@@ -1,8 +1,3 @@
-# Global API base path (automatically prefixes all controller endpoints)
-server:
-  servlet:
-    context-path: /api/v1
-  port: 8080
 spring:
   application:
     name: InvestMali
@@ -31,7 +26,6 @@ spring:
             enable: true
     default-encoding: UTF-8
 
-<<<<<<< HEAD
 server:
   port: 8080
   servlet:
@@ -41,8 +35,6 @@ server:
     allowed-methods: "*"
     allowed-headers: "*"
     allow-credentials: true
-=======
->>>>>>> origin/feature/EDP
 
 logging:
   level:
@@ -110,9 +102,9 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:mysql://localhost:8889/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true
     username: root
-    password: root
+    password: 
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -137,7 +129,7 @@ spring:
 app:
   cors:
     # Origines de développement (exemple: React/Angular locaux)
-    allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:4200,http://localhost:5173
   rate-limit:
     capacity: 200
     refill-tokens: 200

@@ -25,4 +25,8 @@ public interface EntrepriseMembreRepository extends JpaRepository<EntrepriseMemb
     // Single entreprise fetch join
     @Query("SELECT em FROM EntrepriseMembre em JOIN FETCH em.personne JOIN FETCH em.entreprise WHERE em.entreprise.id = :id")
     List<EntrepriseMembre> findByEntrepriseIdWithPersonne(@Param("id") String entrepriseId);
+
+    // Find all memberships for a specific person with full entreprise data
+    @Query("SELECT em FROM EntrepriseMembre em JOIN FETCH em.personne JOIN FETCH em.entreprise e LEFT JOIN FETCH e.division WHERE em.personne.id = :personId")
+    List<EntrepriseMembre> findByPersonne_Id(@Param("personId") String personId);
 }

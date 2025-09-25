@@ -46,6 +46,15 @@ public interface DivisionsRepository extends JpaRepository<Divisions, String> {
     @Query("SELECT d FROM Divisions d WHERE d.parent.id = :communeId AND d.divisionType = 'QUARTIER'")
     List<Divisions> findQuartiersByCommuneId(@Param("communeId") String communeId);
     
+    // Méthodes spécifiques pour Bamako District (structure différente)
+    // Recherche des arrondissements directement depuis une région (pour Bamako District)
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :regionId AND d.divisionType = 'ARRONDISSEMENT'")
+    List<Divisions> findArrondissementsByRegionId(@Param("regionId") String regionId);
+    
+    // Recherche des quartiers directement depuis un arrondissement (pour Bamako District)
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :arrondissementId AND d.divisionType = 'QUARTIER'")
+    List<Divisions> findQuartiersByArrondissementId(@Param("arrondissementId") String arrondissementId);
+    
     // Vérifier l'existence par code
     boolean existsByCode(String code);
 }

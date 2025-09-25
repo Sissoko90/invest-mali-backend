@@ -38,4 +38,8 @@ public class PersonCreateRequest {
     public Roles role;
     // Division code optionnel
     public String divisionCode;
+    // Division ID (UUID) optionnel
+    public String division_id;
+    // Localité précise optionnelle
+    public String localite;
 }

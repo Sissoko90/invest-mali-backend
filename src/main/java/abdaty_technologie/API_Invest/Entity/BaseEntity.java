@@ -27,10 +27,7 @@ public abstract class BaseEntity {
 
   @PrePersist
   protected void onCreate() {
-<<<<<<< HEAD
-    creation = Instant.now();
-    modification = Instant.now();
-=======
+
     Instant now = Instant.now();
     if (this.creation == null) {
       this.creation = now;
@@ -38,15 +35,14 @@ public abstract class BaseEntity {
     if (this.modification == null) {
       this.modification = now;
     }
->>>>>>> origin/feature/EDP
+
   }
 
   @PreUpdate
   protected void onUpdate() {
-<<<<<<< HEAD
-    modification = Instant.now();
-=======
+
+
     this.modification = Instant.now();
->>>>>>> origin/feature/EDP
+
   }
 }

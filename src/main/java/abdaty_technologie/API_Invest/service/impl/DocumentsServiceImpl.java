@@ -116,11 +116,10 @@ public class DocumentsServiceImpl implements DocumentsService {
                 // Appartient aux fondateurs uniquement
                 ensureIsFondateur(person, ent);
             }
-            case DECLARATION_HONNEUR -> { 
-                 /* Appartient aux fondateurs uniquement */ 
-                ensureIsFondateur(person, ent);
-           
-        }
+            case DECLARATION_HONNEUR -> {
+                // Appartient au gérant uniquement (alternative au casier judiciaire)
+                ensureIsGerant(person, ent);
+            }
             default -> {}
         }
 

@@ -86,6 +86,11 @@ public class Entreprise extends BaseEntity {
   @OneToOne(mappedBy = "entreprise", cascade = CascadeType.ALL) 
   private Paiement paiement;
 
+  // Agent assigné pour traiter cette demande
+  @ManyToOne
+  @JoinColumn(name = "assigned_to")
+  private Utilisateurs assignedTo;
+
   // Etat de bannissement
   @Column(name="banni", nullable = false)
   private Boolean banni = false;

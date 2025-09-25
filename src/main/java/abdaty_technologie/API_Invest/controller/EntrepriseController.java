@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import abdaty_technologie.API_Invest.Entity.Entreprise;
+import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
 import abdaty_technologie.API_Invest.Entity.Divisions;
 import abdaty_technologie.API_Invest.Entity.Enum.DivisionType;
 import abdaty_technologie.API_Invest.dto.request.EntrepriseRequest;
@@ -22,15 +24,24 @@ import abdaty_technologie.API_Invest.dto.response.MembreResponse;
 import abdaty_technologie.API_Invest.dto.request.BanEntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.request.UpdateEntrepriseRequest;
 import abdaty_technologie.API_Invest.service.EntrepriseService;
+import abdaty_technologie.API_Invest.service.DocumentsService;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
-import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
+import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
+import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Optional;
+import jakarta.servlet.http.HttpServletRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import abdaty_technologie.API_Invest.util.JwtUtil;
+import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
+import abdaty_technologie.API_Invest.Entity.Utilisateurs;
+import org.springframework.web.bind.annotation.PatchMapping;
 /**
  * Contrôleur REST pour les opérations sur les entreprises.
  *
@@ -47,10 +58,22 @@ public class EntrepriseController {
     private EntrepriseService entrepriseService;
 
     @Autowired
+    private DocumentsService documentsService;
+
+    @Autowired
     private EntrepriseRepository entrepriseRepository;
 
     @Autowired
     private EntrepriseMembreRepository entrepriseMembreRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UtilisateursRepository utilisateursRepository;
 
     /**
      * Crée une entreprise.
@@ -62,6 +85,63 @@ public class EntrepriseController {
     public ResponseEntity<EntrepriseResponse> Entreprise(@RequestBody @Valid EntrepriseRequest request) {
         Entreprise created = entrepriseService.createEntreprise(request);
         return ResponseEntity.ok(toResponse(created));
+    }
+
+    /**
+     * Crée une entreprise avec upload des documents.
+     * - Traite les données JSON de l'entreprise
+     * - Upload et sauvegarde les documents dans la table Documents
+     * - Associe les documents aux personnes et à l'entreprise
+     */
+    @PostMapping("/with-documents")
+    public ResponseEntity<EntrepriseResponse> createEntrepriseWithDocuments(
+            @RequestParam("entrepriseData") String entrepriseDataJson,
+            @RequestParam(value = "statuts", required = false) MultipartFile statuts,
+            @RequestParam(value = "registreCommerce", required = false) MultipartFile registreCommerce,
+            @RequestParam(value = "certificatResidence", required = false) MultipartFile certificatResidence,
+            @RequestParam Map<String, Object> allParams) {
+        
+        try {
+            // Parser les données JSON de l'entreprise
+            EntrepriseRequest request = objectMapper.readValue(entrepriseDataJson, EntrepriseRequest.class);
+            
+            // Créer l'entreprise d'abord
+            Entreprise created = entrepriseService.createEntreprise(request);
+            
+            // Traiter les documents de l'entreprise
+            if (statuts != null && !statuts.isEmpty()) {
+                // Trouver un fondateur pour associer les statuts
+                String founderId = findFounderId(created);
+                if (founderId != null) {
+                    documentsService.uploadDocument(founderId, created.getId(), 
+                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), statuts);
+                }
+            }
+            
+            if (registreCommerce != null && !registreCommerce.isEmpty()) {
+                String founderId = findFounderId(created);
+                if (founderId != null) {
+                    documentsService.uploadDocument(founderId, created.getId(), 
+                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), registreCommerce);
+                }
+            }
+            
+            if (certificatResidence != null && !certificatResidence.isEmpty()) {
+                String gerantId = findGerantId(created);
+                if (gerantId != null) {
+                    documentsService.uploadDocument(gerantId, created.getId(), 
+                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), certificatResidence);
+                }
+            }
+            
+            // Traiter les documents des participants
+            processParticipantDocuments(allParams, created);
+            
+            return ResponseEntity.ok(toResponse(created));
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la création de l'entreprise avec documents: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -172,12 +252,204 @@ public class EntrepriseController {
     }
 
     /**
+     * Test endpoint pour vérifier l'assignation
+     */
+    @GetMapping("/{id}/test-assign")
+    public ResponseEntity<Map<String, Object>> testAssign(@PathVariable String id, HttpServletRequest httpRequest) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Vérifier si l'entreprise existe
+            Optional<Entreprise> entrepriseOpt = entrepriseRepository.findById(id);
+            result.put("entrepriseExists", entrepriseOpt.isPresent());
+            
+            if (entrepriseOpt.isPresent()) {
+                Entreprise e = entrepriseOpt.get();
+                result.put("entrepriseName", e.getNom());
+                result.put("currentAssignedTo", e.getAssignedTo() != null ? e.getAssignedTo().getId() : null);
+            }
+            
+            // Vérifier le token
+            String token = httpRequest.getHeader("Authorization");
+            result.put("tokenPresent", token != null);
+            
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+                try {
+                    String username = jwtUtil.getUsernameFromToken(token);
+                    result.put("username", username);
+                    
+                    Optional<Utilisateurs> userOpt = utilisateursRepository.findByUtilisateur(username);
+                    result.put("userExists", userOpt.isPresent());
+                    
+                    if (userOpt.isPresent()) {
+                        result.put("userId", userOpt.get().getId());
+                    }
+                } catch (Exception e) {
+                    result.put("tokenError", e.getMessage());
+                }
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    /**
+     * Assigner une entreprise à un agent.
+     */
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<EntrepriseResponse> assignToAgent(
+            @PathVariable String id, 
+            @RequestBody(required = false) Map<String, String> request,
+            HttpServletRequest httpRequest) {
+        
+        System.out.println("🔍 [ASSIGN] Début assignation entreprise ID: " + id);
+        System.out.println("🔍 [ASSIGN] Request body: " + request);
+        
+        // Récupérer l'agent connecté depuis le token JWT
+        String token = httpRequest.getHeader("Authorization");
+        System.out.println("🔍 [ASSIGN] Token présent: " + (token != null));
+        
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        
+        String agentUsername = jwtUtil.getUsernameFromToken(token);
+        Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
+            .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+        
+        // Assigner l'entreprise à l'agent connecté ou à un agent spécifique
+        String targetAgentId = (request != null) ? request.get("agentId") : null;
+        Utilisateurs targetAgent = agent; // Par défaut, s'assigner à soi-même
+        
+        System.out.println("🔍 [ASSIGN] Agent connecté: " + agent.getUtilisateur());
+        System.out.println("🔍 [ASSIGN] Target agent ID: " + targetAgentId);
+        
+        if (targetAgentId != null && !targetAgentId.isEmpty()) {
+            targetAgent = utilisateursRepository.findById(targetAgentId)
+                .orElseThrow(() -> new RuntimeException("Agent cible non trouvé"));
+        }
+        
+        try {
+            Entreprise entreprise = entrepriseService.assignToAgent(id, targetAgent);
+            System.out.println("✅ [ASSIGN] Assignation réussie pour entreprise: " + id);
+            return ResponseEntity.ok(toResponseShallow(entreprise));
+        } catch (Exception e) {
+            System.err.println("❌ [ASSIGN] Erreur lors de l'assignation: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * Désassigner une entreprise (la remettre dans la liste commune).
+     */
+    @PatchMapping("/{id}/unassign")
+    public ResponseEntity<EntrepriseResponse> unassignFromAgent(@PathVariable String id) {
+        Entreprise entreprise = entrepriseService.unassignFromAgent(id);
+        return ResponseEntity.ok(toResponseShallow(entreprise));
+    }
+
+    /**
+     * Récupérer les entreprises assignées à l'agent connecté.
+     */
+    @GetMapping("/assigned-to-me")
+    public ResponseEntity<Page<EntrepriseResponse>> getAssignedToMe(
+            Pageable pageable,
+            HttpServletRequest httpRequest) {
+        
+        // Récupérer l'agent connecté
+        String token = httpRequest.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        
+        String agentUsername = jwtUtil.getUsernameFromToken(token);
+        Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
+            .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+        
+        Page<Entreprise> page = entrepriseService.getAssignedToAgent(agent.getId(), pageable);
+        
+        // Récupérer les IDs et batch fetch des membres
+        List<Entreprise> entreprises = page.getContent();
+        List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+        Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
+                entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                    .stream()
+                    .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+        Page<EntrepriseResponse> mapped = page.map(e -> {
+            EntrepriseResponse r = toResponseShallow(e);
+            List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
+            if (ems != null) {
+                r.membres = ems.stream().map(em -> {
+                    MembreResponse mr = new MembreResponse();
+                    if (em.getPersonne() != null) {
+                        mr.personId = em.getPersonne().getId();
+                        mr.nom = em.getPersonne().getNom();
+                        mr.prenom = em.getPersonne().getPrenom();
+                    }
+                    mr.role = em.getRole();
+                    mr.pourcentageParts = em.getPourcentageParts();
+                    mr.dateDebut = em.getDateDebut();
+                    mr.dateFin = em.getDateFin();
+                    return mr;
+                }).collect(Collectors.toList());
+            }
+            return r;
+        });
+        
+        return ResponseEntity.ok(mapped);
+    }
+
+    /**
      * Mise à jour partielle d'une entreprise.
      */
     @PutMapping("/{id}")
     public ResponseEntity<EntrepriseResponse> update(@PathVariable String id, @RequestBody @Valid UpdateEntrepriseRequest req) {
         Entreprise e = entrepriseService.updateEntreprise(id, req);
         return ResponseEntity.ok(toResponseShallow(e));
+    }
+
+    /**
+     * Récupère les entreprises de l'utilisateur connecté.
+     */
+    @GetMapping("/my-applications")
+    public ResponseEntity<List<EntrepriseResponse>> getMyApplications(HttpServletRequest request) {
+        System.out.println("🔍 DEBUG - Appel de /my-applications");
+        
+        // Récupérer l'utilisateur connecté depuis le token JWT
+        String currentUserId = getCurrentUserId(request);
+        System.out.println("🔍 DEBUG - currentUserId: " + currentUserId);
+        
+        if (currentUserId == null) {
+            System.out.println("❌ DEBUG - Utilisateur non authentifié");
+            throw new RuntimeException("Utilisateur non authentifié");
+        }
+        
+        // Récupérer les entreprises où l'utilisateur est membre
+        List<EntrepriseMembre> memberships = entrepriseMembreRepository.findByPersonne_Id(currentUserId);
+        System.out.println("🔍 DEBUG - Nombre de memberships trouvés: " + memberships.size());
+        
+        // Extraire les entreprises et les mapper
+        List<EntrepriseResponse> applications = memberships.stream()
+            .map(em -> {
+                Entreprise entreprise = em.getEntreprise();
+                System.out.println("🔍 DEBUG - Entreprise trouvée: " + entreprise.getNom());
+                System.out.println("🔍 DEBUG - Type entreprise: " + entreprise.getTypeEntreprise());
+                System.out.println("🔍 DEBUG - Forme juridique: " + entreprise.getFormeJuridique());
+                System.out.println("🔍 DEBUG - Référence: " + entreprise.getReference());
+                return entreprise;
+            })
+            .distinct()
+            .map(this::toResponseShallow)
+            .collect(Collectors.toList());
+            
+        System.out.println("🔍 DEBUG - Nombre d'applications retournées: " + applications.size());
+        return ResponseEntity.ok(applications);
     }
 
     /**
@@ -333,5 +605,127 @@ public class EntrepriseController {
         r.motifBannissement = e.getMotifBannissement();
         r.dateBannissement = e.getDateBannissement();
         return r;
+    }
+
+    /**
+     * Méthodes utilitaires pour le traitement des documents
+     */
+    private String findFounderId(Entreprise entreprise) {
+        return entrepriseMembreRepository.findByEntreprise_IdAndRole(entreprise.getId(), 
+            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.FONDATEUR)
+            .stream()
+            .findFirst()
+            .map(em -> em.getPersonne() != null ? em.getPersonne().getId() : null)
+            .orElse(null);
+    }
+
+    private String findGerantId(Entreprise entreprise) {
+        return entrepriseMembreRepository.findByEntreprise_IdAndRole(entreprise.getId(), 
+            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.GERANT)
+            .stream()
+            .findFirst()
+            .map(em -> em.getPersonne() != null ? em.getPersonne().getId() : null)
+            .orElse(null);
+    }
+
+    private void processParticipantDocuments(Map<String, Object> allParams, Entreprise entreprise) {
+        // Traiter les documents des participants (pièces d'identité, casier judiciaire, acte de mariage)
+        System.out.println("🔍 DEBUG - Tous les paramètres reçus:");
+        allParams.forEach((k, v) -> {
+            if (k.startsWith("participant_")) {
+                System.out.println("  " + k + " = " + (v instanceof MultipartFile ? "FILE: " + ((MultipartFile)v).getOriginalFilename() : "'" + v + "'"));
+            }
+        });
+        
+        allParams.forEach((key, value) -> {
+            try {
+                if (key.startsWith("participant_") && key.endsWith("_document") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        // Extraire l'index du participant
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_document"));
+                        
+                        // Récupérer les métadonnées associées
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId");
+                        String typePieceStr = (String) allParams.get("participant_" + indexStr + "_typePiece");
+                        String numeroPiece = (String) allParams.get("participant_" + indexStr + "_numeroPiece");
+                        
+                        // Debug: afficher les valeurs récupérées
+                        System.out.println("🔍 DEBUG Document participant " + indexStr + ":");
+                        System.out.println("  - personId: '" + personId + "'");
+                        System.out.println("  - typePieceStr: '" + typePieceStr + "'");
+                        System.out.println("  - numeroPiece: '" + numeroPiece + "'");
+                        
+                        if (personId != null && !personId.isEmpty() && 
+                            typePieceStr != null && !typePieceStr.isEmpty() && 
+                            numeroPiece != null && !numeroPiece.isEmpty()) {
+                            TypePieces typePiece = TypePieces.valueOf(typePieceStr);
+                            // Date d'expiration par défaut (5 ans)
+                            java.time.LocalDate dateExpiration = java.time.LocalDate.now().plusYears(5);
+                            
+                            System.out.println("  ✅ Appel uploadPiece avec numeroPiece: '" + numeroPiece + "'");
+                            documentsService.uploadPiece(personId, entreprise.getId(), 
+                                typePiece, numeroPiece, dateExpiration, file);
+                        } else {
+                            System.out.println("  ❌ Paramètres manquants pour le document participant " + indexStr);
+                        }
+                    }
+                } else if (key.startsWith("participant_") && key.endsWith("_casierJudiciaire") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_casierJudiciaire"));
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId_casier");
+                        
+                        if (personId != null) {
+                            documentsService.uploadDocument(personId, entreprise.getId(), 
+                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, file);
+                        }
+                    }
+                } else if (key.startsWith("participant_") && key.endsWith("_acteMariage") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_acteMariage"));
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId_mariage");
+                        
+                        if (personId != null) {
+                            documentsService.uploadDocument(personId, entreprise.getId(), 
+                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, file);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Log l'erreur mais ne pas faire échouer toute la création
+                System.err.println("Erreur lors du traitement du document " + key + ": " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Récupère l'ID de l'utilisateur connecté depuis le token JWT.
+     */
+    private String getCurrentUserId(HttpServletRequest request) {
+        try {
+            // Récupérer le token depuis l'en-tête Authorization
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return null;
+            }
+            
+            String token = authHeader.substring(7);
+            String email = jwtUtil.getUsernameFromToken(token);
+            
+            if (email == null) {
+                return null;
+            }
+            
+            // Trouver l'utilisateur par email et récupérer l'ID de la personne
+            return utilisateursRepository.findByUtilisateur(email)
+                .map(user -> user.getPersonne() != null ? user.getPersonne().getId() : null)
+                .orElse(null);
+                
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération de l'utilisateur connecté: " + e.getMessage());
+            return null;
+        }
     }
 }

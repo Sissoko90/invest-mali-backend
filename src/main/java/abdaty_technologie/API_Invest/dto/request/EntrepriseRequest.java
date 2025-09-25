@@ -7,6 +7,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
@@ -24,47 +25,47 @@ public class EntrepriseRequest {
     public String sigle;
 
     /** Adresse différente de celle d'identité (optionnel) */
-    @NotBlank
+    @NotNull
     public Boolean adresseDifferentIdentite;
 
     /** Extrait judiciaire fourni (optionnel) */
-    @NotBlank
+    @NotNull
     public Boolean extraitJudiciaire;
 
     /** Autorisation du gérant fournie (optionnel) */
-    @NotBlank
+    @NotNull
     public Boolean autorisationGerant;
 
     /** Autorisation d'exercice fournie (optionnel) */
-    @NotBlank
+    @NotNull
     public Boolean autorisationExercice;
 
     /** Compte import/export (optionnel) */
-    @NotBlank
+    @NotNull
     public Boolean importExport;
 
     /** Statut de société: si true, un document devra être uploadé (géré côté workflow/documents) */
-    @NotBlank
+    @NotNull
     public Boolean statutSociete;
 
     /** Type d'entreprise (ex: SOCIETE, ENTREPRISE_INDIVIDUELLE) */
-    @NotBlank
+    @NotNull
     public TypeEntreprise typeEntreprise;
 
     /** Statut du processus de création (workflow interne) */
-    @NotBlank
+    @NotNull
     public StatutCreation statutCreation;
     /** Étape de validation (workflow interne) */
 
-    @NotBlank
+    @NotNull
     public EtapeValidation etapeValidation;
     /** Forme juridique (ex: SARL, SA, ...) */
 
-    @NotBlank
+    @NotNull
     public FormeJuridique formeJuridique;
 
     /** Domaine d'activité principal */
-    @NotBlank
+    @NotNull
     public DomaineActivites domaineActivite;
 
     // Code de la division obligatoire

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -71,24 +72,97 @@ public class PersonServiceImpl implements PersonService {
         }
 
         // entrepriseRole: obligatoire SEULEMENT si rôle USER
-        if (role == Roles.USER && req.entrepriseRole == null) {
-            throw new BadRequestException(Messages.PERSON_ENTREPRISE_ROLE_OBLIGATOIRE_POUR_USER);
+        if (role == Roles.USER) {
+            if (req.entrepriseRole == null) {
+                throw new BadRequestException(Messages.PERSON_ENTREPRISE_ROLE_OBLIGATOIRE_POUR_USER);
+            }
+        } else {
+            // Un agent ne doit pas avoir de rôle d'entreprise
+            if (req.entrepriseRole != null) {
+                throw new BadRequestException(Messages.PERSON_AGENT_DOIT_PAS_AVOIR_ENTREPRISEROLE);
+            }
         }
 
-        // Division optionnelle par code
+        // Division optionnelle par code ou par ID avec logique de fallback robuste
         Divisions div = null;
-        if (req.divisionCode != null && !req.divisionCode.isBlank()) {
-            div = divisionsRepository.findByCode(req.divisionCode)
-                    .orElseThrow(() -> new NotFoundException(Messages.divisionIntrouvable(req.divisionCode)));
+        try {
+            if (req.division_id != null && !req.division_id.isBlank()) {
+                // Priorité à division_id si fourni
+                div = divisionsRepository.findById(req.division_id).orElse(null);
+                if (div != null) {
+                    System.out.println("[PersonService] Division trouvée par ID: " + div.getId() + " (" + div.getCode() + ")");
+                } else {
+                    System.out.println("[PersonService] Division_id " + req.division_id + " non trouvé");
+                }
+            }
+            
+            if (div == null && req.divisionCode != null && !req.divisionCode.isBlank()) {
+                // Fallback sur divisionCode
+                div = divisionsRepository.findByCode(req.divisionCode).orElse(null);
+                if (div != null) {
+                    System.out.println("[PersonService] Division trouvée par code: " + div.getCode() + " (ID: " + div.getId() + ")");
+                } else {
+                    System.out.println("[PersonService] DivisionCode " + req.divisionCode + " non trouvé");
+                }
+            }
+            
+            if (div == null) {
+                // Ne plus faire de fallback automatique - respecter le choix de null
+                System.out.println("[PersonService] Aucune division spécifiée - division_id et divisionCode sont null/vides");
+                System.out.println("[PersonService] La personne sera créée sans division assignée");
+            }
+        } catch (Exception e) {
+            System.out.println("[PersonService] Erreur lors de la recherche de division: " + e.getMessage());
+            // Continuer sans division plutôt que de faire échouer la création
         }
 
         // --- Age / Autorisation ---
         // Calcule l'âge à partir du LocalDate reçu et rejette si < 18 ans.
         LocalDate naissance = req.dateNaissance;
-        int age = Period.between(naissance, LocalDate.now(ZoneId.of("Africa/Bamako"))).getYears();
+        LocalDate aujourdhui = LocalDate.now(ZoneId.of("Africa/Bamako"));
+        
+        // Calcul d'âge avec plusieurs méthodes pour débogage
+        int agePeriod = Period.between(naissance, aujourdhui).getYears();
+        long ageChronoUnit = ChronoUnit.YEARS.between(naissance, aujourdhui);
+        
+        // Logs de débogage détaillés
+        System.out.println("[PersonService] ========== DÉBOGAGE CALCUL D'ÂGE ==========");
+        System.out.println("[PersonService] Date de naissance reçue: " + naissance);
+        System.out.println("[PersonService] Date actuelle (Bamako): " + aujourdhui);
+        System.out.println("[PersonService] Âge calculé (Period): " + agePeriod + " ans");
+        System.out.println("[PersonService] Âge calculé (ChronoUnit): " + ageChronoUnit + " ans");
+        System.out.println("[PersonService] Différence entre les deux méthodes: " + (agePeriod - ageChronoUnit));
+        
+        // Utiliser ChronoUnit qui est plus fiable
+        int age = (int) ageChronoUnit;
+        
+        // Vérification de cohérence
+        if (naissance.isAfter(aujourdhui)) {
+            System.out.println("[PersonService] ERREUR: Date de naissance dans le futur!");
+            throw new BadRequestException("La date de naissance ne peut pas être dans le futur");
+        }
+        
+        // Calcul alternatif simple pour vérification
+        int anneeNaissance = naissance.getYear();
+        int anneeActuelle = aujourdhui.getYear();
+        int ageSimple = anneeActuelle - anneeNaissance;
+        
+        // Ajustement si l'anniversaire n'est pas encore passé cette année
+        if (naissance.getDayOfYear() > aujourdhui.getDayOfYear()) {
+            ageSimple--;
+        }
+        
+        System.out.println("[PersonService] Âge calculé (méthode simple): " + ageSimple + " ans");
+        System.out.println("[PersonService] ================================================");
+        
         boolean autoriser = age >= 18;
         if (!autoriser) {
-            throw new BadRequestException(Messages.PERSON_MINEUR_NON_AUTORISE);
+            System.out.println("[PersonService] ERREUR: Personne mineure - âge: " + age + " ans (< 18)");
+            System.out.println("[PersonService] Toutes les méthodes de calcul:");
+            System.out.println("[PersonService] - Period.between(): " + agePeriod);
+            System.out.println("[PersonService] - ChronoUnit.YEARS: " + ageChronoUnit);
+            System.out.println("[PersonService] - Méthode simple: " + ageSimple);
+            throw new BadRequestException(Messages.personneMineure("ID_TEMPORAIRE") + " - Âge calculé: " + age + " ans");
         }
 
         // --- Cohérence sexe/civilité ---
@@ -111,7 +185,7 @@ public class PersonServiceImpl implements PersonService {
         p.setDateNaissance(java.util.Date.from(req.dateNaissance.atStartOfDay(ZoneId.of("Africa/Bamako")).toInstant()));
         p.setLieuNaissance(req.lieuNaissance.trim());
         p.setEstAutoriser(autoriser);
-        p.setNationnalite(req.nationnalite);
+        p.setNationalite(req.nationnalite);
         p.setEntrepriseRole(req.entrepriseRole); // peut rester null si role != USER
         p.setAntenneAgent(req.antenneAgent); // peut rester null si role == USER
         p.setSexe(req.sexe);
@@ -119,6 +193,11 @@ public class PersonServiceImpl implements PersonService {
         p.setCivilite(req.civilite);
         p.setRole(role);
         p.setDivision(div);
+        p.setLocalite(req.localite != null ? req.localite.trim() : null);
+        
+        // Log final pour vérifier l'assignation
+        System.out.println("[PersonService] Division finale assignée: " + (div != null ? div.getId() : "NULL"));
+        System.out.println("[PersonService] Localité assignée: " + (req.localite != null ? req.localite : "NULL"));
 
         Persons saved = personsRepository.save(p);
         return toResponse(saved);
@@ -156,22 +235,57 @@ public class PersonServiceImpl implements PersonService {
         if (req.nom != null) p.setNom(req.nom.trim());
         if (req.prenom != null) p.setPrenom(req.prenom.trim());
         if (req.lieuNaissance != null) p.setLieuNaissance(req.lieuNaissance.trim());
-        if (req.nationnalite != null) p.setNationnalite(req.nationnalite);
+        if (req.nationnalite != null) p.setNationalite(req.nationnalite);
         if (req.entrepriseRole != null) p.setEntrepriseRole(req.entrepriseRole);
         if (req.sexe != null) p.setSexe(req.sexe);
         if (req.situationMatrimoniale != null) p.setSituationMatrimoniale(req.situationMatrimoniale);
         if (req.civilite != null) p.setCivilite(req.civilite);
 
-        // Division
-        if (req.divisionCode != null) {
-            if (req.divisionCode.isBlank()) {
-                p.setDivision(null);
-            } else {
-                Divisions div = divisionsRepository.findByCode(req.divisionCode)
-                        .orElseThrow(() -> new NotFoundException(Messages.divisionIntrouvable(req.divisionCode)));
-                p.setDivision(div);
+        // Division - logique de fallback robuste comme dans PersonSeeder
+        Divisions div = null;
+        try {
+            if (req.division_id != null && !req.division_id.isBlank()) {
+                // Priorité à division_id si fourni
+                div = divisionsRepository.findById(req.division_id).orElse(null);
+                if (div != null) {
+                    System.out.println("[PersonService UPDATE] Division trouvée par ID: " + div.getId() + " (" + div.getCode() + ")");
+                } else {
+                    System.out.println("[PersonService UPDATE] Division_id " + req.division_id + " non trouvé");
+                }
             }
+            
+            if (div == null && req.divisionCode != null && !req.divisionCode.isBlank()) {
+                // Fallback sur divisionCode
+                div = divisionsRepository.findByCode(req.divisionCode).orElse(null);
+                if (div != null) {
+                    System.out.println("[PersonService UPDATE] Division trouvée par code: " + div.getCode() + " (ID: " + div.getId() + ")");
+                } else {
+                    System.out.println("[PersonService UPDATE] DivisionCode " + req.divisionCode + " non trouvé");
+                }
+            }
+            
+            if (div == null && (req.division_id != null || req.divisionCode != null)) {
+                // Ne plus faire de fallback automatique - respecter le choix de null
+                System.out.println("[PersonService UPDATE] Division spécifiée mais non trouvée - division_id: " + req.division_id + ", divisionCode: " + req.divisionCode);
+                System.out.println("[PersonService UPDATE] La division restera null");
+            }
+            
+            // Appliquer la division trouvée (ou null si aucune demandée)
+            if (req.division_id != null || req.divisionCode != null) {
+                p.setDivision(div);
+                System.out.println("[PersonService UPDATE] Division finale assignée: " + (div != null ? div.getId() : "NULL"));
+            }
+        } catch (Exception e) {
+            System.out.println("[PersonService UPDATE] Erreur lors de la recherche de division: " + e.getMessage());
+            // Continuer sans division plutôt que de faire échouer la mise à jour
         }
+
+        // Localité
+        if (req.localite != null) {
+            p.setLocalite(req.localite.isBlank() ? null : req.localite.trim());
+            System.out.println("[PersonService UPDATE] Localité assignée: " + (req.localite.isBlank() ? "NULL" : req.localite));
+        }
+
 
         // Rôle et antenneAgent
         Roles newRole = (req.role != null) ? req.role : p.getRole();
@@ -186,6 +300,7 @@ public class PersonServiceImpl implements PersonService {
             if (req.antenneAgent == null && p.getAntenneAgent() == null) {
                 throw new BadRequestException(Messages.PERSON_ANTENNE_AGENT_OBLIGATOIRE);
             }
+         
         }
         p.setRole(newRole);
         if (req.antenneAgent != null) {
@@ -233,7 +348,7 @@ public class PersonServiceImpl implements PersonService {
         r.dateNaissance = p.getDateNaissance();
         r.lieuNaissance = p.getLieuNaissance();
         r.estAutoriser = p.getEstAutoriser();
-        r.nationnalite = p.getNationnalite();
+        r.nationnalite = p.getNationalite();
         r.entrepriseRole = p.getEntrepriseRole();
         r.antenneAgent = p.getAntenneAgent();
         r.sexe = p.getSexe();
@@ -242,6 +357,8 @@ public class PersonServiceImpl implements PersonService {
         r.role = p.getRole();
         r.divisionCode = p.getDivision() != null ? p.getDivision().getCode() : null;
         r.divisionNom = p.getDivision() != null ? p.getDivision().getNom() : null;
+        r.division_id = p.getDivision() != null ? p.getDivision().getId() : null;
+        r.localite = p.getLocalite();
         return r;
     }
 

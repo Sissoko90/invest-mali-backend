@@ -3,8 +3,6 @@ package abdaty_technologie.API_Invest.service.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Date;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.UUID;
 
@@ -13,13 +11,14 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Optional;
 
 import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.Entity.Persons;
-import abdaty_technologie.API_Invest.Entity.Divisions;
-import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.PasswordResetToken;
-import abdaty_technologie.API_Invest.Entity.Enum.*;
+import abdaty_technologie.API_Invest.Entity.Enum.Roles;
 import abdaty_technologie.API_Invest.constants.Messages;
 import abdaty_technologie.API_Invest.dto.requests.LoginRequest;
 import abdaty_technologie.API_Invest.dto.requests.RegisterRequest;
@@ -29,26 +28,19 @@ import abdaty_technologie.API_Invest.dto.responses.LoginResponse;
 import abdaty_technologie.API_Invest.dto.responses.UserAuthResponse;
 import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
-import abdaty_technologie.API_Invest.repository.DivisionsRepository;
-import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.PasswordResetTokenRepository;
 import abdaty_technologie.API_Invest.service.IAuthService;
 import abdaty_technologie.API_Invest.util.JwtUtil;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     @Autowired
     private UtilisateursRepository utilisateursRepository;
 
     @Autowired
     private PersonsRepository personsRepository;
-
-    @Autowired
-    private DivisionsRepository divisionsRepository;
-
-    @Autowired
-    private EntrepriseRepository entrepriseRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -61,13 +53,27 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public LoginResponse authenticate(LoginRequest loginRequest) {
-        // Rechercher la personne par email
-        Persons person = personsRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new BadCredentialsException(Messages.PERSON_NOT_FOUND + loginRequest.getEmail()));
-
-        // Trouver le compte utilisateur lié à cette personne
-        Utilisateurs utilisateur = utilisateursRepository.findByPersonneId(person.getId())
-                .orElseThrow(() -> new BadCredentialsException(Messages.UTILISATEUR_NON_TROUVE));
+        log.info("Tentative de connexion pour l'email: {}", loginRequest.getEmail());
+        
+        // Rechercher directement l'utilisateur par son email
+        Optional<Utilisateurs> userOpt = utilisateursRepository.findByUtilisateur(loginRequest.getEmail());
+        
+        if (!userOpt.isPresent()) {
+            log.error("Aucun utilisateur trouvé avec l'email: {}", loginRequest.getEmail());
+            throw new BadCredentialsException(Messages.UTILISATEUR_NON_TROUVE);
+        }
+        
+        Utilisateurs utilisateur = userOpt.get();
+        log.info("Utilisateur trouvé: {}", utilisateur.getUtilisateur());
+                
+        // Récupérer les informations de la personne associée
+        Persons person = utilisateur.getPersonne();
+        if (person == null) {
+            log.error("Aucune personne associée à l'utilisateur: {}", utilisateur.getUtilisateur());
+            throw new BadCredentialsException(Messages.PERSONNE_NON_TROUVE);
+        }
+        
+        log.info("Personne associée trouvée: {} {}", person.getPrenom(), person.getNom());
 
         // Vérifier le mot de passe (hash) avec auto-migration legacy si en clair
         if (!passwordEncoder.matches(loginRequest.getMotdepasse(), utilisateur.getMotdepasse())) {
@@ -84,91 +90,93 @@ public class AuthServiceImpl implements IAuthService {
         String role = "USER"; // basé sur présence d'une personne
         String token = jwtUtil.generateToken(utilisateur.getUtilisateur(), role);
 
-        return new LoginResponse(token, utilisateur.getUtilisateur(), role, person.getNom(), person.getPrenom(), person.getEmail());
+        // Récupérer la civilité depuis la table persons - si null, utiliser le sexe comme fallback
+        System.out.println("DEBUG - Person object: " + person);
+        System.out.println("DEBUG - Person civilité: " + person.getCivilite());
+        System.out.println("DEBUG - Person sexe: " + person.getSexe());
+        
+        String civiliteStr = null;
+        if (person.getCivilite() != null) {
+            // Vérifier la cohérence entre sexe et civilité
+            String sexe = person.getSexe() != null ? person.getSexe().toString() : null;
+            String civilite = person.getCivilite().toString();
+            
+            // Contrainte: MASCULIN → MONSIEUR, FEMININ → MADAME ou MADEMOISELLE
+            if (sexe != null) {
+                if (sexe.equals("MASCULIN") && !civilite.equals("MONSIEUR")) {
+                    System.out.println("WARN - Incohérence: sexe=" + sexe + " mais civilité=" + civilite + ". Correction appliquée.");
+                    civiliteStr = "MONSIEUR";
+                } else if (sexe.equals("FEMININ") && !civilite.equals("MADAME") && !civilite.equals("MADEMOISELLE")) {
+                    System.out.println("WARN - Incohérence: sexe=" + sexe + " mais civilité=" + civilite + ". Correction appliquée.");
+                    civiliteStr = "MADAME";
+                } else {
+                    civiliteStr = civilite;
+                }
+            } else {
+                civiliteStr = civilite;
+            }
+        } else if (person.getSexe() != null) {
+            // Fallback: utiliser le sexe pour déterminer la civilité
+            civiliteStr = person.getSexe().toString().equals("MASCULIN") ? "MONSIEUR" : 
+                         person.getSexe().toString().equals("FEMININ") ? "MADAME" : null;
+        } else {
+            // Valeur par défaut si aucune info disponible
+            civiliteStr = "MONSIEUR";
+        }
+        
+        System.out.println("DEBUG - Civilité finale: " + civiliteStr);
+        
+        return new LoginResponse(token, utilisateur.getUtilisateur(), role, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
     }
 
     @Override
+    @Transactional
     public LoginResponse register(RegisterRequest request) {
-        // Déterminer l'identifiant du compte: username explicite ou email par défaut
-        String username = (request.getUtilisateur() != null && !request.getUtilisateur().isBlank())
-                ? request.getUtilisateur().trim()
-                : request.getEmail();
-
-        // Validations de base (unicité)
-        if (utilisateursRepository.existsByUtilisateur(username)) {
-            throw new RuntimeException("Nom d'utilisateur déjà utilisé");
-        }
+        // Vérification des doublons
         if (personsRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email déjà utilisé");
+            throw new RuntimeException("Cette adresse email est déjà utilisée");
         }
-        if (request.getTelephone1() != null && personsRepository.existsByTelephone1(request.getTelephone1())) {
-            throw new RuntimeException("Téléphone déjà utilisé");
-        }
-
-        // Parsing date
-        Date dateNaissance;
-        try {
-            dateNaissance = new SimpleDateFormat("yyyy-MM-dd").parse(request.getDateNaissance());
-        } catch (ParseException e) {
-            throw new RuntimeException(Messages.invalidFieldFormat("dateNaissance"));
+        if (personsRepository.existsByTelephone1(request.getTelephone1())) {
+            throw new RuntimeException("Ce numéro de téléphone est déjà utilisé");
         }
 
-        // Conversion des enums (en majuscules pour tolérance)
-        Nationalites nationalite = Nationalites.valueOf(request.getNationalite().toUpperCase());
-        Sexes sexe = Sexes.valueOf(request.getSexe().toUpperCase());
-        SituationMatrimoniales situation = SituationMatrimoniales.valueOf(request.getSituationMatrimoniale().toUpperCase());
-        Civilites civilite = Civilites.valueOf(request.getCivilite().toUpperCase());
-        Roles role = (request.getRole() == null || request.getRole().isBlank()) ? Roles.USER : Roles.valueOf(request.getRole().toUpperCase());
-        AntenneAgents antenne = AntenneAgents.valueOf(request.getAntenneAgent().toUpperCase());
-        EntrepriseRole entrepriseRole = EntrepriseRole.valueOf(request.getEntrepriseRole().toUpperCase());
+        // Création de la personne avec uniquement les champs fournis
+        Persons person = new Persons();
+        person.setNom(request.getNom());
+        person.setPrenom(request.getPrenom());
+        person.setCivilite(request.getCivilite());
+        person.setSexe(request.getSexe());
+        person.setEmail(request.getEmail());
+        person.setTelephone1(request.getTelephone1());
+        
+        // Rôle par défaut
+        person.setRole(Roles.USER);
+        
 
-        // Création de la personne
-        Persons p = new Persons();
-        p.setNom(request.getNom());
-        p.setPrenom(request.getPrenom());
-        p.setEmail(request.getEmail());
-        p.setTelephone1(request.getTelephone1());
-        p.setTelephone2(request.getTelephone2());
-        p.setDateNaissance(dateNaissance);
-        p.setLieuNaissance(request.getLieuNaissance());
-        p.setLocalite(request.getLocalite());
-        p.setEstAutoriser(true); // autorisé par défaut
-        p.setNationalite(nationalite);
-        p.setEntrepriseRole(entrepriseRole);
-        p.setAntenneAgent(antenne);
-        p.setSexe(sexe);
-        p.setSituationMatrimoniale(situation);
-        p.setCivilite(civilite);
-        p.setRole(role);
-
-        // Division optionnelle (objet imbriqué avec id)
-        if (request.getDivision() != null && request.getDivision().getId() != null && !request.getDivision().getId().isBlank()) {
-            Divisions div = divisionsRepository.findById(request.getDivision().getId())
-                .orElseThrow(() -> new RuntimeException(Messages.invalidFieldFormat("division.id")));
-            p.setDivision(div);
-        }
-
-        // Entreprise optionnelle
-        if (request.getEntrepriseId() != null && !request.getEntrepriseId().isBlank()) {
-            Entreprise ent = entrepriseRepository.findById(request.getEntrepriseId())
-                .orElseThrow(() -> new RuntimeException(Messages.ENTERPRISE_NOT_FOUND + request.getEntrepriseId()));
-            p.setEntreprise(ent);
-        }
-
-        // Persister la personne
-        Persons saved = personsRepository.save(p);
-
-        // Créer le compte utilisateur lié à la personne
-        Utilisateurs u = new Utilisateurs();
-        u.setUtilisateur(username);
-        u.setMotdepasse(passwordEncoder.encode(request.getMotdepasse()));
-        u.setPersonne(saved);
-        utilisateursRepository.save(u);
-
-        // Générer un token et répondre
-        String roleStr = "USER";
-        String token = jwtUtil.generateToken(u.getUtilisateur(), roleStr);
-        return new LoginResponse(token, u.getUtilisateur(), roleStr, saved.getNom(), saved.getPrenom(), saved.getEmail());
+        // Création du compte utilisateur avec mot de passe haché
+        Utilisateurs utilisateur = new Utilisateurs();
+        utilisateur.setUtilisateur(request.getEmail());
+        utilisateur.setMotdepasse(passwordEncoder.encode(request.getMotdepasse()));
+        utilisateur.setPersonne(person);
+        
+        // Sauvegarde de la personne et de l'utilisateur
+        Persons savedPerson = personsRepository.save(person);
+        utilisateursRepository.save(utilisateur);
+        
+        // Génération du token JWT
+        String token = jwtUtil.generateToken(utilisateur.getUtilisateur(), "USER");
+        
+        // Création de la réponse avec uniquement les champs de base
+        return new LoginResponse(
+            token, 
+            utilisateur.getUtilisateur(), 
+            "USER", 
+            savedPerson.getNom(), 
+            savedPerson.getPrenom(), 
+            savedPerson.getEmail(),
+            savedPerson.getId(),
+            savedPerson.getCivilite() != null ? savedPerson.getCivilite().toString() : null
+        );
     }
 
     @Override

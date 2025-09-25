@@ -1,13 +1,21 @@
 package abdaty_technologie.API_Invest.Entity.Enum;
 
 public enum TypePaiement {
-    CARTE_BANCAIRE,
-    VIREMENT_BANCAIRE,
-    ESPECES,
-    CHEQUE,
-    MOBILE_MONEY,
-    ORANGE_MONEY,
-    MOOV_MONEY,
-    PAYPAL,
-    CRYPTO_MONNAIE
+    CARTE_BANCAIRE("Carte bancaire"),
+    MOBILE_MONEY("Mobile Money"),
+    // VIREMENT_BANCAIRE("Virement bancaire"),
+    ESPECES("Espèces");
+    // CHEQUE("Cheque"),
+    // PAYPAL("Paypal");
+   
+
+    private final String value;
+
+    TypePaiement(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
 }

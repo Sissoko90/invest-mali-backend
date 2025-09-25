@@ -22,4 +22,6 @@ public class PersonResponse {
     public Roles role;
     public String divisionCode;
     public String divisionNom;
+    public String division_id;
+    public String localite;
 }

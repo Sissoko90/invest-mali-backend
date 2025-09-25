@@ -14,10 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import abdaty_technologie.API_Invest.Entity.Divisions;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
 import abdaty_technologie.API_Invest.Entity.Persons;
+import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.Entity.ReferenceSequence;
 import abdaty_technologie.API_Invest.dto.request.EntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.request.BanEntrepriseRequest;
@@ -36,6 +38,7 @@ import abdaty_technologie.API_Invest.service.EmailService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
+import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 
 /**
  * Service d'application pour la gestion des entreprises.
@@ -201,13 +204,33 @@ public class EntrepriseServiceImpl implements EntrepriseService {
             if (person.getDateNaissance() == null) {
                 throw new BadRequestException(Messages.personneMineure(p.personId));
             }
-            LocalDate birth = person.getDateNaissance().toInstant().atZone(ZoneId.of("Africa/Bamako")).toLocalDate();
-            if (birth.isAfter(LocalDate.now())) {
+            
+            // Utiliser la même timezone pour les deux dates pour éviter les décalages
+            ZoneId bamakoZone = ZoneId.of("Africa/Bamako");
+            LocalDate birth = person.getDateNaissance().toInstant().atZone(bamakoZone).toLocalDate();
+            LocalDate today = LocalDate.now(bamakoZone);
+            
+            // Logs de débogage pour la validation d'entreprise
+            System.out.println("[EntrepriseService] ========== VALIDATION ÂGE PARTICIPANT ==========");
+            System.out.println("[EntrepriseService] PersonId: " + p.personId);
+            System.out.println("[EntrepriseService] Date de naissance (DB): " + person.getDateNaissance());
+            System.out.println("[EntrepriseService] Date de naissance (LocalDate): " + birth);
+            System.out.println("[EntrepriseService] Date actuelle (Bamako): " + today);
+            
+            if (birth.isAfter(today)) {
+                System.out.println("[EntrepriseService] ERREUR: Date de naissance dans le futur!");
                 throw new BadRequestException(Messages.personneMineure(p.personId));
             }
-            int years = Period.between(birth, LocalDate.now()).getYears();
+            
+            int years = Period.between(birth, today).getYears();
+            System.out.println("[EntrepriseService] Âge calculé: " + years + " ans");
+            System.out.println("[EntrepriseService] ================================================");
+            
             if (years < 18) {
+                System.out.println("[EntrepriseService] REJET: Personne mineure - âge: " + years + " ans");
                 throw new BadRequestException(Messages.personneMineure(p.personId));
+            } else {
+                System.out.println("[EntrepriseService] ✅ ACCEPTÉ: Personne majeure - âge: " + years + " ans");
             }
         }
 
@@ -421,6 +444,73 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         } catch (Exception ignore) {}
 
         return updated;
+    }
+
+    @Override
+    public Entreprise assignToAgent(String entrepriseId, Utilisateurs agent) {
+        Entreprise entreprise = entrepriseRepository.findById(entrepriseId)
+            .orElseThrow(() -> new NotFoundException(Messages.ENTREPRISE_INTROUVABLE));
+        
+        // Vérifier que l'agent a le bon rôle pour cette étape
+        if (!canAgentHandleStep(agent, entreprise.getEtapeValidation())) {
+            throw new BadRequestException("L'agent n'a pas les permissions pour traiter cette étape");
+        }
+        
+        entreprise.setAssignedTo(agent);
+        entreprise.setModification(Instant.now());
+        return entrepriseRepository.save(entreprise);
+    }
+
+    @Override
+    public Entreprise unassignFromAgent(String entrepriseId) {
+        Entreprise entreprise = entrepriseRepository.findById(entrepriseId)
+            .orElseThrow(() -> new NotFoundException(Messages.ENTREPRISE_INTROUVABLE));
+        
+        entreprise.setAssignedTo(null);
+        entreprise.setModification(Instant.now());
+        return entrepriseRepository.save(entreprise);
+    }
+
+    @Override
+    public Page<Entreprise> getAssignedToAgent(String agentId, Pageable pageable) {
+        return entrepriseRepository.findByAssignedToId(agentId, pageable);
+    }
+
+    @Override
+    public Page<Entreprise> getUnassignedForStep(EtapeValidation etape, Pageable pageable) {
+        return entrepriseRepository.findByEtapeValidationAndAssignedToIsNull(etape, pageable);
+    }
+
+    private boolean canAgentHandleStep(Utilisateurs agent, EtapeValidation etape) {
+        // Vérifier les rôles selon l'étape
+        if (agent.getPersonne() == null || agent.getPersonne().getRole() == null) {
+            System.out.println("🚫 [ASSIGN] Agent sans personne ou rôle: " + agent.getId());
+            return false;
+        }
+        
+        String roleName = agent.getPersonne().getRole().name();
+        System.out.println("🔍 [ASSIGN] Agent: " + agent.getId() + ", Rôle: " + roleName + ", Étape: " + etape);
+        
+        switch (etape) {
+            case ACCUEIL:
+                return roleName.equals("AGENT_ACCEUIL") || roleName.equals("SUPER_ADMIN");
+            case REGISSEUR:
+                return roleName.equals("AGENT_REGISTER");
+            case REVISION:
+                return roleName.equals("AGENT_REVISION");
+            case IMPOTS:
+                return roleName.equals("AGENT_IMPOT");
+            case RCCM1:
+                return roleName.equals("AGENT_RCCM1");
+            case RCCM2:
+                return roleName.equals("AGENT_RCCM2");
+            case NINA:
+                return roleName.equals("AGENT_NINA");
+            case RETRAIT:
+                return roleName.equals("AGENT_RETRAIT");
+            default:
+                return false;
+        }
     }
 
 // ... (rest of the code remains the same)

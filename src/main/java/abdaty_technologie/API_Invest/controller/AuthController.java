@@ -80,11 +80,11 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/test")
-    @Operation(summary = "Test endpoint", description = "Endpoint de test pour vérifier l'authentification")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok(Messages.AUTHENTICATION_SUCCESS);
-    }
+    // @GetMapping("/test")
+    // @Operation(summary = "Test endpoint", description = "Endpoint de test pour vérifier l'authentification")
+    // public ResponseEntity<String> test() {
+    //     return ResponseEntity.ok(Messages.AUTHENTICATION_SUCCESS);
+    // }
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Authentification d'un utilisateur", description = "Récupère les informations d'authentification d'un utilisateur par son ID")

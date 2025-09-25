@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
+import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 
 @Repository
 public interface EntrepriseRepository extends JpaRepository<Entreprise, String> {
@@ -57,4 +58,12 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String> 
            "LEFT JOIN FETCH em.personne " +
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembres(@Param("id") String id);
+
+    // Méthodes pour l'assignation des demandes
+    Page<Entreprise> findByAssignedToId(String agentId, Pageable pageable);
+    
+    Page<Entreprise> findByEtapeValidationAndAssignedToIsNull(EtapeValidation etape, Pageable pageable);
+    
+    Page<Entreprise> findByEtapeValidationAndAssignedToIsNullAndStatutCreationIn(
+        EtapeValidation etape, List<StatutCreation> statuts, Pageable pageable);
 }

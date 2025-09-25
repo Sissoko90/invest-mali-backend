@@ -3,8 +3,7 @@ package abdaty_technologie.API_Invest.constants;
 public final class Messages {
     private Messages() {}
 
-<<<<<<< HEAD
-=======
+
     // Validation messages
     public static final String REQ_INVALIDE = "Requête invalide";
     public static final String REF_OBLIGATOIRE = "reference est obligatoire";
@@ -26,7 +25,6 @@ public final class Messages {
         return "Division avec code '" + code + "' introuvable. Assurez-vous que les données de divisions sont importées.";
     }
 
->>>>>>> origin/feature/EDP
     // GlobalExceptionHandler helpers
     public static String invalidEnumValue(String field, String allowedValuesCsv) {
         return "Valeur invalide pour le champ '" + field + "'. Valeurs acceptées: [" + allowedValuesCsv + "]";
@@ -44,7 +42,7 @@ public final class Messages {
         return "Paramètre '" + param + "' a un type invalide";
     }
 
-<<<<<<< HEAD
+
     // Messages d'erreur d'authentification
     public static final String INVALID_CREDENTIALS = "Nom d'utilisateur ou mot de passe incorrect";
     public static final String UTILISATEUR_NON_TROUVE = "Utilisateur non trouvé";
@@ -81,7 +79,7 @@ public final class Messages {
     public static final String VALIDATION_ERROR = "Erreur lors de la validation: ";
     public static final String REFUSAL_ERROR = "Erreur lors du refus: ";
     public static final String CANCELLATION_ERROR = "Erreur lors de l'annulation: ";
-=======
+
     // Participants / Entreprise validations
     public static final String PARTICIPANTS_OBLIGATOIRES = "La liste des participants est obligatoire";
     public static final String UN_SEUL_GERANT_AUTORISE = "Un seul gérant est autorisé par entreprise";
@@ -137,5 +135,7 @@ public final class Messages {
     public static final String PERSON_MINEUR_NON_AUTORISE = "La personne est mineure (moins de 18 ans) et ne peut pas être créée";
     public static final String PERSON_TELEPHONE_INVALIDE = "Le format du téléphone est invalide. Format international E.164 requis (ex: +22377000001)";
     public static final String PERSON_CIVILITE_INVALIDE_POUR_SEXE = "La civilité ne correspond pas au sexe fourni";
->>>>>>> origin/feature/EDP
+    public static final String PERSON_AGENT_DOIT_PAS_AVOIR_ENTREPRISEROLE = "Un agent ne peut pas avoir un rôle d'entreprise";
+    public static final String PERSONNE_NON_TROUVE = "Aucune personne associée à ce compte utilisateur";
+    
 }

@@ -13,10 +13,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.Nationalites;
 import abdaty_technologie.API_Invest.Entity.Enum.Roles;
 import abdaty_technologie.API_Invest.Entity.Enum.Sexes;
 import abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales;
-<<<<<<< HEAD
-import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
-=======
->>>>>>> origin/feature/EDP
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,27 +49,24 @@ public class Persons extends BaseEntity {
     @Column(name="telephone2", nullable = true, unique = true)
     private String telephone2;
 
-    @Column(name="date_naissance", nullable = false)
+    @Column(name="date_naissance", nullable = true)
     private Date dateNaissance;
     
-    @Column(name="lieu_naissance", nullable = false)
+    @Column(name="lieu_naissance", nullable = true)
     private String lieuNaissance;
 
     @Column(name="localite", nullable = true, length = 255)
     private String localite;
 
-    @Column(name="est_autoriser", nullable = false)
+    @Column(name="est_autoriser", nullable = true)
     private Boolean estAutoriser;
 
-    @Column(name="nationalite", nullable = false)
+    @Column(name="nationalite", nullable = true)
     @Enumerated(EnumType.STRING) 
     private Nationalites nationalite;
     
-<<<<<<< HEAD
-    @Column(name="entreprise_role", nullable = false)
-=======
     @Column(name="entreprise_role", nullable = true)
->>>>>>> origin/feature/EDP
+
     @Enumerated(EnumType.STRING)
     private EntrepriseRole entrepriseRole;
     
@@ -80,15 +74,15 @@ public class Persons extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private AntenneAgents antenneAgent;
     
-    @Column(name="sexe", nullable = false)
+    @Column(name="sexe", nullable = true)
     @Enumerated(EnumType.STRING)
     private Sexes sexe;
     
-    @Column(name="situation_matrimoniale", nullable = false)
+    @Column(name="situation_matrimoniale", nullable = true)
     @Enumerated(EnumType.STRING)
     private SituationMatrimoniales situationMatrimoniale;
     
-    @Column(name="civilite", nullable = false)
+    @Column(name="civilite", nullable = true)
     @Enumerated(EnumType.STRING)
     private Civilites civilite;
     

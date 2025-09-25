@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import abdaty_technologie.API_Invest.Entity.Documents;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
@@ -66,6 +69,15 @@ public class DocumentsController {
     ) {
         Documents saved = documentsService.uploadDocument(personneId, entrepriseId, typeDocument, numero, file);
         return ResponseEntity.ok(toResponse(saved));
+    }
+
+    @GetMapping("/entreprise/{entrepriseId}")
+    public ResponseEntity<List<DocumentResponse>> getDocumentsByEntreprise(@PathVariable String entrepriseId) {
+        List<Documents> documents = documentsRepository.findByEntrepriseId(entrepriseId);
+        List<DocumentResponse> responses = documents.stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping(path = "/{id}/file")

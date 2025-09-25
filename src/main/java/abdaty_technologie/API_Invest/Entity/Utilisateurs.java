@@ -1,6 +1,5 @@
 package abdaty_technologie.API_Invest.Entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +16,7 @@ public class Utilisateurs extends BaseEntity {
   @Column(name="utilisateur", nullable = false, unique = true)
   private String utilisateur; 
   
-  @JsonIgnore
+ 
   @Column(name="motdepasse", nullable = false)
   private String motdepasse;
   
