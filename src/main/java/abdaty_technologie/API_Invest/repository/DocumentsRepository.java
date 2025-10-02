@@ -41,4 +41,7 @@ public interface DocumentsRepository extends JpaRepository<Documents, String> {
     
     // Vérifier l'existence par numéro de pièce
     boolean existsByNumero(String numero);
+    
+    // Vérifier l'existence par numéro et type de pièce
+    boolean existsByNumeroAndTypePiece(String numero, TypePieces typePiece);
 }

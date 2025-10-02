@@ -20,6 +20,17 @@ public interface DivisionsRepository extends JpaRepository<Divisions, String> {
     // Recherche par nom
     List<Divisions> findByNomContainingIgnoreCase(String nom);
     
+    // Recherche par nom avec chargement des relations parent
+    @Query("SELECT d FROM Divisions d LEFT JOIN FETCH d.parent WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%'))")
+    List<Divisions> findByNomContainingIgnoreCaseWithParent(@Param("nom") String nom);
+    
+    // Recherche par nom et type de division
+    List<Divisions> findByNomContainingIgnoreCaseAndDivisionType(String nom, DivisionType divisionType);
+    
+    // Recherche par nom et type avec chargement des relations parent
+    @Query("SELECT d FROM Divisions d LEFT JOIN FETCH d.parent WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) AND d.divisionType = :divisionType")
+    List<Divisions> findByNomContainingIgnoreCaseAndDivisionTypeWithParent(@Param("nom") String nom, @Param("divisionType") DivisionType divisionType);
+    
     // Recherche par type de division
     List<Divisions> findByDivisionType(DivisionType divisionType);
     

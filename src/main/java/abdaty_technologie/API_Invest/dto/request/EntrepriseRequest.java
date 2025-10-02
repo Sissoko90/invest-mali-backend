@@ -1,6 +1,7 @@
 package abdaty_technologie.API_Invest.dto.request;
 
 import abdaty_technologie.API_Invest.Entity.Enum.DomaineActivites;
+import abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Enum.FormeJuridique;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
@@ -20,9 +21,15 @@ public class EntrepriseRequest {
     /** Nom légal de l'entreprise (obligatoire) */
     @NotBlank
     public String nom;
-    /** Sigle de l'entreprise (obligatoire) */
-    @NotBlank
+    /** Sigle de l'entreprise (optionnel) */
     public String sigle;
+
+    /** Capitale de l'entreprise (obligatoire) */
+    @NotNull
+    public String capitale;
+
+
+    public String activiteSecondaire;
 
     /** Adresse différente de celle d'identité (optionnel) */
     @NotNull
@@ -67,6 +74,9 @@ public class EntrepriseRequest {
     /** Domaine d'activité principal */
     @NotNull
     public DomaineActivites domaineActivite;
+
+    /** Domaine d'activité réglementé (optionnel) */
+    public DomaineActiviteNr domaineActiviteNr;
 
     // Code de la division obligatoire
     /** Code de la division (localisation la plus précise connue) */

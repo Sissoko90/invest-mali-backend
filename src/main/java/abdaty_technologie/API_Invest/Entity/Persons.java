@@ -65,8 +65,7 @@ public class Persons extends BaseEntity {
     @Enumerated(EnumType.STRING) 
     private Nationalites nationalite;
     
-    @Column(name="entreprise_role", nullable = true)
-
+    @Column(name="entreprise_role", nullable = true, length = 20)
     @Enumerated(EnumType.STRING)
     private EntrepriseRole entrepriseRole;
     

@@ -14,6 +14,11 @@ spring:
       add-mappings: false
   jpa:
     open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+      enabled: true
   mail:
     host: smtp.gmail.com
     port: 587
@@ -102,7 +107,7 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864
     username: root
     password: 
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -129,7 +134,7 @@ spring:
 app:
   cors:
     # Origines de développement (exemple: React/Angular locaux)
-    allowed-origins: http://localhost:3000,http://localhost:3001,http://localhost:4200,http://localhost:5173
+    allowed-origins: http://localhost:3000,http://localhost:3001, http://localhost:3002,http://localhost:4200,http://localhost:5173
   rate-limit:
     capacity: 200
     refill-tokens: 200
@@ -147,13 +152,12 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         format_sql: false
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}

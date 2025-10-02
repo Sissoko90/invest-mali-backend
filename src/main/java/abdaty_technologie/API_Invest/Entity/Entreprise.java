@@ -2,9 +2,11 @@ package abdaty_technologie.API_Invest.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import abdaty_technologie.API_Invest.Entity.Enum.DomaineActivites;
+import abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Enum.FormeJuridique;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
@@ -28,10 +30,16 @@ public class Entreprise extends BaseEntity {
   @Column(name="reference", nullable = false, unique = true, length = 50)
   private String reference;
 
+  @Column(name="capital", nullable = false)
+  private BigDecimal capitale;
+
+  @Column(name="activiteSecondaire", nullable = false,  length = 5000)
+  private String activiteSecondaire;
+
   @Column(name="nom", nullable = false, unique = true, length = 150)
   private String nom;
 
-  @Column(name="sigle", nullable = false, unique = true, length = 15)
+  @Column(name="sigle", nullable = true, unique = true, length = 15)
   private String sigle;
 
   @Column(name="adresse_different_identite", nullable = false)
@@ -71,6 +79,10 @@ public class Entreprise extends BaseEntity {
   @Column(name="domaine_activite", nullable = false, length = 150)
   @Enumerated(EnumType.STRING)  
   private DomaineActivites domaineActivite;
+
+  @Column(name="domaine_activite_nr", nullable = true, length = 150)
+  @Enumerated(EnumType.STRING)  
+  private DomaineActiviteNr domaineActiviteNr;
 
   // Relation membres via table de jointure EntrepriseMembre
   @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL, orphanRemoval = true)

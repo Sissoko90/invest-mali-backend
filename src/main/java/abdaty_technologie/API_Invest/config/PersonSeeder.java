@@ -58,12 +58,16 @@ public class PersonSeeder implements CommandLineRunner {
                     existingAdmin.getDivision() != null ? existingAdmin.getDivision().getId() : "NULL",
                     existingAdmin.getLocalite());
                 
-                // Si pas de division, on met à jour
-                if (existingAdmin.getDivision() == null) {
-                    log.info("[PersonSeeder] Mise à jour de l'admin existant avec division...");
+                // Si pas de division ET pas de localité, on met à jour
+                if (existingAdmin.getDivision() == null && 
+                    (existingAdmin.getLocalite() == null || existingAdmin.getLocalite().isBlank())) {
+                    log.info("[PersonSeeder] Mise à jour de l'admin existant avec division et localité par défaut...");
                     // Continuer avec la logique de recherche de division
                 } else {
-                    log.info("[PersonSeeder] Admin existant a déjà une division, pas de mise à jour.");
+                    log.info("[PersonSeeder] Admin existant a déjà des données de localisation, pas de mise à jour.");
+                    log.info("[PersonSeeder] Division existante: {}, Localité existante: {}", 
+                        existingAdmin.getDivision() != null ? existingAdmin.getDivision().getId() : "NULL",
+                        existingAdmin.getLocalite());
                     return;
                 }
             } else {
@@ -153,9 +157,23 @@ public class PersonSeeder implements CommandLineRunner {
             admin.setCreation(Instant.now());
         }
         
-        // Mettre à jour les champs division et localité (nouveau ou existant)
-        admin.setLocalite("Bamako Centre");
-        admin.setDivision(defaultDivision);
+        // Mettre à jour les champs division et localité SEULEMENT si c'est une création ou si les valeurs sont nulles
+        if (!isUpdate || admin.getLocalite() == null || admin.getLocalite().isBlank()) {
+            admin.setLocalite("Bamako Centre");
+            log.info("[PersonSeeder] Localité définie sur: Bamako Centre");
+        } else {
+            log.info("[PersonSeeder] Localité existante conservée: {}", admin.getLocalite());
+        }
+        
+        if (!isUpdate || admin.getDivision() == null) {
+            admin.setDivision(defaultDivision);
+            log.info("[PersonSeeder] Division définie sur: {}", 
+                defaultDivision != null ? defaultDivision.getId() : "NULL");
+        } else {
+            log.info("[PersonSeeder] Division existante conservée: {}", 
+                admin.getDivision() != null ? admin.getDivision().getId() : "NULL");
+        }
+        
         admin.setModification(Instant.now());
         
         log.info("[PersonSeeder] Division assignée à admin AVANT sauvegarde: {}", 

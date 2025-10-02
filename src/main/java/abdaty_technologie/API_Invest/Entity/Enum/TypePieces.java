@@ -4,7 +4,6 @@ package abdaty_technologie.API_Invest.Entity.Enum;
 public enum TypePieces {
     CNI("Carte Nationale d’Identité"),                // Carte Nationale d’Identité
     PASSEPORT("Passeport"),
-    PERMIS_CONDUIRE("Permis de conduire"),
     CARTE_CONSULAIRE("Carte consulatère"),
     CARTE_ELECTEUR("Carte électorale");
     

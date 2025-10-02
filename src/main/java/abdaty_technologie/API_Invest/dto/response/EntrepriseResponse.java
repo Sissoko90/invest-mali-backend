@@ -1,5 +1,6 @@
 package abdaty_technologie.API_Invest.dto.response;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -26,6 +27,10 @@ public class EntrepriseResponse {
 
     /** Sigle */
     public String sigle;
+
+    public BigDecimal capitale;
+
+    public String activiteSecondaire;
 
     /** Type d'entreprise (SOCIETE / ENTREPRISE_INDIVIDUELLE) */
     public TypeEntreprise typeEntreprise;
@@ -72,6 +77,9 @@ public class EntrepriseResponse {
 
     // Membres liés (personnes) avec leur rôle et parts
     public List<MembreResponse> membres;
+
+    /** Agent assigné pour traiter cette demande */
+    public UtilisateursResponse assignedTo;
 
     /** Dates de création et de modification */
     public Instant creation;

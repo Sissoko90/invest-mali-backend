@@ -9,8 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import abdaty_technologie.API_Invest.service.EntrepriseService;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
-import abdaty_technologie.API_Invest.dto.response.EntrepriseResponse;
-
 import java.util.*;
 
 @RestController

@@ -78,11 +78,11 @@ Contraintes supplémentaires:
   - Doit appartenir au gérant.
 - `STATUS_SOCIETE`:
   - Requiert `entreprise.statutSociete = true`.
-  - Réservé aux FONDATEURS.
+  - Réservé aux DIRIGEANTS.
 - `REGISTRE_COMMERCE`:
-  - Réservé aux FONDATEURS.
+  - Réservé aux DIRIGEANTS.
 - `DECLARATION_HONNEUR`:
-  - Réservé aux FONDATEURS (selon dernière règle appliquée).
+  - Réservé aux DIRIGEANTS (selon dernière règle appliquée).
 
 Autres validations:
 - `dateExpiration` (pour pièces) doit être au format ISO (yyyy-MM-dd) et >= aujourd’hui.
@@ -139,7 +139,7 @@ ALTER TABLE persons MODIFY antenne_agent varchar(255) NULL;
 ## Entreprises – Points clés
 
 - Création, mise à jour, bannissement, progression de workflow (`EtapeValidation`, `StatutCreation`, etc.).
-- Participants (`EntrepriseMembre`): rôles `FONDATEUR`, `ASSOCIE`, `GERANT` avec dates d’effet.
+- Participants (`EntrepriseMembre`): rôles `DIRIGEANT`, `ASSOCIE`, `GERANT` avec dates d’effet.
 - Contrôles typiques:
   - Règles de rôle pour certains documents.
   - `statutSociete` => nécessite dépôt `STATUS_SOCIETE`.
@@ -164,7 +164,7 @@ curl -X POST "http://localhost:8080/api/v1/persons" \
     "dateNaissance": "1990-05-10",
     "lieuNaissance": "Bamako",
     "nationnalite": "MALIENNE",
-    "entrepriseRole": "FONDATEUR",
+    "entrepriseRole": "DIRIGEANT",
     "sexe": "FEMININ",
     "situationMatrimoniale": "CELIBATAIRE",
     "civilite": "MADAME",

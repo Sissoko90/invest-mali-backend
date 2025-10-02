@@ -27,4 +27,16 @@ public class MembreResponse {
 
     //La date du debut du personne membre de l'entreprise
     public LocalDate dateFin;
+
+    //L'email du membre
+    public String email;
+
+    //Le téléphone du membre
+    public String telephone;
+
+    //La date de naissance du membre
+    public LocalDate dateNaissance;
+
+    //La situation matrimoniale du membre
+    public Boolean situationMatrimoniale;
 }

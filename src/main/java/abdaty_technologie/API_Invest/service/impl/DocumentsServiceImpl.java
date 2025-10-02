@@ -4,6 +4,7 @@ import java.sql.Blob;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Objects;
+import java.util.List;
 import javax.sql.rowset.serial.SerialBlob;
 import java.util.UUID;
 
@@ -60,9 +61,11 @@ public class DocumentsServiceImpl implements DocumentsService {
         if (documentsRepository.existsByNumero(numero.trim())) {
             throw new BadRequestException(Messages.NUMERO_PIECE_DEJA_UTILISE);
         }
-        if (!documentsRepository.findByTypePieceAndPersonneId(typePiece, personneId).isEmpty()) {
-            throw new BadRequestException(Messages.PIECE_DEJA_EXISTANTE_POUR_PERSONNE);
-        }
+        // DÉSACTIVÉ: Contrôle d'unicité par typePiece pour une personne
+        // Une personne peut avoir plusieurs documents du même type (renouvellement, validité, etc.)
+        // if (!documentsRepository.findByTypePieceAndPersonneId(typePiece, personneId).isEmpty()) {
+        //     throw new BadRequestException(Messages.PIECE_DEJA_EXISTANTE_POUR_PERSONNE);
+        // }
 
         Documents d = new Documents();
         d.setPersonne(person);
@@ -109,12 +112,12 @@ public class DocumentsServiceImpl implements DocumentsService {
                 if (!Boolean.TRUE.equals(ent.getStatutSociete())) {
                     throw new BadRequestException(Messages.STATUT_SOCIETE_REQUIS);
                 }
-                // Ce document appartient aux fondateurs uniquement
-                ensureIsFondateur(person, ent);
+                // Ce document appartient aux dirigeants uniquement
+                ensureIsDirigeant(person, ent);
             }
             case REGISTRE_COMMERCE -> {
-                // Appartient aux fondateurs uniquement
-                ensureIsFondateur(person, ent);
+                // Appartient aux dirigeants uniquement
+                ensureIsDirigeant(person, ent);
             }
             case DECLARATION_HONNEUR -> {
                 // Appartient au gérant uniquement (alternative au casier judiciaire)
@@ -135,18 +138,18 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     private void ensureIsGerant(Persons person, Entreprise ent) {
-        var gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
+        List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
         boolean ok = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
         if (!ok) {
             throw new BadRequestException(Messages.DOCUMENT_POUR_GERANT_SEULEMENT);
         }
     }
 
-    private void ensureIsFondateur(Persons person, Entreprise ent) {
-        var fnds = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.FONDATEUR);
+    private void ensureIsDirigeant(Persons person, Entreprise ent) {
+        List<EntrepriseMembre> fnds = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.DIRIGEANT);
         boolean ok = fnds.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
         if (!ok) {
-            throw new BadRequestException("Ce document est réservé aux fondateurs de l'entreprise");
+            throw new BadRequestException("Ce document est réservé aux dirigeants de l'entreprise");
         }
     }
 
@@ -174,5 +177,27 @@ public class DocumentsServiceImpl implements DocumentsService {
         String prefix = typeDocument != null ? typeDocument.name() : "DOC";
         String rand = UUID.randomUUID().toString().replace("-", "");
         return (prefix + "-" + rand).substring(0, Math.min(prefix.length() + 1 + rand.length(), 20));
+    }
+
+    @Override
+    public boolean isPieceNumeroAlreadyUsed(String numero, String typePiece) {
+        if (numero == null || numero.isBlank()) {
+            return false;
+        }
+        
+        try {
+            // Convertir le string en enum si possible
+            TypePieces pieceType = TypePieces.valueOf(typePiece.toUpperCase());
+            
+            // Vérifier dans la base de données
+            return documentsRepository.existsByNumeroAndTypePiece(numero.trim(), pieceType);
+            
+        } catch (IllegalArgumentException e) {
+            // Type de pièce invalide
+            return false;
+        } catch (Exception e) {
+            // En cas d'erreur, on considère que la pièce n'existe pas
+            return false;
+        }
     }
 }

@@ -19,7 +19,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-
 public class AuthController {
 
     @Autowired
@@ -33,14 +32,13 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            // DEBUG: exposer le message d'erreur réel pour faciliter le diagnostic
-            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Connexion utilisateur", description = "Authentifie un utilisateur et retourne un token JWT")
+    @Operation(summary = "Connexion", description = "Authentification d'un utilisateur")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             LoginResponse response = authService.authenticate(loginRequest);
@@ -79,12 +77,6 @@ public class AuthController {
             return ResponseEntity.internalServerError().body(new ErrorResponse("Erreur lors de la réinitialisation du mot de passe : " + e.getMessage()));
         }
     }
-
-    // @GetMapping("/test")
-    // @Operation(summary = "Test endpoint", description = "Endpoint de test pour vérifier l'authentification")
-    // public ResponseEntity<String> test() {
-    //     return ResponseEntity.ok(Messages.AUTHENTICATION_SUCCESS);
-    // }
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Authentification d'un utilisateur", description = "Récupère les informations d'authentification d'un utilisateur par son ID")

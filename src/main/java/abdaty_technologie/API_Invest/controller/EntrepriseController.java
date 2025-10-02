@@ -18,9 +18,11 @@ import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
 import abdaty_technologie.API_Invest.Entity.Divisions;
 import abdaty_technologie.API_Invest.Entity.Enum.DivisionType;
+import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.dto.request.EntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.response.EntrepriseResponse;
 import abdaty_technologie.API_Invest.dto.response.MembreResponse;
+import abdaty_technologie.API_Invest.dto.response.UtilisateursResponse;
 import abdaty_technologie.API_Invest.dto.request.BanEntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.request.UpdateEntrepriseRequest;
 import abdaty_technologie.API_Invest.service.EntrepriseService;
@@ -167,19 +169,7 @@ public class EntrepriseController {
             EntrepriseResponse r = toResponseShallow(e);
             List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
             if (ems != null) {
-                r.membres = ems.stream().map(em -> {
-                    MembreResponse mr = new MembreResponse();
-                    if (em.getPersonne() != null) {
-                        mr.personId = em.getPersonne().getId();
-                        mr.nom = em.getPersonne().getNom();
-                        mr.prenom = em.getPersonne().getPrenom();
-                    }
-                    mr.role = em.getRole();
-                    mr.pourcentageParts = em.getPourcentageParts();
-                    mr.dateDebut = em.getDateDebut();
-                    mr.dateFin = em.getDateFin();
-                    return mr;
-                }).toList();
+                r.membres = ems.stream().map(this::mapMembre).toList();
             }
             return r;
         });
@@ -203,19 +193,7 @@ public class EntrepriseController {
             EntrepriseResponse r = toResponseShallow(e);
             List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
             if (ems != null) {
-                r.membres = ems.stream().map(em -> {
-                    MembreResponse mr = new MembreResponse();
-                    if (em.getPersonne() != null) {
-                        mr.personId = em.getPersonne().getId();
-                        mr.nom = em.getPersonne().getNom();
-                        mr.prenom = em.getPersonne().getPrenom();
-                    }
-                    mr.role = em.getRole();
-                    mr.pourcentageParts = em.getPourcentageParts();
-                    mr.dateDebut = em.getDateDebut();
-                    mr.dateFin = em.getDateFin();
-                    return mr;
-                }).toList();
+                r.membres = ems.stream().map(this::mapMembre).toList();
             }
             return r;
         });
@@ -266,6 +244,7 @@ public class EntrepriseController {
             if (entrepriseOpt.isPresent()) {
                 Entreprise e = entrepriseOpt.get();
                 result.put("entrepriseName", e.getNom());
+                result.put("etapeValidation", e.getEtapeValidation() != null ? e.getEtapeValidation().name() : "NULL");
                 result.put("currentAssignedTo", e.getAssignedTo() != null ? e.getAssignedTo().getId() : null);
             }
             
@@ -283,7 +262,12 @@ public class EntrepriseController {
                     result.put("userExists", userOpt.isPresent());
                     
                     if (userOpt.isPresent()) {
-                        result.put("userId", userOpt.get().getId());
+                        Utilisateurs user = userOpt.get();
+                        result.put("userId", user.getId());
+                        result.put("userPersonne", user.getPersonne() != null ? "EXISTS" : "NULL");
+                        if (user.getPersonne() != null) {
+                            result.put("userRole", user.getPersonne().getRole() != null ? user.getPersonne().getRole().name() : "NO_ROLE");
+                        }
                     }
                 } catch (Exception e) {
                     result.put("tokenError", e.getMessage());
@@ -329,8 +313,25 @@ public class EntrepriseController {
         System.out.println("🔍 [ASSIGN] Target agent ID: " + targetAgentId);
         
         if (targetAgentId != null && !targetAgentId.isEmpty()) {
-            targetAgent = utilisateursRepository.findById(targetAgentId)
-                .orElseThrow(() -> new RuntimeException("Agent cible non trouvé"));
+            System.out.println("🔍 [ASSIGN] Recherche agent par ID: " + targetAgentId);
+            
+            // Essayer d'abord par ID utilisateur
+            Optional<Utilisateurs> userById = utilisateursRepository.findById(targetAgentId);
+            if (userById.isPresent()) {
+                System.out.println("✅ [ASSIGN] Agent trouvé par ID utilisateur");
+                targetAgent = userById.get();
+            } else {
+                // Fallback: chercher par personne_id
+                System.out.println("🔍 [ASSIGN] Agent non trouvé par ID utilisateur, recherche par personne_id");
+                Optional<Utilisateurs> userByPersonId = utilisateursRepository.findByPersonneId(targetAgentId);
+                if (userByPersonId.isPresent()) {
+                    System.out.println("✅ [ASSIGN] Agent trouvé par personne_id");
+                    targetAgent = userByPersonId.get();
+                } else {
+                    System.err.println("❌ [ASSIGN] Agent non trouvé ni par ID utilisateur ni par personne_id: " + targetAgentId);
+                    throw new RuntimeException("Agent cible non trouvé pour ID: " + targetAgentId);
+                }
+            }
         }
         
         try {
@@ -354,6 +355,60 @@ public class EntrepriseController {
     }
 
     /**
+     * Récupérer les entreprises NON ASSIGNÉES pour éviter les conflits entre agents.
+     */
+    @GetMapping("/unassigned")
+    public ResponseEntity<Page<EntrepriseResponse>> getUnassignedEntreprises(
+            @RequestParam(value = "etape", defaultValue = "ACCUEIL") String etape,
+            Pageable pageable) {
+        
+        System.out.println("🔍 [UNASSIGNED] Récupération des entreprises non assignées pour l'étape: " + etape);
+        
+        try {
+            EtapeValidation etapeValidation = EtapeValidation.valueOf(etape.toUpperCase());
+            Page<Entreprise> page = entrepriseRepository.findByEtapeValidationAndAssignedToIsNull(etapeValidation, pageable);
+            
+            System.out.println("✅ [UNASSIGNED] Trouvé " + page.getTotalElements() + " entreprises non assignées");
+            
+            // Récupérer les IDs des entreprises de la page
+            List<Entreprise> entreprises = page.getContent();
+            List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+            
+            // Batch fetch des membres + personne pour éviter N+1 et lazy
+            Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
+                    entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                        .stream()
+                        .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+            Page<EntrepriseResponse> mapped = page.map(e -> {
+                EntrepriseResponse r = toResponseShallow(e);
+                List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
+                if (ems != null) {
+                    r.membres = ems.stream().map(em -> {
+                        MembreResponse mr = new MembreResponse();
+                        if (em.getPersonne() != null) {
+                            mr.personId = em.getPersonne().getId();
+                            mr.nom = em.getPersonne().getNom();
+                            mr.prenom = em.getPersonne().getPrenom();
+                        }
+                        mr.role = em.getRole();
+                        mr.pourcentageParts = em.getPourcentageParts();
+                        mr.dateDebut = em.getDateDebut();
+                        mr.dateFin = em.getDateFin();
+                        return mr;
+                    }).toList();
+                }
+                return r;
+            });
+            
+            return ResponseEntity.ok(mapped);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ [UNASSIGNED] Étape invalide: " + etape);
+            throw new RuntimeException("Étape de validation invalide: " + etape);
+        }
+    }
+
+    /**
      * Récupérer les entreprises assignées à l'agent connecté.
      */
     @GetMapping("/assigned-to-me")
@@ -361,48 +416,66 @@ public class EntrepriseController {
             Pageable pageable,
             HttpServletRequest httpRequest) {
         
-        // Récupérer l'agent connecté
-        String token = httpRequest.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-        
-        String agentUsername = jwtUtil.getUsernameFromToken(token);
-        Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
-            .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
-        
-        Page<Entreprise> page = entrepriseService.getAssignedToAgent(agent.getId(), pageable);
-        
-        // Récupérer les IDs et batch fetch des membres
-        List<Entreprise> entreprises = page.getContent();
-        List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
-        Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
-                entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
-                    .stream()
-                    .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
-
-        Page<EntrepriseResponse> mapped = page.map(e -> {
-            EntrepriseResponse r = toResponseShallow(e);
-            List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
-            if (ems != null) {
-                r.membres = ems.stream().map(em -> {
-                    MembreResponse mr = new MembreResponse();
-                    if (em.getPersonne() != null) {
-                        mr.personId = em.getPersonne().getId();
-                        mr.nom = em.getPersonne().getNom();
-                        mr.prenom = em.getPersonne().getPrenom();
-                    }
-                    mr.role = em.getRole();
-                    mr.pourcentageParts = em.getPourcentageParts();
-                    mr.dateDebut = em.getDateDebut();
-                    mr.dateFin = em.getDateFin();
-                    return mr;
-                }).collect(Collectors.toList());
+        try {
+            System.out.println("🔍 [ASSIGNED-TO-ME] Début de la requête");
+            
+            // Récupérer l'agent connecté
+            String token = httpRequest.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
             }
-            return r;
-        });
-        
-        return ResponseEntity.ok(mapped);
+            
+            String agentUsername = jwtUtil.getUsernameFromToken(token);
+            System.out.println("🔍 [ASSIGNED-TO-ME] Agent username: " + agentUsername);
+            
+            Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
+                .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+            
+            System.out.println("🔍 [ASSIGNED-TO-ME] Agent ID: " + agent.getId());
+            
+            Page<Entreprise> page = entrepriseService.getAssignedToAgent(agent.getId(), pageable);
+            System.out.println("🔍 [ASSIGNED-TO-ME] Nombre d'entreprises assignées: " + page.getTotalElements());
+            
+            // Récupérer les IDs et batch fetch des membres
+            List<Entreprise> entreprises = page.getContent();
+            List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+            Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
+                    entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                        .stream()
+                        .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+            Page<EntrepriseResponse> mapped = page.map(e -> {
+                EntrepriseResponse r = toResponseShallow(e);
+                List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
+                if (ems != null) {
+                    r.membres = ems.stream().map(em -> {
+                        MembreResponse mr = new MembreResponse();
+                        if (em.getPersonne() != null) {
+                            mr.personId = em.getPersonne().getId();
+                            mr.nom = em.getPersonne().getNom();
+                            mr.prenom = em.getPersonne().getPrenom();
+                        }
+                        mr.role = em.getRole();
+                        mr.pourcentageParts = em.getPourcentageParts();
+                        mr.dateDebut = em.getDateDebut();
+                        mr.dateFin = em.getDateFin();
+                        return mr;
+                    }).collect(Collectors.toList());
+                }
+                return r;
+            });
+            
+            System.out.println("✅ [ASSIGNED-TO-ME] Succès");
+            return ResponseEntity.ok(mapped);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [ASSIGNED-TO-ME] Erreur: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Retourner une page vide en cas d'erreur pour éviter le crash du frontend
+            Page<EntrepriseResponse> emptyPage = Page.empty(pageable);
+            return ResponseEntity.ok(emptyPage);
+        }
     }
 
     /**
@@ -490,6 +563,8 @@ public class EntrepriseController {
         r.reference = e.getReference();
         r.nom = e.getNom();
         r.sigle = e.getSigle();
+        r.capitale = e.getCapitale();
+        r.activiteSecondaire = e.getActiviteSecondaire();
         r.typeEntreprise = e.getTypeEntreprise();
         r.statutCreation = e.getStatutCreation();
         r.etapeValidation = e.getEtapeValidation();
@@ -548,21 +623,36 @@ public class EntrepriseController {
 
         // Map des membres (personnes liées) avec rôle et parts
         if (e.getMembres() != null) {
-            r.membres = e.getMembres().stream().map(em -> {
-                MembreResponse mr = new MembreResponse();
-                if (em.getPersonne() != null) {
-                    mr.personId = em.getPersonne().getId();
-                    mr.nom = em.getPersonne().getNom();
-                    mr.prenom = em.getPersonne().getPrenom();
-                }
-                mr.role = em.getRole();
-                mr.pourcentageParts = em.getPourcentageParts();
-                mr.dateDebut = em.getDateDebut();
-                mr.dateFin = em.getDateFin();
-                return mr;
-            }).toList();
+            r.membres = e.getMembres().stream().map(this::mapMembre).toList();
         }
         return r;
+    }
+
+    // Méthode utilitaire pour mapper un membre
+    private MembreResponse mapMembre(EntrepriseMembre em) {
+        MembreResponse mr = new MembreResponse();
+        if (em.getPersonne() != null) {
+            mr.personId = em.getPersonne().getId();
+            mr.nom = em.getPersonne().getNom();
+            mr.prenom = em.getPersonne().getPrenom();
+            mr.email = em.getPersonne().getEmail();
+            mr.telephone = em.getPersonne().getTelephone1(); // Correction: telephone1
+            // Conversion Date vers LocalDate
+            if (em.getPersonne().getDateNaissance() != null) {
+                mr.dateNaissance = em.getPersonne().getDateNaissance().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            }
+            // Conversion enum vers Boolean (true = marié, false = célibataire/autre)
+            if (em.getPersonne().getSituationMatrimoniale() != null) {
+                mr.situationMatrimoniale = em.getPersonne().getSituationMatrimoniale() == 
+                    abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.MARIE;
+            }
+        }
+        mr.role = em.getRole();
+        mr.pourcentageParts = em.getPourcentageParts();
+        mr.dateDebut = em.getDateDebut();
+        mr.dateFin = em.getDateFin();
+        return mr;
     }
 
     // Mapping léger sans membres (utilisé pour la liste paginée)
@@ -572,6 +662,8 @@ public class EntrepriseController {
         r.reference = e.getReference();
         r.nom = e.getNom();
         r.sigle = e.getSigle();
+        r.capitale = e.getCapitale();
+        r.activiteSecondaire = e.getActiviteSecondaire();
         r.typeEntreprise = e.getTypeEntreprise();
         r.statutCreation = e.getStatutCreation();
         r.etapeValidation = e.getEtapeValidation();
@@ -604,6 +696,19 @@ public class EntrepriseController {
         r.banni = e.getBanni();
         r.motifBannissement = e.getMotifBannissement();
         r.dateBannissement = e.getDateBannissement();
+        
+        // Mapper l'agent assigné
+        if (e.getAssignedTo() != null) {
+            r.assignedTo = new UtilisateursResponse();
+            r.assignedTo.id = e.getAssignedTo().getId();
+            r.assignedTo.utilisateur = e.getAssignedTo().getUtilisateur();
+            if (e.getAssignedTo().getPersonne() != null) {
+                r.assignedTo.email = e.getAssignedTo().getPersonne().getEmail();
+                r.assignedTo.nom = e.getAssignedTo().getPersonne().getNom();
+                r.assignedTo.prenom = e.getAssignedTo().getPersonne().getPrenom();
+            }
+        }
+        
         return r;
     }
 
@@ -612,7 +717,7 @@ public class EntrepriseController {
      */
     private String findFounderId(Entreprise entreprise) {
         return entrepriseMembreRepository.findByEntreprise_IdAndRole(entreprise.getId(), 
-            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.FONDATEUR)
+            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.DIRIGEANT)
             .stream()
             .findFirst()
             .map(em -> em.getPersonne() != null ? em.getPersonne().getId() : null)

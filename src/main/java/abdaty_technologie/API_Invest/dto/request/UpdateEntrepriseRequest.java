@@ -15,6 +15,9 @@ public class UpdateEntrepriseRequest {
     // Sigle de l'entreprise 
     public String sigle;
 
+    // Activité secondaire (texte libre)
+    public String activiteSecondaire;
+
     public Boolean adresseDifferentIdentite;
     public Boolean extraitJudiciaire;
     public Boolean autorisationGerant;

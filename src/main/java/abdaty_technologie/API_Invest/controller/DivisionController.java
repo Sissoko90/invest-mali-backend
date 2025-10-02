@@ -356,6 +356,72 @@ public class DivisionController {
     }
     
     /**
+     * Recherche rapide de divisions par nom
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<Divisions>> searchDivisions(
+            @RequestParam String query,
+            @RequestParam(required = false) String type) {
+        
+        System.out.println("[DivisionController] Recherche divisions - Query: '" + query + "', Type: '" + type + "'");
+        
+        try {
+            List<Divisions> results;
+            
+            if (type != null && !type.trim().isEmpty()) {
+                // Recherche avec filtrage par type et chargement des relations parent
+                DivisionType divisionType = DivisionType.valueOf(type.toUpperCase());
+                results = divisionsRepository.findByNomContainingIgnoreCaseAndDivisionTypeWithParent(query, divisionType);
+                System.out.println("[DivisionController] Recherche avec type " + divisionType + ": " + results.size() + " résultats");
+            } else {
+                // Recherche sans filtrage par type avec chargement des relations parent
+                results = divisionsRepository.findByNomContainingIgnoreCaseWithParent(query);
+                System.out.println("[DivisionController] Recherche sans filtre type: " + results.size() + " résultats");
+            }
+            
+            // Limiter à 50 résultats pour éviter la surcharge
+            if (results.size() > 50) {
+                results = results.subList(0, 50);
+                System.out.println("[DivisionController] Résultats limités à 50");
+            }
+            
+            // Debug: afficher les premiers résultats avec hiérarchie complète
+            for (int i = 0; i < Math.min(5, results.size()); i++) {
+                Divisions div = results.get(i);
+                String parentInfo = div.getParent() != null ? 
+                    " (Parent: " + div.getParent().getNom() + ", Type Parent: " + div.getParent().getDivisionType() + ")" : " (Racine)";
+                System.out.println("[DivisionController] - Résultat " + (i+1) + ": " + div.getNom() + 
+                    " (Type: " + div.getDivisionType() + ", Code: " + div.getCode() + ")" + parentInfo);
+                
+                // Afficher la hiérarchie complète pour les quartiers de Bamako
+                if (div.getNom().toLowerCase().contains("bamako") || 
+                    (div.getParent() != null && div.getParent().getNom().toLowerCase().contains("bamako"))) {
+                    System.out.println("[DivisionController]   >>> BAMAKO DÉTECTÉ - Hiérarchie complète:");
+                    Divisions current = div;
+                    int level = 0;
+                    while (current != null && level < 5) { // Éviter les boucles infinies
+                        String indent = "    ".repeat(level);
+                        System.out.println("[DivisionController]   " + indent + "- " + current.getNom() + 
+                            " (Type: " + current.getDivisionType() + ", ID: " + current.getId() + ")");
+                        current = current.getParent();
+                        level++;
+                    }
+                }
+            }
+            
+            return ResponseEntity.ok(results);
+            
+        } catch (IllegalArgumentException e) {
+            System.out.println("[DivisionController] Type de division invalide: " + type);
+            return ResponseEntity.badRequest().body(List.of());
+        } catch (Exception e) {
+            System.out.println("[DivisionController] Erreur lors de la recherche: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of());
+        }
+    }
+
+    /**
      * Récupérer les quartiers par code d'arrondissement (solution de contournement pour Bamako)
      */
     @GetMapping("/arrondissements/{arrondissementId}/quartiers/by-code")
