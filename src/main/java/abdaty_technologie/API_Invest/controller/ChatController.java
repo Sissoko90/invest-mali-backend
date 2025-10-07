@@ -4,22 +4,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import abdaty_technologie.API_Invest.dto.chat.*;
 import abdaty_technologie.API_Invest.service.ChatService;
 import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
-import abdaty_technologie.API_Invest.repository.ConversationRepository;
 import abdaty_technologie.API_Invest.repository.MessageRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
+import abdaty_technologie.API_Invest.repository.ConversationRepository;
+import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.Entity.Conversation;
+
 import abdaty_technologie.API_Invest.Entity.Message;
-import abdaty_technologie.API_Invest.Entity.Persons;
-import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.Enum.ConversationStatus;
-import abdaty_technologie.API_Invest.Entity.Enum.MessageType;
+
+import abdaty_technologie.API_Invest.exception.NotFoundException;
+
 
 import jakarta.validation.Valid;
 import java.util.HashMap;
@@ -40,10 +43,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Contrôleur REST pour la gestion du système de chat
+ * Contrôleur REST pour la gestion du système de chat selon la logique métier :
+ * 1. Les agents initient les conversations (pas les utilisateurs)
+ * 2. Une conversation = 1 entreprise + 1 agent + 1 utilisateur
+ * 3. Messages envoyés par agent OU utilisateur
  */
 @RestController
-@RequestMapping("/chat")
+@RequestMapping("/api/v1/chat")
 @CrossOrigin(origins = "*")
 public class ChatController {
 
@@ -77,6 +83,9 @@ public class ChatController {
     @Autowired
     private EntrepriseRepository entrepriseRepository;
 
+    @Autowired
+    private EntrepriseMembreRepository entrepriseMembreRepository;
+
     /**
      * Crée une nouvelle conversation
      */
@@ -92,7 +101,7 @@ public class ChatController {
     }
 
     /**
-     * Démarre une conversation depuis une entreprise (version simplifiée)
+     * Démarre une conversation depuis une entreprise (utilise la vraie base de données)
      */
     @PostMapping("/conversations/start-from-entreprise/{entrepriseId}")
     public ResponseEntity<Map<String, Object>> startConversationFromEntreprise(
@@ -102,6 +111,9 @@ public class ChatController {
         Map<String, Object> response = new HashMap<>();
         
         try {
+            logger.info("📤 Démarrage conversation depuis entreprise - entrepriseId: {}, userId: {}", 
+                       entrepriseId, request.getUserId());
+            
             // Vérifier que l'entreprise existe
             boolean entrepriseExists = entrepriseRepository.existsById(entrepriseId);
             if (!entrepriseExists) {
@@ -110,18 +122,30 @@ public class ChatController {
                 return ResponseEntity.badRequest().body(response);
             }
             
-            // Créer une réponse simulée pour l'instant
+            // Utiliser l'agent par défaut
+            String defaultAgentId = "6d3e1dca-8241-4e42-ad64-90f54b3210f7"; // Moussa Macalou
+            
+            // Utiliser le ChatService pour créer une vraie conversation
+            ConversationResponse conversationResponse = chatService.startConversationFromEntreprise(
+                entrepriseId, request, defaultAgentId);
+            
+            logger.info("✅ Conversation créée depuis entreprise - conversationId: {}", conversationResponse.getId());
+            
             response.put("status", "SUCCESS");
-            response.put("message", "Conversation créée avec succès (simulée)");
+            response.put("message", "Conversation créée avec succès");
+            response.put("conversationId", conversationResponse.getId());
             response.put("entrepriseId", entrepriseId);
             response.put("userId", request.getUserId());
-            response.put("subject", request.getSubject());
-            response.put("conversationId", "simulated-" + System.currentTimeMillis());
+            response.put("agentId", defaultAgentId);
+            response.put("agentName", "Moussa Macalou");
+            response.put("subject", conversationResponse.getSubject());
             
-            return ResponseEntity.ok(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (Exception e) {
+            logger.error("❌ Erreur lors du démarrage de conversation depuis entreprise: {}", e.getMessage(), e);
             response.put("status", "ERROR");
+            response.put("message", "Erreur: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
@@ -146,9 +170,34 @@ public class ChatController {
                 return ResponseEntity.badRequest().body(response);
             }
             
-            // Pour l'instant, utiliser directement le système en mémoire pour éviter les contraintes de base
-            // TODO: Implémenter la persistance en base quand les contraintes seront résolues
-            return createInMemoryConversation(userId, message, subject, response);
+            // Utiliser le ChatService pour créer la conversation en base de données
+            logger.info("📤 Création conversation utilisateur - userId: {}, message: {}", userId, message);
+            
+            // Récupérer l'entreprise réelle de l'utilisateur
+            String realEntrepriseId = getRealEntrepriseIdForUser(userId);
+            logger.info("🏢 Entreprise trouvée pour utilisateur {}: {}", userId, realEntrepriseId);
+            
+            ConversationRequest conversationRequest = new ConversationRequest();
+            conversationRequest.setUserId(userId);
+            conversationRequest.setSubject(subject != null ? subject : "Demande d'assistance");
+            conversationRequest.setInitialMessage(message);
+            conversationRequest.setEntrepriseId(realEntrepriseId);
+            
+            // Utiliser l'agent par défaut
+            String defaultAgentId = "6d3e1dca-8241-4e42-ad64-90f54b3210f7"; // Moussa Macalou
+            
+            ConversationResponse conversationResponse = chatService.createConversation(conversationRequest, defaultAgentId);
+            
+            logger.info("✅ Conversation utilisateur créée en base - conversationId: {}", conversationResponse.getId());
+            
+            response.put("status", "SUCCESS");
+            response.put("conversationId", conversationResponse.getId());
+            response.put("agentId", defaultAgentId);
+            response.put("agentName", "Moussa Macalou");
+            response.put("subject", conversationResponse.getSubject());
+            response.put("initialMessage", message);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
             /* Code de persistance en base (temporairement désactivé)
             // Essayer de récupérer les entités utilisateur et agent
@@ -324,7 +373,6 @@ public class ChatController {
             String message = request.get("message");
             String subject = request.get("subject");
             String entrepriseId = request.get("entrepriseId");
-            String entrepriseNom = request.get("entrepriseNom");
             
             if (agentId == null || userId == null || message == null) {
                 response.put("status", "ERROR");
@@ -332,10 +380,33 @@ public class ChatController {
                 return ResponseEntity.badRequest().body(response);
             }
             
-            // Pour l'instant, utiliser directement le système en mémoire
-            return createAgentInitiatedConversation(agentId, userId, message, subject, entrepriseId, entrepriseNom, response);
+            logger.info("📤 Création conversation agent - agentId: {}, userId: {}, entrepriseId: {}", 
+                agentId, userId, entrepriseId);
+            
+            // Utiliser le ChatService pour créer la conversation en base de données
+            ConversationRequest conversationRequest = new ConversationRequest();
+            conversationRequest.setUserId(userId);
+            conversationRequest.setSubject(subject != null ? subject : "Contact agent");
+            conversationRequest.setEntrepriseId(entrepriseId);
+            conversationRequest.setInitialMessage(message);
+            
+            ConversationResponse conversationResponse = chatService.createConversation(conversationRequest, agentId);
+            
+            logger.info("✅ Conversation créée en base - conversationId: {}", conversationResponse.getId());
+            
+            response.put("status", "SUCCESS");
+            response.put("conversationId", conversationResponse.getId());
+            response.put("agentId", agentId);
+            response.put("userId", userId);
+            response.put("subject", conversationResponse.getSubject());
+            response.put("message", "Conversation initiée par l'agent avec succès");
+            response.put("initialMessage", message);
+            response.put("initiatedBy", "AGENT");
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (Exception e) {
+            logger.error("❌ Erreur lors de la création de conversation: {}", e.getMessage(), e);
             response.put("status", "ERROR");
             response.put("message", "Erreur: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -422,6 +493,7 @@ public class ChatController {
     /**
      * Récupère une conversation par son ID avec ses messages
      */
+    @Transactional(readOnly = true)
     @GetMapping("/conversations/{conversationId}")
     public ResponseEntity<Map<String, Object>> getConversation(
             @PathVariable String conversationId) {
@@ -430,12 +502,18 @@ public class ChatController {
         
         // Vérifier si c'est une vraie conversation en base de données
         try {
+            logger.info("🔍 Recherche conversation en DB - conversationId: {}", conversationId);
+            
             Optional<Conversation> conversationOpt = conversationRepository.findById(conversationId);
             if (conversationOpt.isPresent()) {
                 Conversation conversation = conversationOpt.get();
                 
+                logger.info("✅ Conversation trouvée en DB - subject: {}", conversation.getSubject());
+                
                 // Récupérer les messages de la conversation
                 List<Message> messages = messageRepository.findByConversationIdOrderByCreationAsc(conversationId);
+                
+                logger.info("📨 {} messages trouvés pour cette conversation", messages.size());
                 
                 // Convertir les messages au format attendu
                 List<Map<String, Object>> messageList = new ArrayList<>();
@@ -448,6 +526,7 @@ public class ChatController {
                     messageMap.put("content", msg.getContent());
                     messageMap.put("timestamp", msg.getCreation().toEpochMilli());
                     messageMap.put("senderName", msg.getSender().getPrenom() + " " + msg.getSender().getNom());
+                    messageMap.put("messageType", msg.getMessageType().toString());
                     messageList.add(messageMap);
                 }
                 
@@ -462,10 +541,14 @@ public class ChatController {
                 response.put("conversationStatus", conversation.getStatus().toString());
                 
                 return ResponseEntity.ok(response);
+            } else {
+                logger.warn("⚠️ Conversation non trouvée en DB - conversationId: {}", conversationId);
             }
         } catch (Exception e) {
-            // Si erreur de base de données, continuer avec les fallbacks
-            System.err.println("Erreur lors de la récupération de la conversation: " + e.getMessage());
+            logger.error("❌ Erreur lors de la récupération de la conversation: {}", e.getMessage(), e);
+            response.put("status", "ERROR");
+            response.put("message", "Conversation non trouvée: " + conversationId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
         
         // Vérifier si c'est une conversation en mémoire
@@ -511,7 +594,7 @@ public class ChatController {
     }
 
     /**
-     * Marque une conversation comme lue (version simplifiée)
+     * Marque une conversation comme lue
      */
     @PatchMapping("/conversations/{conversationId}/read")
     public ResponseEntity<Map<String, Object>> markConversationAsRead(
@@ -519,68 +602,183 @@ public class ChatController {
         
         Map<String, Object> response = new HashMap<>();
         
-        // Vérifier si c'est une vraie conversation persistante
-        if (conversationId.startsWith("conv-")) {
-            Map<String, Object> conversation = conversations.get(conversationId);
-            if (conversation != null) {
-                response.put("status", "SUCCESS");
-                response.put("message", "Conversation marquée comme lue");
-                response.put("conversationId", conversationId);
-                
-                return ResponseEntity.ok(response);
-            }
-        }
-        
-        // Si l'ID est undefined ou commence par "simulated-" ou "user-chat-", retourner une simulation
-        if ("undefined".equals(conversationId) || conversationId.startsWith("simulated-") || conversationId.startsWith("user-chat-")) {
-            response.put("status", "SIMULATED");
-            response.put("message", "Conversation marquée comme lue (simulée)");
+        try {
+            logger.info("📖 Marquage conversation comme lue - conversationId: {}", conversationId);
+            
+            // Pour l'instant, utiliser l'ID de l'agent par défaut
+            // TODO: Récupérer l'ID depuis l'authentification quand elle sera configurée
+            String userId = "6d3e1dca-8241-4e42-ad64-90f54b3210f7"; // Agent Moussa Macalou
+            
+            // Utiliser le ChatService pour marquer comme lue
+            chatService.markConversationAsRead(conversationId, userId);
+            
+            response.put("status", "SUCCESS");
+            response.put("message", "Conversation marquée comme lue");
             response.put("conversationId", conversationId);
             
             return ResponseEntity.ok(response);
+            
+        } catch (NotFoundException e) {
+            logger.warn("⚠️ Conversation non trouvée pour marquage lecture: {}", conversationId);
+            response.put("status", "ERROR");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            logger.error("❌ Erreur lors du marquage lecture: {}", e.getMessage(), e);
+            response.put("status", "ERROR");
+            response.put("message", "Erreur: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-        
-        // Conversation non trouvée
-        response.put("status", "ERROR");
-        response.put("message", "Conversation non trouvée: " + conversationId);
-        
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     /**
-     * Récupère toutes les conversations d'un agent (version simplifiée)
+     * Récupère toutes les conversations d'un agent
      */
     @GetMapping("/conversations/agent")
     public ResponseEntity<Map<String, Object>> getAgentConversations(
+            @RequestParam String agentId,
+            @RequestParam(required = false) String entrepriseId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "SIMULATED");
-        response.put("message", "Liste des conversations agent (simulée)");
-        response.put("conversations", java.util.Collections.emptyList());
-        response.put("page", page);
-        response.put("size", size);
         
-        return ResponseEntity.ok(response);
+        try {
+            logger.info("🔍 Récupération conversations pour agent: {}, entrepriseId: {}", agentId, entrepriseId);
+            
+            List<Conversation> agentConversations;
+            
+            if (entrepriseId != null && !entrepriseId.isEmpty()) {
+                // Filtrer par entreprise spécifique
+                agentConversations = conversationRepository.findByUserIdOrAgentIdAndEntrepriseIdOrderByModificationDesc(agentId, agentId, entrepriseId);
+                logger.info("✅ {} conversations trouvées pour l'agent dans l'entreprise {}", agentConversations.size(), entrepriseId);
+            } else {
+                // Récupérer toutes les conversations où l'agent est participant
+                agentConversations = conversationRepository.findByUserIdOrAgentIdOrderByModificationDesc(agentId, agentId);
+                logger.info("✅ {} conversations trouvées pour l'agent", agentConversations.size());
+            }
+            
+            List<Map<String, Object>> conversationList = new ArrayList<>();
+            
+            for (Conversation conversation : agentConversations) {
+                Map<String, Object> conversationSummary = new HashMap<>();
+                conversationSummary.put("id", conversation.getId());
+                conversationSummary.put("subject", conversation.getSubject());
+                conversationSummary.put("agentId", conversation.getAgent().getId());
+                conversationSummary.put("agentName", conversation.getAgent().getPrenom() + " " + conversation.getAgent().getNom());
+                conversationSummary.put("userId", conversation.getUser().getId());
+                conversationSummary.put("userName", conversation.getUser().getPrenom() + " " + conversation.getUser().getNom());
+                conversationSummary.put("createdAt", conversation.getCreation().toEpochMilli());
+                conversationSummary.put("status", conversation.getStatus().toString());
+                
+                // Ajouter les informations d'entreprise
+                if (conversation.getEntreprise() != null) {
+                    conversationSummary.put("entrepriseId", conversation.getEntreprise().getId());
+                    conversationSummary.put("entrepriseNom", conversation.getEntreprise().getNom());
+                }
+                
+                // Récupérer le dernier message
+                Message lastMessage = messageRepository.findLastMessageInConversation(conversation.getId());
+                if (lastMessage != null) {
+                    conversationSummary.put("lastMessage", lastMessage.getContent());
+                    conversationSummary.put("lastMessageTime", lastMessage.getCreation().toEpochMilli());
+                    conversationSummary.put("lastMessageSender", 
+                        lastMessage.getSender().getId().equals(conversation.getAgent().getId()) ? "AGENT" : "USER");
+                }
+                
+                conversationList.add(conversationSummary);
+            }
+            
+            response.put("status", "SUCCESS");
+            response.put("conversations", conversationList);
+            response.put("totalConversations", conversationList.size());
+            response.put("page", page);
+            response.put("size", size);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("❌ Erreur lors de la récupération des conversations agent: {}", e.getMessage(), e);
+            response.put("status", "ERROR");
+            response.put("message", "Erreur: " + e.getMessage());
+            response.put("conversations", java.util.Collections.emptyList());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     /**
-     * Récupère toutes les conversations d'un utilisateur (version simplifiée)
+     * Récupère toutes les conversations d'un utilisateur (avec userId en paramètre)
      */
     @GetMapping("/conversations/user")
     public ResponseEntity<Map<String, Object>> getUserConversations(
+            @RequestParam String userId,
+            @RequestParam(required = false) String entrepriseId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "SIMULATED");
-        response.put("message", "Liste des conversations utilisateur (simulée)");
-        response.put("conversations", java.util.Collections.emptyList());
-        response.put("page", page);
-        response.put("size", size);
         
-        return ResponseEntity.ok(response);
+        try {
+            logger.info("🔍 Récupération conversations pour utilisateur: {}, entrepriseId: {}", userId, entrepriseId);
+            
+            List<Conversation> userConversations;
+            
+            if (entrepriseId != null && !entrepriseId.isEmpty()) {
+                // Filtrer par entreprise spécifique
+                userConversations = conversationRepository.findByUserIdOrAgentIdAndEntrepriseIdOrderByModificationDesc(userId, userId, entrepriseId);
+                logger.info("✅ {} conversations trouvées pour l'utilisateur dans l'entreprise {}", userConversations.size(), entrepriseId);
+            } else {
+                // Récupérer toutes les conversations où l'utilisateur est participant
+                userConversations = conversationRepository.findByUserIdOrAgentIdOrderByModificationDesc(userId, userId);
+                logger.info("✅ {} conversations trouvées pour l'utilisateur", userConversations.size());
+            }
+            
+            List<Map<String, Object>> conversationList = new ArrayList<>();
+            
+            for (Conversation conversation : userConversations) {
+                Map<String, Object> conversationSummary = new HashMap<>();
+                conversationSummary.put("id", conversation.getId());
+                conversationSummary.put("subject", conversation.getSubject());
+                conversationSummary.put("agentId", conversation.getAgent().getId());
+                conversationSummary.put("agentName", conversation.getAgent().getPrenom() + " " + conversation.getAgent().getNom());
+                conversationSummary.put("userId", conversation.getUser().getId());
+                conversationSummary.put("userName", conversation.getUser().getPrenom() + " " + conversation.getUser().getNom());
+                conversationSummary.put("createdAt", conversation.getCreation().toEpochMilli());
+                conversationSummary.put("status", conversation.getStatus().toString());
+                
+                // Ajouter les informations d'entreprise
+                if (conversation.getEntreprise() != null) {
+                    conversationSummary.put("entrepriseId", conversation.getEntreprise().getId());
+                    conversationSummary.put("entrepriseNom", conversation.getEntreprise().getNom());
+                }
+                
+                // Récupérer le dernier message
+                Message lastMessage = messageRepository.findLastMessageInConversation(conversation.getId());
+                if (lastMessage != null) {
+                    conversationSummary.put("lastMessage", lastMessage.getContent());
+                    conversationSummary.put("lastMessageTime", lastMessage.getCreation().toEpochMilli());
+                    conversationSummary.put("lastMessageSender", 
+                        lastMessage.getSender().getId().equals(conversation.getAgent().getId()) ? "AGENT" : "USER");
+                }
+                
+                conversationList.add(conversationSummary);
+            }
+            
+            response.put("status", "SUCCESS");
+            response.put("conversations", conversationList);
+            response.put("totalConversations", conversationList.size());
+            response.put("page", page);
+            response.put("size", size);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("❌ Erreur lors de la récupération des conversations: {}", e.getMessage(), e);
+            response.put("status", "ERROR");
+            response.put("message", "Erreur: " + e.getMessage());
+            response.put("conversations", java.util.Collections.emptyList());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     /**
@@ -595,78 +793,44 @@ public class ChatController {
         
         try {
             String content = request.get("content");
+            String senderId = request.get("senderId");
+            
             if (content == null || content.trim().isEmpty()) {
                 response.put("status", "ERROR");
                 response.put("message", "Le contenu du message est requis");
                 return ResponseEntity.badRequest().body(response);
             }
             
-            // Vérifier si c'est une vraie conversation
-            if (conversationId.startsWith("conv-")) {
-                Map<String, Object> conversation = conversations.get(conversationId);
-                if (conversation != null) {
-                    List<Map<String, Object>> messages = conversationMessages.get(conversationId);
-                    if (messages == null) {
-                        messages = new ArrayList<>();
-                        conversationMessages.put(conversationId, messages);
-                    }
-                    
-                    // Déterminer qui envoie le message (utilisateur ou agent)
-                    String senderId = request.get("senderId");
-                    String senderType = "USER"; // Par défaut utilisateur
-                    String senderName = "Utilisateur";
-                    
-                    // Si pas de senderId spécifié, utiliser l'utilisateur de la conversation
-                    if (senderId == null) {
-                        senderId = (String) conversation.get("userId");
-                    } else if (senderId.equals(conversation.get("agentId"))) {
-                        senderType = "AGENT";
-                        senderName = (String) conversation.get("agentName");
-                    }
-                    
-                    // Créer le nouveau message
-                    Map<String, Object> newMessage = new HashMap<>();
-                    newMessage.put("id", "msg-" + System.currentTimeMillis());
-                    newMessage.put("conversationId", conversationId);
-                    newMessage.put("senderId", senderId);
-                    newMessage.put("senderType", senderType);
-                    newMessage.put("content", content.trim());
-                    newMessage.put("timestamp", System.currentTimeMillis());
-                    newMessage.put("senderName", senderName);
-                    
-                    // Ajouter le message à la conversation
-                    messages.add(newMessage);
-                    
-                    // Sauvegarder immédiatement
-                    saveImmediately();
-                    
-                    // Notifier les agents si c'est un message utilisateur
-                    if ("USER".equals(senderType)) {
-                        notifyAgentsOfNewMessage(conversationId, newMessage);
-                    }
-                    
-                    response.put("status", "SUCCESS");
-                    response.put("message", "Message envoyé avec succès");
-                    response.put("messageId", newMessage.get("id"));
-                    response.put("conversationId", conversationId);
-                    response.put("content", content);
-                    response.put("timestamp", newMessage.get("timestamp"));
-                    response.put("senderType", senderType);
-                    
-                    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-                }
+            if (senderId == null || senderId.trim().isEmpty()) {
+                response.put("status", "ERROR");
+                response.put("message", "L'ID de l'expéditeur est requis");
+                return ResponseEntity.badRequest().body(response);
             }
             
-            // Fallback pour les conversations simulées
-            response.put("status", "SIMULATED");
-            response.put("message", "Message envoyé (simulé)");
+            logger.info("📤 Envoi message - conversationId: {}, senderId: {}, content: {}", 
+                conversationId, senderId, content.substring(0, Math.min(content.length(), 50)));
+            
+            // Utiliser le ChatService pour sauvegarder en base de données
+            MessageRequest messageRequest = new MessageRequest();
+            messageRequest.setContent(content.trim());
+            messageRequest.setMessageType("TEXT");
+            
+            MessageResponse messageResponse = chatService.sendMessage(conversationId, messageRequest, senderId);
+            
+            logger.info("✅ Message sauvegardé en base - messageId: {}", messageResponse.getId());
+            
+            response.put("status", "SUCCESS");
+            response.put("message", "Message envoyé avec succès");
+            response.put("messageId", messageResponse.getId());
             response.put("conversationId", conversationId);
             response.put("content", content);
-            response.put("timestamp", System.currentTimeMillis());
+            response.put("timestamp", messageResponse.getCreation()); // Utiliser getCreation() au lieu de getCreatedAt()
+            response.put("senderType", messageResponse.getSenderRole()); // Utiliser getSenderRole() au lieu de getSenderType()
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (Exception e) {
+            logger.error("❌ Erreur lors de l'envoi du message: {}", e.getMessage(), e);
             response.put("status", "ERROR");
             response.put("message", "Erreur lors de l'envoi: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -678,49 +842,80 @@ public class ChatController {
     /**
      * Liste les conversations d'un utilisateur spécifique
      */
+    @Transactional(readOnly = true)
     @GetMapping("/conversations/user/{userId}")
-    public ResponseEntity<Map<String, Object>> getUserConversations(@PathVariable String userId) {
+    public ResponseEntity<Map<String, Object>> getUserConversations(
+            @PathVariable String userId,
+            @RequestParam(required = false) String entrepriseId) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            List<Map<String, Object>> userConversations = new ArrayList<>();
+            logger.info("🔍 [getUserConversations] Début - userId: {}, entrepriseId: {}", userId, entrepriseId);
             
-            for (Map<String, Object> conversation : conversations.values()) {
-                if (userId.equals(conversation.get("userId")) && "ACTIVE".equals(conversation.get("status"))) {
-                    Map<String, Object> conversationSummary = new HashMap<>();
-                    conversationSummary.put("id", conversation.get("id"));
-                    conversationSummary.put("subject", conversation.get("subject"));
-                    conversationSummary.put("agentName", conversation.get("agentName"));
-                    conversationSummary.put("createdAt", conversation.get("createdAt"));
-                    conversationSummary.put("status", conversation.get("status"));
-                    
-                    // Ajouter le dernier message si disponible
-                    List<Map<String, Object>> messages = conversationMessages.get(conversation.get("id"));
-                    if (messages != null && !messages.isEmpty()) {
-                        Map<String, Object> lastMessage = messages.get(messages.size() - 1);
-                        conversationSummary.put("lastMessage", lastMessage.get("content"));
-                        conversationSummary.put("lastMessageTime", lastMessage.get("timestamp"));
-                        conversationSummary.put("lastMessageSender", lastMessage.get("senderType"));
-                    }
-                    
-                    userConversations.add(conversationSummary);
-                }
+            // Vérifier que l'utilisateur existe
+            if (!personsRepository.existsById(userId)) {
+                logger.warn("⚠️ Utilisateur non trouvé: {}", userId);
+                response.put("status", "ERROR");
+                response.put("message", "Utilisateur non trouvé: " + userId);
+                response.put("conversations", java.util.Collections.emptyList());
+                return ResponseEntity.badRequest().body(response);
             }
             
-            // Trier par date de création (plus récent en premier)
-            userConversations.sort((a, b) -> {
-                Long timeA = (Long) a.get("createdAt");
-                Long timeB = (Long) b.get("createdAt");
-                return timeB.compareTo(timeA);
-            });
+            logger.info("✅ Utilisateur existe: {}", userId);
+            
+            List<Conversation> userConversations;
+            
+            if (entrepriseId != null && !entrepriseId.isEmpty()) {
+                logger.info("🔍 Recherche avec filtre entreprise: {}", entrepriseId);
+                // Filtrer par entreprise spécifique
+                userConversations = conversationRepository.findByUserIdOrAgentIdAndEntrepriseIdOrderByModificationDesc(userId, userId, entrepriseId);
+                logger.info("✅ {} conversations trouvées pour l'utilisateur dans l'entreprise {}", userConversations.size(), entrepriseId);
+            } else {
+                logger.info("🔍 Recherche sans filtre entreprise");
+                // Récupérer toutes les conversations où l'utilisateur est participant
+                userConversations = conversationRepository.findByUserIdOrAgentIdOrderByModificationDesc(userId, userId);
+                logger.info("✅ {} conversations trouvées pour l'utilisateur", userConversations.size());
+            }
+            
+            List<Map<String, Object>> conversationList = new ArrayList<>();
+            
+            for (Conversation conversation : userConversations) {
+                Map<String, Object> conversationSummary = new HashMap<>();
+                conversationSummary.put("id", conversation.getId());
+                conversationSummary.put("subject", conversation.getSubject());
+                conversationSummary.put("agentId", conversation.getAgent().getId());
+                conversationSummary.put("agentName", conversation.getAgent().getPrenom() + " " + conversation.getAgent().getNom());
+                conversationSummary.put("userId", conversation.getUser().getId());
+                conversationSummary.put("userName", conversation.getUser().getPrenom() + " " + conversation.getUser().getNom());
+                conversationSummary.put("createdAt", conversation.getCreation().toEpochMilli());
+                conversationSummary.put("status", conversation.getStatus().toString());
+                
+                // Ajouter les informations d'entreprise
+                if (conversation.getEntreprise() != null) {
+                    conversationSummary.put("entrepriseId", conversation.getEntreprise().getId());
+                    conversationSummary.put("entrepriseNom", conversation.getEntreprise().getNom());
+                }
+                
+                // Récupérer le dernier message
+                Message lastMessage = messageRepository.findLastMessageInConversation(conversation.getId());
+                if (lastMessage != null) {
+                    conversationSummary.put("lastMessage", lastMessage.getContent());
+                    conversationSummary.put("lastMessageTime", lastMessage.getCreation().toEpochMilli());
+                    conversationSummary.put("lastMessageSender", 
+                        lastMessage.getSender().getId().equals(conversation.getAgent().getId()) ? "AGENT" : "USER");
+                }
+                
+                conversationList.add(conversationSummary);
+            }
             
             response.put("status", "SUCCESS");
-            response.put("conversations", userConversations);
-            response.put("total", userConversations.size());
+            response.put("conversations", conversationList);
+            response.put("total", conversationList.size());
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            logger.error("❌ Erreur lors de la récupération des conversations utilisateur: {}", e.getMessage(), e);
             response.put("status", "ERROR");
             response.put("message", "Erreur lors de la récupération des conversations: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -730,63 +925,69 @@ public class ChatController {
     /**
      * Liste toutes les conversations actives (pour les agents)
      */
+    @Transactional(readOnly = true)
     @GetMapping("/conversations/active")
     public ResponseEntity<Map<String, Object>> getActiveConversations(
             @RequestParam(required = false) String entrepriseId) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            List<Map<String, Object>> activeConversations = new ArrayList<>();
+            logger.info("🔍 Récupération conversations actives - entrepriseId: {}", entrepriseId);
             
-            logger.info("🔍 Filtrage conversations avec entrepriseId: {}", entrepriseId);
+            List<Conversation> activeConversations;
             
-            for (Map<String, Object> conversation : conversations.values()) {
-                String status = (String) conversation.get("status");
-                String conversationEntrepriseId = (String) conversation.get("entrepriseId");
+            if (entrepriseId != null && !entrepriseId.isEmpty()) {
+                // Filtrer par entreprise spécifique
+                activeConversations = conversationRepository.findByEntrepriseIdOrderByCreationDesc(entrepriseId);
+                logger.info("✅ {} conversations actives trouvées pour l'entreprise {}", activeConversations.size(), entrepriseId);
+            } else {
+                // Récupérer toutes les conversations actives
+                activeConversations = conversationRepository.findAll().stream()
+                    .filter(c -> c.getStatus() == ConversationStatus.ACTIVE)
+                    .sorted((a, b) -> b.getModification().compareTo(a.getModification()))
+                    .collect(java.util.stream.Collectors.toList());
+                logger.info("✅ {} conversations actives trouvées", activeConversations.size());
+            }
+            
+            List<Map<String, Object>> conversationList = new ArrayList<>();
+            
+            for (Conversation conversation : activeConversations) {
+                Map<String, Object> conversationSummary = new HashMap<>();
+                conversationSummary.put("id", conversation.getId());
+                conversationSummary.put("subject", conversation.getSubject());
+                conversationSummary.put("agentId", conversation.getAgent().getId());
+                conversationSummary.put("agentName", conversation.getAgent().getPrenom() + " " + conversation.getAgent().getNom());
+                conversationSummary.put("userId", conversation.getUser().getId());
+                conversationSummary.put("userName", conversation.getUser().getPrenom() + " " + conversation.getUser().getNom());
+                conversationSummary.put("createdAt", conversation.getCreation().toEpochMilli());
+                conversationSummary.put("status", conversation.getStatus().toString());
                 
-                // Filtrer par entreprise si spécifié
-                boolean matchesEntreprise = (entrepriseId == null || entrepriseId.equals(conversationEntrepriseId));
-                
-                logger.info("🔍 Conversation {} - entrepriseId: {} - match: {}", conversation.get("id"), conversationEntrepriseId, matchesEntreprise);
-                
-                if (("ACTIVE".equals(status) || "WAITING_AGENT_RESPONSE".equals(status)) && matchesEntreprise) {
-                    Map<String, Object> conversationSummary = new HashMap<>();
-                    conversationSummary.put("id", conversation.get("id"));
-                    conversationSummary.put("subject", conversation.get("subject"));
-                    conversationSummary.put("agentName", conversation.get("agentName"));
-                    conversationSummary.put("userName", conversation.get("userName"));
-                    conversationSummary.put("createdAt", conversation.get("createdAt"));
-                    conversationSummary.put("status", status);
-                    conversationSummary.put("hasUnreadMessages", conversation.get("hasUnreadMessages"));
-                    conversationSummary.put("lastActivity", conversation.get("lastActivity"));
-                    conversationSummary.put("agentId", conversation.get("agentId"));
-                    
-                    // Ajouter les informations d'entreprise
-                    conversationSummary.put("entrepriseId", conversation.get("entrepriseId"));
-                    conversationSummary.put("entrepriseNom", conversation.get("entrepriseNom"));
-                    conversationSummary.put("creatorUserId", conversation.get("creatorUserId"));
-                    conversationSummary.put("creatorUserName", conversation.get("creatorUserName"));
-                    
-                    // Ajouter le dernier message
-                    List<Map<String, Object>> messages = conversationMessages.get(conversation.get("id"));
-                    if (messages != null && !messages.isEmpty()) {
-                        Map<String, Object> lastMessage = messages.get(messages.size() - 1);
-                        conversationSummary.put("lastMessage", lastMessage.get("content"));
-                        conversationSummary.put("lastMessageTime", lastMessage.get("timestamp"));
-                        conversationSummary.put("lastMessageSender", lastMessage.get("senderType"));
-                    }
-                    
-                    activeConversations.add(conversationSummary);
+                // Ajouter les informations d'entreprise
+                if (conversation.getEntreprise() != null) {
+                    conversationSummary.put("entrepriseId", conversation.getEntreprise().getId());
+                    conversationSummary.put("entrepriseNom", conversation.getEntreprise().getNom());
                 }
+                
+                // Récupérer le dernier message
+                Message lastMessage = messageRepository.findLastMessageInConversation(conversation.getId());
+                if (lastMessage != null) {
+                    conversationSummary.put("lastMessage", lastMessage.getContent());
+                    conversationSummary.put("lastMessageTime", lastMessage.getCreation().toEpochMilli());
+                    conversationSummary.put("lastMessageSender", 
+                        lastMessage.getSender().getId().equals(conversation.getAgent().getId()) ? "AGENT" : "USER");
+                }
+                
+                conversationList.add(conversationSummary);
             }
             
             response.put("status", "SUCCESS");
-            response.put("conversations", activeConversations);
-            response.put("total", activeConversations.size());
+            response.put("conversations", conversationList);
+            response.put("total", conversationList.size());
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            logger.error("❌ Erreur lors de la récupération des conversations actives: {}", e.getMessage(), e);
             response.put("status", "ERROR");
             response.put("message", "Erreur: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -953,7 +1154,106 @@ public class ChatController {
         }
     }
 
+    // ==================== DEBUG ENDPOINTS ====================
+    
+    /**
+     * Debug: Vérifie les conversations en base pour un utilisateur spécifique
+     */
+    @GetMapping("/debug/conversations/user/{userId}")
+    public ResponseEntity<Map<String, Object>> debugUserConversations(@PathVariable String userId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            logger.info("🔍 DEBUG - Vérification conversations pour userId: {}", userId);
+            
+            // Vérifier si l'utilisateur existe
+            Optional<abdaty_technologie.API_Invest.Entity.Persons> userOpt = personsRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                response.put("status", "ERROR");
+                response.put("message", "Utilisateur non trouvé: " + userId);
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            abdaty_technologie.API_Invest.Entity.Persons user = userOpt.get();
+            logger.info("✅ Utilisateur trouvé: {} {}", user.getPrenom(), user.getNom());
+            
+            // Récupérer toutes les conversations où l'utilisateur est participant
+            List<Conversation> conversations = conversationRepository.findByUserIdOrAgentIdOrderByModificationDesc(userId, userId);
+            logger.info("📊 {} conversations trouvées pour l'utilisateur", conversations.size());
+            
+            List<Map<String, Object>> conversationDetails = new ArrayList<>();
+            
+            for (Conversation conv : conversations) {
+                Map<String, Object> details = new HashMap<>();
+                details.put("id", conv.getId());
+                details.put("subject", conv.getSubject());
+                details.put("status", conv.getStatus().toString());
+                details.put("agentId", conv.getAgent().getId());
+                details.put("agentName", conv.getAgent().getPrenom() + " " + conv.getAgent().getNom());
+                details.put("userId", conv.getUser().getId());
+                details.put("userName", conv.getUser().getPrenom() + " " + conv.getUser().getNom());
+                details.put("entrepriseId", conv.getEntreprise().getId());
+                details.put("entrepriseNom", conv.getEntreprise().getNom());
+                details.put("createdAt", conv.getCreation().toString());
+                details.put("modifiedAt", conv.getModification().toString());
+                
+                // Compter les messages
+                long messageCount = messageRepository.countByConversationId(conv.getId());
+                details.put("messageCount", messageCount);
+                
+                conversationDetails.add(details);
+            }
+            
+            response.put("status", "SUCCESS");
+            response.put("userId", userId);
+            response.put("userName", user.getPrenom() + " " + user.getNom());
+            response.put("totalConversations", conversations.size());
+            response.put("conversations", conversationDetails);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("❌ Erreur lors du debug: {}", e.getMessage(), e);
+            response.put("status", "ERROR");
+            response.put("message", "Erreur: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
     // ==================== GESTION ENTREPRISE ====================
+
+    /**
+     * Récupère l'ID de l'entreprise réelle pour un utilisateur
+     */
+    private String getRealEntrepriseIdForUser(String userId) {
+        try {
+            logger.info("🔍 Recherche entreprise pour utilisateur: {}", userId);
+            
+            // Récupérer les entreprises où l'utilisateur est membre (fondateur, associé, gérant)
+            List<abdaty_technologie.API_Invest.Entity.EntrepriseMembre> memberships = 
+                entrepriseMembreRepository.findByPersonne_Id(userId);
+            
+            logger.info("📊 {} memberships trouvés pour utilisateur {}", memberships.size(), userId);
+            
+            if (!memberships.isEmpty()) {
+                // Prendre la première entreprise trouvée (ou la plus récente)
+                String entrepriseId = memberships.get(0).getEntreprise().getId();
+                String entrepriseNom = memberships.get(0).getEntreprise().getNom();
+                
+                logger.info("✅ Entreprise trouvée: {} ({})", entrepriseNom, entrepriseId);
+                return entrepriseId;
+            } else {
+                logger.warn("⚠️ Aucune entreprise trouvée pour utilisateur {}, utilisation de l'entreprise par défaut", userId);
+                // Fallback vers l'entreprise par défaut
+                return "69f667f7-b9a2-43cd-bf7c-8fb5c723ce33"; // Entreprise TMT par défaut
+            }
+            
+        } catch (Exception e) {
+            logger.error("❌ Erreur lors de la récupération de l'entreprise pour {}: {}", userId, e.getMessage());
+            // En cas d'erreur, utiliser l'entreprise par défaut
+            return "69f667f7-b9a2-43cd-bf7c-8fb5c723ce33";
+        }
+    }
 
     /**
      * Récupère les informations d'entreprise pour un utilisateur
@@ -962,15 +1262,29 @@ public class ChatController {
         Map<String, Object> entrepriseInfo = new HashMap<>();
         
         try {
-            // TODO: Implémenter la vraie logique de récupération depuis la base de données
-            // Pour l'instant, retourner des valeurs par défaut
-            entrepriseInfo.put("entrepriseId", "default-entreprise-" + userId);
-            entrepriseInfo.put("entrepriseNom", "Entreprise de " + userId);
-            entrepriseInfo.put("creatorUserId", userId);
-            entrepriseInfo.put("creatorUserName", "Propriétaire");
+            // Utiliser la nouvelle méthode pour récupérer l'entreprise réelle
+            String realEntrepriseId = getRealEntrepriseIdForUser(userId);
             
-            logger.info("📊 Informations entreprise récupérées pour utilisateur {}: {}", 
-                       userId, entrepriseInfo.get("entrepriseNom"));
+            // Récupérer les détails de l'entreprise
+            Optional<abdaty_technologie.API_Invest.Entity.Entreprise> entrepriseOpt = 
+                entrepriseRepository.findById(realEntrepriseId);
+            
+            if (entrepriseOpt.isPresent()) {
+                abdaty_technologie.API_Invest.Entity.Entreprise entreprise = entrepriseOpt.get();
+                entrepriseInfo.put("entrepriseId", entreprise.getId());
+                entrepriseInfo.put("entrepriseNom", entreprise.getNom());
+                entrepriseInfo.put("creatorUserId", userId);
+                entrepriseInfo.put("creatorUserName", "Propriétaire");
+                
+                logger.info("📊 Informations entreprise récupérées pour utilisateur {}: {}", 
+                           userId, entreprise.getNom());
+            } else {
+                // Valeurs par défaut si entreprise non trouvée
+                entrepriseInfo.put("entrepriseId", "default-entreprise-" + userId);
+                entrepriseInfo.put("entrepriseNom", "Entreprise de " + userId);
+                entrepriseInfo.put("creatorUserId", userId);
+                entrepriseInfo.put("creatorUserName", "Propriétaire");
+            }
             
         } catch (Exception e) {
             logger.error("❌ Erreur lors de la récupération des infos entreprise pour {}: {}", 

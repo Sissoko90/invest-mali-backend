@@ -89,4 +89,7 @@ public class EntrepriseResponse {
     public Boolean banni;
     public String motifBannissement;
     public Instant dateBannissement;
+
+    /** Montant total de la demande */
+    public BigDecimal totalAmount;
 }

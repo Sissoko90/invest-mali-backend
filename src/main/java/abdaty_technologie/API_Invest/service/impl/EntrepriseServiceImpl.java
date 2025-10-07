@@ -40,6 +40,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
+import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 
 /**
  * Service d'application pour la gestion des entreprises.
@@ -155,6 +156,10 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
         e.setDivision(division);
 
+        // Calculer le montant total
+        BigDecimal totalAmount = calculateTotalAmount(req);
+        e.setTotalAmount(totalAmount);
+
         // timestamps (en attendant Auditing)
         e.setCreation(Instant.now());
         e.setModification(Instant.now());
@@ -204,6 +209,33 @@ public class EntrepriseServiceImpl implements EntrepriseService {
     }
 
     private void validateParticipants(EntrepriseRequest req) {
+        boolean isEntrepriseIndividuelle = req.typeEntreprise == TypeEntreprise.ENTREPRISE_INDIVIDUELLE;
+        
+        // ========== RÈGLES POUR ENTREPRISE INDIVIDUELLE ==========
+        if (isEntrepriseIndividuelle) {
+            // 1. Un seul participant autorisé
+            if (req.participants.size() != 1) {
+                throw new BadRequestException("Une entreprise individuelle ne peut avoir qu'un seul participant (le dirigeant)");
+            }
+            
+            // 2. Le seul rôle autorisé est DIRIGEANT
+            ParticipantRequest participant = req.participants.get(0);
+            if (participant.role != EntrepriseRole.DIRIGEANT) {
+                throw new BadRequestException("Pour une entreprise individuelle, le seul rôle autorisé est DIRIGEANT");
+            }
+            
+            // 3. Le dirigeant doit avoir 100% des parts
+            if (participant.pourcentageParts.compareTo(new BigDecimal("100")) != 0) {
+                throw new BadRequestException("Le dirigeant d'une entreprise individuelle doit avoir 100% des parts");
+            }
+            
+            // 4. Validation de la personne (âge, autorisation)
+            validatePersonEligibility(participant);
+            
+            return; // Sortir après validation pour entreprise individuelle
+        }
+        
+        // ========== RÈGLES POUR SOCIÉTÉ (logique existante) ==========
         // Un seul gérant, au moins un fondateur, parts = 100 (fondateurs + associés)
         long gerants = req.participants.stream().filter(p -> p.role == EntrepriseRole.GERANT).count();
         if (gerants != 1) throw new BadRequestException(Messages.UN_SEUL_GERANT_AUTORISE);
@@ -216,44 +248,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
             if (p.dateDebut.isAfter(p.dateFin)) {
                 throw new BadRequestException(Messages.datesInvalides(p.personId));
             }
-            Persons person = personsRepository.findById(p.personId)
-                .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(p.personId)));
-            // Autorisation explicite
-            if (Boolean.FALSE.equals(person.getEstAutoriser())) {
-                throw new BadRequestException(Messages.personneNonAutorisee(p.personId));
-            }
-            // Age >= 18
-            if (person.getDateNaissance() == null) {
-                throw new BadRequestException(Messages.personneMineure(p.personId));
-            }
-            
-            // Utiliser la même timezone pour les deux dates pour éviter les décalages
-            ZoneId bamakoZone = ZoneId.of("Africa/Bamako");
-            LocalDate birth = person.getDateNaissance().toInstant().atZone(bamakoZone).toLocalDate();
-            LocalDate today = LocalDate.now(bamakoZone);
-            
-            // Logs de débogage pour la validation d'entreprise
-            System.out.println("[EntrepriseService] ========== VALIDATION ÂGE PARTICIPANT ==========");
-            System.out.println("[EntrepriseService] PersonId: " + p.personId);
-            System.out.println("[EntrepriseService] Date de naissance (DB): " + person.getDateNaissance());
-            System.out.println("[EntrepriseService] Date de naissance (LocalDate): " + birth);
-            System.out.println("[EntrepriseService] Date actuelle (Bamako): " + today);
-            
-            if (birth.isAfter(today)) {
-                System.out.println("[EntrepriseService] ERREUR: Date de naissance dans le futur!");
-                throw new BadRequestException(Messages.personneMineure(p.personId));
-            }
-            
-            int years = Period.between(birth, today).getYears();
-            System.out.println("[EntrepriseService] Âge calculé: " + years + " ans");
-            System.out.println("[EntrepriseService] ================================================");
-            
-            if (years < 18) {
-                System.out.println("[EntrepriseService] REJET: Personne mineure - âge: " + years + " ans");
-                throw new BadRequestException(Messages.personneMineure(p.personId));
-            } else {
-                System.out.println("[EntrepriseService] ✅ ACCEPTÉ: Personne majeure - âge: " + years + " ans");
-            }
+            validatePersonEligibility(p);
         }
 
         // Somme des parts (fondateurs + associés) == 100
@@ -265,6 +260,70 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         if (total.compareTo(new BigDecimal("100")) != 0) {
             throw new BadRequestException(Messages.sommePartsInvalide(total.toPlainString()));
         }
+    }
+
+    /**
+     * Valide l'éligibilité d'une personne (âge >= 18 ans, autorisation)
+     */
+    private void validatePersonEligibility(ParticipantRequest p) {
+        Persons person = personsRepository.findById(p.personId)
+            .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(p.personId)));
+        
+        // Autorisation explicite
+        if (Boolean.FALSE.equals(person.getEstAutoriser())) {
+            throw new BadRequestException(Messages.personneNonAutorisee(p.personId));
+        }
+        
+        // Age >= 18
+        if (person.getDateNaissance() == null) {
+            throw new BadRequestException(Messages.personneMineure(p.personId));
+        }
+        
+        // Utiliser la même timezone pour les deux dates pour éviter les décalages
+        ZoneId bamakoZone = ZoneId.of("Africa/Bamako");
+        LocalDate birth = person.getDateNaissance().toInstant().atZone(bamakoZone).toLocalDate();
+        LocalDate today = LocalDate.now(bamakoZone);
+        
+        // Logs de débogage pour la validation d'entreprise
+        System.out.println("[EntrepriseService] ========== VALIDATION ÂGE PARTICIPANT ==========");
+        System.out.println("[EntrepriseService] PersonId: " + p.personId);
+        System.out.println("[EntrepriseService] Date de naissance (DB): " + person.getDateNaissance());
+        System.out.println("[EntrepriseService] Date de naissance (LocalDate): " + birth);
+        System.out.println("[EntrepriseService] Date actuelle (Bamako): " + today);
+        
+        if (birth.isAfter(today)) {
+            System.out.println("[EntrepriseService] ERREUR: Date de naissance dans le futur!");
+            throw new BadRequestException(Messages.personneMineure(p.personId));
+        }
+        
+        int years = Period.between(birth, today).getYears();
+        System.out.println("[EntrepriseService] Âge calculé: " + years + " ans");
+        System.out.println("[EntrepriseService] ================================================");
+        
+        if (years < 18) {
+            System.out.println("[EntrepriseService] REJET: Personne mineure - âge: " + years + " ans");
+            throw new BadRequestException(Messages.personneMineure(p.personId));
+        } else {
+            System.out.println("[EntrepriseService] ✅ ACCEPTÉ: Personne majeure - âge: " + years + " ans");
+        }
+    }
+
+    /**
+     * Calcule le montant total de la demande d'entreprise.
+     * Base: 12000 FCFA (immatriculation 7000 + service 3000 + publication 2000)
+     * + 2500 FCFA par associé supplémentaire (au-delà du premier) pour les sociétés
+     */
+    private BigDecimal calculateTotalAmount(EntrepriseRequest req) {
+        BigDecimal baseAmount = new BigDecimal("12000"); // 7000 + 3000 + 2000
+        
+        // Pour les sociétés, ajouter 2500 FCFA par associé supplémentaire
+        if (req.typeEntreprise == TypeEntreprise.SOCIETE && req.participants != null) {
+            int additionalPartners = Math.max(0, req.participants.size() - 1);
+            BigDecimal additionalCost = new BigDecimal(additionalPartners * 2500);
+            return baseAmount.add(additionalCost);
+        }
+        
+        return baseAmount;
     }
 
     /**

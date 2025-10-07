@@ -494,35 +494,44 @@ public class EntrepriseController {
     public ResponseEntity<List<EntrepriseResponse>> getMyApplications(HttpServletRequest request) {
         System.out.println("🔍 DEBUG - Appel de /my-applications");
         
-        // Récupérer l'utilisateur connecté depuis le token JWT
-        String currentUserId = getCurrentUserId(request);
-        System.out.println("🔍 DEBUG - currentUserId: " + currentUserId);
-        
-        if (currentUserId == null) {
-            System.out.println("❌ DEBUG - Utilisateur non authentifié");
-            throw new RuntimeException("Utilisateur non authentifié");
-        }
-        
-        // Récupérer les entreprises où l'utilisateur est membre
-        List<EntrepriseMembre> memberships = entrepriseMembreRepository.findByPersonne_Id(currentUserId);
-        System.out.println("🔍 DEBUG - Nombre de memberships trouvés: " + memberships.size());
-        
-        // Extraire les entreprises et les mapper
-        List<EntrepriseResponse> applications = memberships.stream()
-            .map(em -> {
-                Entreprise entreprise = em.getEntreprise();
-                System.out.println("🔍 DEBUG - Entreprise trouvée: " + entreprise.getNom());
-                System.out.println("🔍 DEBUG - Type entreprise: " + entreprise.getTypeEntreprise());
-                System.out.println("🔍 DEBUG - Forme juridique: " + entreprise.getFormeJuridique());
-                System.out.println("🔍 DEBUG - Référence: " + entreprise.getReference());
-                return entreprise;
-            })
-            .distinct()
-            .map(this::toResponseShallow)
-            .collect(Collectors.toList());
+        try {
+            // Récupérer l'utilisateur connecté depuis le token JWT
+            String currentUserId = getCurrentUserId(request);
+            System.out.println("🔍 DEBUG - currentUserId: " + currentUserId);
             
-        System.out.println("🔍 DEBUG - Nombre d'applications retournées: " + applications.size());
-        return ResponseEntity.ok(applications);
+            if (currentUserId == null) {
+                System.out.println("❌ DEBUG - Utilisateur non authentifié ou pas de personne associée");
+                // Retourner une liste vide au lieu de lever une exception
+                return ResponseEntity.ok(List.of());
+            }
+            
+            // Récupérer les entreprises où l'utilisateur est membre
+            List<EntrepriseMembre> memberships = entrepriseMembreRepository.findByPersonne_Id(currentUserId);
+            System.out.println("🔍 DEBUG - Nombre de memberships trouvés: " + memberships.size());
+            
+            // Extraire les entreprises et les mapper
+            List<EntrepriseResponse> applications = memberships.stream()
+                .map(em -> {
+                    Entreprise entreprise = em.getEntreprise();
+                    System.out.println("🔍 DEBUG - Entreprise trouvée: " + entreprise.getNom());
+                    System.out.println("🔍 DEBUG - Type entreprise: " + entreprise.getTypeEntreprise());
+                    System.out.println("🔍 DEBUG - Forme juridique: " + entreprise.getFormeJuridique());
+                    System.out.println("🔍 DEBUG - Référence: " + entreprise.getReference());
+                    return entreprise;
+                })
+                .distinct()
+                .map(this::toResponseShallow)
+                .collect(Collectors.toList());
+                
+            System.out.println("🔍 DEBUG - Nombre d'applications retournées: " + applications.size());
+            return ResponseEntity.ok(applications);
+            
+        } catch (Exception e) {
+            System.err.println("❌ DEBUG - Erreur dans /my-applications: " + e.getMessage());
+            e.printStackTrace();
+            // Retourner une liste vide en cas d'erreur pour éviter le crash du frontend
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     /**
@@ -620,6 +629,7 @@ public class EntrepriseController {
         r.banni = e.getBanni();
         r.motifBannissement = e.getMotifBannissement();
         r.dateBannissement = e.getDateBannissement();
+        r.totalAmount = e.getTotalAmount();
 
         // Map des membres (personnes liées) avec rôle et parts
         if (e.getMembres() != null) {
@@ -696,6 +706,7 @@ public class EntrepriseController {
         r.banni = e.getBanni();
         r.motifBannissement = e.getMotifBannissement();
         r.dateBannissement = e.getDateBannissement();
+        r.totalAmount = e.getTotalAmount();
         
         // Mapper l'agent assigné
         if (e.getAssignedTo() != null) {
@@ -813,23 +824,36 @@ public class EntrepriseController {
             // Récupérer le token depuis l'en-tête Authorization
             String authHeader = request.getHeader("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                System.out.println("🔍 DEBUG - Pas de token Authorization ou format incorrect");
                 return null;
             }
             
             String token = authHeader.substring(7);
             String email = jwtUtil.getUsernameFromToken(token);
+            System.out.println("🔍 DEBUG - Email extrait du token: " + email);
             
             if (email == null) {
+                System.out.println("❌ DEBUG - Impossible d'extraire l'email du token");
                 return null;
             }
             
             // Trouver l'utilisateur par email et récupérer l'ID de la personne
             return utilisateursRepository.findByUtilisateur(email)
-                .map(user -> user.getPersonne() != null ? user.getPersonne().getId() : null)
+                .map(user -> {
+                    System.out.println("🔍 DEBUG - Utilisateur trouvé: " + user.getUtilisateur());
+                    if (user.getPersonne() != null) {
+                        System.out.println("🔍 DEBUG - Personne associée ID: " + user.getPersonne().getId());
+                        return user.getPersonne().getId();
+                    } else {
+                        System.out.println("❌ DEBUG - Utilisateur trouvé mais pas de personne associée");
+                        return null;
+                    }
+                })
                 .orElse(null);
                 
         } catch (Exception e) {
-            System.err.println("Erreur lors de la récupération de l'utilisateur connecté: " + e.getMessage());
+            System.err.println("❌ DEBUG - Erreur lors de la récupération de l'utilisateur connecté: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

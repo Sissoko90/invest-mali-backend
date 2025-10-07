@@ -379,6 +379,11 @@ public class DivisionController {
                 System.out.println("[DivisionController] Recherche sans filtre type: " + results.size() + " résultats");
             }
             
+            // Charger la hiérarchie complète pour chaque résultat
+            for (Divisions division : results) {
+                loadCompleteHierarchy(division);
+            }
+            
             // Limiter à 50 résultats pour éviter la surcharge
             if (results.size() > 50) {
                 results = results.subList(0, 50);
@@ -461,5 +466,34 @@ public class DivisionController {
         
         System.out.println("[DivisionController] Total quartiers trouvés par code: " + quartiersCorrespondants.size());
         return ResponseEntity.ok(quartiersCorrespondants);
+    }
+    
+    /**
+     * Charge récursivement toute la hiérarchie parent d'une division
+     */
+    private void loadCompleteHierarchy(Divisions division) {
+        if (division == null) return;
+        
+        Divisions current = division;
+        int depth = 0;
+        
+        // Charger tous les parents jusqu'à la racine (max 5 niveaux pour éviter les boucles infinies)
+        while (current.getParent() != null && depth < 5) {
+            String parentId = current.getParent().getId();
+            
+            // Recharger le parent depuis la base pour s'assurer qu'il est complètement initialisé
+            Optional<Divisions> parentOpt = divisionsRepository.findById(parentId);
+            if (parentOpt.isPresent()) {
+                Divisions fullParent = parentOpt.get();
+                current.setParent(fullParent);
+                current = fullParent;
+                depth++;
+            } else {
+                break;
+            }
+        }
+        
+        System.out.println("[DivisionController] Hiérarchie chargée pour " + division.getNom() + 
+                          " (profondeur: " + depth + " niveaux)");
     }
 }

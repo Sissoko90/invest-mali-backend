@@ -21,6 +21,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
 import abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
+import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 import abdaty_technologie.API_Invest.exception.BadRequestException;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
 import abdaty_technologie.API_Invest.repository.DocumentsRepository;
@@ -138,19 +139,44 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     private void ensureIsGerant(Persons person, Entreprise ent) {
+        // Pour entreprise individuelle, accepter aussi les DIRIGEANTS
+        boolean isEntrepriseIndividuelle = ent.getTypeEntreprise() == TypeEntreprise.ENTREPRISE_INDIVIDUELLE;
+        
         List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
-        boolean ok = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
-        if (!ok) {
+        boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        
+        // Si entreprise individuelle et pas gérant, vérifier si c'est le dirigeant
+        if (!isGerant && isEntrepriseIndividuelle) {
+            List<EntrepriseMembre> dirigeants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.DIRIGEANT);
+            boolean isDirigeant = dirigeants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+            if (isDirigeant) {
+                return; // OK, c'est le dirigeant d'une entreprise individuelle
+            }
+        }
+        
+        if (!isGerant) {
             throw new BadRequestException(Messages.DOCUMENT_POUR_GERANT_SEULEMENT);
         }
     }
 
     private void ensureIsDirigeant(Persons person, Entreprise ent) {
+        // Vérifier si c'est un dirigeant
         List<EntrepriseMembre> fnds = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.DIRIGEANT);
-        boolean ok = fnds.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
-        if (!ok) {
-            throw new BadRequestException("Ce document est réservé aux dirigeants de l'entreprise");
+        boolean isDirigeant = fnds.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        
+        if (isDirigeant) {
+            return; // OK, c'est un dirigeant
         }
+        
+        // Si pas dirigeant, vérifier si c'est le gérant (pour compatibilité avec les sociétés)
+        List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
+        boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        
+        if (isGerant) {
+            return; // OK, c'est le gérant
+        }
+        
+        throw new BadRequestException("Ce document est réservé aux dirigeants ou au gérant de l'entreprise");
     }
 
 

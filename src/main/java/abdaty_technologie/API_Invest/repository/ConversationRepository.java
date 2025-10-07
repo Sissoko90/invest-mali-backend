@@ -11,7 +11,6 @@ import abdaty_technologie.API_Invest.Entity.Conversation;
 import abdaty_technologie.API_Invest.Entity.Enum.ConversationStatus;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, String> {
@@ -27,6 +26,17 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
     Page<Conversation> findByUserIdOrderByModificationDesc(String userId, Pageable pageable);
 
     /**
+     * Trouve toutes les conversations où l'utilisateur est participant (agent ou user)
+     */
+    List<Conversation> findByUserIdOrAgentIdOrderByModificationDesc(String userId, String agentId);
+
+    /**
+     * Trouve toutes les conversations où l'utilisateur est participant dans une entreprise spécifique
+     */
+    @Query("SELECT c FROM Conversation c WHERE (c.user.id = :userId OR c.agent.id = :agentId) AND c.entreprise.id = :entrepriseId ORDER BY c.modification DESC")
+    List<Conversation> findByUserIdOrAgentIdAndEntrepriseIdOrderByModificationDesc(@Param("userId") String userId, @Param("agentId") String agentId, @Param("entrepriseId") String entrepriseId);
+
+    /**
      * Trouve toutes les conversations liées à une entreprise
      */
     List<Conversation> findByEntrepriseIdOrderByCreationDesc(String entrepriseId);
@@ -34,7 +44,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
     /**
      * Trouve une conversation spécifique entre un agent et un utilisateur pour une entreprise
      */
-    Optional<Conversation> findByEntrepriseIdAndAgentIdAndUserId(String entrepriseId, String agentId, String userId);
+    @Query("SELECT c FROM Conversation c WHERE c.entreprise.id = :entrepriseId AND c.agent.id = :agentId AND c.user.id = :userId AND c.status = 'ACTIVE' ORDER BY c.creation DESC")
+    List<Conversation> findByEntrepriseIdAndAgentIdAndUserId(@Param("entrepriseId") String entrepriseId, @Param("agentId") String agentId, @Param("userId") String userId);
 
     /**
      * Trouve les conversations actives d'un agent
@@ -101,4 +112,19 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
            "WHERE LOWER(c.subject) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "ORDER BY c.modification DESC")
     List<Conversation> searchBySubject(@Param("keyword") String keyword);
+
+    /**
+     * Trouve les conversations actives d'un agent dans une entreprise spécifique
+     */
+    @Query("SELECT c FROM Conversation c WHERE c.agent.id = :agentId AND c.entreprise.id = :entrepriseId AND c.status = :status ORDER BY c.modification DESC")
+    List<Conversation> findActiveConversationsByAgentAndEntreprise(@Param("agentId") String agentId, @Param("entrepriseId") String entrepriseId, @Param("status") ConversationStatus status);
+
+    /**
+     * Trouve une conversation active entre deux participants (peu importe qui est agent/user) dans une entreprise
+     */
+    @Query("SELECT c FROM Conversation c WHERE c.entreprise.id = :entrepriseId AND c.status = 'ACTIVE' AND " +
+           "((c.agent.id = :participant1 AND c.user.id = :participant2) OR " +
+           "(c.agent.id = :participant2 AND c.user.id = :participant1)) " +
+           "ORDER BY c.creation DESC")
+    List<Conversation> findActiveConversationBetweenParticipants(@Param("entrepriseId") String entrepriseId, @Param("participant1") String participant1, @Param("participant2") String participant2);
 }

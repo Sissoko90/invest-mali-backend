@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Recherche Division</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .hierarchy { color: #666; font-size: 0.9em; }
+        .type { color: #007bff; font-weight: bold; }
+        input { padding: 10px; width: 300px; margin-bottom: 20px; }
+        button { padding: 10px 20px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Test de Recherche de Division</h1>
+    
+    <div>
+        <input type="text" id="searchInput" placeholder="Rechercher une localisation..." />
+        <button onclick="searchDivisions()">Rechercher</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        async function searchDivisions() {
+            const query = document.getElementById('searchInput').value;
+            if (!query || query.length < 2) {
+                alert('Veuillez saisir au moins 2 caractères');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/v1/divisions/search?query=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const divisions = await response.json();
+                displayResults(divisions);
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('results').innerHTML = `<div class="result" style="color: red;">Erreur: ${error.message}</div>`;
+            }
+        }
+        
+        function displayResults(divisions) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (divisions.length === 0) {
+                resultsDiv.innerHTML = '<div class="result">Aucun résultat trouvé</div>';
+                return;
+            }
+            
+            let html = `<h3>Résultats (${divisions.length}):</h3>`;
+            
+            divisions.forEach((division, index) => {
+                const hierarchy = buildHierarchyPath(division);
+                html += `
+                    <div class="result">
+                        <strong>${division.nom}</strong> 
+                        <span class="type">[${division.divisionType}]</span>
+                        <br>
+                        <span class="hierarchy">📍 ${hierarchy}</span>
+                        <br>
+                        <small>Code: ${division.code} | ID: ${division.id}</small>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function buildHierarchyPath(division) {
+            const path = [];
+            let current = division;
+            
+            while (current) {
+                path.unshift(current.nom);
+                current = current.parent;
+            }
+            
+            return path.join(' → ');
+        }
+        
+        // Permettre la recherche avec Enter
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchDivisions();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -112,5 +112,9 @@ public class Entreprise extends BaseEntity {
 
   @Column(name="date_bannissement")
   private Instant dateBannissement;
+
+  // Montant total de la demande
+  @Column(name="total_amount")
+  private BigDecimal totalAmount;
 }
 
