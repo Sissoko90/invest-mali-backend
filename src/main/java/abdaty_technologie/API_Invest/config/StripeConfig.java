@@ -75,4 +75,3 @@ public class StripeConfig {
         return defaultCurrency;
     }
 }
-
