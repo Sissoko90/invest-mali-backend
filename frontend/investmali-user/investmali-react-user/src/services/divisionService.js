@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Service for DivisionMali endpoints (Spring Boot)
 // Backend base for divisions is /api/v1/divisions (with /v1)
 
@@ -700,3 +701,156 @@ export const divisionService = {
 };
 
 export default divisionService;
+=======
+// Service for DivisionMali endpoints (Spring Boot)
+// Backend base for divisions is /api/v1/divisions (with /v1)
+
+import { API_CONFIG, getHeaders } from '../config/api.config';
+
+const rawRequest = async (path, options = {}) => {
+  const url = path.startsWith('http') ? path : `${API_CONFIG.BASE_URL}${path}`;
+  const config = {
+    headers: {
+      ...getHeaders(),
+      ...options.headers,
+    },
+    ...options,
+  };
+  const res = await fetch(url, config);
+  if (!res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    const err = { status: res.status, message: (data && (data.message || data.error)) || 'Erreur API', data };
+    if (res.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/auth';
+    }
+    throw err;
+  }
+  return res.json();
+};
+
+export const divisionService = {
+  // GET /divisions/regions
+  getRegions: async () => rawRequest('/divisions/regions'),
+
+  // GET /api/v1/divisions/parent/{parentId}
+  getByParent: async (parentId) => rawRequest(`/divisions/parent/${parentId}`),
+
+  // GET /api/v1/divisions/type/{type}
+  // type one of: REGION, CERCLE, ARRONDISSEMENT, COMMUNE
+  getByType: async (type) => rawRequest(`/divisions/type/${type}`),
+
+  // GET /api/v1/divisions/parent/{parentId}/type/{type}
+  getByParentAndType: async (parentId, type) => rawRequest(`/divisions/parent/${parentId}/type/${type}`),
+
+  // GET /api/v1/divisions/{id} - Récupérer une division spécifique par ID
+  getById: async (divisionId) => rawRequest(`/divisions/${divisionId}`),
+
+  // GET /api/v1/divisions/code/{code} - Récupérer une division par son code
+  getByCode: async (divisionCode) => rawRequest(`/divisions/code/${divisionCode}`),
+
+  // Helpers for cascaded selects
+  getCerclesByRegion: async (regionId) => rawRequest(`/divisions/regions/${regionId}/cercles`),
+  getArrondissementsByCercle: async (cercleId) => rawRequest(`/divisions/cercles/${cercleId}/arrondissements`),
+  getCommunesByArrondissement: async (arrondissementId) => rawRequest(`/divisions/arrondissements/${arrondissementId}/communes`),
+  getQuartiersByCommune: async (communeId) => rawRequest(`/divisions/communes/${communeId}/quartiers`),
+  
+  // Helpers spécifiques pour Bamako District (structure différente)
+  getArrondissementsByRegion: async (regionId) => {
+    // Pour Bamako District, récupérer directement les arrondissements depuis la région
+    try {
+      return await rawRequest(`/divisions/regions/${regionId}/arrondissements`);
+    } catch (error) {
+      console.error('Erreur lors du chargement des arrondissements par région:', error);
+      return [];
+    }
+  },
+  
+  getQuartiersByArrondissement: async (arrondissementId) => {
+    // Pour Bamako District, récupérer directement les quartiers depuis l'arrondissement
+    try {
+      return await rawRequest(`/divisions/arrondissements/${arrondissementId}/quartiers`);
+    } catch (error) {
+      console.error('Erreur lors du chargement des quartiers par arrondissement:', error);
+      return [];
+    }
+  },
+  
+  // Solution de contournement: Récupérer les quartiers par code d'arrondissement
+  getQuartiersByArrondissementCode: async (arrondissementId) => {
+    try {
+      return await rawRequest(`/divisions/arrondissements/${arrondissementId}/quartiers/by-code`);
+    } catch (error) {
+      console.error('Erreur lors du chargement des quartiers par code:', error);
+      return [];
+    }
+  },
+  
+  // Debug: Récupérer tous les enfants d'une région
+  getChildrenByRegion: async (regionId) => {
+    try {
+      return await rawRequest(`/divisions/debug/regions/${regionId}/children`);
+    } catch (error) {
+      console.error('Erreur lors du chargement des enfants par région:', error);
+      return [];
+    }
+  },
+  
+  // Debug: Rechercher toutes les divisions Bamako
+  searchBamakoDivisions: async () => {
+    try {
+      return await rawRequest(`/divisions/debug/search/bamako`);
+    } catch (error) {
+      console.error('Erreur lors de la recherche des divisions Bamako:', error);
+      return [];
+    }
+  },
+  
+  // Debug: Récupérer tous les arrondissements
+  getAllArrondissements: async () => {
+    try {
+      return await rawRequest(`/divisions/debug/arrondissements`);
+    } catch (error) {
+      console.error('Erreur lors du chargement de tous les arrondissements:', error);
+      return [];
+    }
+  },
+  
+  // Debug: Récupérer tous les quartiers
+  getAllQuartiers: async () => {
+    try {
+      return await rawRequest(`/divisions/debug/quartiers`);
+    } catch (error) {
+      console.error('Erreur lors du chargement de tous les quartiers:', error);
+      return [];
+    }
+  },
+  
+  // Debug: Analyser la structure complète de Bamako
+  analyzeBamakoStructure: async () => {
+    try {
+      const data = await rawRequest('/divisions/debug/bamako/structure');
+      return typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    } catch (error) {
+      console.error('Erreur lors de l\'analyse de la structure Bamako:', error);
+      return 'Erreur: ' + (error.message || 'Une erreur est survenue');
+    }
+  },
+
+  // Recherche rapide de divisions par nom
+  searchDivisions: async (query, type = null) => {
+    try {
+      const params = new URLSearchParams({ query });
+      if (type && type !== null) params.append('type', type);
+      return await rawRequest(`/divisions/search?${params.toString()}`);
+    } catch (error) {
+      console.error('Erreur lors de la recherche de divisions:', error);
+      return [];
+    }
+  },
+};
+
+export default divisionService;
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

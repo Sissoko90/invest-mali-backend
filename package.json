@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "dependencies": {
     "html2canvas": "^1.4.1",
@@ -10,3 +11,17 @@
     "tailwindcss": "^4.1.15"
   }
 }
+=======
+{
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.3",
+    "mysql2": "^3.15.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.15"
+  }
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

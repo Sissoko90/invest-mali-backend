@@ -306,6 +306,7 @@ public class PaiementServiceImpl implements IPaiementService {
     public boolean existsByReference(String reference) {
         return paiementRepository.existsByReferenceTransaction(reference);
     }
+<<<<<<< HEAD
 
     /**
      * Met à jour le statut de l'entreprise après un paiement validé
@@ -483,4 +484,6 @@ public class PaiementServiceImpl implements IPaiementService {
         }
     }
 
+=======
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
 }

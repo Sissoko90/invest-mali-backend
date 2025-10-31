@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
@@ -33,3 +34,35 @@ module.exports = function(app) {
     })
   );
 };
+=======
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+module.exports = function(app) {
+  // Proxy seulement en développement
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 setupProxy.js: Configuration proxy pour développement');
+    app.use(
+      '/api',
+      createProxyMiddleware({
+        target: 'https://investmali.abdatytch.com',
+        changeOrigin: true,
+        secure: true,
+        onProxyReq: (proxyReq, req, res) => {
+          // Log des requêtes pour le débogage
+          console.log('Proxying request:', req.method, req.url);
+        },
+        onError: (err, req, res) => {
+          console.error('Proxy error:', err);
+          res.status(500).json({ error: 'Erreur de connexion au serveur' });
+        },
+        logLevel: 'debug',
+        pathRewrite: {
+          '^/api': '/api', // Conserve le préfixe /api
+        },
+      })
+    );
+  } else {
+    console.log('🔧 setupProxy.js: Production mode - pas de proxy configuré');
+  }
+};
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

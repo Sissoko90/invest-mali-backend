@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package abdaty_technologie.API_Invest.service.impl;
 
 import java.util.Collection;
@@ -83,3 +84,65 @@ public class EmailServiceImpl implements EmailService {
             .forEach(to -> sendTo(to, subject, text));
     }
 }
+=======
+package abdaty_technologie.API_Invest.service.impl;
+
+import java.util.Collection;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import abdaty_technologie.API_Invest.service.EmailService;
+
+@Service
+public class EmailServiceImpl implements EmailService {
+    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
+
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.from:}")
+    private String from;
+
+    @Value("${app.mail.enabled:false}")
+    private boolean mailEnabled;
+
+    public EmailServiceImpl(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    @Override
+    public void sendTo(String to, String subject, String text) {
+        if (!mailEnabled) {
+            log.debug("[EmailService] Mail désactivé (app.mail.enabled=false). Message ignoré pour {} | subject='{}'", to, subject);
+            return;
+        }
+
+        if (to == null || to.isBlank()) return;
+        try {
+            SimpleMailMessage msg = new SimpleMailMessage();
+            if (from != null && !from.isBlank()) {
+                msg.setFrom(from);
+            }
+            msg.setTo(to);
+            msg.setSubject(subject);
+            msg.setText(text);
+            mailSender.send(msg);
+            log.info("[EmailService] Mail envoyé à {} | subject='{}'", to, subject);
+        } catch (Exception ex) {
+            log.warn("[EmailService] Échec envoi mail à {} | subject='{}' | cause={}", to, subject, ex.getMessage());
+        }
+    }
+
+    @Override
+    public void sendToMany(Collection<String> tos, String subject, String text) {
+        if (tos == null || tos.isEmpty()) return;
+        tos.stream().filter(Objects::nonNull).filter(s -> !s.isBlank()).distinct()
+            .forEach(to -> sendTo(to, subject, text));
+    }
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

@@ -93,6 +93,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
+<<<<<<< HEAD
         // 🔥 SOLUTION D'URGENCE CORS - Configuration forcée pour production
         List<String> origins = List.of(
             // Nouveau domaine formalisation.ml
@@ -138,6 +139,20 @@ public class SecurityConfig {
         );
         
         config.setAllowedOrigins(origins);
+=======
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                                         .map(String::trim).toList();
+            // ✅ Quand credentials=true, utilise des origines explicites
+            config.setAllowedOrigins(origins);
+            System.out.println("🌐 CORS - Origines configurées: " + origins);
+        } else {
+            // ✅ Fallback: utilise allowedOriginPatterns pour supporter wildcards avec credentials
+            config.setAllowedOriginPatterns(List.of("*"));
+            System.out.println("🌐 CORS - Utilisation du fallback: allowedOriginPatterns = *");
+        }
+
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

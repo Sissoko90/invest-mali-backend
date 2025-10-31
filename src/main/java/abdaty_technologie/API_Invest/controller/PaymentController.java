@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package abdaty_technologie.API_Invest.controller;
 
 import abdaty_technologie.API_Invest.dto.PaymentRequest;
@@ -561,3 +562,270 @@ public class PaymentController {
         return userId;
     }
 }
+=======
+package abdaty_technologie.API_Invest.controller;
+
+import abdaty_technologie.API_Invest.dto.PaymentRequest;
+import abdaty_technologie.API_Invest.dto.PaymentResponse;
+import abdaty_technologie.API_Invest.service.StripeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Contrôleur pour la gestion des paiements multi-méthodes
+ */
+@RestController
+@RequestMapping("/payments")
+@Tag(name = "Payments", description = "API de gestion des paiements")
+public class PaymentController {
+    
+    @Autowired
+    private StripeService stripeService;
+    
+    @Value("${stripe.public-key}")
+    private String stripePublicKey;
+    
+    /**
+     * Récupère la clé publique Stripe pour le frontend
+     */
+    @GetMapping("/stripe/public-key")
+    @Operation(summary = "Récupère la clé publique Stripe")
+    public ResponseEntity<Map<String, String>> getStripePublicKey() {
+        Map<String, String> response = new HashMap<>();
+        response.put("publicKey", stripePublicKey);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Initie un paiement selon la méthode choisie
+     */
+    @PostMapping("/initiate")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Initie un paiement", description = "Crée une session de paiement selon la méthode choisie")
+    public ResponseEntity<PaymentResponse> initiatePayment(@Valid @RequestBody PaymentRequest request) {
+        System.out.println("💳 Initiation paiement: " + request.getPaymentMethod() + " pour entreprise: " + request.getEntrepriseId());
+        
+        PaymentResponse response;
+        
+        switch (request.getPaymentMethod()) {
+            case "STRIPE" -> {
+                // Paiement par carte via Stripe Elements (PaymentIntent)
+                response = stripeService.createPaymentIntent(request);
+            }
+            case "ORANGE_MONEY" -> {
+                // Paiement Orange Money (simulation)
+                response = handleOrangeMoneyPayment(request);
+            }
+            case "MOOV_MONEY" -> {
+                // Paiement Moov Money (simulation)
+                response = handleMoovMoneyPayment(request);
+            }
+            case "BANK_TRANSFER" -> {
+                // Virement bancaire (instructions)
+                response = handleBankTransferPayment(request);
+            }
+            case "CASH" -> {
+                // Paiement en espèces (instructions)
+                response = handleCashPayment(request);
+            }
+            default -> {
+                response = PaymentResponse.error(
+                    request.getEntrepriseId(),
+                    request.getPaymentMethod(),
+                    "Méthode de paiement non supportée: " + request.getPaymentMethod()
+                );
+            }
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Vérifie le statut d'un paiement
+     */
+    @GetMapping("/{paymentId}/status")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Vérifie le statut d'un paiement")
+    public ResponseEntity<PaymentResponse> getPaymentStatus(@PathVariable String paymentId) {
+        System.out.println("🔍 Vérification statut paiement: " + paymentId);
+        
+        // Pour Stripe, utiliser le service Stripe
+        if (paymentId.startsWith("pi_") || paymentId.startsWith("cs_")) {
+            PaymentResponse response = stripeService.getPaymentStatus(paymentId);
+            return ResponseEntity.ok(response);
+        }
+        
+        // Pour les autres méthodes, simuler une vérification
+        PaymentResponse response = PaymentResponse.builder()
+                .paymentId(paymentId)
+                .status(PaymentResponse.PaymentStatus.PENDING)
+                .build();
+                
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Webhook Stripe pour les notifications de paiement
+     */
+    @PostMapping("/stripe/webhook")
+    @Operation(summary = "Webhook Stripe")
+    public ResponseEntity<String> stripeWebhook(@RequestBody String payload, 
+                                              @RequestHeader("Stripe-Signature") String sigHeader) {
+        System.out.println("🔔 Webhook Stripe reçu");
+        // TODO: Implémenter la vérification de signature et le traitement des événements
+        return ResponseEntity.ok("OK");
+    }
+    
+    /**
+     * Endpoint pour synchroniser manuellement un paiement Stripe avec la base de données
+     */
+    @PostMapping("/stripe/{paymentId}/sync")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Synchronise un paiement Stripe avec la base de données")
+    public ResponseEntity<PaymentResponse> syncStripePayment(@PathVariable String paymentId) {
+        System.out.println("🔄 Synchronisation manuelle du paiement Stripe: " + paymentId);
+        
+        PaymentResponse response = stripeService.getPaymentStatus(paymentId);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Calcule les frais de paiement
+     */
+    @GetMapping("/fees")
+    @Operation(summary = "Calcule les frais de paiement")
+    public ResponseEntity<Map<String, Object>> calculateFees(@RequestParam(defaultValue = "BUSINESS_CREATION") String requestType) {
+        Long fees = stripeService.calculateFees(requestType);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("requestType", requestType);
+        response.put("amount", fees);
+        response.put("currency", "xof");
+        response.put("amountFormatted", String.format("%,d XOF", fees / 100));
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Gère les paiements Orange Money (simulation)
+     */
+    private PaymentResponse handleOrangeMoneyPayment(PaymentRequest request) {
+        // Simulation d'intégration Orange Money
+        String transactionRef = "OM_" + System.currentTimeMillis();
+        
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("phoneNumber", request.getMethodData().getPhoneNumber());
+        metadata.put("provider", "Orange Money");
+        
+        return PaymentResponse.builder()
+                .paymentId(transactionRef)
+                .entrepriseId(request.getEntrepriseId())
+                .status(PaymentResponse.PaymentStatus.PENDING)
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .transactionReference(transactionRef)
+                .paymentInstructions("Composez *144*4*4# et suivez les instructions pour valider le paiement")
+                .metadata(metadata)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * Gère les paiements Moov Money (simulation)
+     */
+    private PaymentResponse handleMoovMoneyPayment(PaymentRequest request) {
+        // Simulation d'intégration Moov Money
+        String transactionRef = "MM_" + System.currentTimeMillis();
+        
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("phoneNumber", request.getMethodData().getPhoneNumber());
+        metadata.put("provider", "Moov Money");
+        
+        return PaymentResponse.builder()
+                .paymentId(transactionRef)
+                .entrepriseId(request.getEntrepriseId())
+                .status(PaymentResponse.PaymentStatus.PENDING)
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .transactionReference(transactionRef)
+                .paymentInstructions("Composez *555# et suivez les instructions pour valider le paiement")
+                .metadata(metadata)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * Gère les virements bancaires
+     */
+    private PaymentResponse handleBankTransferPayment(PaymentRequest request) {
+        String transactionRef = "BT_" + System.currentTimeMillis();
+        
+        String instructions = String.format(
+            "Effectuez un virement bancaire vers:\n" +
+            "Bénéficiaire: API-INVEST MALI\n" +
+            "IBAN: ML13 BMLI 0001 0000 0000 0000 1234\n" +
+            "BIC: BMLIMALI\n" +
+            "Montant: %,d XOF\n" +
+            "Référence: %s",
+            request.getAmount() / 100,
+            transactionRef
+        );
+        
+        return PaymentResponse.builder()
+                .paymentId(transactionRef)
+                .entrepriseId(request.getEntrepriseId())
+                .status(PaymentResponse.PaymentStatus.PENDING)
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .transactionReference(transactionRef)
+                .paymentInstructions(instructions)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * Gère les paiements en espèces
+     */
+    private PaymentResponse handleCashPayment(PaymentRequest request) {
+        String transactionRef = "CASH_" + System.currentTimeMillis();
+        
+        String instructions = String.format(
+            "Rendez-vous dans l'une de nos agences avec:\n" +
+            "- Référence: %s\n" +
+            "- Montant: %,d XOF\n" +
+            "- Pièce d'identité\n\n" +
+            "Agences disponibles:\n" +
+            "- Bamako Centre: ACI 2000, près de la BCEAO\n" +
+            "- Bamako Hippodrome: Avenue Cheick Zayed\n" +
+            "Horaires: Lun-Ven 8h-17h, Sam 8h-12h",
+            transactionRef,
+            request.getAmount() / 100
+        );
+        
+        return PaymentResponse.builder()
+                .paymentId(transactionRef)
+                .entrepriseId(request.getEntrepriseId())
+                .status(PaymentResponse.PaymentStatus.PENDING)
+                .paymentMethod(request.getPaymentMethod())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .transactionReference(transactionRef)
+                .paymentInstructions(instructions)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -144,3 +145,88 @@ module.exports = {
   },
   plugins: [],
 }
+=======
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // InvestMali Official Brand Colors
+        'investmali-primary': '#261e73',    // Bleu profond - Confiance & Professionnalisme
+        'investmali-secondary': '#c50100',  // Rouge dynamique - Action & Urgence
+        'investmali-accent': '#59af47',     // Vert croissance - Succès & Prospérité
+        // Legacy colors (kept for compatibility)
+        'mali-emerald': {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          'dark': '#15803d', // Alias pour mali-emerald-dark
+          DEFAULT: '#176B5C', // Couleur par défaut de l'ancien CDN
+        },
+        'mali-gold': {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+          DEFAULT: '#FFB800', // Couleur par défaut de l'ancien CDN
+        },
+        'mali-indigo': '#4B3F72',
+        'mali-dark': '#23272A',
+        'mali-light': '#F7F7FA',
+        'mali-white': '#FFFFFF',
+        'mali-purple': '#A259F7',
+        'mali-red': '#E4572E'
+      },
+      fontFamily: {
+        'inter': ['Inter', 'sans-serif']
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.6s ease-out',
+        'slide-up': 'slideUp 0.8s ease-out',
+        'draw-line': 'drawLine 2s ease-in-out infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'glow': 'glow 2s ease-in-out infinite alternate'
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(30px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        drawLine: {
+          '0%': { strokeDasharray: '0 100' },
+          '100%': { strokeDasharray: '100 0' }
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' }
+        },
+        glow: {
+          '0%': { boxShadow: '0 0 5px rgba(23, 107, 92, 0.5)' },
+          '100%': { boxShadow: '0 0 20px rgba(23, 107, 92, 0.8)' }
+        }
+      }
+    },
+  },
+  plugins: [],
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package abdaty_technologie.API_Invest.service;
 
 import abdaty_technologie.API_Invest.dto.PaymentRequest;
@@ -310,3 +311,233 @@ public class StripeService {
         };
     }
 }
+=======
+package abdaty_technologie.API_Invest.service;
+
+import abdaty_technologie.API_Invest.dto.PaymentRequest;
+import abdaty_technologie.API_Invest.dto.PaymentResponse;
+import abdaty_technologie.API_Invest.dto.requests.PaiementRequest;
+import abdaty_technologie.API_Invest.Entity.Enum.TypePaiement;
+import abdaty_technologie.API_Invest.Entity.Entreprise;
+import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
+import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Service pour l'intégration Stripe
+ */
+@Service
+public class StripeService {
+    
+    @Autowired
+    private IPaiementService paiementService;
+    
+    @Autowired
+    private EntrepriseRepository entrepriseRepository;
+    
+    @Value("${stripe.currency:xof}")
+    private String defaultCurrency;
+    
+    @Value("${stripe.fees.business-creation:2500000}")
+    private Long businessCreationFee;
+    
+    /**
+     * Crée une session de paiement Stripe Checkout
+     */
+    public PaymentResponse createCheckoutSession(PaymentRequest request) {
+        try {
+            // Paramètres de la session Checkout
+            SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl(request.getSuccessUrl())
+                    .setCancelUrl(request.getCancelUrl())
+                    .addLineItem(
+                        SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(
+                                SessionCreateParams.LineItem.PriceData.builder()
+                                    .setCurrency(request.getCurrency())
+                                    .setUnitAmount(request.getAmount())
+                                    .setProductData(
+                                        SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                            .setName("Frais de création d'entreprise")
+                                            .setDescription(request.getDescription())
+                                            .build()
+                                    )
+                                    .build()
+                            )
+                            .build()
+                    );
+            
+            // Métadonnées pour traçabilité
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("entreprise_id", request.getEntrepriseId());
+            metadata.put("payment_method", request.getPaymentMethod());
+            paramsBuilder.putAllMetadata(metadata);
+            
+            // Créer la session
+            Session session = Session.create(paramsBuilder.build());
+            
+            return PaymentResponse.builder()
+                    .paymentId(session.getId())
+                    .entrepriseId(request.getEntrepriseId())
+                    .status(PaymentResponse.PaymentStatus.PENDING)
+                    .paymentMethod(request.getPaymentMethod())
+                    .amount(request.getAmount())
+                    .currency(request.getCurrency())
+                    .redirectUrl(session.getUrl())
+                    .transactionReference(session.getId())
+                    .build();
+                    
+        } catch (StripeException e) {
+            System.err.println("❌ Erreur Stripe: " + e.getMessage());
+            return PaymentResponse.error(
+                request.getEntrepriseId(), 
+                request.getPaymentMethod(), 
+                "Erreur lors de la création de la session de paiement: " + e.getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Crée un PaymentIntent pour les paiements directs
+     */
+    public PaymentResponse createPaymentIntent(PaymentRequest request) {
+        try {
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                    .setAmount(request.getAmount())
+                    .setCurrency(request.getCurrency())
+                    .setDescription(request.getDescription())
+                    .putMetadata("entreprise_id", request.getEntrepriseId())
+                    .putMetadata("payment_method", request.getPaymentMethod())
+                    .build();
+            
+            PaymentIntent intent = PaymentIntent.create(params);
+            
+            return PaymentResponse.builder()
+                    .paymentId(intent.getId())
+                    .entrepriseId(request.getEntrepriseId())
+                    .status(mapStripeStatus(intent.getStatus()))
+                    .paymentMethod(request.getPaymentMethod())
+                    .amount(request.getAmount())
+                    .currency(request.getCurrency())
+                    .clientSecret(intent.getClientSecret())
+                    .transactionReference(intent.getId())
+                    .build();
+                    
+        } catch (StripeException e) {
+            System.err.println("❌ Erreur Stripe PaymentIntent: " + e.getMessage());
+            return PaymentResponse.error(
+                request.getEntrepriseId(), 
+                request.getPaymentMethod(), 
+                "Erreur lors de la création du PaymentIntent: " + e.getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Récupère le statut d'un paiement
+     */
+    public PaymentResponse getPaymentStatus(String paymentId) {
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(paymentId);
+            
+            // Si le paiement vient de réussir, l'enregistrer dans la base de données
+            if ("succeeded".equals(intent.getStatus())) {
+                savePaiementToDatabase(intent);
+            }
+            
+            return PaymentResponse.builder()
+                    .paymentId(intent.getId())
+                    .status(mapStripeStatus(intent.getStatus()))
+                    .amount(intent.getAmount())
+                    .currency(intent.getCurrency())
+                    .transactionReference(intent.getId())
+                    .build();
+                    
+        } catch (StripeException e) {
+            System.err.println("❌ Erreur récupération statut Stripe: " + e.getMessage());
+            return PaymentResponse.error("", "STRIPE", 
+                "Erreur lors de la récupération du statut: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Enregistre un paiement Stripe réussi dans la base de données
+     */
+    private void savePaiementToDatabase(PaymentIntent intent) {
+        try {
+            // Extraire les métadonnées
+            String entrepriseId = intent.getMetadata().get("entreprise_id");
+            
+            if (entrepriseId != null) {
+                // Récupérer l'entreprise pour obtenir le personneId
+                Entreprise entreprise = entrepriseRepository.findById(entrepriseId).orElse(null);
+                if (entreprise != null && !entreprise.getMembres().isEmpty()) {
+                    // Trouver le fondateur (premier membre ou membre avec rôle FONDATEUR)
+                    String personneId = entreprise.getMembres().get(0).getPersonne().getId();
+                    
+                    // Vérifier si le paiement n'existe pas déjà
+                    if (!paiementService.existsByReference(intent.getId())) {
+                        // Créer la requête de paiement
+                        PaiementRequest paiementRequest = new PaiementRequest();
+                        paiementRequest.setPersonneId(personneId);
+                        paiementRequest.setEntrepriseId(entrepriseId);
+                        paiementRequest.setTypePaiement(TypePaiement.CARTE_BANCAIRE);
+                        paiementRequest.setMontant(new BigDecimal(intent.getAmount()).divide(new BigDecimal(100))); // Convertir centimes en unités
+                        paiementRequest.setReferenceTransaction(intent.getId());
+                        paiementRequest.setDescription("Paiement Stripe - Frais de création d'entreprise");
+                        
+                        // Sauvegarder le paiement
+                        paiementService.creerPaiement(paiementRequest);
+                        System.out.println("✅ Paiement Stripe enregistré en base: " + intent.getId());
+                    } else {
+                        System.out.println("ℹ️ Paiement Stripe déjà enregistré: " + intent.getId());
+                    }
+                } else {
+                    System.err.println("❌ Entreprise ou membres non trouvés pour: " + entrepriseId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de l'enregistrement du paiement Stripe: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Mappe les statuts Stripe vers nos statuts internes
+     */
+    private PaymentResponse.PaymentStatus mapStripeStatus(String stripeStatus) {
+        return switch (stripeStatus) {
+            case "succeeded" -> PaymentResponse.PaymentStatus.SUCCEEDED;
+            case "processing" -> PaymentResponse.PaymentStatus.PROCESSING;
+            case "requires_payment_method" -> PaymentResponse.PaymentStatus.REQUIRES_ACTION;
+            case "requires_confirmation" -> PaymentResponse.PaymentStatus.REQUIRES_CONFIRMATION;
+            case "requires_action" -> PaymentResponse.PaymentStatus.REQUIRES_ACTION;
+            case "canceled" -> PaymentResponse.PaymentStatus.CANCELLED;
+            default -> PaymentResponse.PaymentStatus.PENDING;
+        };
+    }
+    
+    /**
+     * Calcule les frais selon le type de demande
+     */
+    public Long calculateFees(String requestType) {
+        return switch (requestType) {
+            case "BUSINESS_CREATION" -> businessCreationFee;
+            case "DOCUMENT_PROCESSING" -> 500000L; // 5,000 XOF
+            case "EXPEDITED_PROCESSING" -> 1000000L; // 10,000 XOF
+            default -> businessCreationFee;
+        };
+    }
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

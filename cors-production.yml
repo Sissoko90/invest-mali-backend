@@ -1,0 +1,8 @@
+# Configuration CORS pour déploiement production
+# À ajouter dans src/main/resources/application.yml
+
+app:
+  cors:
+    allowed-origins: >
+      https://investmali.abdatytch.com,
+      https://investmali-agent.abdatytch.com

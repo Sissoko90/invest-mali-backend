@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package abdaty_technologie.API_Invest.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -3402,3 +3403,953 @@ public class EntrepriseController {
     }
 
 }
+=======
+package abdaty_technologie.API_Invest.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletRequest;
+
+import abdaty_technologie.API_Invest.Entity.Entreprise;
+import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
+import abdaty_technologie.API_Invest.Entity.Divisions;
+import abdaty_technologie.API_Invest.Entity.Enum.DivisionType;
+import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
+import abdaty_technologie.API_Invest.dto.request.EntrepriseRequest;
+import abdaty_technologie.API_Invest.dto.response.EntrepriseResponse;
+import abdaty_technologie.API_Invest.dto.response.MembreResponse;
+import abdaty_technologie.API_Invest.dto.response.UtilisateursResponse;
+import abdaty_technologie.API_Invest.dto.request.BanEntrepriseRequest;
+import abdaty_technologie.API_Invest.dto.request.UpdateEntrepriseRequest;
+import abdaty_technologie.API_Invest.service.EntrepriseService;
+import abdaty_technologie.API_Invest.service.DocumentsService;
+import abdaty_technologie.API_Invest.exception.NotFoundException;
+import abdaty_technologie.API_Invest.exception.BadRequestException;
+import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
+import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
+import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
+import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
+import jakarta.validation.Valid;
+import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Optional;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import abdaty_technologie.API_Invest.util.JwtUtil;
+import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
+import abdaty_technologie.API_Invest.Entity.Utilisateurs;
+import org.springframework.web.bind.annotation.PatchMapping;
+/**
+ * Contrôleur REST pour les opérations sur les entreprises.
+ *
+ * Expose:
+ * Les endpoints sont automatiquement préfixés par /api/v1 via spring.mvc.servlet.path.
+ * - POST /entreprises: création d'une entreprise avec génération automatique de la référence
+ * - GET  /entreprises: liste paginée (et triable) des entreprises, avec filtre optionnel par divisionCode
+ */
+@RestController
+@RequestMapping("/entreprises")
+public class EntrepriseController {
+
+    @Autowired
+    private EntrepriseService entrepriseService;
+
+    @Autowired
+    private DocumentsService documentsService;
+
+    @Autowired
+    private EntrepriseRepository entrepriseRepository;
+
+    @Autowired
+    private EntrepriseMembreRepository entrepriseMembreRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UtilisateursRepository utilisateursRepository;
+
+    /**
+     * Crée une entreprise.
+     * - Valide la requête (@Valid)
+     * - Délègue au service qui génère la référence (CE-YYYY-MM-DD-#####)
+     * - Retourne une réponse épurée (EntrepriseResponse)
+     */
+    @PostMapping
+    public ResponseEntity<EntrepriseResponse> Entreprise(@RequestBody @Valid EntrepriseRequest request, HttpServletRequest httpRequest) {
+        // Récupérer l'utilisateur connecté
+        String currentUserId = getCurrentUserId(httpRequest);
+        Utilisateurs currentUser = utilisateursRepository.findById(currentUserId)
+            .orElseThrow(() -> new BadRequestException("Utilisateur connecté introuvable"));
+            
+        Entreprise created = entrepriseService.createEntreprise(request, currentUser);
+        return ResponseEntity.ok(toResponse(created));
+    }
+
+    /**
+     * Crée une entreprise avec upload des documents.
+     * - Traite les données JSON de l'entreprise
+     * - Upload et sauvegarde les documents dans la table Documents
+     * - Associe les documents aux personnes et à l'entreprise
+     */
+    @PostMapping("/with-documents")
+    public ResponseEntity<EntrepriseResponse> createEntrepriseWithDocuments(
+            @RequestParam("entrepriseData") String entrepriseDataJson,
+            @RequestParam(value = "statuts", required = false) MultipartFile statuts,
+            @RequestParam(value = "registreCommerce", required = false) MultipartFile registreCommerce,
+            @RequestParam(value = "certificatResidence", required = false) MultipartFile certificatResidence,
+            @RequestParam Map<String, Object> allParams,
+            HttpServletRequest httpRequest) {
+        
+        try {
+            // Parser les données JSON de l'entreprise
+            EntrepriseRequest request = objectMapper.readValue(entrepriseDataJson, EntrepriseRequest.class);
+            
+            // Récupérer l'utilisateur connecté
+            String currentUserId = getCurrentUserId(httpRequest);
+            Utilisateurs currentUser = utilisateursRepository.findById(currentUserId)
+                .orElseThrow(() -> new BadRequestException("Utilisateur connecté introuvable"));
+            
+            // Créer l'entreprise d'abord
+            Entreprise created = entrepriseService.createEntreprise(request, currentUser);
+            
+            // Traiter les documents de l'entreprise
+            if (statuts != null && !statuts.isEmpty()) {
+                // Trouver un fondateur pour associer les statuts
+                String founderId = findFounderId(created);
+                if (founderId != null) {
+                    documentsService.uploadDocument(founderId, created.getId(), 
+                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), statuts);
+                }
+            }
+            
+            if (registreCommerce != null && !registreCommerce.isEmpty()) {
+                String founderId = findFounderId(created);
+                if (founderId != null) {
+                    documentsService.uploadDocument(founderId, created.getId(), 
+                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), registreCommerce);
+                }
+            }
+            
+            if (certificatResidence != null && !certificatResidence.isEmpty()) {
+                String gerantId = findGerantId(created);
+                if (gerantId != null) {
+                    documentsService.uploadDocument(gerantId, created.getId(), 
+                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), certificatResidence);
+                }
+            }
+            
+            // Traiter les documents des participants
+            processParticipantDocuments(allParams, created);
+            
+            return ResponseEntity.ok(toResponse(created));
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de la création de l'entreprise avec documents: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Liste paginée des entreprises.
+     * - Paramètres Spring Data: page, size, sort
+     * - Filtre optionnel par code de division (divisionCode)
+     */
+    @GetMapping
+    public ResponseEntity<Page<EntrepriseResponse>> listEntreprises(
+            @RequestParam(value = "divisionCode", required = false) String divisionCode,
+            Pageable pageable) {
+        Page<Entreprise> page = entrepriseService.listEntreprises(divisionCode, pageable);
+        // Récupérer les IDs des entreprises de la page
+        List<Entreprise> entreprises = page.getContent();
+        List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+        // Batch fetch des membres + personne pour éviter N+1 et lazy
+        Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
+                entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                    .stream()
+                    .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+        Page<EntrepriseResponse> mapped = page.map(e -> {
+            EntrepriseResponse r = toResponseShallow(e);
+            List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
+            if (ems != null) {
+                r.membres = ems.stream().map(this::mapMembre).toList();
+            }
+            return r;
+        });
+        return ResponseEntity.ok(mapped);
+    }
+
+    /**
+     * Liste paginée des entreprises bannies.
+     */
+    @GetMapping("/bannis")
+    public ResponseEntity<Page<EntrepriseResponse>> listEntreprisesBannies(Pageable pageable) {
+        Page<Entreprise> page = entrepriseService.listBanned(pageable);
+        // on inclut les membres comme pour la liste standard
+        List<Entreprise> entreprises = page.getContent();
+        List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+        Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of() :
+                entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                    .stream()
+                    .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+        Page<EntrepriseResponse> mapped = page.map(e -> {
+            EntrepriseResponse r = toResponseShallow(e);
+            List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
+            if (ems != null) {
+                r.membres = ems.stream().map(this::mapMembre).toList();
+            }
+            return r;
+        });
+        return ResponseEntity.ok(mapped);
+    }
+
+    /**
+     * Récupère une entreprise par son identifiant.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<EntrepriseResponse> getEntrepriseById(@PathVariable String id) {
+        // Charger avec fetch join pour inclure membres et personnes
+        Entreprise e = entrepriseRepository.findByIdWithMembres(id)
+            .orElseThrow(() -> new NotFoundException("Entreprise introuvable: " + id));
+        return ResponseEntity.ok(toResponse(e));
+    }
+
+    /**
+     * Bannir une entreprise (avec motif obligatoire).
+     */
+    @PostMapping("/{id}/ban")
+    public ResponseEntity<EntrepriseResponse> ban(@PathVariable String id, @RequestBody @Valid BanEntrepriseRequest req) {
+        Entreprise e = entrepriseService.ban(id, req);
+        return ResponseEntity.ok(toResponseShallow(e));
+    }
+
+    /**
+     * Dé-bannir une entreprise.
+     */
+    @PostMapping("/{id}/unban")
+    public ResponseEntity<EntrepriseResponse> unban(@PathVariable String id) {
+        Entreprise e = entrepriseService.unban(id);
+        return ResponseEntity.ok(toResponseShallow(e));
+    }
+
+    /**
+     * Met à jour les informations d'une entreprise existante.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<EntrepriseResponse> updateEntreprise(
+            @PathVariable String id,
+            @RequestBody UpdateEntrepriseRequest request) {
+
+        Entreprise updated = entrepriseService.updateEntreprise(id, request);
+        return ResponseEntity.ok(toResponse(updated));
+    }
+
+    /**
+     * Test endpoint pour vérifier l'assignation
+     */
+    @GetMapping("/{id}/test-assign")
+    public ResponseEntity<Map<String, Object>> testAssign(@PathVariable String id, HttpServletRequest httpRequest) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Vérifier si l'entreprise existe
+            Optional<Entreprise> entrepriseOpt = entrepriseRepository.findById(id);
+            result.put("entrepriseExists", entrepriseOpt.isPresent());
+            
+            if (entrepriseOpt.isPresent()) {
+                Entreprise e = entrepriseOpt.get();
+                result.put("entrepriseName", e.getNom());
+                result.put("etapeValidation", e.getEtapeValidation() != null ? e.getEtapeValidation().name() : "NULL");
+                result.put("currentAssignedTo", e.getAssignedTo() != null ? e.getAssignedTo().getId() : null);
+            }
+            
+            // Vérifier le token
+            String token = httpRequest.getHeader("Authorization");
+            result.put("tokenPresent", token != null);
+            
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+                try {
+                    String username = jwtUtil.getUsernameFromToken(token);
+                    result.put("username", username);
+                    
+                    Optional<Utilisateurs> userOpt = utilisateursRepository.findByUtilisateur(username);
+                    result.put("userExists", userOpt.isPresent());
+                    
+                    if (userOpt.isPresent()) {
+                        Utilisateurs user = userOpt.get();
+                        result.put("userId", user.getId());
+                        result.put("userPersonne", user.getPersonne() != null ? "EXISTS" : "NULL");
+                        if (user.getPersonne() != null) {
+                            result.put("userRole", user.getPersonne().getRole() != null ? user.getPersonne().getRole().name() : "NO_ROLE");
+                        }
+                    }
+                } catch (Exception e) {
+                    result.put("tokenError", e.getMessage());
+                }
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    /**
+     * Assigner une entreprise à un agent.
+     */
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<EntrepriseResponse> assignToAgent(
+            @PathVariable String id,
+            @RequestBody(required = false) Map<String, String> request,
+            HttpServletRequest httpRequest) {
+
+        System.out.println("🔍 [ASSIGN] Début assignation entreprise ID: " + id);
+        System.out.println("🔍 [ASSIGN] Request body: " + request);
+
+        String token = httpRequest.getHeader("Authorization");
+        System.out.println("🔍 [ASSIGN] Token présent: " + (token != null));
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        String agentUsername = jwtUtil.getUsernameFromToken(token);
+        Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
+            .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+
+        String targetAgentId = request != null ? request.get("agentId") : null;
+        Utilisateurs targetAgent = agent;
+
+        if (targetAgentId != null && !targetAgentId.isBlank()) {
+            Optional<Utilisateurs> userById = utilisateursRepository.findById(targetAgentId);
+            if (userById.isPresent()) {
+                targetAgent = userById.get();
+            } else {
+                Optional<Utilisateurs> userByPersonId = utilisateursRepository.findByPersonneId(targetAgentId);
+                if (userByPersonId.isPresent()) {
+                    targetAgent = userByPersonId.get();
+                } else {
+                    throw new RuntimeException("Agent cible non trouvé pour ID: " + targetAgentId);
+                }
+            }
+        }
+
+        try {
+            Entreprise entreprise = entrepriseService.assignToAgent(id, targetAgent);
+            return ResponseEntity.ok(toResponseShallow(entreprise));
+        } catch (Exception e) {
+            System.err.println("❌ [ASSIGN] Erreur lors de l'assignation: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * Désassigner une entreprise (la remettre dans la liste commune).
+     */
+    @PatchMapping("/{id}/unassign")
+    public ResponseEntity<EntrepriseResponse> unassignFromAgent(@PathVariable String id) {
+        Entreprise entreprise = entrepriseService.unassignFromAgent(id);
+        return ResponseEntity.ok(toResponseShallow(entreprise));
+    }
+
+    /**
+     * Récupérer les entreprises NON ASSIGNÉES pour éviter les conflits entre agents.
+     */
+    @GetMapping("/unassigned")
+    public ResponseEntity<Page<EntrepriseResponse>> getUnassignedEntreprises(
+            @RequestParam(value = "etape", defaultValue = "ACCUEIL") String etape,
+            Pageable pageable) {
+
+        try {
+            EtapeValidation etapeValidation = EtapeValidation.valueOf(etape.toUpperCase());
+            Page<Entreprise> page = entrepriseRepository.findByEtapeValidationAndAssignedToIsNull(etapeValidation, pageable);
+
+            List<Entreprise> entreprises = page.getContent();
+            List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+            Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of()
+                    : entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                        .stream()
+                        .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+            Page<EntrepriseResponse> mapped = page.map(ent -> {
+                EntrepriseResponse response = toResponseShallow(ent);
+                List<EntrepriseMembre> ems = membresByEntreprise.get(ent.getId());
+                if (ems != null) {
+                    response.membres = ems.stream().map(this::mapMembre).toList();
+                }
+                return response;
+            });
+
+            return ResponseEntity.ok(mapped);
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Étape de validation invalide: " + etape, ex);
+        }
+    }
+
+    /**
+     * Récupérer les entreprises assignées à l'agent connecté.
+     */
+    @GetMapping("/assigned-to-me")
+    public ResponseEntity<Page<EntrepriseResponse>> getAssignedToMe(
+            Pageable pageable,
+            HttpServletRequest httpRequest) {
+
+        try {
+            String token = httpRequest.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+
+            String agentUsername = jwtUtil.getUsernameFromToken(token);
+            Utilisateurs agent = utilisateursRepository.findByUtilisateur(agentUsername)
+                .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+
+            Page<Entreprise> page = entrepriseService.getAssignedToAgent(agent.getId(), pageable);
+
+            List<Entreprise> entreprises = page.getContent();
+            List<String> ids = entreprises.stream().map(Entreprise::getId).toList();
+            Map<String, List<EntrepriseMembre>> membresByEntreprise = ids.isEmpty() ? Map.of()
+                    : entrepriseMembreRepository.findByEntrepriseIdsWithPersonne(ids)
+                        .stream()
+                        .collect(Collectors.groupingBy(em -> em.getEntreprise().getId()));
+
+            Page<EntrepriseResponse> mapped = page.map(ent -> {
+                EntrepriseResponse response = toResponseShallow(ent);
+                List<EntrepriseMembre> ems = membresByEntreprise.get(ent.getId());
+                if (ems != null) {
+                    response.membres = ems.stream().map(this::mapMembre).toList();
+                }
+                return response;
+            });
+
+            return ResponseEntity.ok(mapped);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(Page.empty(pageable));
+        }
+    }
+
+    /**
+     * Récupère les entreprises créées par l'utilisateur courant.
+     */
+    @GetMapping("/my-applications")
+    public ResponseEntity<List<EntrepriseResponse>> getMyApplications(HttpServletRequest request) {
+        System.out.println("🔍 [MY-APPLICATIONS] Appel" );
+
+        try {
+            String currentUserId = getCurrentUserId(request);
+            System.out.println("🔍 [MY-APPLICATIONS] currentUserId=" + currentUserId);
+
+            if (currentUserId == null || currentUserId.isBlank()) {
+                return ResponseEntity.ok(List.of());
+            }
+
+            List<Entreprise> created = entrepriseRepository.findByCreatedByPersonOrUser(currentUserId, currentUserId);
+            System.out.println("🔍 [MY-APPLICATIONS] entreprises créées trouvé via personId/userId=" + created.size());
+
+            List<EntrepriseMembre> memberships = entrepriseMembreRepository.findByPersonne_Id(currentUserId);
+            System.out.println("🔍 [MY-APPLICATIONS] memberships trouvés=" + memberships.size());
+
+            Set<String> seenIds = new HashSet<>();
+            List<Entreprise> combined = new ArrayList<>();
+
+            created.forEach(ent -> {
+                if (ent != null && seenIds.add(ent.getId())) {
+                    combined.add(ent);
+                }
+            });
+
+            memberships.forEach(em -> {
+                Entreprise ent = em.getEntreprise();
+                if (ent != null && seenIds.add(ent.getId())) {
+                    combined.add(ent);
+                }
+            });
+
+            System.out.println("🔍 [MY-APPLICATIONS] total entreprises uniques=" + combined.size());
+
+            List<EntrepriseResponse> responses = combined.stream()
+                .map(this::toResponseShallow)
+                .toList();
+
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            System.err.println("❌ [MY-APPLICATIONS] Erreur: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(List.of());
+        }
+    }
+
+    /**
+     * Récupère les membres (personnes liées) d'une entreprise.
+     */
+    @GetMapping("/{id}/membres")
+    public ResponseEntity<List<MembreResponse>> getMembres(@PathVariable String id) {
+        // Vérifier l'existence pour un 404 propre
+        if (!entrepriseRepository.existsById(id)) {
+            throw new NotFoundException("Entreprise introuvable: " + id);
+        }
+        // Charger avec fetch join la personne pour éviter les proxies
+        List<EntrepriseMembre> membres = entrepriseMembreRepository.findByEntrepriseIdWithPersonne(id);
+        List<MembreResponse> out = membres.stream().map(em -> {
+            MembreResponse mr = new MembreResponse();
+            if (em.getPersonne() != null) {
+                mr.personId = em.getPersonne().getId();
+                mr.nom = em.getPersonne().getNom();
+                mr.prenom = em.getPersonne().getPrenom();
+            }
+            mr.role = em.getRole();
+            mr.pourcentageParts = em.getPourcentageParts();
+            mr.dateDebut = em.getDateDebut();
+            mr.dateFin = em.getDateFin();
+            return mr;
+        }).toList();
+        return ResponseEntity.ok(out);
+    }
+
+    /**
+     * Met à jour un membre d'une entreprise.
+     */
+    @PutMapping("/{entrepriseId}/membres/{membreId}")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<MembreResponse> updateMembre(
+            @PathVariable String entrepriseId,
+            @PathVariable String membreId,
+            @RequestBody Map<String, Object> membreData) {
+        
+        System.out.println("🔧 [UPDATE-MEMBRE] Mise à jour membre " + membreId + " de l'entreprise " + entrepriseId);
+        System.out.println("📝 [UPDATE-MEMBRE] Données reçues: " + membreData);
+        
+        try {
+            // Vérifier que l'entreprise existe
+            if (!entrepriseRepository.existsById(entrepriseId)) {
+                throw new NotFoundException("Entreprise introuvable: " + entrepriseId);
+            }
+            
+            // Trouver le membre à mettre à jour avec une session active
+            EntrepriseMembre membre = entrepriseMembreRepository
+                .findByEntrepriseIdAndPersonneId(entrepriseId, membreId)
+                .orElseThrow(() -> new NotFoundException("Membre introuvable: " + membreId + " dans l'entreprise " + entrepriseId));
+            
+            System.out.println("✅ [UPDATE-MEMBRE] Membre trouvé: " + membre.getId());
+            
+            // Mettre à jour les données du membre dans EntrepriseMembre
+            if (membreData.containsKey("role")) {
+                String roleStr = (String) membreData.get("role");
+                if (roleStr != null && !roleStr.isEmpty()) {
+                    try {
+                        abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole role = 
+                            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.valueOf(roleStr);
+                        membre.setRole(role);
+                        System.out.println("✅ [UPDATE-MEMBRE] Rôle mis à jour: " + role);
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("❌ [UPDATE-MEMBRE] Rôle invalide: " + roleStr);
+                    }
+                }
+            }
+            
+            if (membreData.containsKey("pourcentageParts")) {
+                Object partsObj = membreData.get("pourcentageParts");
+                if (partsObj != null) {
+                    java.math.BigDecimal parts = null;
+                    if (partsObj instanceof Number) {
+                        parts = java.math.BigDecimal.valueOf(((Number) partsObj).doubleValue());
+                    } else if (partsObj instanceof String) {
+                        try {
+                            parts = new java.math.BigDecimal((String) partsObj);
+                        } catch (NumberFormatException e) {
+                            System.err.println("❌ [UPDATE-MEMBRE] Pourcentage invalide: " + partsObj);
+                        }
+                    }
+                    if (parts != null) {
+                        membre.setPourcentageParts(parts);
+                        System.out.println("✅ [UPDATE-MEMBRE] Parts mises à jour: " + parts + "%");
+                    }
+                }
+            }
+            
+            // Mettre à jour les données personnelles si présentes
+            if (membre.getPersonne() != null) {
+                if (membreData.containsKey("prenom")) {
+                    String prenom = (String) membreData.get("prenom");
+                    if (prenom != null) {
+                        membre.getPersonne().setPrenom(prenom);
+                        System.out.println("✅ [UPDATE-MEMBRE] Prénom mis à jour: " + prenom);
+                    }
+                }
+                
+                if (membreData.containsKey("nom")) {
+                    String nom = (String) membreData.get("nom");
+                    if (nom != null) {
+                        membre.getPersonne().setNom(nom);
+                        System.out.println("✅ [UPDATE-MEMBRE] Nom mis à jour: " + nom);
+                    }
+                }
+                
+                if (membreData.containsKey("telephone")) {
+                    String telephone = (String) membreData.get("telephone");
+                    if (telephone != null) {
+                        membre.getPersonne().setTelephone1(telephone);
+                        System.out.println("✅ [UPDATE-MEMBRE] Téléphone mis à jour: " + telephone);
+                    }
+                }
+                
+                if (membreData.containsKey("email")) {
+                    String email = (String) membreData.get("email");
+                    if (email != null) {
+                        membre.getPersonne().setEmail(email);
+                        System.out.println("✅ [UPDATE-MEMBRE] Email mis à jour: " + email);
+                    }
+                }
+                
+                if (membreData.containsKey("situationMatrimoniale")) {
+                    Boolean situationMatrimoniale = (Boolean) membreData.get("situationMatrimoniale");
+                    if (situationMatrimoniale != null) {
+                        abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales situation = 
+                            situationMatrimoniale ? 
+                            abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.MARIE :
+                            abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.CELIBATAIRE;
+                        membre.getPersonne().setSituationMatrimoniale(situation);
+                        System.out.println("✅ [UPDATE-MEMBRE] Situation matrimoniale mise à jour: " + situation);
+                    }
+                }
+            }
+            
+            // Sauvegarder les modifications avec flush pour forcer la synchronisation
+            EntrepriseMembre membreSauvegarde = entrepriseMembreRepository.saveAndFlush(membre);
+            System.out.println("✅ [UPDATE-MEMBRE] Membre sauvegardé avec succès: " + membreSauvegarde.getId());
+            
+            // Recharger l'entité avec toutes ses relations pour la réponse
+            EntrepriseMembre membreRecharge = entrepriseMembreRepository
+                .findByEntrepriseIdAndPersonneId(entrepriseId, membreId)
+                .orElse(membreSauvegarde);
+            
+            // Retourner la réponse
+            MembreResponse response = mapMembre(membreRecharge);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [UPDATE-MEMBRE] Erreur lors de la mise à jour: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la mise à jour du membre: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mappe une entité Entreprise vers une réponse API minimale.
+     * - Projette les informations de base
+     * - Remonte la hiérarchie de Divisions (QUARTIER -> ... -> REGION) via le parent
+     */
+    private EntrepriseResponse toResponse(Entreprise e) {
+        EntrepriseResponse r = new EntrepriseResponse();
+        r.id = e.getId();
+        r.reference = e.getReference();
+        r.nom = e.getNom();
+        r.sigle = e.getSigle();
+        r.capitale = e.getCapitale();
+        r.activiteSecondaire = e.getActiviteSecondaire();
+        r.typeEntreprise = e.getTypeEntreprise();
+        r.statutCreation = e.getStatutCreation();
+        r.etapeValidation = e.getEtapeValidation();
+        r.formeJuridique = e.getFormeJuridique();
+        r.domaineActivite = e.getDomaineActivite();
+        r.domaineActiviteNr = e.getDomaineActiviteNr();
+        r.statutSociete = e.getStatutSociete();
+
+        Divisions d = e.getDivision();
+        if (d != null) {
+            r.divisionCode = d.getCode();
+            r.divisionNom = d.getNom();
+
+            // Remonter la hiérarchie parentale jusqu'à la racine (REGION)
+            Divisions cursor = d;
+            while (cursor != null) {
+                DivisionType type = cursor.getDivisionType();
+                if (type != null) {
+                    switch (type) {
+                        case REGION -> { 
+                            // Division de type REGION
+                            r.regionCode = cursor.getCode(); 
+                            r.regionNom = cursor.getNom(); 
+                        }
+                        case CERCLE -> { 
+                            // Division de type CERCLE
+                            r.cercleCode = cursor.getCode(); 
+                            r.cercleNom = cursor.getNom(); 
+                        }
+                        case ARRONDISSEMENT -> { 
+                            // Division de type ARRONDISSEMENT
+                            r.arrondissementCode = cursor.getCode(); 
+                            r.arrondissementNom = cursor.getNom(); 
+                        }
+                        case COMMUNE -> { 
+                            // Division de type COMMUNE
+                            r.communeCode = cursor.getCode(); 
+                            r.communeNom = cursor.getNom(); 
+                        }
+                        case QUARTIER -> { 
+                            // Division de type QUARTIER
+                            r.quartierCode = cursor.getCode(); 
+                            r.quartierNom = cursor.getNom(); 
+                        }
+                        default -> {}
+                    }
+                }
+                cursor = cursor.getParent();
+            }
+        }
+
+        r.creation = e.getCreation();
+        r.modification = e.getModification();
+        r.banni = e.getBanni();
+        r.motifBannissement = e.getMotifBannissement();
+        r.dateBannissement = e.getDateBannissement();
+        r.totalAmount = e.getTotalAmount();
+
+        // Map des membres (personnes liées) avec rôle et parts
+        if (e.getMembres() != null) {
+            r.membres = e.getMembres().stream().map(this::mapMembre).toList();
+        }
+        return r;
+    }
+
+    // Méthode utilitaire pour mapper un membre
+    private MembreResponse mapMembre(EntrepriseMembre em) {
+        MembreResponse mr = new MembreResponse();
+        if (em.getPersonne() != null) {
+            mr.personId = em.getPersonne().getId();
+            mr.nom = em.getPersonne().getNom();
+            mr.prenom = em.getPersonne().getPrenom();
+            mr.email = em.getPersonne().getEmail();
+            mr.telephone = em.getPersonne().getTelephone1(); // Correction: telephone1
+            // Conversion Date vers LocalDate
+            if (em.getPersonne().getDateNaissance() != null) {
+                mr.dateNaissance = em.getPersonne().getDateNaissance().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            }
+            // Conversion enum vers Boolean (true = marié, false = célibataire/autre)
+            if (em.getPersonne().getSituationMatrimoniale() != null) {
+                mr.situationMatrimoniale = em.getPersonne().getSituationMatrimoniale() == 
+                    abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.MARIE;
+            }
+        }
+        mr.role = em.getRole();
+        mr.pourcentageParts = em.getPourcentageParts();
+        mr.dateDebut = em.getDateDebut();
+        mr.dateFin = em.getDateFin();
+        return mr;
+    }
+
+    // Mapping léger sans membres (utilisé pour la liste paginée)
+    private EntrepriseResponse toResponseShallow(Entreprise e) {
+        EntrepriseResponse r = new EntrepriseResponse();
+        r.id = e.getId();
+        r.reference = e.getReference();
+        r.nom = e.getNom();
+        r.sigle = e.getSigle();
+        r.capitale = e.getCapitale();
+        r.activiteSecondaire = e.getActiviteSecondaire();
+        r.typeEntreprise = e.getTypeEntreprise();
+        r.statutCreation = e.getStatutCreation();
+        r.etapeValidation = e.getEtapeValidation();
+        r.formeJuridique = e.getFormeJuridique();
+        r.domaineActivite = e.getDomaineActivite();
+        r.domaineActiviteNr = e.getDomaineActiviteNr();
+
+        Divisions d = e.getDivision();
+        if (d != null) {
+            r.divisionCode = d.getCode();
+            r.divisionNom = d.getNom();
+
+            Divisions cursor = d;
+            while (cursor != null) {
+                DivisionType type = cursor.getDivisionType();
+                if (type != null) {
+                    switch (type) {
+                        case REGION -> { r.regionCode = cursor.getCode(); r.regionNom = cursor.getNom(); }
+                        case CERCLE -> { r.cercleCode = cursor.getCode(); r.cercleNom = cursor.getNom(); }
+                        case ARRONDISSEMENT -> { r.arrondissementCode = cursor.getCode(); r.arrondissementNom = cursor.getNom(); }
+                        case COMMUNE -> { r.communeCode = cursor.getCode(); r.communeNom = cursor.getNom(); }
+                        case QUARTIER -> { r.quartierCode = cursor.getCode(); r.quartierNom = cursor.getNom(); }
+                        default -> {}
+                    }
+                }
+                cursor = cursor.getParent();
+            }
+        }
+        r.creation = e.getCreation();
+        r.modification = e.getModification();
+        r.banni = e.getBanni();
+        r.motifBannissement = e.getMotifBannissement();
+        r.dateBannissement = e.getDateBannissement();
+        r.totalAmount = e.getTotalAmount();
+        
+        // Mapper l'agent assigné
+        if (e.getAssignedTo() != null) {
+            r.assignedTo = new UtilisateursResponse();
+            r.assignedTo.id = e.getAssignedTo().getId();
+            r.assignedTo.utilisateur = e.getAssignedTo().getUtilisateur();
+            if (e.getAssignedTo().getPersonne() != null) {
+                r.assignedTo.email = e.getAssignedTo().getPersonne().getEmail();
+                r.assignedTo.nom = e.getAssignedTo().getPersonne().getNom();
+                r.assignedTo.prenom = e.getAssignedTo().getPersonne().getPrenom();
+            }
+        }
+        
+        return r;
+    }
+
+    /**
+     * Méthodes utilitaires pour le traitement des documents
+     */
+    private String findFounderId(Entreprise entreprise) {
+        return entrepriseMembreRepository.findByEntreprise_IdAndRole(entreprise.getId(), 
+            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.GERANT)
+            .stream()
+            .findFirst()
+            .map(em -> em.getPersonne() != null ? em.getPersonne().getId() : null)
+            .orElse(null);
+    }
+
+    private String findGerantId(Entreprise entreprise) {
+        return entrepriseMembreRepository.findByEntreprise_IdAndRole(entreprise.getId(), 
+            abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.GERANT)
+            .stream()
+            .findFirst()
+            .map(em -> em.getPersonne() != null ? em.getPersonne().getId() : null)
+            .orElse(null);
+    }
+
+    private void processParticipantDocuments(Map<String, Object> allParams, Entreprise entreprise) {
+        // Traiter les documents des participants (pièces d'identité, casier judiciaire, acte de mariage)
+        System.out.println("🔍 DEBUG - Tous les paramètres reçus:");
+        allParams.forEach((k, v) -> {
+            if (k.startsWith("participant_")) {
+                System.out.println("  " + k + " = " + (v instanceof MultipartFile ? "FILE: " + ((MultipartFile)v).getOriginalFilename() : "'" + v + "'"));
+            }
+        });
+        
+        allParams.forEach((key, value) -> {
+            try {
+                if (key.startsWith("participant_") && key.endsWith("_document") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        // Extraire l'index du participant
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_document"));
+                        
+                        // Récupérer les métadonnées associées
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId");
+                        String typePieceStr = (String) allParams.get("participant_" + indexStr + "_typePiece");
+                        String numeroPiece = (String) allParams.get("participant_" + indexStr + "_numeroPiece");
+                        
+                        // Debug: afficher les valeurs récupérées
+                        System.out.println("🔍 DEBUG Document participant " + indexStr + ":");
+                        System.out.println("  - personId: '" + personId + "'");
+                        System.out.println("  - typePieceStr: '" + typePieceStr + "'");
+                        System.out.println("  - numeroPiece: '" + numeroPiece + "'");
+                        
+                        if (personId != null && !personId.isEmpty() && 
+                            typePieceStr != null && !typePieceStr.isEmpty() && 
+                            numeroPiece != null && !numeroPiece.isEmpty()) {
+                            TypePieces typePiece = TypePieces.valueOf(typePieceStr);
+                            // Date d'expiration par défaut (5 ans)
+                            java.time.LocalDate dateExpiration = java.time.LocalDate.now().plusYears(5);
+                            
+                            System.out.println("  ✅ Appel uploadPiece avec numeroPiece: '" + numeroPiece + "'");
+                            documentsService.uploadPiece(personId, entreprise.getId(), 
+                                typePiece, numeroPiece, dateExpiration, file);
+                        } else {
+                            System.out.println("  ❌ Paramètres manquants pour le document participant " + indexStr);
+                        }
+                    }
+                } else if (key.startsWith("participant_") && key.endsWith("_casierJudiciaire") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_casierJudiciaire"));
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId_casier");
+                        
+                        if (personId != null) {
+                            documentsService.uploadDocument(personId, entreprise.getId(), 
+                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, file);
+                        }
+                    }
+                } else if (key.startsWith("participant_") && key.endsWith("_acteMariage") && value instanceof MultipartFile) {
+                    MultipartFile file = (MultipartFile) value;
+                    if (!file.isEmpty()) {
+                        String indexStr = key.substring("participant_".length(), key.indexOf("_acteMariage"));
+                        String personId = (String) allParams.get("participant_" + indexStr + "_personId_mariage");
+                        
+                        if (personId != null) {
+                            documentsService.uploadDocument(personId, entreprise.getId(), 
+                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, file);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Log l'erreur mais ne pas faire échouer toute la création
+                System.err.println("Erreur lors du traitement du document " + key + ": " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Récupère l'ID de l'utilisateur connecté depuis le token JWT.
+     */
+    private String getCurrentUserId(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                System.out.println("❌ DEBUG - Token Authorization manquant ou invalide");
+                throw new BadRequestException("Utilisateur connecté introuvable");
+            }
+
+            String token = authHeader.substring(7);
+            String email = jwtUtil.getUsernameFromToken(token);
+            System.out.println("🔍 DEBUG - Email extrait du token: " + email);
+
+            if (email == null || email.isBlank()) {
+                System.out.println("❌ DEBUG - Impossible d'extraire l'email du token");
+                throw new BadRequestException("Utilisateur connecté introuvable");
+            }
+
+            return utilisateursRepository.findByUtilisateur(email)
+                .map(user -> {
+                    System.out.println("🔍 DEBUG - Utilisateur trouvé: " + user.getUtilisateur() + " (ID: " + user.getId() + ")");
+                    return user.getId();
+                })
+                .orElseThrow(() -> {
+                    System.out.println("❌ DEBUG - Aucun utilisateur pour l'email: " + email);
+                    return new BadRequestException("Utilisateur connecté introuvable");
+                });
+
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            System.err.println("❌ DEBUG - Erreur lors de la récupération de l'utilisateur connecté: " + e.getMessage());
+            e.printStackTrace();
+            throw new BadRequestException("Utilisateur connecté introuvable");
+        }
+    }
+}
+>>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
