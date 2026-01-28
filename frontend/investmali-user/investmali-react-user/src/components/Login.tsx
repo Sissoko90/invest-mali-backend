@@ -50,11 +50,11 @@ const Login: React.FC = () => {
         {/* Header */}
         <div className="text-center animate-fade-in">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-r from-mali-emerald to-mali-emerald/80 rounded-2xl flex items-center justify-center shadow-xl animate-glow">
+            <div className="w-20 h-20 bg-gradient-to-r from-investmali-accent to-investmali-accent/80 rounded-2xl flex items-center justify-center shadow-xl animate-glow">
               <span className="text-white font-bold text-3xl">IM</span>
             </div>
           </div>
-          <h2 className="text-4xl font-extrabold text-mali-dark">
+          <h2 className="text-4xl font-extrabold text-investmali-neutral-dark">
             Bon retour !
           </h2>
           <p className="mt-2 text-lg text-gray-600">
@@ -65,15 +65,15 @@ const Login: React.FC = () => {
         {/* Quick stats */}
         <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{animationDelay: '0.1s'}}>
           <div className="text-center p-4 bg-white/50 rounded-xl backdrop-blur-sm">
-            <div className="text-2xl font-bold text-mali-emerald">2,500+</div>
+            <div className="text-2xl font-bold text-investmali-accent">2,500+</div>
             <div className="text-xs text-gray-600">Entreprises créées</div>
           </div>
           <div className="text-center p-4 bg-white/50 rounded-xl backdrop-blur-sm">
-            <div className="text-2xl font-bold text-mali-gold">24h</div>
+            <div className="text-2xl font-bold text-investmali-warning">24h</div>
             <div className="text-xs text-gray-600">Délai moyen</div>
           </div>
           <div className="text-center p-4 bg-white/50 rounded-xl backdrop-blur-sm">
-            <div className="text-2xl font-bold text-mali-purple">98%</div>
+            <div className="text-2xl font-bold text-investmali-primary">98%</div>
             <div className="text-xs text-gray-600">Satisfaction</div>
           </div>
         </div>
@@ -94,7 +94,7 @@ const Login: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50 text-lg"
+                  className="w-full px-4 py-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-lg"
                   placeholder="votre@email.com"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -118,7 +118,7 @@ const Login: React.FC = () => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-4 pl-12 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50 text-lg"
+                  className="w-full px-4 py-4 pl-12 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-lg"
                   placeholder="Votre mot de passe"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -129,7 +129,7 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-mali-emerald transition-colors duration-300"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {showPassword ? (
@@ -151,14 +151,14 @@ const Login: React.FC = () => {
                   type="checkbox"
                   checked={formData.rememberMe}
                   onChange={handleInputChange}
-                  className="w-4 h-4 text-mali-emerald bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
+                  className="w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
                 />
                 <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
                   Se souvenir de moi
                 </label>
               </div>
               <div className="text-sm">
-                <a href="#" className="font-medium text-mali-emerald hover:text-mali-emerald/80 transition-colors duration-300">
+                <a href="#" className="font-medium text-investmali-accent hover:text-investmali-accent/80 transition-colors duration-300">
                   Mot de passe oublié ?
                 </a>
               </div>
@@ -184,7 +184,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-mali-emerald to-mali-emerald/90 hover:from-mali-emerald/90 hover:to-mali-emerald focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-investmali-accent to-investmali-accent/90 hover:from-investmali-accent/90 hover:to-investmali-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <span className="relative z-10 flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,7 +209,7 @@ const Login: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="group relative w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-mali-emerald transition-all duration-300"
+                className="group relative w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-investmali-accent transition-all duration-300"
               >
                 <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -221,7 +221,7 @@ const Login: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="group relative w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-mali-emerald transition-all duration-300"
+                className="group relative w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-investmali-accent transition-all duration-300"
               >
                 <svg className="w-5 h-5 text-blue-800" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -236,7 +236,7 @@ const Login: React.FC = () => {
         <div className="text-center animate-fade-in" style={{animationDelay: '0.4s'}}>
           <p className="text-sm text-gray-600">
             Vous n'avez pas encore de compte ?{' '}
-            <Link to="/register" className="font-medium text-mali-emerald hover:text-mali-emerald/80 transition-colors duration-300">
+            <Link to="/register" className="font-medium text-investmali-accent hover:text-investmali-accent/80 transition-colors duration-300">
               Créer un compte gratuitement
             </Link>
           </p>
@@ -245,7 +245,7 @@ const Login: React.FC = () => {
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{animationDelay: '0.6s'}}>
           <div className="text-center p-4 bg-white/30 rounded-xl backdrop-blur-sm">
-            <div className="w-8 h-8 bg-mali-emerald rounded-full flex items-center justify-center mx-auto mb-2">
+            <div className="w-8 h-8 bg-investmali-accent rounded-full flex items-center justify-center mx-auto mb-2">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -253,7 +253,7 @@ const Login: React.FC = () => {
             <div className="text-xs text-gray-600">Sécurisé</div>
           </div>
           <div className="text-center p-4 bg-white/30 rounded-xl backdrop-blur-sm">
-            <div className="w-8 h-8 bg-mali-gold rounded-full flex items-center justify-center mx-auto mb-2">
+            <div className="w-8 h-8 bg-investmali-warning rounded-full flex items-center justify-center mx-auto mb-2">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
@@ -261,7 +261,7 @@ const Login: React.FC = () => {
             <div className="text-xs text-gray-600">Rapide</div>
           </div>
           <div className="text-center p-4 bg-white/30 rounded-xl backdrop-blur-sm">
-            <div className="w-8 h-8 bg-mali-purple rounded-full flex items-center justify-center mx-auto mb-2">
+            <div className="w-8 h-8 bg-investmali-primary rounded-full flex items-center justify-center mx-auto mb-2">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
               </svg>
@@ -275,3 +275,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

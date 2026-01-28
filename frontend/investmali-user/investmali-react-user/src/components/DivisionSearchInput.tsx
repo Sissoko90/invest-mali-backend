@@ -3,11 +3,11 @@ import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import divisionService from '../services/divisionService';
 
 interface Division {
-  id: string;
-  nom: string;
-  code: string;
-  divisionType: 'REGION' | 'CERCLE' | 'ARRONDISSEMENT' | 'COMMUNE' | 'QUARTIER';
-  parent?: Division;
+  id: any;
+  nom: any;
+  code: any;
+  divisionType: string;
+  parent?: Division | null;
 }
 
 interface DivisionSearchInputProps {
@@ -44,7 +44,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
   className = ""
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Division[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -57,7 +57,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
   // Construire le chemin hiérarchique complet
   const buildHierarchyPath = (division: Division): string => {
     const path: string[] = [];
-    let current: Division | undefined = division;
+    let current: Division | undefined | null = division;
     
     while (current) {
       path.unshift(current.nom);
@@ -65,6 +65,61 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
     }
     
     return path.join(' → ');
+  };
+
+  // Trouver la région racine pour différencier les divisions avec le même nom
+  const findRootRegion = (division: Division): string => {
+    let current: Division | undefined | null = division;
+    let rootRegion = ''; // Pas de valeur par défaut
+    
+    // Détection prioritaire pour Bamako par le code (plus fiable)
+    if (division.code) {
+      const code = division.code;
+      // Pattern pour tous les codes de Bamako : 000X où X = 1-9, ou 00X où X = 1-9
+      if (/^000[1-9]/.test(code) || /^00[1-9]/.test(code)) {
+      }
+    }
+    
+    // Remonter jusqu'à la région racine
+    while (current) {
+      if (current.divisionType === 'REGION') {
+        rootRegion = current.nom;
+        break;
+      }
+      // Cas spécial pour Bamako : détecter si on est dans la hiérarchie de Bamako
+      if (current.nom && current.nom.toLowerCase().includes('bamako')) {
+        rootRegion = 'Bamako District';
+        break;
+      }
+      // Détecter Bamako par le code dans la hiérarchie
+      if (current.code && current.code.startsWith('0004')) {
+        rootRegion = 'Bamako District';
+        break;
+      }
+      current = current.parent;
+    }
+    
+    // Si on n'a pas trouvé de région, vérifier si le nom contient "bamako"
+    if (!rootRegion && division.nom && division.nom.toLowerCase().includes('bamako')) {
+      rootRegion = 'Bamako District';
+    }
+    
+    // Détection étendue pour Bamako : tous les codes possibles
+    if (!rootRegion && division.code) {
+      const code = division.code;
+      if (code.startsWith('0001') || code.startsWith('0002') || code.startsWith('0003') ||
+          code.startsWith('0004') || code.startsWith('0005') || code.startsWith('0006') ||
+          code.startsWith('0007') || code.startsWith('0008') || code.startsWith('0009') ||
+          code.startsWith('00010') || code.startsWith('00020') || code.startsWith('00030') ||
+          code.startsWith('00040') || code.startsWith('00050') || code.startsWith('00060') ||
+          code.startsWith('00070') || code.startsWith('00080') || code.startsWith('00090')) {
+        rootRegion = 'Bamako District';
+      }
+    }
+    
+    // Si aucune région trouvée, utiliser "Mali" comme fallback
+    const finalRegion = rootRegion || 'Mali';
+    return finalRegion;
   };
 
   // Recherche avec debounce
@@ -248,7 +303,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
                       {buildHierarchyPath(division)}
                     </div>
                     <div className="text-xs text-blue-600 mt-1">
-                      {DIVISION_LABELS[division.divisionType]} • Code: {division.code}
+                      {DIVISION_LABELS[division.divisionType]} • {findRootRegion(division)}
                     </div>
                   </div>
                 </div>

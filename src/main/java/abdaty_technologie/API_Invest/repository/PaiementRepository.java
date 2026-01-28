@@ -19,11 +19,18 @@ public interface PaiementRepository extends JpaRepository<Paiement, String> {
     // Recherche par référence de transaction
     Optional<Paiement> findByReferenceTransaction(String referenceTransaction);
     
+    // Vérifier l'existence par référence de transaction
+    boolean existsByReferenceTransaction(String referenceTransaction);
+    
     // Recherche par type de paiement
     List<Paiement> findByTypePaiement(TypePaiement typePaiement);
     
     // Recherche par statut
     List<Paiement> findByStatut(StatutPaiement statut);
+    
+    // Recherche par statut avec chargement des relations
+    @Query("SELECT p FROM Paiement p LEFT JOIN FETCH p.entreprise LEFT JOIN FETCH p.personne WHERE p.statut = :statut")
+    List<Paiement> findByStatutWithRelations(@Param("statut") StatutPaiement statut);
     
     // Recherche par entreprise
     @Query("SELECT p FROM Paiement p WHERE p.entreprise.id = :entrepriseId")

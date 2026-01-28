@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 export type ApplicationRow = {
   id: number;
@@ -124,3 +124,27 @@ const ApplicationsTable: React.FC<Props> = ({ rows, page, limit, total, loading,
 };
 
 export default ApplicationsTable;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

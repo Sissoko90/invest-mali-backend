@@ -24,4 +24,9 @@ public class PersonResponse {
     public String divisionNom;
     public String division_id;
     public String localite;
+    public String porte;
+    public String adresseLibre;
+    // Champs spécifiques aux personnes morales
+    public PaysEmissionRccM paysEmissionRccm;
+    public String denominationEntreprise;
 }

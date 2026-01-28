@@ -4,6 +4,7 @@ import abdaty_technologie.API_Invest.Entity.Divisions;
 import abdaty_technologie.API_Invest.Entity.Enum.Roles;
 import abdaty_technologie.API_Invest.Entity.Enum.Sexes;
 import abdaty_technologie.API_Invest.Entity.Enum.Civilites;
+import abdaty_technologie.API_Invest.Entity.Enum.PaysEmissionRccM;
 import abdaty_technologie.API_Invest.Entity.Persons;
 import abdaty_technologie.API_Invest.constants.Messages;
 import abdaty_technologie.API_Invest.dto.request.PersonCreateRequest;
@@ -33,37 +34,82 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public PersonResponse create(PersonCreateRequest req) {
+        // --- Détection précoce des personnes morales ---
+        // Amélioration de la détection avec plusieurs critères
+        boolean isPersonneMorale = false;
+        
+        // Critère 1: Civilité PERSONNE_MORALE
+        boolean civilitePersonneMorale = req.civilite == Civilites.PERSONNE_MORALE;
+        
+        // Critère 2: Présence des champs spécifiques aux personnes morales
+        boolean champsPersonneMorale = (req.paysEmissionRccm != null && !req.paysEmissionRccm.isEmpty()) || 
+                                      (req.denominationEntreprise != null && !req.denominationEntreprise.trim().isEmpty());
+        
+        // Critère 3: Date de naissance fictive (1900-01-01) utilisée pour les personnes morales
+        boolean dateNaissanceFictive = req.dateNaissance != null && 
+                                      req.dateNaissance.equals(LocalDate.of(1900, 1, 1));
+        
+        // Une personne morale est détectée si au moins un critère est rempli
+        isPersonneMorale = civilitePersonneMorale || champsPersonneMorale || dateNaissanceFictive;
+        
+        // Logs de diagnostic pour la détection des personnes morales
+        System.out.println("🔍 [PersonService] DIAGNOSTIC PERSONNE MORALE:");
+        System.out.println("🔍 [PersonService] - req.civilite: " + req.civilite);
+        System.out.println("🔍 [PersonService] - Critère 1 (civilité): " + civilitePersonneMorale);
+        System.out.println("🔍 [PersonService] - req.paysEmissionRccm: " + req.paysEmissionRccm);
+        System.out.println("🔍 [PersonService] - req.denominationEntreprise: " + req.denominationEntreprise);
+        System.out.println("🔍 [PersonService] - Critère 2 (champs): " + champsPersonneMorale);
+        System.out.println("🔍 [PersonService] - req.dateNaissance: " + req.dateNaissance);
+        System.out.println("🔍 [PersonService] - Critère 3 (date fictive): " + dateNaissanceFictive);
+        System.out.println("🔍 [PersonService] - isPersonneMorale final: " + isPersonneMorale);
+        
+        if (isPersonneMorale) {
+            System.out.println("🏢 [PersonService] PERSONNE MORALE DÉTECTÉE - Exemption des validations d'âge et personnelles");
+        } else {
+            System.out.println("👤 [PersonService] PERSONNE PHYSIQUE DÉTECTÉE - Validations normales appliquées");
+        }
+        
         // --- Validation de base (au-delà des annotations DTO) ---
-        // On garde ici des contrôles côté service pour garantir l'intégrité même si les DTO changent.
+        // Champs obligatoires pour tous
         if (req.nom == null || req.nom.isBlank()) throw new BadRequestException(Messages.PERSON_NOM_OBLIGATOIRE);
         if (req.prenom == null || req.prenom.isBlank()) throw new BadRequestException(Messages.PERSON_PRENOM_OBLIGATOIRE);
-        if (req.telephone1 == null || req.telephone1.isBlank()) throw new BadRequestException(Messages.PERSON_TEL1_OBLIGATOIRE);
-        if (req.dateNaissance == null) throw new BadRequestException(Messages.PERSON_DATE_NAISSANCE_OBLIGATOIRE);
-        if (req.lieuNaissance == null || req.lieuNaissance.isBlank()) throw new BadRequestException(Messages.PERSON_LIEU_NAISSANCE_OBLIGATOIRE);
-        if (req.nationnalite == null || req.sexe == null || req.situationMatrimoniale == null || req.civilite == null) {
-            // Validation fine ci-dessous
+        
+        // Champs obligatoires uniquement pour les personnes physiques
+        if (!isPersonneMorale) {
+            if (req.telephone1 == null || req.telephone1.isBlank()) throw new BadRequestException(Messages.PERSON_TEL1_OBLIGATOIRE);
+            if (req.dateNaissance == null) throw new BadRequestException(Messages.PERSON_DATE_NAISSANCE_OBLIGATOIRE);
+            if (req.lieuNaissance == null || req.lieuNaissance.isBlank()) throw new BadRequestException(Messages.PERSON_LIEU_NAISSANCE_OBLIGATOIRE);
+        } else {
+            System.out.println("🏢 [PersonService] Personne morale - exemption des validations téléphone, date et lieu de naissance");
         }
 
         // --- Rôle / Email / Téléphones ---
-        // Email: optionnel si role USER, obligatoire sinon
+        // Email: optionnel si role USER ou personne morale, obligatoire sinon
         // (unicité vérifiée uniquement si fourni)
         // Rôle par défaut USER
         Roles role = (req.role == null) ? Roles.USER : req.role;
-        if (role != Roles.USER && (req.email == null || req.email.isBlank())) {
+        if (!isPersonneMorale && role != Roles.USER && (req.email == null || req.email.isBlank())) {
             throw new BadRequestException(Messages.PERSON_EMAIL_OBLIGATOIRE_SI_NON_USER);
+        } else if (isPersonneMorale) {
+            System.out.println("🏢 [PersonService] Personne morale - email optionnel même pour rôles non-USER");
         }
         if (req.email != null && !req.email.isBlank()) {
             if (personsRepository.existsByEmail(req.email)) throw new BadRequestException(Messages.PERSON_EMAIL_DEJA_UTILISE);
         }
-        if (personsRepository.existsByTelephone1(req.telephone1)) throw new BadRequestException(Messages.PERSON_TEL_DEJA_UTILISE);
+        // Validations téléphone uniquement pour les personnes physiques
+        if (!isPersonneMorale) {
+            if (personsRepository.existsByTelephone1(req.telephone1)) throw new BadRequestException(Messages.PERSON_TEL_DEJA_UTILISE);
 
-        // Téléphone format international (E.164): +[country][digits]
-        // Helper défini en bas de classe: isValidInternationalPhone
-        if (!isValidInternationalPhone(req.telephone1)) {
-            throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
-        }
-        if (req.telephone2 != null && !req.telephone2.isBlank() && !isValidInternationalPhone(req.telephone2)) {
-            throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
+            // Téléphone format international (E.164): +[country][digits]
+            // Helper défini en bas de classe: isValidInternationalPhone
+            if (!isValidInternationalPhone(req.telephone1)) {
+                throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
+            }
+            if (req.telephone2 != null && !req.telephone2.isBlank() && !isValidInternationalPhone(req.telephone2)) {
+                throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
+            }
+        } else {
+            System.out.println("🏢 [PersonService] Personne morale - exemption des validations téléphone (unicité et format)");
         }
 
         // antenneAgent: non obligatoire si rôle USER, obligatoire sinon
@@ -117,63 +163,99 @@ public class PersonServiceImpl implements PersonService {
         }
 
         // --- Age / Autorisation ---
-        // Calcule l'âge à partir du LocalDate reçu et rejette si < 18 ans.
-        LocalDate naissance = req.dateNaissance;
-        LocalDate aujourdhui = LocalDate.now(ZoneId.of("Africa/Bamako"));
+        // Calcule l'âge uniquement pour les personnes physiques
+        boolean autoriser = true; // Par défaut autorisé pour les personnes morales
         
-        // Calcul d'âge avec plusieurs méthodes pour débogage
-        int agePeriod = Period.between(naissance, aujourdhui).getYears();
-        long ageChronoUnit = ChronoUnit.YEARS.between(naissance, aujourdhui);
-        
-        // Logs de débogage détaillés
-        System.out.println("[PersonService] ========== DÉBOGAGE CALCUL D'ÂGE ==========");
-        System.out.println("[PersonService] Date de naissance reçue: " + naissance);
-        System.out.println("[PersonService] Date actuelle (Bamako): " + aujourdhui);
-        System.out.println("[PersonService] Âge calculé (Period): " + agePeriod + " ans");
-        System.out.println("[PersonService] Âge calculé (ChronoUnit): " + ageChronoUnit + " ans");
-        System.out.println("[PersonService] Différence entre les deux méthodes: " + (agePeriod - ageChronoUnit));
-        
-        // Utiliser ChronoUnit qui est plus fiable
-        int age = (int) ageChronoUnit;
-        
-        // Vérification de cohérence
-        if (naissance.isAfter(aujourdhui)) {
-            System.out.println("[PersonService] ERREUR: Date de naissance dans le futur!");
-            throw new BadRequestException("La date de naissance ne peut pas être dans le futur");
-        }
-        
-        // Calcul alternatif simple pour vérification
-        int anneeNaissance = naissance.getYear();
-        int anneeActuelle = aujourdhui.getYear();
-        int ageSimple = anneeActuelle - anneeNaissance;
-        
-        // Ajustement si l'anniversaire n'est pas encore passé cette année
-        if (naissance.getDayOfYear() > aujourdhui.getDayOfYear()) {
-            ageSimple--;
-        }
-        
-        System.out.println("[PersonService] Âge calculé (méthode simple): " + ageSimple + " ans");
-        System.out.println("[PersonService] ================================================");
-        
-        boolean autoriser = age >= 18;
-        if (!autoriser) {
-            System.out.println("[PersonService] ERREUR: Personne mineure - âge: " + age + " ans (< 18)");
-            System.out.println("[PersonService] Toutes les méthodes de calcul:");
-            System.out.println("[PersonService] - Period.between(): " + agePeriod);
-            System.out.println("[PersonService] - ChronoUnit.YEARS: " + ageChronoUnit);
-            System.out.println("[PersonService] - Méthode simple: " + ageSimple);
-            throw new BadRequestException(Messages.personneMineure("ID_TEMPORAIRE") + " - Âge calculé: " + age + " ans");
+        if (!isPersonneMorale) {
+            // Validation et calcul d'âge pour les personnes physiques
+            if (req.dateNaissance == null) {
+                System.out.println("[PersonService] ERREUR: Date de naissance null pour une personne physique");
+                throw new BadRequestException("La date de naissance est obligatoire pour les personnes physiques");
+            }
+            
+            LocalDate naissance = req.dateNaissance;
+            LocalDate aujourdhui = LocalDate.now(ZoneId.of("Africa/Bamako"));
+            
+            // Validation de cohérence de la date
+            if (naissance.isAfter(aujourdhui)) {
+                System.out.println("[PersonService] ERREUR: Date de naissance dans le futur: " + naissance);
+                throw new BadRequestException("La date de naissance ne peut pas être dans le futur");
+            }
+            
+            // Validation d'âge maximum raisonnable (120 ans)
+            if (naissance.isBefore(LocalDate.now().minusYears(120))) {
+                System.out.println("[PersonService] ERREUR: Date de naissance trop ancienne: " + naissance);
+                throw new BadRequestException("La date de naissance ne peut pas être antérieure à 120 ans");
+            }
+            
+            // Calcul d'âge avec plusieurs méthodes pour débogage
+            int agePeriod = Period.between(naissance, aujourdhui).getYears();
+            long ageChronoUnit = ChronoUnit.YEARS.between(naissance, aujourdhui);
+            
+            // Logs de débogage détaillés
+            System.out.println("[PersonService] ========== DÉBOGAGE CALCUL D'ÂGE ==========");
+            System.out.println("[PersonService] Date de naissance reçue: " + naissance);
+            System.out.println("[PersonService] Date actuelle (Bamako): " + aujourdhui);
+            System.out.println("[PersonService] Âge calculé (Period): " + agePeriod + " ans");
+            System.out.println("[PersonService] Âge calculé (ChronoUnit): " + ageChronoUnit + " ans");
+            System.out.println("[PersonService] Différence entre les deux méthodes: " + (agePeriod - ageChronoUnit));
+            
+            // Utiliser ChronoUnit qui est plus fiable
+            int age = (int) ageChronoUnit;
+            
+            // Vérification de cohérence
+            if (naissance.isAfter(aujourdhui)) {
+                System.out.println("[PersonService] ERREUR: Date de naissance dans le futur!");
+                throw new BadRequestException("La date de naissance ne peut pas être dans le futur");
+            }
+            
+            // Calcul alternatif simple pour vérification
+            int anneeNaissance = naissance.getYear();
+            int anneeActuelle = aujourdhui.getYear();
+            int ageSimple = anneeActuelle - anneeNaissance;
+            
+            // Ajustement si l'anniversaire n'est pas encore passé cette année
+            if (naissance.getDayOfYear() > aujourdhui.getDayOfYear()) {
+                ageSimple--;
+            }
+            
+            System.out.println("[PersonService] Âge calculé (méthode simple): " + ageSimple + " ans");
+            System.out.println("[PersonService] ================================================");
+            
+            // Validation d'âge avec exemption spéciale pour les dates fictives des personnes morales
+            if (naissance.equals(LocalDate.of(1900, 1, 1))) {
+                // Date fictive utilisée pour les personnes morales - toujours autoriser
+                autoriser = true;
+                System.out.println("🏢 [PersonService] Date de naissance fictive (1900-01-01) détectée - Personne morale autorisée automatiquement");
+            } else {
+                // Validation normale pour les personnes physiques
+                autoriser = age >= 18;
+                if (!autoriser) {
+                    System.out.println("[PersonService] ERREUR: Personne mineure - âge: " + age + " ans (< 18)");
+                    System.out.println("[PersonService] Toutes les méthodes de calcul:");
+                    System.out.println("[PersonService] - Period.between(): " + agePeriod);
+                    System.out.println("[PersonService] - ChronoUnit.YEARS: " + ageChronoUnit);
+                    System.out.println("[PersonService] - Méthode simple: " + ageSimple);
+                    throw new BadRequestException(Messages.personneMineure("ID_TEMPORAIRE") + " - Âge calculé: " + age + " ans");
+                }
+            }
+        } else {
+            System.out.println("🏢 [PersonService] Personne morale - exemption de la validation d'âge (toujours autorisée)");
         }
 
-        // --- Cohérence sexe/civilité ---
-        if (req.sexe == Sexes.MASCULIN) {
-            if (req.civilite != Civilites.MONSIEUR) {
-                throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+        // --- Cohérence sexe/civilité (sauf pour les personnes morales) ---
+        if (!isPersonneMorale) {
+            if (req.sexe == Sexes.MASCULIN) {
+                if (req.civilite != Civilites.MONSIEUR) {
+                    throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+                }
+            } else if (req.sexe == Sexes.FEMININ) {
+                if (!(req.civilite == Civilites.MADAME || req.civilite == Civilites.MADEMOISELLE)) {
+                    throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+                }
             }
-        } else if (req.sexe == Sexes.FEMININ) {
-            if (!(req.civilite == Civilites.MADAME || req.civilite == Civilites.MADEMOISELLE)) {
-                throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
-            }
+        } else {
+            System.out.println("🏢 [PersonService] Personne morale détectée - validation sexe/civilité ignorée");
         }
 
         Persons p = new Persons();
@@ -194,6 +276,65 @@ public class PersonServiceImpl implements PersonService {
         p.setRole(role);
         p.setDivision(div);
         p.setLocalite(req.localite != null ? req.localite.trim() : null);
+        p.setPorte(req.porte != null ? req.porte.trim() : null);
+        p.setAdresseLibre(req.adresseLibre != null ? req.adresseLibre.trim() : null);
+        
+        // 🔍 DEBUG: Logs pour tracer la réception du champ 'porte'
+        System.out.println("🔍 [PersonService] DEBUG - Champs de localisation:");
+        System.out.println("- localite reçu: " + req.localite);
+        System.out.println("- porte reçu: " + req.porte);
+        System.out.println("- localite assigné: " + p.getLocalite());
+        System.out.println("- porte assigné: " + p.getPorte());
+        
+        System.out.println("🔍 [PersonService] DEBUG - Détection personne morale:");
+        System.out.println("- paysEmissionRccm: " + req.paysEmissionRccm);
+        System.out.println("- denominationEntreprise: " + req.denominationEntreprise);
+        System.out.println("- isPersonneMorale: " + isPersonneMorale);
+        
+        // Si c'est une personne morale, forcer la civilité et traiter les champs spécifiques
+        if (isPersonneMorale) {
+            System.out.println("🏢 [PersonService] Personne morale détectée - traitement des champs spécifiques");
+            
+            // Forcer la civilité à PERSONNE_MORALE
+            p.setCivilite(Civilites.PERSONNE_MORALE);
+            System.out.println("✅ [PersonService] Civilité forcée à PERSONNE_MORALE");
+            
+            // Forcer les champs non applicables aux personnes morales à des valeurs par défaut
+            p.setSexe(null); // Les personnes morales n'ont pas de sexe
+            p.setSituationMatrimoniale(null); // Les personnes morales n'ont pas de situation matrimoniale
+            p.setNationalite(null); // Les personnes morales n'ont pas de nationalité
+            System.out.println("✅ [PersonService] Champs personnels forcés à null pour personne morale");
+            
+            // Traiter paysEmissionRccm
+            try {
+                if (req.paysEmissionRccm != null && !req.paysEmissionRccm.isEmpty()) {
+                    p.setPaysEmissionRccm(PaysEmissionRccM.valueOf(req.paysEmissionRccm));
+                    System.out.println("✅ [PersonService] Pays d'émission RCCM assigné: " + req.paysEmissionRccm);
+                } else {
+                    p.setPaysEmissionRccm(PaysEmissionRccM.MALI);
+                    System.out.println("⚠️ [PersonService] Pays d'émission RCCM null/vide, utilisation de MALI par défaut");
+                }
+            } catch (IllegalArgumentException ex) {
+                // Si la valeur n'est pas valide, utiliser MALI par défaut
+                p.setPaysEmissionRccm(PaysEmissionRccM.MALI);
+                System.out.println("⚠️ [PersonService] Pays d'émission RCCM invalide, utilisation de MALI par défaut");
+            }
+            
+            // Traiter denominationEntreprise avec protection contre null
+            if (req.denominationEntreprise != null && !req.denominationEntreprise.trim().isEmpty()) {
+                p.setDenominationEntreprise(req.denominationEntreprise.trim());
+                System.out.println("✅ [PersonService] Dénomination entreprise assignée: " + req.denominationEntreprise.trim());
+            } else {
+                p.setDenominationEntreprise("Entreprise");
+                System.out.println("⚠️ [PersonService] Dénomination entreprise null/vide, utilisation de 'Entreprise' par défaut");
+            }
+            
+        } else {
+            System.out.println("👤 [PersonService] Personne physique détectée - pas de traitement des champs personnes morales");
+            // Pour les personnes physiques, s'assurer que les champs sont null
+            p.setPaysEmissionRccm(null);
+            p.setDenominationEntreprise(null);
+        }
         
         // Log final pour vérifier l'assignation
         System.out.println("[PersonService] Division finale assignée: " + (div != null ? div.getId() : "NULL"));
@@ -286,6 +427,22 @@ public class PersonServiceImpl implements PersonService {
             System.out.println("[PersonService UPDATE] Localité assignée: " + (req.localite.isBlank() ? "NULL" : req.localite));
         }
 
+        // Porte
+        if (req.porte != null) {
+            p.setPorte(req.porte.isBlank() ? null : req.porte.trim());
+            System.out.println("🔍 [PersonService UPDATE] Porte reçue: " + req.porte);
+            System.out.println("🔍 [PersonService UPDATE] Porte assignée: " + (req.porte.isBlank() ? "NULL" : req.porte));
+            System.out.println("🔍 [PersonService UPDATE] Porte dans l'entité: " + p.getPorte());
+        } else {
+            System.out.println("🔍 [PersonService UPDATE] Aucune porte reçue (req.porte est null)");
+        }
+
+        // Adresse libre
+        if (req.adresseLibre != null) {
+            p.setAdresseLibre(req.adresseLibre.isBlank() ? null : req.adresseLibre.trim());
+            System.out.println("🔍 [PersonService UPDATE] Adresse libre reçue: " + req.adresseLibre);
+            System.out.println("🔍 [PersonService UPDATE] Adresse libre assignée: " + (req.adresseLibre.isBlank() ? "NULL" : req.adresseLibre));
+        }
 
         // Rôle et antenneAgent
         Roles newRole = (req.role != null) ? req.role : p.getRole();
@@ -311,21 +468,33 @@ public class PersonServiceImpl implements PersonService {
         if (req.dateNaissance != null) {
             p.setDateNaissance(java.util.Date.from(req.dateNaissance.atStartOfDay(ZoneId.of("Africa/Bamako")).toInstant()));
         }
-        // Cohérence sexe/civilité si modifiés
-        Sexes effSexe = (req.sexe != null) ? req.sexe : p.getSexe();
+        // Cohérence sexe/civilité et âge - uniquement pour les personnes physiques
         Civilites effCiv = (req.civilite != null) ? req.civilite : p.getCivilite();
-        if (effSexe == Sexes.MASCULIN) {
-            if (effCiv != Civilites.MONSIEUR) {
-                throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+        boolean isPersonneMoraleUpdate = effCiv == Civilites.PERSONNE_MORALE || 
+                                        (p.getDenominationEntreprise() != null && !p.getDenominationEntreprise().trim().isEmpty());
+        
+        if (!isPersonneMoraleUpdate) {
+            // Validation sexe/civilité pour personnes physiques
+            Sexes effSexe = (req.sexe != null) ? req.sexe : p.getSexe();
+            if (effSexe == Sexes.MASCULIN) {
+                if (effCiv != Civilites.MONSIEUR) {
+                    throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+                }
+            } else if (effSexe == Sexes.FEMININ) {
+                if (!(effCiv == Civilites.MADAME || effCiv == Civilites.MADEMOISELLE)) {
+                    throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
+                }
             }
-        } else if (effSexe == Sexes.FEMININ) {
-            if (!(effCiv == Civilites.MADAME || effCiv == Civilites.MADEMOISELLE)) {
-                throw new BadRequestException(Messages.PERSON_CIVILITE_INVALIDE_POUR_SEXE);
-            }
+            
+            // Calcul d'âge pour personnes physiques
+            LocalDate naissanceUpd = p.getDateNaissance().toInstant().atZone(ZoneId.of("Africa/Bamako")).toLocalDate();
+            int ageUpd = Period.between(naissanceUpd, LocalDate.now(ZoneId.of("Africa/Bamako"))).getYears();
+            p.setEstAutoriser(ageUpd >= 18);
+        } else {
+            // Personnes morales toujours autorisées
+            p.setEstAutoriser(true);
+            System.out.println("🏢 [PersonService UPDATE] Personne morale - exemption des validations sexe/civilité et âge");
         }
-        LocalDate naissanceUpd = p.getDateNaissance().toInstant().atZone(ZoneId.of("Africa/Bamako")).toLocalDate();
-        int ageUpd = Period.between(naissanceUpd, LocalDate.now(ZoneId.of("Africa/Bamako"))).getYears();
-        p.setEstAutoriser(ageUpd >= 18);
 
         Persons saved = personsRepository.save(p);
         return toResponse(saved);
@@ -359,6 +528,10 @@ public class PersonServiceImpl implements PersonService {
         r.divisionNom = p.getDivision() != null ? p.getDivision().getNom() : null;
         r.division_id = p.getDivision() != null ? p.getDivision().getId() : null;
         r.localite = p.getLocalite();
+        r.porte = p.getPorte();
+        // Champs spécifiques aux personnes morales
+        r.paysEmissionRccm = p.getPaysEmissionRccm();
+        r.denominationEntreprise = p.getDenominationEntreprise();
         return r;
     }
 

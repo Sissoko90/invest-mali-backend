@@ -51,6 +51,11 @@ const AuthPage: React.FC = () => {
     confirmPassword: ''
   });
 
+  // États pour la visibilité des mots de passe
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
   const handleCivilityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const civilityValue = e.target.value;
     let autoSexe = '';
@@ -167,7 +172,7 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-mali-emerald/5 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-investmali-accent/5 relative overflow-hidden">
       <AnimatedBackground />
       
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -176,13 +181,13 @@ const AuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center animate-slide-up">
             <div className="flex justify-center mb-6">
-              <div className="bg-gradient-to-r from-mali-emerald to-mali-gold p-3 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-3 rounded-2xl shadow-lg">
                 <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-mali-dark">
+            <h2 className="text-3xl font-bold text-investmali-neutral-dark">
               Créez votre entreprise au Mali
             </h2>
             <p className="mt-2 text-gray-600">
@@ -201,7 +206,7 @@ const AuthPage: React.FC = () => {
                 }}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === 'login'
-                    ? 'bg-white text-mali-dark shadow-sm'
+                    ? 'bg-white text-investmali-neutral-dark shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -215,7 +220,7 @@ const AuthPage: React.FC = () => {
                 }}
                 className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === 'register'
-                    ? 'bg-white text-mali-dark shadow-sm'
+                    ? 'bg-white text-investmali-neutral-dark shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -257,20 +262,35 @@ const AuthPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Mot de passe
                   </label>
-                  <input
-                    type="password"
-                    required
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      required
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {showLoginPassword ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-mali-emerald to-mali-gold text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -383,34 +403,64 @@ const AuthPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Mot de passe
                   </label>
-                  <input
-                    type="password"
-                    required
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={registerData.password}
+                      onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {showPassword ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Confirmer le mot de passe
                   </label>
-                  <input
-                    type="password"
-                    required
-                    value={registerData.confirmPassword}
-                    onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      value={registerData.confirmPassword}
+                      onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {showConfirmPassword ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-mali-emerald to-mali-gold text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -429,7 +479,7 @@ const AuthPage: React.FC = () => {
           <div className="text-center animate-slide-up" style={{animationDelay: '0.2s'}}>
             <button
               onClick={() => navigate('/')}
-              className="text-mali-emerald hover:text-mali-gold transition-colors duration-300 text-sm font-medium"
+              className="text-investmali-accent hover:text-investmali-warning transition-colors duration-300 text-sm font-medium"
             >
               ← Retour à l'accueil
             </button>
@@ -441,3 +491,4 @@ const AuthPage: React.FC = () => {
 };
 
 export default AuthPage;
+

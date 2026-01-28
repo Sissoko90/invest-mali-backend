@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import abdaty_technologie.API_Invest.Entity.Persons;
 import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.repository.DivisionsRepository;
 import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
+import jakarta.transaction.Transactional;
 import abdaty_technologie.API_Invest.Entity.Enum.AntenneAgents;
 import abdaty_technologie.API_Invest.Entity.Enum.Civilites;
 import abdaty_technologie.API_Invest.Entity.Enum.Nationalites;
@@ -25,7 +27,9 @@ import abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
 
 @Component
-@Profile({"default","dev"})
+@Profile({"default","dev","prod"})
+@Order(1)
+@Transactional
 public class PersonSeeder implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(PersonSeeder.class);
 
@@ -35,9 +39,9 @@ public class PersonSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     public PersonSeeder(PersonsRepository personsRepository, 
-                       UtilisateursRepository utilisateursRepository,
-                       DivisionsRepository divisionsRepository,
-                       PasswordEncoder passwordEncoder) {
+                        UtilisateursRepository utilisateursRepository,
+                        DivisionsRepository divisionsRepository,
+                        PasswordEncoder passwordEncoder) {
         this.personsRepository = personsRepository;
         this.utilisateursRepository = utilisateursRepository;
         this.divisionsRepository = divisionsRepository;
@@ -58,13 +62,12 @@ public class PersonSeeder implements CommandLineRunner {
                     existingAdmin.getDivision() != null ? existingAdmin.getDivision().getId() : "NULL",
                     existingAdmin.getLocalite());
                 
-                // Si pas de division ET pas de localité, on met à jour
-                if (existingAdmin.getDivision() == null && 
-                    (existingAdmin.getLocalite() == null || existingAdmin.getLocalite().isBlank())) {
-                    log.info("[PersonSeeder] Mise à jour de l'admin existant avec division et localité par défaut...");
+                // Si pas de division, on met à jour (même si localité existe)
+                if (existingAdmin.getDivision() == null) {
+                    log.info("[PersonSeeder] Admin existant n'a pas de division, mise à jour nécessaire...");
                     // Continuer avec la logique de recherche de division
                 } else {
-                    log.info("[PersonSeeder] Admin existant a déjà des données de localisation, pas de mise à jour.");
+                    log.info("[PersonSeeder] Admin existant a déjà une division, pas de mise à jour.");
                     log.info("[PersonSeeder] Division existante: {}, Localité existante: {}", 
                         existingAdmin.getDivision() != null ? existingAdmin.getDivision().getId() : "NULL",
                         existingAdmin.getLocalite());
@@ -78,56 +81,9 @@ public class PersonSeeder implements CommandLineRunner {
         // Création d'un SUPER_ADMIN par défaut (compte technique)
         Date dob1985 = new GregorianCalendar(1985, Calendar.JANUARY, 1).getTime();
 
-        // Récupérer la division par défaut (Bamako)
-        Divisions defaultDivision = null;
-        try {
-            log.info("[PersonSeeder] Recherche de division en cours...");
-            
-            // Lister toutes les divisions disponibles pour debug
-            long totalDivisions = divisionsRepository.count();
-            log.info("[PersonSeeder] Nombre total de divisions en base: {}", totalDivisions);
-            
-            if (totalDivisions > 0) {
-                // Afficher quelques divisions pour debug
-                var allDivisions = divisionsRepository.findAll();
-                log.info("[PersonSeeder] Premières divisions disponibles:");
-                allDivisions.stream().limit(5).forEach(d -> 
-                    log.info("  - Code: {}, Nom: {}, ID: {}", d.getCode(), d.getNom(), d.getId()));
-            }
-            
-            // Vérifier d'abord par code "010101010001" (code fourni)
-            log.info("[PersonSeeder] Recherche par code: 010101010001");
-            defaultDivision = divisionsRepository.findByCode("010101010001").orElse(null);
-            if (defaultDivision != null) {
-                log.info("[PersonSeeder] Division trouvée par code 010101010001: {} - {} (ID: {})", 
-                    defaultDivision.getCode(), defaultDivision.getNom(), defaultDivision.getId());
-            } else {
-                log.warn("[PersonSeeder] Code 010101010001 non trouvé");
-                
-                // Fallback sur l'ID fourni
-                log.info("[PersonSeeder] Recherche par ID: 637abad2-9d85-4450-8a20-4e8d0f26e228");
-                defaultDivision = divisionsRepository.findById("637abad2-9d85-4450-8a20-4e8d0f26e228")
-                        .orElse(null);
-                if (defaultDivision != null) {
-                    log.info("[PersonSeeder] Division trouvée par ID: {} - {} (Code: {})", 
-                        defaultDivision.getId(), defaultDivision.getNom(), defaultDivision.getCode());
-                } else {
-                    log.warn("[PersonSeeder] ID 637abad2-9d85-4450-8a20-4e8d0f26e228 non trouvé");
-                    
-                    // Essayer de récupérer n'importe quelle division comme fallback
-                    log.info("[PersonSeeder] Recherche de n'importe quelle division...");
-                    defaultDivision = divisionsRepository.findAll().stream().findFirst().orElse(null);
-                    if (defaultDivision != null) {
-                        log.info("[PersonSeeder] Division fallback trouvée: {} - {} (ID: {})", 
-                            defaultDivision.getCode(), defaultDivision.getNom(), defaultDivision.getId());
-                    } else {
-                        log.error("[PersonSeeder] AUCUNE division trouvée en base !");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("[PersonSeeder] Erreur lors de la récupération de la division: {}", e.getMessage(), e);
-        }
+        // NOUVELLE APPROCHE : Utiliser directement l'API INSTAT
+        // Plus besoin de chercher en base, on utilise l'API INSTAT pour la localisation
+        log.info("[PersonSeeder] Utilisation de l'API INSTAT pour la localisation - plus de division en base nécessaire");
 
         Persons admin;
         boolean isUpdate = superAdminExists;
@@ -157,7 +113,7 @@ public class PersonSeeder implements CommandLineRunner {
             admin.setCreation(Instant.now());
         }
         
-        // Mettre à jour les champs division et localité SEULEMENT si c'est une création ou si les valeurs sont nulles
+        // Mettre à jour les champs localisation SEULEMENT si c'est une création ou si les valeurs sont nulles
         if (!isUpdate || admin.getLocalite() == null || admin.getLocalite().isBlank()) {
             admin.setLocalite("Bamako Centre");
             log.info("[PersonSeeder] Localité définie sur: Bamako Centre");
@@ -165,19 +121,24 @@ public class PersonSeeder implements CommandLineRunner {
             log.info("[PersonSeeder] Localité existante conservée: {}", admin.getLocalite());
         }
         
-        if (!isUpdate || admin.getDivision() == null) {
-            admin.setDivision(defaultDivision);
-            log.info("[PersonSeeder] Division définie sur: {}", 
-                defaultDivision != null ? defaultDivision.getId() : "NULL");
+        // NOUVELLE APPROCHE : Utiliser divisionCode INSTAT au lieu de division_id
+        // Division en base = NULL, mais on stocke le code INSTAT
+        admin.setDivision(null);
+        
+        // Définir le code de division INSTAT pour la localisation
+        if (!isUpdate || admin.getDivisionCode() == null || admin.getDivisionCode().isBlank()) {
+            admin.setDivisionCode("010101010001"); // Code quartier Kayes N'Di de l'API INSTAT
+            log.info("[PersonSeeder] Code division INSTAT défini: 010101010001 (Kayes N'Di)");
         } else {
-            log.info("[PersonSeeder] Division existante conservée: {}", 
-                admin.getDivision() != null ? admin.getDivision().getId() : "NULL");
+            log.info("[PersonSeeder] Code division INSTAT existant conservé: {}", admin.getDivisionCode());
         }
+        
+        log.info("[PersonSeeder] Division en base = NULL, Code INSTAT = {}", admin.getDivisionCode());
         
         admin.setModification(Instant.now());
         
-        log.info("[PersonSeeder] Division assignée à admin AVANT sauvegarde: {}", 
-            defaultDivision != null ? defaultDivision.getId() + " (" + defaultDivision.getCode() + ")" : "NULL");
+        log.info("[PersonSeeder] Configuration admin AVANT sauvegarde - Division: NULL (API INSTAT), Localité: {}", 
+            admin.getLocalite());
 
         // Sauvegarder la personne
         Persons savedAdmin = personsRepository.save(admin);
@@ -204,8 +165,8 @@ public class PersonSeeder implements CommandLineRunner {
         }
         
         log.info("[PersonSeeder] SUPER_ADMIN seedé: email={} id={}", admin.getEmail(), admin.getId());
-        log.info("[PersonSeeder] Division associée: {}", savedAdmin.getDivision() != null ? 
-            savedAdmin.getDivision().getId() + " (" + savedAdmin.getDivision().getCode() + ")" : "AUCUNE");
+        log.info("[PersonSeeder] Division en base: AUCUNE (migration vers API INSTAT)");
+        log.info("[PersonSeeder] Code division INSTAT: {}", savedAdmin.getDivisionCode());
         log.info("[PersonSeeder] Localité: {}", savedAdmin.getLocalite());
     }
 }

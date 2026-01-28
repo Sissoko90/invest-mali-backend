@@ -1,7 +1,9 @@
 package abdaty_technologie.API_Invest.dto.requests;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import abdaty_technologie.API_Invest.Entity.Enum.StatutPaiement;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePaiement;
 import abdaty_technologie.API_Invest.constants.ValidationMessages;
 import jakarta.validation.constraints.DecimalMin;
@@ -29,4 +31,12 @@ public class PaiementRequest {
     private String numeroTelephone; // Pour mobile money
     
     private String numeroCompte; // Pour virements bancaires
+    
+    private String referenceTransaction; // Référence de la transaction (Stripe Payment Intent ID, etc.)
+    
+    private StatutPaiement statut; // Statut du paiement
+    
+    private LocalDateTime datePaiement; // Date du paiement
+
+  
 }

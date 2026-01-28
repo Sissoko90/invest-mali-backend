@@ -8,23 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'mali-emerald': '#10b981',
-        'mali-emerald-dark': '#059669',
-        'mali-gold': '#f59e0b',
-        'mali-light': '#f0fdf4',
-        'mali-dark': '#1f2937',
+        // Palette simplifiée à 2 couleurs : Primary (bleu) + Neutral (gris)
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
         },
+        // Alias pour compatibilité avec l'ancien code
+        'mali-emerald': '#4f46e5',
+        'mali-emerald-dark': '#4338ca',
+        'mali-gold': '#6366f1',
+        'mali-light': '#eef2ff',
+        'mali-dark': '#1f2937',
       },
       keyframes: {
         'fade-in': {

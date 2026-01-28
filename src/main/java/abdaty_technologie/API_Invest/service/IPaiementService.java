@@ -76,4 +76,14 @@ public interface IPaiementService {
      * Supprime un paiement
      */
     void supprimerPaiement(String id);
+    
+    /**
+     * Vérifie si un paiement existe par référence de transaction
+     */
+    boolean existsByReference(String reference);
+    
+    /**
+     * Récupère tous les paiements par statut
+     */
+    List<PaiementResponse> getPaiementsByStatut(StatutPaiement statut);
 }

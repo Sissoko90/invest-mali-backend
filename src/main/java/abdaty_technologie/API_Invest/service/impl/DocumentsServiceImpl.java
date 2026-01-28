@@ -21,7 +21,6 @@ import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
 import abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
-import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 import abdaty_technologie.API_Invest.exception.BadRequestException;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
 import abdaty_technologie.API_Invest.repository.DocumentsRepository;
@@ -29,6 +28,7 @@ import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
 import abdaty_technologie.API_Invest.service.DocumentsService;
+import abdaty_technologie.API_Invest.service.FileStorageService;
 import abdaty_technologie.API_Invest.constants.Messages;
 
 @Service
@@ -39,6 +39,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     @Autowired private PersonsRepository personsRepository;
     @Autowired private EntrepriseRepository entrepriseRepository;
     @Autowired private EntrepriseMembreRepository entrepriseMembreRepository;
+    @Autowired private FileStorageService fileStorageService;
 
     @Override
     public Documents uploadPiece(String personneId, String entrepriseId, TypePieces typePiece, String numero, java.time.LocalDate dateExpiration, MultipartFile file) {
@@ -113,16 +114,20 @@ public class DocumentsServiceImpl implements DocumentsService {
                 if (!Boolean.TRUE.equals(ent.getStatutSociete())) {
                     throw new BadRequestException(Messages.STATUT_SOCIETE_REQUIS);
                 }
-                // Ce document appartient aux dirigeants uniquement
-                ensureIsDirigeant(person, ent);
+                // Ce document appartient aux gérants uniquement
+                ensureIsGerant(person, ent);
             }
             case REGISTRE_COMMERCE -> {
-                // Appartient aux dirigeants uniquement
-                ensureIsDirigeant(person, ent);
+                // Appartient aux gérants uniquement
+                ensureIsGerant(person, ent);
             }
             case DECLARATION_HONNEUR -> {
                 // Appartient au gérant uniquement (alternative au casier judiciaire)
                 ensureIsGerant(person, ent);
+            }
+            case RCCM -> {
+                // Document RCCM - pas de validation spécifique de gérant
+                System.out.println("📋 [DocumentsServiceImpl] Upload document RCCM - pas de validation gérant");
             }
             default -> {}
         }
@@ -139,45 +144,19 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     private void ensureIsGerant(Persons person, Entreprise ent) {
-        // Pour entreprise individuelle, accepter aussi les DIRIGEANTS
-        boolean isEntrepriseIndividuelle = ent.getTypeEntreprise() == TypeEntreprise.ENTREPRISE_INDIVIDUELLE;
-        
+        // Vérifier si c'est le gérant ou promoteur
         List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
+        List<EntrepriseMembre> promoteurs = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.PROMOTEUR);
+        
         boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        boolean isPromoteur = promoteurs.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
         
-        // Si entreprise individuelle et pas gérant, vérifier si c'est le dirigeant
-        if (!isGerant && isEntrepriseIndividuelle) {
-            List<EntrepriseMembre> dirigeants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.DIRIGEANT);
-            boolean isDirigeant = dirigeants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
-            if (isDirigeant) {
-                return; // OK, c'est le dirigeant d'une entreprise individuelle
-            }
-        }
-        
-        if (!isGerant) {
+        if (!isGerant && !isPromoteur) {
             throw new BadRequestException(Messages.DOCUMENT_POUR_GERANT_SEULEMENT);
         }
     }
 
-    private void ensureIsDirigeant(Persons person, Entreprise ent) {
-        // Vérifier si c'est un dirigeant
-        List<EntrepriseMembre> fnds = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.DIRIGEANT);
-        boolean isDirigeant = fnds.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
-        
-        if (isDirigeant) {
-            return; // OK, c'est un dirigeant
-        }
-        
-        // Si pas dirigeant, vérifier si c'est le gérant (pour compatibilité avec les sociétés)
-        List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
-        boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
-        
-        if (isGerant) {
-            return; // OK, c'est le gérant
-        }
-        
-        throw new BadRequestException("Ce document est réservé aux dirigeants ou au gérant de l'entreprise");
-    }
+    // Méthode supprimée - ensureIsDirigeant remplacée par ensureIsGerant
 
 
     private boolean isActive(EntrepriseMembre em) {
@@ -225,5 +204,80 @@ public class DocumentsServiceImpl implements DocumentsService {
             // En cas d'erreur, on considère que la pièce n'existe pas
             return false;
         }
+    }
+
+    @Override
+    public Documents updateDocumentFile(String documentId, MultipartFile file) {
+        if (documentId == null || documentId.isBlank()) {
+            throw new BadRequestException("ID du document obligatoire");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Fichier obligatoire");
+        }
+
+        // Valider le type de fichier
+        if (!fileStorageService.isAllowedFileType(file.getContentType())) {
+            throw new BadRequestException("Type de fichier non autorisé: " + file.getContentType() + 
+                ". Types acceptés: PDF, images (JPG, PNG, GIF, etc.), documents Word.");
+        }
+
+        // Valider la taille du fichier
+        if (!fileStorageService.isValidFileSize(file.getSize())) {
+            throw new BadRequestException("Fichier trop volumineux. Taille maximale autorisée: 10MB");
+        }
+
+        // Récupérer le document existant
+        Documents document = documentsRepository.findById(documentId)
+            .orElseThrow(() -> new NotFoundException("Document non trouvé avec l'ID: " + documentId));
+
+        // Mettre à jour uniquement le fichier
+        document.setPhotoPiece(toBlob(file));
+        
+        return documentsRepository.save(document);
+    }
+
+    @Override
+    public void deleteDocument(String documentId) {
+        if (documentId == null || documentId.isBlank()) {
+            throw new BadRequestException("ID du document obligatoire");
+        }
+
+        // Vérifier que le document existe
+        Documents document = documentsRepository.findById(documentId)
+            .orElseThrow(() -> new NotFoundException("Document non trouvé avec l'ID: " + documentId));
+
+        System.out.println("🗑️ [DocumentsServiceImpl] Suppression du document: " + document.getNumero() + " (Type: " + document.getTypeDocument() + ")");
+        
+        // Supprimer le document
+        documentsRepository.delete(document);
+        
+        System.out.println("✅ [DocumentsServiceImpl] Document supprimé avec succès");
+    }
+
+    @Override
+    public Documents uploadAutresDocument(String personneId, String entrepriseId, String nom, String description, MultipartFile file) {
+        if (personneId == null || personneId.isBlank()) throw new BadRequestException(Messages.PERSONNE_ID_OBLIGATOIRE);
+        if (entrepriseId == null || entrepriseId.isBlank()) throw new BadRequestException(Messages.ENTREPRISE_ID_OBLIGATOIRE);
+        if (nom == null || nom.isBlank()) throw new BadRequestException("Le nom du document est obligatoire");
+        if (file == null || file.isEmpty()) throw new BadRequestException(Messages.PHOTO_DOCUMENT_OBLIGATOIRE);
+
+        Persons person = personsRepository.findById(personneId)
+            .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(personneId)));
+        Entreprise ent = entrepriseRepository.findById(entrepriseId)
+            .orElseThrow(() -> new NotFoundException(Messages.ENTREPRISE_INTROUVABLE));
+
+        // Créer le document de type AUTRES
+        Documents d = new Documents();
+        d.setPersonne(person);
+        d.setEntreprise(ent);
+        d.setTypePiece(null);
+        d.setTypeDocument(TypeDocuments.AUTRES);
+        d.setNumero(nom.trim()); // Utiliser le nom comme numéro/identifiant
+        d.setDescription(description != null ? description.trim() : null);
+        d.setPhotoPiece(toBlob(file));
+        
+        System.out.println("📎 [DocumentsServiceImpl] Upload document AUTRES: " + nom + " pour personne: " + personneId);
+        
+        return documentsRepository.save(d);
     }
 }

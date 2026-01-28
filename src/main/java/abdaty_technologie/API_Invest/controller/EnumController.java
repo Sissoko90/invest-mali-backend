@@ -31,7 +31,7 @@ public class EnumController {
                 .map(forme -> Map.of(
                         "key", forme.name(),
                         "value", forme.getValue(),
-                        "label", forme.getLabel()
+                        "label", forme.getValue()
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
@@ -43,6 +43,17 @@ public class EnumController {
                 .map(domaine -> Map.of(
                         "key", domaine.name(),
                         "value", domaine.getValue()
+                ))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/domaine-activites-nr")
+    public ResponseEntity<List<Map<String, String>>> getDomaineActivitesNr() {
+        List<Map<String, String>> result = Arrays.stream(DomaineActiviteNr.values())
+                .map(domaine -> Map.of(
+                        "key", domaine.name(),
+                        "value", domaine.getLabel()
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
@@ -208,6 +219,17 @@ public class EnumController {
                 .map(plan -> Map.of(
                         "key", plan.name(),
                         "value", plan.getValue()
+                ))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/pays-emission-rccm")
+    public ResponseEntity<List<Map<String, String>>> getPaysEmissionRccm() {
+        List<Map<String, String>> result = Arrays.stream(PaysEmissionRccM.values())
+                .map(pays -> Map.of(
+                        "key", pays.name(),
+                        "value", pays.getValue()
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);

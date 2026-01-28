@@ -51,7 +51,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         <p className="text-xs text-gray-500">{description}</p>
       )}
 
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-mali-emerald transition-colors duration-300">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-investmali-accent transition-colors duration-300">
         {!file ? (
           <div className="text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -61,7 +61,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-mali-emerald hover:text-mali-emerald/80 font-medium"
+                className="text-investmali-accent hover:text-investmali-accent/80 font-medium"
               >
                 Cliquez pour sélectionner un fichier
               </button>
@@ -74,7 +74,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-mali-emerald" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-8 w-8 text-investmali-accent" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -91,7 +91,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-mali-emerald hover:text-mali-emerald/80 text-sm font-medium"
+                className="text-investmali-accent hover:text-investmali-accent/80 text-sm font-medium"
               >
                 Changer
               </button>
@@ -120,3 +120,4 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
 };
 
 export default DocumentUpload;
+

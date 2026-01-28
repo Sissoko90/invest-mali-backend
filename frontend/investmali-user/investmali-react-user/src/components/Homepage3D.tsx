@@ -177,8 +177,8 @@ const ProcessGear3D: React.FC<{
 const LoadingFallback: React.FC = () => (
   <div className="w-full h-96 flex items-center justify-center bg-gradient-to-b from-blue-50 to-emerald-50 rounded-2xl">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mali-emerald mx-auto mb-4"></div>
-      <p className="text-mali-dark font-medium">Chargement de l'expérience 3D...</p>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-investmali-accent mx-auto mb-4"></div>
+      <p className="text-investmali-neutral-dark font-medium">Chargement de l'expérience 3D...</p>
     </div>
   </div>
 );
@@ -258,8 +258,8 @@ const CSS3DScene: React.FC = () => {
     >
       {/* Titre principal avec effet 3D */}
       <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
-        <h2 className="text-4xl font-bold text-mali-dark text-center mb-2 transform-gpu perspective-1000">
-          <span className="inline-block animate-pulse bg-gradient-to-r from-mali-emerald to-mali-gold bg-clip-text text-transparent">
+        <h2 className="text-4xl font-bold text-investmali-neutral-dark text-center mb-2 transform-gpu perspective-1000">
+          <span className="inline-block animate-pulse bg-gradient-to-r from-investmali-accent to-investmali-warning bg-clip-text text-transparent">
             InvestMali 3D
           </span>
         </h2>
@@ -279,7 +279,7 @@ const CSS3DScene: React.FC = () => {
         >
           
           {/* Bâtiment 1 - Création 24h */}
-          <div className="absolute left-8 bottom-16 w-16 h-32 bg-gradient-to-t from-mali-emerald to-mali-emerald/80 rounded-t-lg shadow-2xl transform-gpu animate-bounce" 
+          <div className="absolute left-8 bottom-16 w-16 h-32 bg-gradient-to-t from-investmali-accent to-investmali-accent/80 rounded-t-lg shadow-2xl transform-gpu animate-bounce" 
                style={{ 
                  animationDelay: '0s',
                  transform: 'rotateX(10deg) rotateY(-15deg)',
@@ -287,13 +287,13 @@ const CSS3DScene: React.FC = () => {
                }}>
             <div className="absolute top-2 left-2 right-2 h-6 bg-white/20 rounded"></div>
             <div className="absolute top-10 left-2 right-2 h-6 bg-white/20 rounded"></div>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-mali-dark whitespace-nowrap">
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-investmali-neutral-dark whitespace-nowrap">
               Création 24h
             </div>
           </div>
 
           {/* Bâtiment 2 - Paiement sécurisé */}
-          <div className="absolute left-32 bottom-20 w-20 h-28 bg-gradient-to-t from-mali-gold to-mali-gold/80 rounded-t-lg shadow-2xl transform-gpu animate-bounce"
+          <div className="absolute left-32 bottom-20 w-20 h-28 bg-gradient-to-t from-investmali-warning to-investmali-warning/80 rounded-t-lg shadow-2xl transform-gpu animate-bounce"
                style={{ 
                  animationDelay: '0.5s',
                  transform: 'rotateX(10deg) rotateY(5deg)',
@@ -302,7 +302,7 @@ const CSS3DScene: React.FC = () => {
             <div className="absolute top-2 left-2 right-2 h-4 bg-white/20 rounded"></div>
             <div className="absolute top-8 left-2 right-2 h-4 bg-white/20 rounded"></div>
             <div className="absolute top-14 left-2 right-2 h-4 bg-white/20 rounded"></div>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-mali-dark whitespace-nowrap">
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-investmali-neutral-dark whitespace-nowrap">
               Paiement sécurisé
             </div>
           </div>
@@ -317,7 +317,7 @@ const CSS3DScene: React.FC = () => {
             <div className="absolute top-2 left-2 right-2 h-5 bg-white/20 rounded"></div>
             <div className="absolute top-9 left-2 right-2 h-5 bg-white/20 rounded"></div>
             <div className="absolute top-16 left-2 right-2 h-5 bg-white/20 rounded"></div>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-mali-dark whitespace-nowrap">
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-investmali-neutral-dark whitespace-nowrap">
               Support 24/7
             </div>
           </div>
@@ -333,7 +333,7 @@ const CSS3DScene: React.FC = () => {
             <div className="absolute top-8 left-2 right-2 h-4 bg-white/20 rounded"></div>
             <div className="absolute top-14 left-2 right-2 h-4 bg-white/20 rounded"></div>
             <div className="absolute top-20 left-2 right-2 h-4 bg-white/20 rounded"></div>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-mali-dark whitespace-nowrap">
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-investmali-neutral-dark whitespace-nowrap">
               Innovation
             </div>
           </div>
@@ -376,23 +376,23 @@ const CSS3DScene: React.FC = () => {
       >
         <div className="relative">
           <div 
-            className="w-12 h-12 border-4 border-mali-emerald rounded-full animate-spin" 
+            className="w-12 h-12 border-4 border-investmali-accent rounded-full animate-spin" 
             style={{ 
               animationDuration: `${3 - Math.abs(mousePosition.x) * 1}s`,
               transform: `scale(${1 + Math.abs(mousePosition.x) * 0.2})`
             }}
           >
-            <div className="absolute inset-2 border-2 border-mali-emerald rounded-full"></div>
+            <div className="absolute inset-2 border-2 border-investmali-accent rounded-full"></div>
           </div>
           <div 
-            className="absolute -right-8 top-2 w-8 h-8 border-4 border-mali-gold rounded-full animate-spin" 
+            className="absolute -right-8 top-2 w-8 h-8 border-4 border-investmali-warning rounded-full animate-spin" 
             style={{ 
               animationDuration: `${2 - Math.abs(mousePosition.y) * 0.5}s`, 
               animationDirection: 'reverse',
               transform: `scale(${1 + Math.abs(mousePosition.y) * 0.3})`
             }}
           >
-            <div className="absolute inset-1 border-2 border-mali-gold rounded-full"></div>
+            <div className="absolute inset-1 border-2 border-investmali-warning rounded-full"></div>
           </div>
         </div>
       </div>
@@ -407,7 +407,7 @@ const CSS3DScene: React.FC = () => {
         return (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-mali-emerald rounded-full opacity-60 animate-pulse transition-all duration-500 ease-out"
+            className="absolute w-2 h-2 bg-investmali-accent rounded-full opacity-60 animate-pulse transition-all duration-500 ease-out"
             style={{
               left: `calc(${baseLeft}% + ${offsetX}px)`,
               top: `calc(${baseTop}% + ${offsetY}px)`,
@@ -498,3 +498,4 @@ const Homepage3D: React.FC = () => {
 };
 
 export default Homepage3D;
+

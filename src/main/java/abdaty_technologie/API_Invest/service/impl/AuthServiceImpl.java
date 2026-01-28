@@ -29,6 +29,8 @@ import abdaty_technologie.API_Invest.dto.responses.UserAuthResponse;
 import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
 import abdaty_technologie.API_Invest.repository.PasswordResetTokenRepository;
+import abdaty_technologie.API_Invest.repository.PersonRoleRepository;
+import abdaty_technologie.API_Invest.Entity.PersonRole;
 import abdaty_technologie.API_Invest.service.IAuthService;
 import abdaty_technologie.API_Invest.util.JwtUtil;
 
@@ -47,6 +49,9 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private PersonRoleRepository personRoleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -86,9 +91,41 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // Générer le token JWT avec le rôle de la personne
-        String role = "USER"; // basé sur présence d'une personne
-        String token = jwtUtil.generateToken(utilisateur.getUtilisateur(), role);
+        // Récupérer tous les rôles de l'utilisateur
+        List<PersonRole> personRoles = personRoleRepository.findByPersonAndActifTrue(person);
+        List<String> allRoles = personRoles.stream()
+            .map(pr -> pr.getRole().name())
+            .collect(Collectors.toList());
+        
+        // Si pas de rôles dans la table de liaison, utiliser le rôle principal (fallback pour anciens agents)
+        if (allRoles.isEmpty() && person.getRole() != null) {
+            allRoles.add(person.getRole().name());
+        }
+        
+        // Si toujours pas de rôles, assigner USER par défaut
+        if (allRoles.isEmpty()) {
+            allRoles.add("USER");
+        }
+        
+        // Déterminer le rôle principal pour le token (le plus élevé en priorité)
+        String mainRole = "USER";
+        if (!allRoles.isEmpty()) {
+            // Priorité: SUPER_ADMIN > ADMIN > AGENT_*
+            if (allRoles.contains("SUPER_ADMIN")) {
+                mainRole = "SUPER_ADMIN";
+            } else if (allRoles.contains("ADMIN")) {
+                mainRole = "ADMIN";
+            } else {
+                // Prendre le premier rôle agent trouvé
+                mainRole = allRoles.stream()
+                    .filter(role -> role.startsWith("AGENT_"))
+                    .findFirst()
+                    .orElse(allRoles.get(0));
+            }
+        }
+        
+        // Générer le token avec le rôle principal et tous les rôles
+        String token = jwtUtil.generateTokenWithRoles(utilisateur.getUtilisateur(), mainRole, allRoles);
 
         // Récupérer la civilité depuis la table persons - si null, utiliser le sexe comme fallback
         System.out.println("DEBUG - Person object: " + person);
@@ -126,7 +163,7 @@ public class AuthServiceImpl implements IAuthService {
         
         System.out.println("DEBUG - Civilité finale: " + civiliteStr);
         
-        return new LoginResponse(token, utilisateur.getUtilisateur(), role, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
+        return new LoginResponse(token, utilisateur.getUtilisateur(), mainRole, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
     }
 
     @Override

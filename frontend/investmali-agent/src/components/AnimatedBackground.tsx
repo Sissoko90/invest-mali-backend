@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const AnimatedBackground: React.FC = () => {
   return (
@@ -18,3 +18,27 @@ const AnimatedBackground: React.FC = () => {
 };
 
 export default AnimatedBackground;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

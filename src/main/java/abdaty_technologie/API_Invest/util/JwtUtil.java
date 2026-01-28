@@ -10,6 +10,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
 
 @Component
@@ -62,6 +63,14 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
+    // Générer un token avec tous les rôles de l'utilisateur
+    public String generateTokenWithRoles(String username, String mainRole, List<String> allRoles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", mainRole); // Rôle principal pour compatibilité
+        claims.put("roles", allRoles); // Tous les rôles
+        return createToken(claims, username);
+    }
+
     // Créer le token avec les claims et le sujet (nom d'utilisateur)
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
@@ -82,5 +91,11 @@ public class JwtUtil {
     // Récupérer le rôle du token
     public String getRoleFromToken(String token) {
         return getClaimFromToken(token, claims -> claims.get("role", String.class));
+    }
+
+    // Récupérer tous les rôles du token
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
+        return getClaimFromToken(token, claims -> (List<String>) claims.get("roles"));
     }
 }

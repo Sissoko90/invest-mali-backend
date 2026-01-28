@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { entreprisesAPI } from '../services/api';
 import { DemandeEntreprise } from '../types';
@@ -109,7 +109,7 @@ const BaseStepComponent: React.FC<BaseStepProps> = ({
                   console.log(`🔄 Rechargement des vraies données ${stepName}...`);
                   loadDemandesFromDatabase();
                 }}
-                className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
+                className="bg-primary-500 text-white px-3 py-1 rounded text-xs hover:bg-primary-600"
                 title={`Recharger les vraies données ${stepName}`}
               >
                 🔄 Reload DB
@@ -163,7 +163,7 @@ const BaseStepComponent: React.FC<BaseStepProps> = ({
                       {canEdit && (
                         <>
                           <button
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
                           >
                             ✅ Traiter
                           </button>
@@ -190,3 +190,27 @@ const BaseStepComponent: React.FC<BaseStepProps> = ({
 };
 
 export default BaseStepComponent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -114,7 +114,7 @@ const DeclarationHonneur: React.FC = () => {
 
   if (!showPreview) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-mali-emerald/10 to-mali-gold/10 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-investmali-accent/10 to-investmali-warning/10 py-8">
         <div className="max-w-2xl mx-auto px-4">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-8">
@@ -192,7 +192,7 @@ const DeclarationHonneur: React.FC = () => {
               <button
                 onClick={handlePreview}
                 disabled={!formData.nom || !formData.prenom || !formData.faitA}
-                className="flex-1 bg-mali-emerald hover:bg-mali-emerald/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex-1 bg-investmali-accent hover:bg-investmali-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Prévisualiser
               </button>
@@ -204,7 +204,7 @@ const DeclarationHonneur: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mali-emerald/10 to-mali-gold/10 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-investmali-accent/10 to-investmali-warning/10 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
@@ -290,7 +290,7 @@ const DeclarationHonneur: React.FC = () => {
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="flex-1 bg-mali-emerald hover:bg-mali-emerald/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300"
+              className="flex-1 bg-investmali-accent hover:bg-investmali-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300"
             >
               📄 Télécharger PDF
             </button>
@@ -318,3 +318,4 @@ const DeclarationHonneur: React.FC = () => {
 };
 
 export default DeclarationHonneur;
+

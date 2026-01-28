@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 export type AgentStats = {
   total?: number;
@@ -94,3 +94,27 @@ const KpiCards: React.FC<Props> = ({ stats, loading }) => {
 };
 
 export default KpiCards;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

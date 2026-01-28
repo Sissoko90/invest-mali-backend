@@ -27,16 +27,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitingFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
 
-    @Value("${app.rate-limit.capacity:100}")
+    @Value("${app.rate-limit.capacity:1000}")
     private int capacity;
-    @Value("${app.rate-limit.refill-tokens:100}")
+    @Value("${app.rate-limit.refill-tokens:500}")
     private int refillTokens;
-    @Value("${app.rate-limit.refill-period-seconds:60}")
+    @Value("${app.rate-limit.refill-period-seconds:30}")
     private long refillPeriodSeconds;
 
-    private static class Bucket {
-        int tokens;
-        long lastRefillEpochSec;
+    public static class Bucket {
+        public int tokens;
+        public long lastRefillEpochSec;
+        
+        public Bucket() {
+            this.tokens = 0;
+            this.lastRefillEpochSec = 0;
+        }
     }
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();

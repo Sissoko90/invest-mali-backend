@@ -12,6 +12,23 @@ public enum Roles {
     AGENT_NINA("Agent NINA"),
     AGENT_RETRAIT("Agent retrait"),
     AGENT_NOTAIRE("Agent notaire"),
+    AGENT_TCOM("Agent T-COM"),
+    REGISSEUR("Régisseur"),
+    
+    // Rôles pour le processus d'agrément
+    AGENT_AGREMENT_ACCUEIL("Agent Agrément Accueil"),
+    AGENT_AGREMENT_REVISION("Agent Agrément Révision"),
+    AGENT_REGISSEUR("Agent Régisseur"),
+    AGENT_AGREMENT_RETRAIT("Agent Agrément Retrait"),
+    
+    // Rôles ministères (créés par SUPER_ADMIN)
+    MINISTERE_TRANSPORT("Ministère des Transports"),
+    MINISTERE_TOURISME("Ministère du Tourisme"),
+    MINISTERE_COMMERCE("Ministère du Commerce"),
+    MINISTERE_INDUSTRIE("Ministère de l'Industrie"),
+    MINISTERE_ENVIRONNEMENT("Ministère de l'Environnement"),
+    MINISTERE_URBANISME("Ministère de l'Urbanisme"),
+    
     SUPER_ADMIN("Super admin");
 
     private final String value;

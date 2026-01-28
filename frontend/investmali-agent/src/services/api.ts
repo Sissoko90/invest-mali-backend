@@ -1,57 +1,44 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { API_CONFIG, API_ENDPOINTS, AUTH_CONFIG, buildApiUrl, getHeaders } from '../config/api.config';
 
-// Normalize base URL from env to ensure it doesn't include unwanted "/agent" suffix
-const rawBaseURL = process.env.REACT_APP_AGENT_API_URL || 'http://localhost:8080/api/v1';
-const baseURL = (() => {
-  try {
-    let url = rawBaseURL.trim();
-    if (url.endsWith('/')) url = url.slice(0, -1);
-    // Replace '/api/agent' (or trailing '/agent') with '/api'
-    url = url.replace(/\/api\/agent$/i, '/api').replace(/\/agent$/i, '');
-    return url;
-  } catch {
-    return 'http://localhost:8080/api/v1';
-  }
-})();
+// Utiliser la configuration centralisée
+const baseURL = API_CONFIG.BASE_URL;
 
-// Debug: show which baseURL is used at runtime
-// eslint-disable-next-line no-console
-console.log('Agent API baseURL:', baseURL);
 
 // Create axios instance with proper typing
 const api: AxiosInstance = axios.create({
   baseURL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: false
+  timeout: API_CONFIG.TIMEOUT,
+  headers: API_CONFIG.DEFAULT_HEADERS,
 });
 
 // Add a request interceptor to include the auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('investmali_agent_token');
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Add a response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
-    console.error('Response interceptor error:', error);
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      localStorage.removeItem('investmali_agent_token');
-      localStorage.removeItem('investmali_agent');
-      window.location.href = '/agent-login';
+      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+      window.location.href = AUTH_CONFIG.LOGIN_REDIRECT;
     }
     return Promise.reject(error);
   }
@@ -60,19 +47,19 @@ api.interceptors.response.use(
 // API Modules
 const agentBusinessAPI = {
   // Applications list with filters/sort/pagination (Agent endpoints)
-  listApplications: (params: Record<string, any> = {}) => api.get('/agent/applications', { params }),
+  listApplications: (params: Record<string, any> = {}) => api.get(API_ENDPOINTS.AGENT.APPLICATIONS, { params }),
   // Backward-compat alias used by legacy components/tests
-  getApplications: (queryParams: Record<string, any> = {}) => api.get('/agent/applications', { params: queryParams }),
+  getApplications: (queryParams: Record<string, any> = {}) => api.get(API_ENDPOINTS.AGENT.APPLICATIONS, { params: queryParams }),
   // Single application detail
-  getApplication: (id: string | number) => api.get(`/agent/applications/${id}`),
+  getApplication: (id: string | number) => api.get(API_ENDPOINTS.AGENT.APPLICATION_DETAIL(id)),
   // Partial update (priority, agent_notes, payment_status, costs)
-  updateApplication: (id: string | number, patch: Partial<Record<string, any>>) => api.patch(`/agent/applications/${id}`, patch),
+  updateApplication: (id: string | number, patch: Partial<Record<string, any>>) => api.patch(API_ENDPOINTS.AGENT.UPDATE_APPLICATION(id), patch),
   // Assign to current agent or unassign depending on backend contract
-  assignApplication: (id: string | number, assignToMe = true) => api.patch(`/agent/applications/${id}/assign`, { assignToMe }),
+  assignApplication: (id: string | number, assignToMe = true) => api.patch(API_ENDPOINTS.AGENT.ASSIGN_APPLICATION(id), { assignToMe }),
   // Update status with optional note
-  updateStatus: (id: string | number, status: string, note?: string) => api.patch(`/agent/applications/${id}/status`, { status, note }),
+  updateStatus: (id: string | number, status: string, note?: string) => api.patch(API_ENDPOINTS.AGENT.UPDATE_STATUS(id), { status, note }),
   // Aggregated stats for KPI cards
-  getStats: () => api.get('/agent/stats'),
+  getStats: () => api.get(API_ENDPOINTS.AGENT.STATS),
   // Backward-compat: client application creation (non-agent endpoint)
   createApplicationForClient: (data: any) => api.post('/applications/client-application', data),
   // Multipart version including files (statutes, commerceRegistry, residenceCertificate, representativeId, partnersIds[])
@@ -83,34 +70,21 @@ const agentBusinessAPI = {
   // Smart multipart with env-configurable path and multiple fallbacks
   // Set REACT_APP_CREATE_CLIENT_APP_PATH to override (e.g. "/agent/applications")
   createApplicationForClientMultipartSmart: async (form: FormData): Promise<AxiosResponse<any>> => {
-    const configuredPath = process.env.REACT_APP_CREATE_CLIENT_APP_PATH?.trim();
     const candidates = [
       // Highest priority: explicit env path(s)
-      ...(configuredPath ? configuredPath.split(',').map(p => p.trim()).filter(Boolean) : []),
-      // Agent-first common paths
-      '/agent/applications/client-application',
-      '/agent/applications',
-      '/agent/client-applications',
-      '/agent/business/client-application',
-      // Non-agent common paths
-      '/applications/client-application',
-      '/applications',
-      '/client-applications',
-      '/business/client-application',
+      ...API_ENDPOINTS.CLIENT_APPS.CONFIGURED_PATHS,
+      // Default paths from configuration
+      ...API_ENDPOINTS.CLIENT_APPS.DEFAULT_PATHS,
     ];
     let lastErr: any;
     const tried: { path: string; status?: number }[] = [];
     for (const path of candidates) {
       try {
-        // eslint-disable-next-line no-console
-        console.log('[API] Trying create path:', path);
         const res = await api.post(path, form, { headers: { 'Content-Type': 'multipart/form-data' } });
         return res;
       } catch (err: any) {
         lastErr = err;
         const status = err?.response?.status;
-        // eslint-disable-next-line no-console
-        console.warn('[API] Create path failed', path, 'status =', status);
         tried.push({ path, status });
         if (status && status !== 404) break; // do not continue on non-404 errors
       }
@@ -148,8 +122,6 @@ const agentBusinessAPI = {
       const isJson = path === '/business/applications';
       const mode: 'json' | 'multipart' = isJson ? 'json' : 'multipart';
       try {
-        // eslint-disable-next-line no-console
-        console.log('[API] Trying create path:', path, 'mode =', mode);
         const res = isJson
           ? await api.post(path, payload)
           : await api.post(path, form, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -157,10 +129,8 @@ const agentBusinessAPI = {
       } catch (err: any) {
         lastErr = err;
         const status = err?.response?.status;
-        // eslint-disable-next-line no-console
-        console.warn('[API] Create path failed', path, 'mode =', mode, 'status =', status);
         tried.push({ path, status, mode });
-        if (status && status !== 404) break; // stop on non-404 errors
+        if (status && status !== 404 && status !== 500) break; // continue on 500 errors to try other endpoints
       }
     }
     const enhanced = new Error(
@@ -173,60 +143,48 @@ const agentBusinessAPI = {
 };
 
 const healthAPI = {
-  checkHealth: () => api.get('/health'),
+  checkHealth: () => api.get(API_ENDPOINTS.HEALTH),
 };
 
 const agentAuthAPI = {
   login: (credentials: { email: string; password: string }) => {
-    console.log('=== AGENT LOGIN API CALL ===');
-    console.log('Credentials:', { email: credentials.email, password: '***' });
-    console.log('Endpoint:', '/auth/login');
-    console.log('============================');
-    
-    return api.post('/auth/login', { 
+    return api.post(API_ENDPOINTS.AUTH.LOGIN, { 
       email: credentials.email, 
       motdepasse: credentials.password 
-    }).then(response => {
-      console.log('=== AGENT LOGIN RESPONSE ===');
-      console.log('Response data:', response.data);
-      console.log('============================');
-      return response;
     });
   },
-  register: (data: any) => api.post('/auth/register', data),
-  getProfile: () => api.get('/auth/me'),
-  updateProfile: (patch: Partial<Record<string, any>>) => api.patch('/auth/me', patch),
+  register: (data: any) => api.post(API_ENDPOINTS.AUTH.REGISTER, data),
+  getProfile: () => api.get(API_ENDPOINTS.AUTH.PROFILE),
+  updateProfile: (patch: Partial<Record<string, any>>) => api.patch(API_ENDPOINTS.AUTH.UPDATE_PROFILE, patch),
   uploadAvatar: (file: File | Blob) => {
     const form = new FormData();
     form.append('avatar', file);
-    return api.post('/auth/me/avatar', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    return api.post(API_ENDPOINTS.AUTH.UPLOAD_AVATAR, form, {
+      headers: API_CONFIG.MULTIPART_HEADERS,
     });
   },
 };
 
 // Notifications (Agent)
 const notificationsAPI = {
-  list: (params: Record<string, any> = {}) => api.get('/agent/notifications', { params }),
-  markRead: (id: string | number) => api.patch(`/agent/notifications/${id}/read`),
-  markAllRead: () => api.patch('/agent/notifications/read-all'),
+  list: (params: Record<string, any> = {}) => api.get(API_ENDPOINTS.AGENT.NOTIFICATIONS, { params }),
+  markRead: (id: string | number) => api.patch(API_ENDPOINTS.AGENT.MARK_NOTIFICATION_READ(id)),
+  markAllRead: () => api.patch(API_ENDPOINTS.AGENT.MARK_ALL_NOTIFICATIONS_READ),
 };
 
 // Entreprises API
 const entreprisesAPI = {
   // Liste des entreprises avec filtres
-  list: (params: Record<string, any> = {}) => api.get('/entreprises', { params }),
+  list: (params: Record<string, any> = {}) => api.get(API_ENDPOINTS.ENTREPRISES.LIST, { params }),
   // Liste des entreprises NON ASSIGNÉES (pour éviter les conflits entre agents)
-  unassigned: (params: Record<string, any> = {}) => api.get('/entreprises/unassigned', { params }),
+  unassigned: (params: Record<string, any> = {}) => api.get(API_ENDPOINTS.ENTREPRISES.UNASSIGNED, { params }),
   // Détail d'une entreprise
-  getById: (id: string | number) => api.get(`/entreprises/${id}`),
+  getById: (id: string | number) => api.get(API_ENDPOINTS.ENTREPRISES.DETAIL(id)),
   // Mettre à jour une entreprise (utilise PUT avec UpdateEntrepriseRequest)
   update: (id: string | number, updateData: Record<string, any>) => 
-    api.put(`/entreprises/${id}`, updateData),
+    api.put(API_ENDPOINTS.ENTREPRISES.UPDATE(id), updateData),
   // Mettre à jour le statut d'une entreprise (utilise l'endpoint update général)
   updateStatus: (id: string | number, status: string, note?: string) => {
-    console.log(`Mise à jour du statut de l'entreprise ${id} vers ${status}`);
-    
     // Mapper les statuts vers les enums backend
     let statutCreation = '';
     let etapeValidation = 'ACCUEIL';
@@ -235,6 +193,10 @@ const entreprisesAPI = {
       case 'VALIDE':
         statutCreation = 'VALIDEE';
         etapeValidation = 'REGISSEUR'; // Passe à l'étape suivante
+        break;
+      case 'PAIEMENT_VALIDE':
+        statutCreation = 'VALIDEE';
+        etapeValidation = 'REVISION'; // Passe à l'étape révision après paiement
         break;
       case 'REJETE':
         statutCreation = 'REFUSEE';
@@ -249,21 +211,64 @@ const entreprisesAPI = {
         etapeValidation = 'ACCUEIL';
     }
     
-    return api.put(`/entreprises/${id}`, { 
+    return api.put(API_ENDPOINTS.ENTREPRISES.UPDATE(id), { 
       statutCreation,
       etapeValidation
     });
   },
   // Mes applications (pour les agents)
-  myApplications: () => api.get('/entreprises/my-applications'),
+  myApplications: () => api.get(API_ENDPOINTS.ENTREPRISES.MY_APPLICATIONS),
   // Assignation des demandes
   assign: (id: string | number, agentId?: string) => 
-    api.patch(`/entreprises/${id}/assign`, { agentId: agentId || null }),
+    api.patch(API_ENDPOINTS.ENTREPRISES.ASSIGN(id), { agentId: agentId || null }),
   unassign: (id: string | number) => 
-    api.patch(`/entreprises/${id}/unassign`),
+    api.patch(API_ENDPOINTS.ENTREPRISES.UNASSIGN(id)),
   // Mes demandes assignées
   assignedToMe: (params: Record<string, any> = {}) => 
-    api.get('/entreprises/assigned-to-me', { params }),
+    api.get(API_ENDPOINTS.ENTREPRISES.ASSIGNED_TO_ME, { params }),
+  // Entreprises par étape de validation
+  getByEtape: (etape: string, params: Record<string, any> = {}) => 
+    api.get(API_ENDPOINTS.ENTREPRISES.BY_ETAPE(etape), { params }),
+  // Documents d'une entreprise
+  getDocuments: (entrepriseId: string) => 
+    api.get(API_ENDPOINTS.ENTREPRISES.DOCUMENTS(entrepriseId)),
+};
+
+// Enums API - Récupération des énumérations
+const enumsAPI = {
+  // Récupérer la liste des pays d'émission RCCM
+  getPaysEmissionRccm: () => api.get(API_ENDPOINTS.ENUMS.PAYS_EMISSION_RCCM),
+  // Récupérer la liste des domaines d'activité non réglementés
+  getDomaineActivitesNr: () => api.get(API_ENDPOINTS.ENUMS.DOMAINE_ACTIVITES_NR),
+};
+
+// NINA API - Génération des numéros NINA INSTAT Mali
+const ninaAPI = {
+  // Test ultra simple
+  ping: () => api.get('/nina/ping'),
+  
+  // Test simple du contrôleur
+  testController: () => api.get('/nina/test'),
+  
+  // Test sans authentification
+  testNoAuth: (entrepriseId: string, rccm: string) => 
+    api.post(`/nina/test-no-auth/${entrepriseId}?rccm=${encodeURIComponent(rccm)}`, {}),
+  
+  // Test de génération sans service
+  testGenerate: (entrepriseId: string, rccm: string) => 
+    api.post(`/nina/test-generate/${entrepriseId}?rccm=${encodeURIComponent(rccm)}`, {}),
+  
+  // Générer un numéro NINA pour une entreprise
+  generateNina: (entrepriseId: string, rccm: string) => 
+    api.post(`/nina/generate/${entrepriseId}?rccm=${encodeURIComponent(rccm)}`, {}),
+  
+  // Récupérer le NINA d'une entreprise
+  getNinaByEntreprise: (entrepriseId: string) => 
+    api.get(`/nina/entreprise/${entrepriseId}`),
+  
+  // Générer le certificat NINA en PDF
+  generateCertificate: (entrepriseId: string) => 
+    api.get(`/nina/certificate/${entrepriseId}`, { responseType: 'blob' }),
 };
 
 // Chat API - Système de messagerie agent-utilisateur
@@ -275,13 +280,13 @@ const chatAPI = {
     subject: string;
     initialMessage: string;
     priority?: string;
-  }) => api.post('/chat/conversations', data),
+  }) => api.post(API_ENDPOINTS.CHAT.CONVERSATIONS, data),
   
   getAgentConversations: (params: { page?: number; size?: number } = {}) =>
-    api.get('/chat/conversations/agent', { params }),
+    api.get(API_ENDPOINTS.CHAT.AGENT_CONVERSATIONS, { params }),
   
   getConversation: (conversationId: string) =>
-    api.get(`/chat/conversations/${conversationId}`),
+    api.get(API_ENDPOINTS.CHAT.CONVERSATION_DETAIL(conversationId)),
   
   // Messages
   sendMessage: (conversationId: string, data: {
@@ -289,45 +294,70 @@ const chatAPI = {
     messageType?: string;
     documentName?: string;
     documentUrl?: string;
-  }) => api.post(`/chat/conversations/${conversationId}/messages`, data),
+  }) => api.post(API_ENDPOINTS.CHAT.SEND_MESSAGE(conversationId), data),
   
   // Actions
   markAsRead: (conversationId: string) =>
-    api.patch(`/chat/conversations/${conversationId}/read`),
+    api.patch(API_ENDPOINTS.CHAT.MARK_AS_READ(conversationId)),
   
   closeConversation: (conversationId: string) =>
-    api.patch(`/chat/conversations/${conversationId}/close`),
+    api.patch(API_ENDPOINTS.CHAT.CLOSE_CONVERSATION(conversationId)),
   
   // Statistiques
-  getUnreadCount: () => api.get('/chat/unread-count/agent'),
+  getUnreadCount: () => api.get(API_ENDPOINTS.CHAT.UNREAD_COUNT),
   
   // Démarrer conversation depuis entreprise
   startFromEntreprise: (entrepriseId: string, data: {
     userId: string;
     subject?: string;
     message: string;
-  }) => api.post(`/chat/conversations/start-from-entreprise/${entrepriseId}`, data),
+  }) => api.post(API_ENDPOINTS.CHAT.START_FROM_ENTREPRISE(entrepriseId), data),
 };
 
-// Create the main API client with all methods
-const apiClient = {
-  // Core axios methods
-  ...api,
+// Paiements API - Gestion des paiements
+const paiementsAPI = {
+  // Créer un nouveau paiement
+  create: (paiementData: {
+    entrepriseId: string;
+    montant: number;
+    typePaiement: string;
+    referenceTransaction: string;
+    description?: string;
+    numeroTelephone?: string;
+    numeroCompte?: string;
+  }) => api.post(API_ENDPOINTS.PAIEMENTS.CREATE, paiementData),
   
-  // Authentication methods
-  login: agentAuthAPI.login,
+  // Liste des paiements
+  list: (params: Record<string, any> = {}) => api.get(API_ENDPOINTS.PAIEMENTS.LIST, { params }),
   
-  // API modules
+  // Détail d'un paiement
+  getById: (id: string | number) => api.get(API_ENDPOINTS.PAIEMENTS.DETAIL(id)),
+  
+  // Paiements d'une entreprise
+  getByEntreprise: (entrepriseId: string | number) => api.get(API_ENDPOINTS.PAIEMENTS.BY_ENTREPRISE(entrepriseId)),
+  
+  // Paiements confirmés
+  getConfirmes: () => api.get(API_ENDPOINTS.PAIEMENTS.CONFIRMES),
+};
+
+// Create the main API client object with all modules
+const apiClient = Object.freeze({
   agentBusinessAPI,
   healthAPI,
   agentAuthAPI,
   notificationsAPI,
   entreprisesAPI,
+  enumsAPI,
+  ninaAPI,
   chatAPI,
-};
+  paiementsAPI,
+});
 
-// Export the API client as default
+// Export the API client as default (with proper typing)
 export default apiClient;
 
 // Export individual modules for direct import when needed
-export { agentAuthAPI, agentBusinessAPI, healthAPI, notificationsAPI, entreprisesAPI, chatAPI };
+export { agentAuthAPI, agentBusinessAPI, healthAPI, notificationsAPI, entreprisesAPI, enumsAPI, ninaAPI, chatAPI, paiementsAPI };
+
+// Export the raw axios instance for direct usage
+export { api as axiosInstance };

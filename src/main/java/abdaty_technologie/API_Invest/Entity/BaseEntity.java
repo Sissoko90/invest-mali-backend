@@ -9,12 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
-import lombok.Getter;
-import lombok.Setter;
-
 @MappedSuperclass
-@Getter
-@Setter
 public abstract class BaseEntity {
   @Id @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
@@ -40,9 +35,31 @@ public abstract class BaseEntity {
 
   @PreUpdate
   protected void onUpdate() {
-
-
     this.modification = Instant.now();
+  }
 
+  // Getters and Setters
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public Instant getCreation() {
+    return creation;
+  }
+
+  public void setCreation(Instant creation) {
+    this.creation = creation;
+  }
+
+  public Instant getModification() {
+    return modification;
+  }
+
+  public void setModification(Instant modification) {
+    this.modification = modification;
   }
 }

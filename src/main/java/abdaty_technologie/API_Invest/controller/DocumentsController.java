@@ -4,15 +4,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import abdaty_technologie.API_Invest.Entity.Documents;
@@ -71,6 +75,18 @@ public class DocumentsController {
         return ResponseEntity.ok(toResponse(saved));
     }
 
+    @PostMapping(path = "/autres", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DocumentResponse> uploadAutresDocument(
+            @RequestParam("personneId") String personneId,
+            @RequestParam("entrepriseId") String entrepriseId,
+            @RequestParam("nom") String nom,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("file") MultipartFile file
+    ) {
+        Documents saved = documentsService.uploadAutresDocument(personneId, entrepriseId, nom, description, file);
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
     @GetMapping("/entreprise/{entrepriseId}")
     public ResponseEntity<List<DocumentResponse>> getDocumentsByEntreprise(@PathVariable String entrepriseId) {
         List<Documents> documents = documentsRepository.findByEntrepriseId(entrepriseId);
@@ -78,6 +94,15 @@ public class DocumentsController {
             .map(this::toResponse)
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping(path = "/{id}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DocumentResponse> updateDocumentFile(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file
+    ) {
+        Documents updated = documentsService.updateDocumentFile(id, file);
+        return ResponseEntity.ok(toResponse(updated));
     }
 
     @GetMapping(path = "/{id}/file")
@@ -168,6 +193,7 @@ public class DocumentsController {
         // URL relative (préfixée par spring.mvc.servlet.path=/api/v1 côté app):
         r.url = "/api/v1/documents/" + d.getId() + "/file";
         r.dateExpiration = d.getDateExpiration();
+        r.description = d.getDescription();
         return r;
     }
 
@@ -187,6 +213,40 @@ public class DocumentsController {
     }
 
     // Recherche d'une sous-chaîne ASCII dans un tableau d'octets
+    /**
+     * Endpoint pour supprimer un document
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteDocument(@PathVariable String id) {
+        try {
+            System.out.println("🗑️ [DocumentsController] Suppression du document: " + id);
+            
+            // Supprimer le document via le service
+            documentsService.deleteDocument(id);
+            
+            System.out.println("✅ [DocumentsController] Document " + id + " supprimé avec succès");
+            
+            // Préparer la réponse
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Document supprimé avec succès");
+            response.put("documentId", id);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [DocumentsController] Erreur lors de la suppression du document " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erreur lors de la suppression du document");
+            errorResponse.put("error", e.getMessage());
+            
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
     private static boolean containsAscii(byte[] data, String needle) {
         byte[] n = needle.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
         outer: for (int i = 0; i <= data.length - n.length; i++) {

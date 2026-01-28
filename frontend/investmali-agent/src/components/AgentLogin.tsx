@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import AnimatedBackground from './AnimatedBackground';
@@ -13,15 +13,15 @@ const AgentLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  const { login, isAuthenticated, isLoading: authLoading } = useAgentAuth();
+  const { login, isAuthenticated, isLoading: authLoading, agent } = useAgentAuth();
   const navigate = useNavigate();
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  // Redirect if already authenticated (disabled - redirection handled in handleLogin)
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     navigate('/dossier', { replace: true });
+  //   }
+  // }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +43,40 @@ const AgentLogin: React.FC = () => {
     setError('');
     
     try {
-      const success = await login(loginData.email, loginData.password);
+      console.log('🔐 [AgentLogin] Tentative de connexion pour:', loginData.email);
+      const result = await login(loginData.email, loginData.password);
+      console.log('🔐 [AgentLogin] Résultat de connexion:', result);
       
-      if (success) {
+      if (result.success) {
         setLoginData({ email: '', password: '' });
-        navigate('/dashboard', { replace: true });
+        
+        // Logique de redirection intelligente basée sur le rôle
+        let redirectPath = result.redirectUrl;
+        
+        if (!redirectPath) {
+          // Attendre un court moment pour que le contexte se mette à jour
+          setTimeout(() => {
+            // Si pas de redirectUrl du backend, utiliser la logique par rôle
+            const userRole = agent?.role;
+            if (userRole === 'SUPER_ADMIN') {
+              redirectPath = '/dashboard'; // Super Admin vers dashboard
+            } else {
+              redirectPath = '/dossier'; // Autres agents vers dossier
+            }
+            
+            console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
+            console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
+            console.log('🚀 [AgentLogin] Rôle de l\'agent:', userRole);
+            console.log('🚀 [AgentLogin] Fallback utilisé:', !result.redirectUrl);
+            navigate(redirectPath, { replace: true });
+          }, 100); // Petit délai pour permettre au contexte de se mettre à jour
+        } else {
+          console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
+          console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
+          navigate(redirectPath, { replace: true });
+        }
       } else {
+        console.error('❌ [AgentLogin] Échec de connexion');
         setError('E-mail ou mot de passe invalide');
       }
     } catch (err: any) {
@@ -75,7 +103,7 @@ const AgentLogin: React.FC = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -124,7 +152,7 @@ const AgentLogin: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
                   placeholder="vous@example.com"
                   value={loginData.email}
                   onChange={(e) => setLoginData({...loginData, email: e.target.value})}
@@ -147,7 +175,7 @@ const AgentLogin: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-md"
+                  className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 pr-10 sm:text-sm border-gray-300 rounded-md"
                   placeholder="••••••••"
                   value={loginData.password}
                   onChange={(e) => setLoginData({...loginData, password: e.target.value})}
@@ -175,7 +203,7 @@ const AgentLogin: React.FC = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                 Se souvenir de moi
@@ -183,7 +211,7 @@ const AgentLogin: React.FC = () => {
             </div>
 
             <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
                 Mot de passe oublié ?
               </Link>
             </div>
@@ -193,7 +221,7 @@ const AgentLogin: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {isLoading ? (
                 <>
@@ -209,14 +237,7 @@ const AgentLogin: React.FC = () => {
         </form>
         
         <div className="text-center text-sm text-gray-500 space-y-2">
-          <p>Vous n'avez pas de compte agent ? <Link to="/request-access" className="font-medium text-indigo-600 hover:text-indigo-500">Demander un accès</Link></p>
-          <div className="bg-blue-50 p-3 rounded-md">
-            <p className="text-xs text-blue-700">
-              <strong>Identifiants de test :</strong><br/>
-              Email: admin@example.com<br/>
-              Mot de passe: Admin@123
-            </p>
-          </div>
+          <p>Vous n'avez pas de compte agent ? <Link to="/request-access" className="font-medium text-primary-600 hover:text-primary-500">Demander un accès</Link></p>
         </div>
       </div>
     </div>
@@ -224,3 +245,27 @@ const AgentLogin: React.FC = () => {
 };
 
 export default AgentLogin;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

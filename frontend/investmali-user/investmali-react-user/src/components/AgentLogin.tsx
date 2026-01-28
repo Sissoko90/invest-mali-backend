@@ -20,9 +20,11 @@ const AgentLogin: React.FC = () => {
     setError('');
     
     try {
-      const success = await login(loginData.email, loginData.password);
-      if (success) {
-        navigate('/agent/dashboard');
+      const result = await login(loginData.email, loginData.password);
+      if (result.success) {
+        // Utiliser la redirectUrl du backend ou fallback vers dashboard
+        const redirectPath = result.redirectUrl || '/agent/dashboard';
+        navigate(redirectPath);
       } else {
         setError('Email ou mot de passe incorrect');
       }
@@ -34,7 +36,7 @@ const AgentLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-mali-emerald/5 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-investmali-accent/5 relative overflow-hidden">
       <AnimatedBackground />
       
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -43,13 +45,13 @@ const AgentLogin: React.FC = () => {
           {/* Header */}
           <div className="text-center animate-slide-up">
             <div className="flex justify-center mb-6">
-              <div className="bg-gradient-to-r from-mali-emerald to-mali-gold p-4 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-4 rounded-2xl shadow-lg">
                 <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-mali-dark">
+            <h2 className="text-3xl font-bold text-investmali-neutral-dark">
               Espace Agent InvestMali
             </h2>
             <p className="mt-2 text-gray-600">
@@ -97,7 +99,7 @@ const AgentLogin: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-mali-emerald to-mali-gold text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -131,7 +133,7 @@ const AgentLogin: React.FC = () => {
           <div className="text-center animate-slide-up" style={{animationDelay: '0.2s'}}>
             <button
               onClick={() => navigate('/')}
-              className="text-mali-emerald hover:text-mali-gold transition-colors duration-300 text-sm font-medium"
+              className="text-investmali-accent hover:text-investmali-warning transition-colors duration-300 text-sm font-medium"
             >
               ← Retour au site principal
             </button>
@@ -143,3 +145,4 @@ const AgentLogin: React.FC = () => {
 };
 
 export default AgentLogin;
+

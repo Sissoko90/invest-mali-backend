@@ -29,4 +29,7 @@ public class DocumentResponse {
 
     //La date d'expiration du document
     public LocalDate dateExpiration;
+
+    //Description pour les documents de type AUTRES
+    public String description;
 }

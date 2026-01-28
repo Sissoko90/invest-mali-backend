@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { agentBusinessAPI } from '../services/api';
 import type { ApplicationRow } from './ApplicationsTable';
 
@@ -60,10 +60,10 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
 
   const getStatusChip = (status?: string) => {
     const base = 'px-2 py-1 rounded-full text-xs font-medium';
-    const color = status === 'approved' ? 'bg-green-100 text-green-800'
+    const color = status === 'approved' ? 'bg-primary-100 text-primary-800'
       : status === 'rejected' ? 'bg-red-100 text-red-800'
-      : status === 'in_review' ? 'bg-blue-100 text-blue-800'
-      : status === 'pending_validation' || status === 'pending' ? 'bg-yellow-100 text-yellow-800'
+      : status === 'in_review' ? 'bg-primary-100 text-primary-800'
+      : status === 'pending_validation' || status === 'pending' ? 'bg-primary-100 text-primary-800'
       : 'bg-gray-100 text-gray-800';
     return <span className={`${base} ${color}`}>{formatStatus(status)}</span>;
   };
@@ -81,9 +81,9 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
   const getPriorityChip = (p?: string) => {
     const base = 'px-2 py-1 rounded-full text-xs font-medium';
     const color = p === 'urgent' ? 'bg-red-100 text-red-800'
-      : p === 'high' ? 'bg-orange-100 text-orange-800'
-      : p === 'medium' ? 'bg-yellow-100 text-yellow-800'
-      : p === 'low' ? 'bg-green-100 text-green-800'
+      : p === 'high' ? 'bg-primary-100 text-primary-800'
+      : p === 'medium' ? 'bg-primary-100 text-primary-800'
+      : p === 'low' ? 'bg-primary-100 text-primary-800'
       : 'bg-gray-100 text-gray-800';
     return <span className={`${base} ${color}`}>{formatPriority(p)}</span>;
   };
@@ -369,7 +369,7 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
                         <li key={ii} className="flex items-center justify-between text-sm">
                           <span className="text-gray-800">{it.name}</span>
                           {it.url ? (
-                            <a href={it.url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Ouvrir</a>
+                            <a href={it.url} target="_blank" rel="noreferrer" className="text-primary-600 hover:text-primary-800 text-xs font-medium">Ouvrir</a>
                           ) : (
                             <span className="text-gray-500 text-xs">Fourni</span>
                           )}
@@ -384,7 +384,7 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
 
           <div className="pt-4 flex items-center justify-end gap-2">
             <button className="px-4 py-2 text-sm rounded border" onClick={onClose} disabled={saving}>Annuler</button>
-            <button className="px-4 py-2 text-sm rounded bg-indigo-600 text-white disabled:opacity-50" onClick={handleSave} disabled={saving}>Enregistrer</button>
+            <button className="px-4 py-2 text-sm rounded bg-primary-600 text-white disabled:opacity-50" onClick={handleSave} disabled={saving}>Enregistrer</button>
           </div>
         </div>
       </div>
@@ -393,3 +393,27 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
 };
 
 export default ApplicationDrawer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

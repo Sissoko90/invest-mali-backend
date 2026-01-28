@@ -57,8 +57,8 @@ const Hero: React.FC = () => {
     },
     {
       id: 3,
-      title: "Conformité garantie",
-      subtitle: "Tous vos documents sont vérifiés par nos experts juridiques. Respect total de la réglementation malienne et validation officielle.",
+      title: "Expert juridique",
+      subtitle: "Assistance juridique et réglementaire L’API Mali assure un accompagnement institutionnel visant la conformité des projets d’investissement avec la réglementation en vigueur au Mali.",
       badge: "100% Conforme",
       cta: "En savoir plus",
       backgroundImage: image3
@@ -259,23 +259,56 @@ const Hero: React.FC = () => {
 
 
   useEffect(() => {
-    // Gestion de l'interaction curseur pour toute la section Hero
-    const handleMouseMove = (e: MouseEvent) => {
-      if (heroRef.current) {
-        const rect = heroRef.current.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
-        // Calculer la position relative du curseur (-1 à 1)
-        const x = (e.clientX - centerX) / (rect.width / 2);
-        const y = (e.clientY - centerY) / (rect.height / 2);
-        
-        setMousePosition({ x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) });
+    // Attendre que le DOM soit complètement chargé
+    const initializeAnimations = () => {
+      if (!document.body || !heroRef.current) return false;
+      
+      // Vérifier que ScrollTrigger peut accéder au body
+      try {
+        // Test simple pour vérifier que ScrollTrigger fonctionne
+        const testElement = document.createElement('div');
+        document.body.appendChild(testElement);
+        document.body.removeChild(testElement);
+        return true;
+      } catch (error) {
+        console.warn('⚠️ DOM pas encore prêt pour GSAP:', error);
+        return false;
       }
     };
 
+    if (!initializeAnimations()) {
+      // Réessayer après un court délai
+      const timer = setTimeout(() => {
+        if (initializeAnimations()) {
+          // Forcer un re-render du composant
+          setCurrentSlide(prev => prev);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!heroRef.current) return;
+      
+      const rect = heroRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width - 0.5) * 20;
+      const y = ((e.clientY - rect.top) / rect.height - 0.5) * 20;
+      
+      gsap.to(scene3DRef.current, {
+        rotationY: x,
+        rotationX: -y,
+        duration: 0.5,
+        ease: "power2.out"
+      });
+    };
+
     const handleMouseLeave = () => {
-      setMousePosition({ x: 0, y: 0 });
+      gsap.to(scene3DRef.current, {
+        rotationY: 0,
+        rotationX: 0,
+        duration: 0.8,
+        ease: "power2.out"
+      });
     };
 
     if (heroRef.current) {
@@ -329,35 +362,43 @@ const Hero: React.FC = () => {
       );
 
       // Animations des formes d'arrière-plan
-      gsap.set(backgroundShapesRef.current?.children || [], { opacity: 0 });
-      
-      gsap.to(backgroundShapesRef.current?.children[0] || {}, {
-        opacity: 1,
-        rotation: 360,
-        duration: 20,
-        repeat: -1,
-        ease: "none"
-      });
+      if (backgroundShapesRef.current && backgroundShapesRef.current.children.length > 0) {
+        gsap.set(backgroundShapesRef.current.children, { opacity: 0 });
+        
+        if (backgroundShapesRef.current.children[0]) {
+          gsap.to(backgroundShapesRef.current.children[0], {
+            opacity: 1,
+            rotation: 360,
+            duration: 20,
+            repeat: -1,
+            ease: "none"
+          });
+        }
 
-      gsap.to(backgroundShapesRef.current?.children[1] || {}, {
-        opacity: 1,
-        y: -20,
-        duration: 3,
-        repeat: -1,
-        yoyo: true,
-        ease: "power2.inOut",
-        delay: 0.5
-      });
+        if (backgroundShapesRef.current.children[1]) {
+          gsap.to(backgroundShapesRef.current.children[1], {
+            opacity: 1,
+            y: -20,
+            duration: 3,
+            repeat: -1,
+            yoyo: true,
+            ease: "power2.inOut",
+            delay: 0.5
+          });
+        }
 
-      gsap.to(backgroundShapesRef.current?.children[2] || {}, {
-        opacity: 1,
-        scale: 1.2,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: "power2.inOut",
-        delay: 1
-      });
+        if (backgroundShapesRef.current.children[2]) {
+          gsap.to(backgroundShapesRef.current.children[2], {
+            opacity: 1,
+            scale: 1.2,
+            duration: 2,
+            repeat: -1,
+            yoyo: true,
+            ease: "power2.inOut",
+            delay: 1
+          });
+        }
+      }
 
       // Animation parallax au scroll
       gsap.to(heroRef.current, {
@@ -517,10 +558,10 @@ const Hero: React.FC = () => {
               }}
             >
               {currentSlideData.title.split(' ').map((word, index) => (
-                <span key={index} className={index === 1 ? "text-mali-emerald relative" : index === currentSlideData.title.split(' ').length - 1 ? "text-mali-gold" : ""}>
+                <span key={index} className={index === 1 ? "text-investmali-accent relative" : index === currentSlideData.title.split(' ').length - 1 ? "text-investmali-warning" : ""}>
                   {word}
                   {index === 1 && (
-                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-mali-gold/30" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-investmali-warning/30" viewBox="0 0 100 10" preserveAspectRatio="none">
                       <path d="M0,8 Q50,0 100,8" stroke="currentColor" strokeWidth="2" fill="none"/>
                     </svg>
                   )}
@@ -548,7 +589,7 @@ const Hero: React.FC = () => {
               }}
             >
               <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-mali-emerald to-mali-emerald/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-accent to-investmali-accent/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -560,7 +601,7 @@ const Hero: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-mali-gold to-mali-gold/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-warning to-investmali-warning/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -604,11 +645,11 @@ const Hero: React.FC = () => {
                 transform: `translateZ(${mousePosition.x * 22}px) rotateY(${mousePosition.x * 7}deg) rotateX(${mousePosition.y * 4}deg) scale(${1 + Math.abs(mousePosition.x + mousePosition.y) * 0.06})`
               }}
             >
-              <Link to="/create-business" className="group relative px-8 py-4 bg-gradient-to-r from-mali-emerald to-mali-emerald/90 text-white rounded-xl font-semibold text-lg hover:from-mali-emerald/90 hover:to-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden text-center">
+              <Link to="/create-business" className="group relative px-8 py-4 bg-gradient-to-r from-investmali-accent to-investmali-accent/90 text-white rounded-xl font-semibold text-lg hover:from-investmali-accent/90 hover:to-investmali-accent transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden text-center">
                 <span className="relative z-10">{currentSlideData.cta}</span>
                 <div className="absolute top-0 left-0 w-full h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </Link>
-              <button className="group relative px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-mali-emerald rounded-xl font-semibold text-lg hover:bg-mali-emerald hover:text-white transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl">
+              <button className="group relative px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-investmali-accent rounded-xl font-semibold text-lg hover:bg-investmali-accent hover:text-white transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl">
                 <span className="relative z-10">Découvrir nos services</span>
               </button>
             </div>
@@ -624,8 +665,8 @@ const Hero: React.FC = () => {
                     disabled={isTransitioning}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       index === currentSlide 
-                        ? 'bg-mali-emerald scale-125' 
-                        : 'bg-mali-emerald/30 hover:bg-mali-emerald/60'
+                        ? 'bg-investmali-accent scale-125' 
+                        : 'bg-investmali-accent/30 hover:bg-investmali-accent/60'
                     } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                 ))}
@@ -636,7 +677,7 @@ const Hero: React.FC = () => {
                 <button
                   onClick={() => disintegrateToSlide((currentSlide - 1 + slides.length) % slides.length)}
                   disabled={isTransitioning}
-                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-mali-emerald/30 flex items-center justify-center text-mali-emerald hover:bg-mali-emerald hover:text-white transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-investmali-accent/30 flex items-center justify-center text-investmali-accent hover:bg-investmali-accent hover:text-white transition-all duration-300 ${
                     isTransitioning ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -647,7 +688,7 @@ const Hero: React.FC = () => {
                 <button
                   onClick={() => disintegrateToSlide((currentSlide + 1) % slides.length)}
                   disabled={isTransitioning}
-                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-mali-emerald/30 flex items-center justify-center text-mali-emerald hover:bg-mali-emerald hover:text-white transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-investmali-accent/30 flex items-center justify-center text-investmali-accent hover:bg-investmali-accent hover:text-white transition-all duration-300 ${
                     isTransitioning ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -664,7 +705,7 @@ const Hero: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
               <Homepage3D />
               <div className="text-center mt-4">
-                <p className="text-sm text-mali-dark/70 font-medium">
+                <p className="text-sm text-investmali-neutral-dark/70 font-medium">
                   Expérience 3D interactive - Démarrez votre entreprise
                 </p>
               </div>
@@ -677,3 +718,4 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
+

@@ -5,7 +5,7 @@ package abdaty_technologie.API_Invest.Entity.Enum;
  */
 public enum EntrepriseRole {
     GERANT,
-    DIRIGEANT,
-    ASSOCIE
-
+    PROMOTEUR,
+    ASSOCIE,
+    ADMINISTRATEUR
 }

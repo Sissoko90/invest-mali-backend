@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
+import abdaty_technologie.API_Invest.Entity.Enum.PaysEmissionRccM;
 
 public class MembreResponse {
 
@@ -34,9 +35,34 @@ public class MembreResponse {
     //Le téléphone du membre
     public String telephone;
 
+    //Le téléphone 2 du membre
+    public String telephone2;
+
     //La date de naissance du membre
     public LocalDate dateNaissance;
+    
+    //Le lieu de naissance du membre
+    public String lieuNaissance;
+    
+    //La localité du membre
+    public String localite;
+    
+    //La civilité du membre (M., Mme, Mlle)
+    public String civilite;
 
-    //La situation matrimoniale du membre
-    public Boolean situationMatrimoniale;
+    //La situation matrimoniale du membre (MARIE, CELIBATAIRE, etc.)
+    public String situationMatrimonialeStr;
+
+    //Le sexe du membre
+    public String sexe;
+
+    //La nationalité du membre
+    public String nationalite;
+
+    // Champs spécifiques aux personnes morales
+    //Le pays d'émission du RCCM pour les personnes morales
+    public PaysEmissionRccM paysEmissionRccm;
+
+    //La dénomination de l'entreprise pour les personnes morales
+    public String denominationEntreprise;
 }

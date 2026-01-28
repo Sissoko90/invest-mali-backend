@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { agentAuthAPI, agentBusinessAPI, healthAPI } from '../services/api';
 
 interface TestResult {
@@ -186,9 +186,9 @@ const AgentIntegrationTest: React.FC = () => {
   const getStatusColor = (status: TestResult['status']) => {
     switch (status) {
       case 'pending':
-        return 'text-yellow-600';
+        return 'text-primary-600';
       case 'success':
-        return 'text-green-600';
+        return 'text-primary-600';
       case 'error':
         return 'text-red-600';
       default:
@@ -214,7 +214,7 @@ const AgentIntegrationTest: React.FC = () => {
           className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
             isRunning
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700'
+              : 'bg-primary-600 hover:bg-primary-700'
           }`}
         >
           {isRunning ? '🔄 Tests en cours...' : '🚀 Lancer les tests agent'}
@@ -251,13 +251,13 @@ const AgentIntegrationTest: React.FC = () => {
             </div>
           ))}
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-semibold text-blue-800 mb-2">
+          <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+            <h4 className="font-semibold text-primary-800 mb-2">
               📊 Résumé des Tests Agent
             </h4>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-primary-600">
                   {tests.filter(t => t.status === 'success').length}
                 </div>
                 <div className="text-sm text-gray-600">Réussis</div>
@@ -269,7 +269,7 @@ const AgentIntegrationTest: React.FC = () => {
                 <div className="text-sm text-gray-600">Échoués</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-primary-600">
                   {tests.filter(t => t.status === 'pending').length}
                 </div>
                 <div className="text-sm text-gray-600">En cours</div>
@@ -293,11 +293,11 @@ const AgentIntegrationTest: React.FC = () => {
         </ul>
       </div>
 
-      <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <h4 className="font-semibold text-yellow-800 mb-2">
+      <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+        <h4 className="font-semibold text-primary-800 mb-2">
           🔐 Compte de Test Agent
         </h4>
-        <p className="text-sm text-yellow-700">
+        <p className="text-sm text-primary-700">
           Email: <code>marie.traore@investmali.com</code><br />
           Mot de passe: <code>agent123</code>
         </p>
@@ -307,3 +307,27 @@ const AgentIntegrationTest: React.FC = () => {
 };
 
 export default AgentIntegrationTest;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

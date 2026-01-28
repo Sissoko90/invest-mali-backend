@@ -1,14 +1,14 @@
 spring:
   application:
-    name: InvestMali
+    name: A kera
   profiles:
-    active: dev
+    active: dev  # <-- profil actif en local (using MySQL database)
   jackson:
     time-zone: Africa/Bamako
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   mvc:
-    throw-exception-if-no-handler-found: true 
+    throw-exception-if-no-handler-found: true
   web:
     resources:
       add-mappings: false
@@ -22,7 +22,6 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    # Par défaut: pas d'identifiants ici (à fournir par profil ou variables d'environnement)
     properties:
       mail:
         smtp:
@@ -35,29 +34,41 @@ server:
   port: 8080
   servlet:
     context-path: /api/v1
-  cors:
-    allowed-origins: "*"
-    allowed-methods: "*"
-    allowed-headers: "*"
-    allow-credentials: true
 
 logging:
   level:
     org.hibernate.SQL: off
     org.springframework.web: info
 
-# Quotas par défaut (profil par défaut)
+# Configuration API INSTAT Mali
+instat:
+  api:
+    base-url: https://apimali.test.instat.ml/api
+    bearer-token: MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw
+    timeout: 30000
+    enabled: true
+
+# Configuration RCCM
+rccm:
+  api:
+    base-url: http://10.92.2.10:8080/RCCM-OHADA/webServTiers/save
+    username: ${RCCM_USERNAME:apiml}
+    password: ${RCCM_PASSWORD:apiml223}
+    ident-tiers: APIML
+    noeud: ML-BKO-01
+    timeout: 30000
+
 app:
   rate-limit:
-    capacity: 100
-    refill-tokens: 100
+    capacity: 10000  # Augmenter pour le développement
+    refill-tokens: 5000  # Augmenter pour le développement
     refill-period-seconds: 60
   security:
     jwt:
-      # Re-map pour compatibilité avec JwtUtil (@Value("${app.security.jwt.secret}"))
-      # On réutilise la valeur déjà définie en haut: security.jwt.secret
       secret: ${security.jwt.secret}
       expiration-ms: 3600000
+  frontend:
+    base-url: ${FRONTEND_URL:http://localhost:3000}
 
 management:
   endpoints:
@@ -73,13 +84,68 @@ management:
 
 security:
   jwt:
-    # Clé HS256 en base64 pour DEV (à changer en local si besoin)
-    secret: bXlkZXZzZWNyZXRsb25nc2VjcmV0YmFzZTY0dmFsaWRrZXk=
+    secret: ${SECURITY_JWT_SECRET:bXlkZXZzZWNyZXRsb25nc2VjcmV0YmFzZTY0dmFsaWRrZXk=}
 
+# Configuration TresorPay (remplace Stripe et autres moyens de paiement)
+tresorpay:
+  base-url: https://tresorpay.ml/api/public/v1
+  auth-url: https://auth.finances.ml/realms/tresorpay/protocol/openid-connect/token
+  client-id: ${TRESORPAY_CLIENT_ID:api-mali}
+  client-secret: ${TRESORPAY_CLIENT_SECRET:}
+  code-client: APP-API-MALI
+  code-structure: API-MALI
+  callback-url: ${BACKEND_URL:http://localhost:8080}/api/v1/payments/tresorpay/callback
+  redirect-url: ${FRONTEND_URL:http://localhost:3001}/dossier
+  # Numéro de test pour l'environnement de développement
+  # IMPORTANT: Remplacer par un vrai numéro de test fourni par TresorPay
+  # Ce numéro sera utilisé automatiquement quand un numéro invalide est détecté en dev
+  # test-phone: +22370000000
+
+# Configuration Stripe (conservée pour référence mais non utilisée)
+stripe:
+  public-key: ${STRIPE_PUBLIC_KEY:}
+  secret-key: ${STRIPE_SECRET_KEY:}
+  currency: xof
+  fees:
+    business-creation: 2500000
+    document-processing: 500000
+    expedited-processing: 1000000
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+# Configuration Orange Money (Ancienne version - conservée pour compatibilité)
+orange-money:
+  client:
+    id: ${ORANGE_MONEY_CLIENT_ID:}
+    secret: ${ORANGE_MONEY_CLIENT_SECRET:}
+  merchant:
+    key: ${ORANGE_MONEY_MERCHANT_KEY:}
+  api:
+    base-url: https://api.orange.com
+    auth-url: ${orange-money.api.base-url}/oauth/v3/token
+    webpay-url: ${orange-money.api.base-url}/orange-money-webpay/dev/v1/webpayment
+  urls:
+    return-url: ${FRONTEND_URL:http://localhost:3000}/payment/success
+    cancel-url: ${FRONTEND_URL:http://localhost:3000}/payment/cancel
+    notif-url: ${BACKEND_URL:http://localhost:8080}/api/v1/orange-money/callback
+  # Configuration V2 (Nouvelle implémentation basée sur les tests Postman)
+  v2:
+    client:
+      id: ${ORANGE_MONEY_CLIENT_ID:}
+      secret: ${ORANGE_MONEY_CLIENT_SECRET:}
+    merchant:
+      key: ${ORANGE_MONEY_MERCHANT_KEY:}
+    api:
+      oauth-url: https://api.orange.com/oauth/v3/token
+      webpay-url: https://api.orange.com/orange-money-webpay/dev/v1/webpayment
+    urls:
+      return-url: https://investmali.abdatytch.com/return
+      cancel-url: https://investmali.abdatytch.com/cancel
+      notif-url: https://investmali.abdatytch.com/notif
+
+# --------------------------- TEST ---------------------------
 ---
 spring:
   config:
@@ -89,7 +155,7 @@ spring:
     url: jdbc:h2:mem:investmali;DB_CLOSE_DELAY=-1;MODE=MySQL
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    password:
   jpa:
     hibernate:
       ddl-auto: update
@@ -101,15 +167,17 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+# --------------------------- DEV ----------------------------
 ---
 spring:
   config:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864
+    url: jdbc:mysql://localhost:8889/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864&zeroDateTimeBehavior=convertToNull
     username: root
-    password: 
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -118,12 +186,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:abdaty11@gmail.com}
-    from: ${MAIL_FROM:${spring.mail.username}}
-    password: ${MAIL_PASSWORD:lyiv qoia uwep xrqj}
+    from: ${MAIL_FROM:abdaty11@gmail.com}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -131,24 +200,39 @@ spring:
           starttls:
             enable: true
     default-encoding: UTF-8
-app:
-  cors:
-    # Origines de développement (exemple: React/Angular locaux)
-    allowed-origins: http://localhost:3000,http://localhost:3001, http://localhost:3002,http://localhost:4200,http://localhost:5173
-  rate-limit:
-    capacity: 200
-    refill-tokens: 200
-    refill-period-seconds: 60
 
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+app:
+  mail:
+    enabled: true  # Activer l'envoi d'emails en développement
+  rate-limit:
+    capacity: 10000  # Augmenter la capacité pour le développement
+    refill-tokens: 5000  # Augmenter le nombre de tokens
+    refill-period-seconds: 60
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001,https://www.formalisation.ml,https://agent.formalisation.ml
+
+logging:
+  level:
+    org.springframework: DEBUG
+    org.hibernate.SQL: DEBUG
+logging.level.org.springframework.mail: DEBUG
+spring.mail.properties.mail.debug: true
+
+# --------------------------- PROD ---------------------------
 ---
 spring:
   config:
     activate:
       on-profile: prod
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://127.0.0.1:3306/apimali_prod?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864
+    username: apimali_user
+    password: ${PROD_DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -158,9 +242,11 @@ spring:
       hibernate:
         format_sql: false
   mail:
+    host: ${MAIL_HOST:smtp.apimali.gov.ml}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:formalisation@apimali.gov.ml}
+    from: ${MAIL_FROM:formalisation@apimali.gov.ml}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -168,51 +254,19 @@ spring:
           starttls:
             enable: true
     default-encoding: UTF-8
-server:
-  port: ${PORT:8080}
+
 security:
   jwt:
-    # Fournir via variable d'environnement JWT_SECRET_BASE64
-    secret: ${JWT_SECRET_BASE64}
+    secret: ${SECURITY_JWT_SECRET:bXlkZXZzZWNyZXRsb25nc2VjcmV0YmFzZTY0dmFsaWRrZXk=}
 app:
+  mail:
+    enabled: true  # Activer l'envoi d'emails en production
   cors:
-    # Remplacer par vos domaines de production quand disponibles
-    allowed-origins: https://app.example.com,https://admin.example.com
+    allowed-origins: https://investmali.abdatytch.com,https://investmali-agent.abdatytch.com,http://agent-investmali.com,https://agent-investmali.com,https://127.0.0.1,http://localhost,http://102.165.96.223,https://www.formalisation.ml,https://agent.formalisation.ml
+    # allowed-origins: https://127.0.0.1,http://localhost,http://102.165.96.223,https://www.formalisation.ml,https://agent.formalisation.ml
   rate-limit:
     capacity: 100
     refill-tokens: 100
     refill-period-seconds: 60
-
----
-spring:
-  config:
-    activate:
-      on-profile: test
-  datasource:
-    url: jdbc:h2:mem:transmali_test;DB_CLOSE_DELAY=-1;MODE=MySQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-  h2:
-    console:
-      enabled: false
-
-# Tests: valeurs par défaut; les tests peuvent override via @SpringBootTest(properties)
-app:
-  rate-limit:
-    capacity: 100
-    refill-tokens: 100
-    refill-period-seconds: 60
-
-
-# src/main/resources/application.yml
-logging:
-  level:
-    org.springframework.security: DEBUG
-
-logging.level.org.springframework.mail: DEBUG
-spring.mail.properties.mail.debug: true
+  frontend:
+    base-url: ${FRONTEND_URL:https://www.formalisation.ml}

@@ -1,7 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Classes personnalisées pour polices très petites sur mobile */
+@layer utilities {
+  .text-2xs {
+    font-size: 0.625rem; /* 10px */
+    line-height: 0.75rem;
+  }
+  
+  .text-3xs {
+    font-size: 0.5625rem; /* 9px */
+    line-height: 0.6875rem;
+  }
+}
 
 body {
   font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }

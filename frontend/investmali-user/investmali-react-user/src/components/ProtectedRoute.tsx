@@ -14,11 +14,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Affichage de chargement pendant la vérification d'authentification
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-mali-emerald/5 relative overflow-hidden flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-mali-light via-white to-investmali-accent/5 relative overflow-hidden flex items-center justify-center">
         <AnimatedBackground variant="minimal" />
         <div className="relative z-10 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-mali-emerald mx-auto mb-4"></div>
-          <p className="text-mali-dark text-lg">Vérification de votre session...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-investmali-accent mx-auto mb-4"></div>
+          <p className="text-investmali-neutral-dark text-lg">Vérification de votre session...</p>
         </div>
       </div>
     );
@@ -34,3 +34,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export default ProtectedRoute;
+

@@ -12,7 +12,22 @@ public interface DocumentsService {
     Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, MultipartFile file);
     
     /**
+     * Met à jour uniquement le fichier d'un document existant
+     */
+    Documents updateDocumentFile(String documentId, MultipartFile file);
+    
+    /**
      * Vérifie si un numéro de pièce est déjà utilisé
      */
     boolean isPieceNumeroAlreadyUsed(String numero, String typePiece);
+    
+    /**
+     * Supprime un document par son ID
+     */
+    void deleteDocument(String documentId);
+    
+    /**
+     * Upload un document supplémentaire de type AUTRES avec description
+     */
+    Documents uploadAutresDocument(String personneId, String entrepriseId, String nom, String description, MultipartFile file);
 }

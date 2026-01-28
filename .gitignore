@@ -20,8 +20,10 @@ target/
 *.iml
 *.ipr
 
+
 ### NetBeans ###
 /nbproject/private/
+node_modules
 /nbbuild/
 /dist/
 /nbdist/
@@ -45,3 +47,8 @@ yarn-error.log*
 frontend/*/build/
 frontend/*/dist/
 frontend/*/.next/
+/frontend/*
+.DS_Store
+uploads/
+*.backup
+*.corrupted

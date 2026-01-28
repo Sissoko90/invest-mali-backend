@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { API_CONFIG } from '../config/api.config';
 
 export const useNotifications = (entrepriseId) => {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export const useNotifications = (entrepriseId) => {
 
     try {
       const userId = user?.id || user?.personne_id;
-      let url = `http://localhost:8080/api/v1/chat/conversations/user/${userId}`;
+      let url = `${API_CONFIG.BASE_URL}/chat/conversations/user/${userId}`;
       if (entrepriseId) {
         url += `?entrepriseId=${entrepriseId}`;
       }
@@ -20,12 +21,10 @@ export const useNotifications = (entrepriseId) => {
       const data = await response.json();
 
       if (data.status === 'SUCCESS' && data.conversations) {
-        console.log('🔍 Vérification notifications - conversations:', data.conversations.length);
         let totalUnread = 0;
         let latestMessageTime = lastMessageTime;
 
         data.conversations.forEach(conv => {
-          console.log('🔍 Conversation:', conv.id, 'lastMessageSender:', conv.lastMessageSender, 'lastMessageTime:', conv.lastMessageTime);
           
           if (conv.lastMessageTime) {
             const messageTime = new Date(conv.lastMessageTime).getTime();
@@ -33,7 +32,6 @@ export const useNotifications = (entrepriseId) => {
             // Si c'est un message de l'agent (pas de l'utilisateur) et plus récent
             if (conv.lastMessageSender === 'AGENT' && 
                 (!lastMessageTime || messageTime > lastMessageTime)) {
-              console.log('✅ Nouveau message détecté de l\'agent!');
               totalUnread++;
               
               if (!latestMessageTime || messageTime > latestMessageTime) {
@@ -48,7 +46,7 @@ export const useNotifications = (entrepriseId) => {
           }
         });
 
-        console.log('🔔 Total messages non lus:', totalUnread);
+        // Total messages non lus: ${totalUnread}
 
         setUnreadCount(totalUnread);
         if (latestMessageTime && latestMessageTime !== lastMessageTime) {

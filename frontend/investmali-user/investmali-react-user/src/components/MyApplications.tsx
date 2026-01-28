@@ -65,7 +65,7 @@ const MyApplications: React.FC = () => {
         {available.map(e => (
           <div key={e.key} className="text-sm">
             <span className="text-gray-600 mr-2">{e.label}:</span>
-            <a className="text-mali-emerald hover:underline" href={buildUrl(e.path!)} target="_blank" rel="noreferrer">
+            <a className="text-investmali-accent hover:underline" href={buildUrl(e.path!)} target="_blank" rel="noreferrer">
               Ouvrir
             </a>
           </div>
@@ -123,3 +123,4 @@ const MyApplications: React.FC = () => {
 };
 
 export default MyApplications;
+

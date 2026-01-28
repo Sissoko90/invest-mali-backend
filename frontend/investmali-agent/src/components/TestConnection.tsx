@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
+import { API_CONFIG } from '../config/api.config';
 import { agentAuthAPI, healthAPI } from '../services/api';
 
 const TestConnection: React.FC = () => {
@@ -33,8 +34,8 @@ const TestConnection: React.FC = () => {
     try {
       console.log('Testing login endpoint...');
       const loginResponse = await agentAuthAPI.login({
-        email: 'admin@example.com',
-        password: 'Admin@123'
+        email: 'test@example.com',
+        password: 'testpassword'
       });
       testResults.login = {
         success: true,
@@ -55,14 +56,14 @@ const TestConnection: React.FC = () => {
     // Test 3: Direct axios call to backend
     try {
       console.log('Testing direct backend connection...');
-      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'admin@example.com',
-          motdepasse: 'Admin@123'
+          email: 'test@example.com',
+          motdepasse: 'testpassword'
         })
       });
       const data = await response.json();
@@ -91,7 +92,7 @@ const TestConnection: React.FC = () => {
       <button
         onClick={testEndpoints}
         disabled={isLoading}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4"
+        className="bg-primary-500 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded mb-4"
       >
         {isLoading ? 'Test en cours...' : 'Tester la Connectivité'}
       </button>
@@ -102,7 +103,7 @@ const TestConnection: React.FC = () => {
             <div key={testName} className="border rounded p-4">
               <h3 className="font-bold text-lg mb-2">
                 {testName.toUpperCase()} - 
-                <span className={result.success ? 'text-green-600' : 'text-red-600'}>
+                <span className={result.success ? 'text-primary-600' : 'text-red-600'}>
                   {result.success ? ' ✅ SUCCÈS' : ' ❌ ÉCHEC'}
                 </span>
               </h3>
@@ -121,3 +122,27 @@ const TestConnection: React.FC = () => {
 };
 
 export default TestConnection;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -25,6 +25,24 @@ export interface Entreprise {
   etapeValidation: string;
   assignedTo?: string;
   creation: string;
+  numeroNina?: string;
+  numeroRccm?: string;
+  divisionCode?: string;
+  domaineActivite?: string; // Domaine d'activité réglementé (pour agrément)
+  domaineActiviteNr?: string; // Domaine d'activité non réglementé
+  activiteSecondaire?: string;
+  numeroAutorisation?: string;
+  dateAutorisation?: string;
+  typeAgrement?: 'BTP_TOURISME' | 'ETABLISSEMENT_CLASSE' | 'CODE_INVESTISSEMENT';
+  delaiTraitement?: number;
+  avantagesFiscaux?: boolean;
+  observations?: string;
+  regimeInvestissement?: string;
+  typeDemandeAgrement?: string;
+  montantFraisDepot?: number;
+  agrementSignePath?: string;
+  telechargementAutorise?: boolean;
+  paiementEffectue?: boolean;
 }
 
 export interface DemandeEntreprise {
@@ -44,6 +62,7 @@ export interface DemandeEntreprise {
   division?: string;
   antenne?: string;
   etapeActuelle: string;
+  motifRejet?: string;
 }
 
 export interface Agent {

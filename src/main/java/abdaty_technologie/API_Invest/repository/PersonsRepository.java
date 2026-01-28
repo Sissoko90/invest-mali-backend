@@ -3,6 +3,8 @@ package abdaty_technologie.API_Invest.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,10 +12,12 @@ import org.springframework.stereotype.Repository;
 
 import abdaty_technologie.API_Invest.Entity.Persons;
 import abdaty_technologie.API_Invest.Entity.Enum.Roles;
+import abdaty_technologie.API_Invest.Entity.Enum.AntenneAgents;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 
 @Repository
-public interface PersonsRepository extends JpaRepository<Persons, String> {
+public interface PersonsRepository extends JpaRepository<Persons, String>, JpaSpecificationExecutor<Persons> {
     
     // Recherche par email
     Optional<Persons> findByEmail(String email);
@@ -55,4 +59,26 @@ public interface PersonsRepository extends JpaRepository<Persons, String> {
     boolean existsByTelephone1(String telephone1);
     
     boolean existsByTelephone2(String telephone2);
+    
+    // Méthodes pour la gestion des agents
+    boolean existsByEmailAndIdNot(String email, String id);
+    
+    boolean existsByTelephone1AndIdNot(String telephone1, String id);
+    
+    long countByRole(Roles role);
+    
+    @Query("SELECT COUNT(p) FROM Persons p WHERE p.role LIKE :rolePrefix%")
+    long countByRoleStartingWith(@Param("rolePrefix") String rolePrefix);
+    
+    @Query("SELECT COUNT(p) FROM Persons p WHERE p.role LIKE :rolePrefix% AND p.estAutoriser = :estAutoriser")
+    long countByRoleStartingWithAndEstAutoriser(@Param("rolePrefix") String rolePrefix, @Param("estAutoriser") boolean estAutoriser);
+    
+    long countByAntenneAgent(AntenneAgents antenneAgent);
+    
+    // Méthodes avec pagination pour la gestion des agents
+    Page<Persons> findByRole(Roles role, Pageable pageable);
+    
+    Page<Persons> findByAntenneAgent(AntenneAgents antenneAgent, Pageable pageable);
+    
+    Page<Persons> findByRoleAndAntenneAgent(Roles role, AntenneAgents antenneAgent, Pageable pageable);
 }

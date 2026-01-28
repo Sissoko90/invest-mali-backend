@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { agentBusinessAPI } from '../services/api';
+import { generateUnpaidReceiptData } from '../services/receiptService';
+import PaymentReceipt from './PaymentReceipt';
 
 interface BusinessFormData {
   // Informations générales
@@ -72,6 +74,8 @@ const AgentBusinessCreation: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [generatedReceipt, setGeneratedReceipt] = useState<any>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const legalForms = {
     'Société': ['SARL', 'SA', 'SAS', 'SASU', 'SNC', 'SCS'],
@@ -233,7 +237,27 @@ const AgentBusinessCreation: React.FC = () => {
       console.log('[AgentBusinessCreation] Sending create request (JSON first, then multipart)');
       const response = await agentBusinessAPI.createClientApplicationSmart(payload, form);
       if (response?.data?.success) {
-        alert('Demande créée avec succès !');
+        // Générer le reçu temporaire NON PAYÉ
+        const totalAmount = 14500; // Montant correct pour les créations d'entreprise
+        const receiptData = generateUnpaidReceiptData(
+          {
+            ...payload,
+            nom: payload.companyName,
+            typeEntreprise: payload.businessType,
+            id: response.data.entrepriseId || 'temp-' + Date.now(),
+            reference: response.data.reference || response.data.entrepriseReference,
+            referenceServeur: response.data.reference || response.data.entrepriseReference,
+            numeroReference: response.data.reference || response.data.entrepriseReference
+          },
+          totalAmount,
+          'Agent API-INVEST'
+        );
+        
+        setGeneratedReceipt(receiptData);
+        setShowReceipt(true);
+        
+        alert('Demande créée avec succès ! Un reçu temporaire a été généré.');
+        
         // Reset du formulaire
         setCurrentStep(1);
         setFormData({
@@ -438,7 +462,7 @@ const AgentBusinessCreation: React.FC = () => {
               <h3 className="text-xl font-semibold text-mali-dark">Associés</h3>
               <button
                 onClick={addPartner}
-                className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors duration-300"
+                className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors duration-300"
               >
                 + Ajouter un associé
               </button>
@@ -493,10 +517,10 @@ const AgentBusinessCreation: React.FC = () => {
             ))}
 
             {formData.partners.length > 0 && (
-              <div className={`p-4 rounded-lg border-2 ${totalShares === 100 ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+              <div className={`p-4 rounded-lg border-2 ${totalShares === 100 ? 'border-primary-300 bg-primary-50' : 'border-red-300 bg-red-50'}`}>
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total des parts :</span>
-                  <span className={`font-bold ${totalShares === 100 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-bold ${totalShares === 100 ? 'text-primary-600' : 'text-red-600'}`}>
                     {totalShares}%
                   </span>
                 </div>
@@ -514,8 +538,8 @@ const AgentBusinessCreation: React.FC = () => {
             <h3 className="text-xl font-semibold text-mali-dark mb-4">Pièces Jointes Requises</h3>
             
             {/* Documents du représentant légal */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-3 flex items-center">
+            <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
+              <h4 className="font-medium text-primary-800 mb-3 flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -541,19 +565,19 @@ const AgentBusinessCreation: React.FC = () => {
                       }));
                     }
                   }}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-mali-emerald file:text-white hover:file:bg-emerald-600"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-mali-emerald file:text-white hover:file:bg-primary-600"
                 />
                 <p className="text-xs text-gray-500 mt-1">Formats acceptés: PDF, JPG, PNG (max 5MB)</p>
                 {formData.documents.representativeId && (
-                  <p className="text-sm text-green-600 mt-2">✓ Fichier sélectionné: {formData.documents.representativeId.name}</p>
+                  <p className="text-sm text-primary-600 mt-2">✓ Fichier sélectionné: {formData.documents.representativeId.name}</p>
                 )}
               </div>
             </div>
 
             {/* Documents des associés */}
             {formData.businessType === 'Société' && formData.partners.length > 0 && (
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-800 mb-3 flex items-center">
+              <div className="bg-primary-50 p-4 rounded-lg border border-primary-200">
+                <h4 className="font-medium text-primary-800 mb-3 flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -585,10 +609,10 @@ const AgentBusinessCreation: React.FC = () => {
                             });
                           }
                         }}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-500 file:text-white hover:file:bg-primary-600"
                       />
                       {formData.documents.partnersIds[index] && (
-                        <p className="text-sm text-green-600 mt-1">✓ {formData.documents.partnersIds[index].name}</p>
+                        <p className="text-sm text-primary-600 mt-1">✓ {formData.documents.partnersIds[index].name}</p>
                       )}
                     </div>
                   ))}
@@ -629,7 +653,7 @@ const AgentBusinessCreation: React.FC = () => {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-600"
                   />
                   {formData.documents.statutes && (
-                    <p className="text-sm text-green-600 mt-1">✓ {formData.documents.statutes.name}</p>
+                    <p className="text-sm text-primary-600 mt-1">✓ {formData.documents.statutes.name}</p>
                   )}
                 </div>
 
@@ -655,7 +679,7 @@ const AgentBusinessCreation: React.FC = () => {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-600"
                   />
                   {formData.documents.residenceProof && (
-                    <p className="text-sm text-green-600 mt-1">✓ {formData.documents.residenceProof.name}</p>
+                    <p className="text-sm text-primary-600 mt-1">✓ {formData.documents.residenceProof.name}</p>
                   )}
                 </div>
 
@@ -682,7 +706,7 @@ const AgentBusinessCreation: React.FC = () => {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-600"
                   />
                   {formData.documents.commerceRegistry && (
-                    <p className="text-sm text-green-600 mt-1">✓ {formData.documents.commerceRegistry.name}</p>
+                    <p className="text-sm text-primary-600 mt-1">✓ {formData.documents.commerceRegistry.name}</p>
                   )}
                 </div>
               </div>
@@ -692,29 +716,29 @@ const AgentBusinessCreation: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-lg border">
               <h4 className="font-medium text-gray-800 mb-3">Résumé des Documents</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div className={`flex items-center ${formData.documents.representativeId ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`flex items-center ${formData.documents.representativeId ? 'text-primary-600' : 'text-red-600'}`}>
                   <span className="mr-2">{formData.documents.representativeId ? '✓' : '✗'}</span>
                   Pièce d'identité représentant
                 </div>
                 
                 {formData.businessType === 'Société' && formData.partners.map((partner, index) => (
-                  <div key={index} className={`flex items-center ${formData.documents.partnersIds[index] ? 'text-green-600' : 'text-red-600'}`}>
+                  <div key={index} className={`flex items-center ${formData.documents.partnersIds[index] ? 'text-primary-600' : 'text-red-600'}`}>
                     <span className="mr-2">{formData.documents.partnersIds[index] ? '✓' : '✗'}</span>
                     ID {partner.firstName} {partner.lastName}
                   </div>
                 ))}
                 
-                <div className={`flex items-center ${formData.documents.statutes ? 'text-green-600' : 'text-gray-500'}`}>
+                <div className={`flex items-center ${formData.documents.statutes ? 'text-primary-600' : 'text-gray-500'}`}>
                   <span className="mr-2">{formData.documents.statutes ? '✓' : '○'}</span>
                   Statuts (optionnel)
                 </div>
                 
-                <div className={`flex items-center ${formData.documents.residenceProof ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`flex items-center ${formData.documents.residenceProof ? 'text-primary-600' : 'text-red-600'}`}>
                   <span className="mr-2">{formData.documents.residenceProof ? '✓' : '✗'}</span>
                   Justificatif de résidence
                 </div>
                 
-                <div className={`flex items-center ${formData.documents.commerceRegistry ? 'text-green-600' : 'text-gray-500'}`}>
+                <div className={`flex items-center ${formData.documents.commerceRegistry ? 'text-primary-600' : 'text-gray-500'}`}>
                   <span className="mr-2">{formData.documents.commerceRegistry ? '✓' : '○'}</span>
                   Registre de commerce (optionnel)
                 </div>
@@ -823,7 +847,7 @@ const AgentBusinessCreation: React.FC = () => {
                   setCurrentStep(currentStep + 1);
                 }
               }}
-              className="px-6 py-2 bg-mali-emerald text-white rounded-lg hover:bg-emerald-600 transition-colors duration-300"
+              className="px-6 py-2 bg-mali-emerald text-white rounded-lg hover:bg-primary-600 transition-colors duration-300"
             >
               Suivant
             </button>
@@ -831,7 +855,7 @@ const AgentBusinessCreation: React.FC = () => {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-6 py-2 bg-mali-gold text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 flex items-center gap-2"
+              className="px-6 py-2 bg-mali-gold text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 flex items-center gap-2"
             >
               {submitting && (
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -847,8 +871,78 @@ const AgentBusinessCreation: React.FC = () => {
         )}
         </div>
       </div>
+
+      {/* Modal du reçu temporaire NON PAYÉ */}
+      {showReceipt && generatedReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Reçu Temporaire - NON PAYÉ</h2>
+                <button
+                  onClick={() => setShowReceipt(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                <p className="text-primary-800 font-medium">
+                  ⚠️ Ce reçu est temporaire et indique un statut "NON PAYÉ". 
+                  Il n'est pas sauvegardé en base de données et sert d'aperçu pour le client.
+                </p>
+              </div>
+              
+              <PaymentReceipt 
+                paymentData={generatedReceipt} 
+                onClose={() => setShowReceipt(false)} 
+              />
+              
+              <div className="mt-6 flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowReceipt(false)}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                >
+                  Imprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AgentBusinessCreation;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -133,7 +133,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
           }}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
             signatureMode === 'draw'
-              ? 'bg-mali-emerald text-white'
+              ? 'bg-investmali-accent text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -147,7 +147,7 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
           }}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
             signatureMode === 'upload'
-              ? 'bg-mali-emerald text-white'
+              ? 'bg-investmali-accent text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -235,3 +235,4 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
 };
 
 export default SignatureCanvas;
+

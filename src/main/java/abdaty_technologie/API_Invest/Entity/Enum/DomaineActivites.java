@@ -5,55 +5,81 @@ public enum DomaineActivites {
    
     ADMINISTRATEURS_ET_AGENTS_IMMOBILIERS(
         "Administrateurs et Agents Immobiliers",
-        DomaineActiviteNr.IMMOBILIER_ET_CONSTRUCTION
+        DomaineActiviteNr.ACTIVITES_AGENCES_IMMOBILIERES
     ),
     ARCHITECTE(
         "Architecte",
-        DomaineActiviteNr.INGENIERIE_ET_ETUDES
+        DomaineActiviteNr.ACTIVITES_ARCHITECTURE_INGENIERIE
     ),
     BTP(
         "BTP",
-        DomaineActiviteNr.IMMOBILIER_ET_CONSTRUCTION
+        DomaineActiviteNr.CONSTRUCTION_BATIMENTS_COMPLETS
     ),
     CARTOGRAPHIE_TOPOGRAPHIE(
         "Cartographie / Topographie",
-        DomaineActiviteNr.INGENIERIE_ET_ETUDES
+        DomaineActiviteNr.ACTIVITES_CONTROLE_ANALYSES
     ),
     GEOMETRES_EXPERTS(
         "Géomètres-Experts",
-        DomaineActiviteNr.INGENIERIE_ET_ETUDES
+        DomaineActiviteNr.ACTIVITES_ARCHITECTURE_INGENIERIE
     ),
     INGENIEUR_CONSEIL(
         "Ingénieur-Conseil",
-        DomaineActiviteNr.INGENIERIE_ET_ETUDES
+        DomaineActiviteNr.ACTIVITES_ARCHITECTURE_INGENIERIE
     ),
     PRODUCTEUR_DE_SPECTACLES(
         "Producteur de Spectacles",
-        DomaineActiviteNr.TOURISME_CULTURE_ET_ARTISANAT
+        DomaineActiviteNr.ACTIVITES_CREATIVES_ARTISTIQUES
     ),
     PROMOTEUR_IMMOBILIER(
         "Promoteur Immobilier",
-        DomaineActiviteNr.IMMOBILIER_ET_CONSTRUCTION
+        DomaineActiviteNr.PROMOTION_IMMOBILIERE
     ),
     STATIONS(
         "Stations (ex. stations-service)",
-        DomaineActiviteNr.ENERGIE_ET_RESSOURCES_NATURELLES
+        DomaineActiviteNr.COMMERCE_DETAIL_CARBURANTS
     ),
     TRANSPORT(
         "Transport",
-        DomaineActiviteNr.TRANSPORTS_ET_LOGISTIQUE
+        DomaineActiviteNr.TRANSPORTS_ROUTIERS_PASSAGERS
     ),
     URBANISTE(
         "Urbaniste",
-        DomaineActiviteNr.URBANISME_ET_AMENAGEMENT
+        DomaineActiviteNr.ACTIVITES_ARCHITECTURE_INGENIERIE
     ),
     ETABLISSEMENT_DE_TOURISME(
         "Établissement de tourisme",
-        DomaineActiviteNr.TOURISME_CULTURE_ET_ARTISANAT
+        DomaineActiviteNr.HEBERGEMENT
     ),
     AGENCE_DE_VOYAGE(
         "Agence de voyage",
-        DomaineActiviteNr.TOURISME_CULTURE_ET_ARTISANAT
+        DomaineActiviteNr.ACTIVITES_AGENCES_RESERVATION
+    ),
+    
+    // Nouveaux domaines d'activité basés sur les données en base
+    ELEVAGE(
+        "Élevage",
+        DomaineActiviteNr.ELEVAGE
+    ),
+    ACTIVITES_SOUTIEN_AGRICULTURE(
+        "Activités de soutien à l'agriculture",
+        DomaineActiviteNr.ACTIVITES_SOUTIEN_AGRICULTURE
+    ),
+    HEVEA_CULTURE(
+        "Culture d'hévéa",
+        DomaineActiviteNr.HEVEA_CULTURE
+    ),
+    FABRICATION_CARTON_ONDULE(
+        "Fabrication de carton ondulé",
+        DomaineActiviteNr.FABRICATION_CARTON_ONDULE
+    ),
+    FABRICATION_AUTRES_PRODUITS_CERAMIQUES(
+        "Fabrication d'autres produits céramiques",
+        DomaineActiviteNr.FABRICATION_AUTRES_PRODUITS_CERAMIQUES
+    ),
+    TISSAGE_TEXTILE(
+        "Tissage textile",
+        DomaineActiviteNr.TISSAGE_TEXTILE
     );
 
     private final String value;

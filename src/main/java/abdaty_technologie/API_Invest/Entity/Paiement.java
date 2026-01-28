@@ -11,12 +11,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import lombok.Getter;
-import lombok.Setter;
-
 @Entity
-@Getter
-@Setter
 public class Paiement extends BaseEntity {
 
     @Column(name="type_paiement", nullable = false)
@@ -45,12 +40,49 @@ public class Paiement extends BaseEntity {
     @Column(name = "numero_compte")
     private String numeroCompte; // Pour virements bancaires
 
+    @Column(name = "pay_token")
+    private String payToken; // Token de paiement Orange Money V2
+
     @ManyToOne(optional = true)
     @JoinColumn(name = "entreprise_id", nullable = true)
     private Entreprise entreprise;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "personne_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "personne_id", nullable = true)
     private Persons personne;
+    
+    // Getters and Setters
+    public TypePaiement getTypePaiement() { return typePaiement; }
+    public void setTypePaiement(TypePaiement typePaiement) { this.typePaiement = typePaiement; }
+    
+    public StatutPaiement getStatut() { return statut; }
+    public void setStatut(StatutPaiement statut) { this.statut = statut; }
+    
+    public BigDecimal getMontant() { return montant; }
+    public void setMontant(BigDecimal montant) { this.montant = montant; }
+    
+    public String getReferenceTransaction() { return referenceTransaction; }
+    public void setReferenceTransaction(String referenceTransaction) { this.referenceTransaction = referenceTransaction; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public LocalDateTime getDatePaiement() { return datePaiement; }
+    public void setDatePaiement(LocalDateTime datePaiement) { this.datePaiement = datePaiement; }
+    
+    public String getNumeroTelephone() { return numeroTelephone; }
+    public void setNumeroTelephone(String numeroTelephone) { this.numeroTelephone = numeroTelephone; }
+    
+    public String getNumeroCompte() { return numeroCompte; }
+    public void setNumeroCompte(String numeroCompte) { this.numeroCompte = numeroCompte; }
+    
+    public String getPayToken() { return payToken; }
+    public void setPayToken(String payToken) { this.payToken = payToken; }
+    
+    public Entreprise getEntreprise() { return entreprise; }
+    public void setEntreprise(Entreprise entreprise) { this.entreprise = entreprise; }
+    
+    public Persons getPersonne() { return personne; }
+    public void setPersonne(Persons personne) { this.personne = personne; }
 }
 

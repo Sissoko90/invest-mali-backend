@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 export type Filters = {
   status?: string;
@@ -80,3 +80,27 @@ const ApplicationFilters: React.FC<Props> = ({ value, onChange, onReset, loading
 };
 
 export default ApplicationFilters;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -128,11 +128,11 @@ const Register: React.FC = () => {
         {/* Header */}
         <div className="text-center animate-fade-in">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-mali-emerald to-mali-emerald/80 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-r from-investmali-accent to-investmali-accent/80 rounded-2xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-2xl">IM</span>
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-mali-dark">
+          <h2 className="text-3xl font-extrabold text-investmali-neutral-dark">
             Créez votre compte
           </h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -145,7 +145,7 @@ const Register: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
             {/* Informations personnelles */}
             <div>
-              <h3 className="text-lg font-semibold text-mali-dark mb-4">Informations personnelles</h3>
+              <h3 className="text-lg font-semibold text-investmali-neutral-dark mb-4">Informations personnelles</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -158,7 +158,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                     placeholder="Votre prénom"
                   />
                 </div>
@@ -173,7 +173,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                     placeholder="Votre nom"
                   />
                 </div>
@@ -191,7 +191,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.civility}
                     onChange={handleCivilityChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                   >
                     <option value="">Sélectionnez votre civilité</option>
                     <option value="MONSIEUR">Monsieur</option>
@@ -209,7 +209,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.sexe}
                     onChange={handleSexeChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                   >
                     <option value="">Sélectionnez votre sexe</option>
                     <option value="MASCULIN">Masculin</option>
@@ -232,7 +232,7 @@ const Register: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                   placeholder="votre@email.com"
                 />
               </div>
@@ -251,7 +251,7 @@ const Register: React.FC = () => {
 
             {/* Informations entreprise */}
             <div>
-              <h3 className="text-lg font-semibold text-mali-dark mb-4">Informations entreprise</h3>
+              <h3 className="text-lg font-semibold text-investmali-neutral-dark mb-4">Informations entreprise</h3>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,7 +264,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.companyName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                     placeholder="Nom de votre entreprise"
                   />
                 </div>
@@ -278,7 +278,7 @@ const Register: React.FC = () => {
                     required
                     value={formData.businessType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                   >
                     <option value="">Sélectionnez votre secteur</option>
                     <option value="commerce">Commerce</option>
@@ -307,13 +307,13 @@ const Register: React.FC = () => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                     placeholder="Mot de passe sécurisé"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-mali-emerald transition-colors duration-300"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {showPassword ? (
@@ -337,13 +337,13 @@ const Register: React.FC = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
                     placeholder="Confirmez votre mot de passe"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-mali-emerald transition-colors duration-300"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-investmali-accent transition-colors duration-300"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {showConfirmPassword ? (
@@ -367,17 +367,17 @@ const Register: React.FC = () => {
                   required
                   checked={formData.acceptTerms}
                   onChange={handleInputChange}
-                  className="w-4 h-4 text-mali-emerald bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
+                  className="w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
                 />
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="acceptTerms" className="text-gray-700">
                   J'accepte les{' '}
-                  <a href="#" className="text-mali-emerald hover:text-mali-emerald/80 font-medium">
+                  <a href="#" className="text-investmali-accent hover:text-investmali-accent/80 font-medium">
                     conditions d'utilisation
                   </a>{' '}
                   et la{' '}
-                  <a href="#" className="text-mali-emerald hover:text-mali-emerald/80 font-medium">
+                  <a href="#" className="text-investmali-accent hover:text-investmali-accent/80 font-medium">
                     politique de confidentialité
                   </a>
                 </label>
@@ -404,7 +404,7 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-mali-emerald to-mali-emerald/90 hover:from-mali-emerald/90 hover:to-mali-emerald focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-investmali-accent to-investmali-accent/90 hover:from-investmali-accent/90 hover:to-investmali-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <span className="relative z-10">
                 {isLoading ? 'Création en cours...' : 'Créer mon compte'}
@@ -418,7 +418,7 @@ const Register: React.FC = () => {
         <div className="text-center animate-fade-in" style={{animationDelay: '0.4s'}}>
           <p className="text-sm text-gray-600">
             Vous avez déjà un compte ?{' '}
-            <Link to="/login" className="font-medium text-mali-emerald hover:text-mali-emerald/80 transition-colors duration-300">
+            <Link to="/login" className="font-medium text-investmali-accent hover:text-investmali-accent/80 transition-colors duration-300">
               Se connecter
             </Link>
           </p>
@@ -429,3 +429,4 @@ const Register: React.FC = () => {
 };
 
 export default Register;
+

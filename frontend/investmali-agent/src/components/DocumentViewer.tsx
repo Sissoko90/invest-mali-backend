@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
+import { API_CONFIG } from '../config/api.config';
 import { 
   XMarkIcon,
   ArrowDownTrayIcon,
@@ -38,9 +39,8 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setLoading(true);
       setError(null);
       
-      console.log('📄 Chargement du document:', documentId);
       
-      const response = await fetch(`http://localhost:8080/api/v1/documents/${documentId}/file`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/documents/${documentId}/file`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`
         }
@@ -59,7 +59,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
       const url = URL.createObjectURL(blob);
       setDocumentUrl(url);
       
-      console.log('✅ Document chargé:', { contentType, size: blob.size });
     } catch (error) {
       console.error('❌ Erreur lors du chargement du document:', error);
       setError('Erreur lors du chargement du document');
@@ -233,3 +232,27 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
 };
 
 export default DocumentViewer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

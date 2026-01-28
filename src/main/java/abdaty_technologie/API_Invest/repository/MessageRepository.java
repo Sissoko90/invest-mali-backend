@@ -19,12 +19,14 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     /**
      * Trouve tous les messages d'une conversation
      */
-    Page<Message> findByConversationIdOrderByCreationAsc(String conversationId, Pageable pageable);
+    @Query("SELECT m FROM Message m WHERE m.conversation.id = :conversationId ORDER BY m.creation ASC")
+    Page<Message> findByConversationIdOrderByCreationAsc(@Param("conversationId") String conversationId, Pageable pageable);
 
     /**
      * Trouve tous les messages d'une conversation (liste simple)
      */
-    List<Message> findByConversationIdOrderByCreationAsc(String conversationId);
+    @Query("SELECT m FROM Message m WHERE m.conversation.id = ?1 ORDER BY m.creation ASC")
+    List<Message> findByConversation_IdOrderByCreationAsc(String conversationId);
 
     /**
      * Trouve les messages non lus d'une conversation pour un utilisateur spécifique
@@ -49,7 +51,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
      * Marque tous les messages d'une conversation comme lus pour un utilisateur
      */
     @Modifying
-    @Query("UPDATE Message m SET m.isRead = true, m.readAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE Message m SET m.isRead = true " +
            "WHERE m.conversation.id = :conversationId " +
            "AND m.sender.id != :userId " +
            "AND m.isRead = false")
@@ -91,6 +93,12 @@ public interface MessageRepository extends JpaRepository<Message, String> {
                                               @Param("keyword") String keyword);
 
     /**
+     * Trouve tous les messages d'une conversation avec requête native
+     */
+    @Query(value = "SELECT m.id, m.content, m.created_at, m.sender_id, m.conversation_id, m.message_type, m.is_read FROM messages m WHERE m.conversation_id = :conversationId ORDER BY m.created_at ASC", nativeQuery = true)
+    List<Object[]> findMessagesByConversationIdNative(@Param("conversationId") String conversationId);
+
+    /**
      * Supprime tous les messages d'une conversation
      */
     void deleteByConversationId(String conversationId);
@@ -104,4 +112,9 @@ public interface MessageRepository extends JpaRepository<Message, String> {
      * Trouve les messages d'un expéditeur spécifique dans une conversation
      */
     List<Message> findByConversationIdAndSenderIdOrderByCreationAsc(String conversationId, String senderId);
+
+    /**
+     * Compte les messages non lus dans une conversation
+     */
+    long countByConversationIdAndIsReadFalse(String conversationId);
 }

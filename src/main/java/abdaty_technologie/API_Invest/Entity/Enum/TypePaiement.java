@@ -1,6 +1,7 @@
 package abdaty_technologie.API_Invest.Entity.Enum;
 
 public enum TypePaiement {
+    TRESORPAY("TresorPay"),
     CARTE_BANCAIRE("Carte bancaire"),
     MOBILE_MONEY("Mobile Money"),
     // VIREMENT_BANCAIRE("Virement bancaire"),

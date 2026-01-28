@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { entreprisesAPI } from '../services/api';
 import StepNavigation from './StepNavigation';
 import AccueilStep from './AccueilStep';
 import RegisseurStep from './RegisseurStep';
+import RevisionStep from './RevisionStep';
+import ImpotsStep from './ImpotsStep';
+import TCOMStep from './TCOMStep';
+import RCCM2Step from './RCCM2Step';
+import NinaStep from './NinaStep';
+import RetraitStep from './RetraitStep';
 import RoleProtectedRoute from './RoleProtectedRoute';
 import { Dossier, Entreprise } from '../types';
 import { 
@@ -36,10 +42,11 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
     if (agent) {
       const roleStepMapping: Record<string, string> = {
         'AGENT_ACCEUIL': 'ACCUEIL',
+        'AGENT_REGISTER': 'REGISSEUR', // AGENT_REGISTER utilise RegisseurStep
         'REGISSEUR': 'REGISSEUR',
         'AGENT_REVISION': 'REVISION',
-        'AGENT_IMPOT': 'IMPOT',
-        'AGENT_RCCM1': 'RCCM1',
+        'AGENT_IMPOT': 'IMPOTS',
+        'AGENT_TCOM': 'TCOM',
         'AGENT_RCCM2': 'RCCM2',
         'AGENT_NINA': 'NINA',
         'AGENT_RETRAIT': 'RETRAIT',
@@ -91,6 +98,11 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
     setDossier(updatedDossier);
   };
 
+  const handleEntrepriseUpdate = (updatedEntreprise: Entreprise) => {
+    setEntreprise(updatedEntreprise);
+    console.log('🔄 [DossierWorkflow] Entreprise mise à jour:', updatedEntreprise);
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 'ACCUEIL':
@@ -109,7 +121,7 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
       case 'REGISSEUR':
         return (
           <RoleProtectedRoute 
-            allowedRoles={['REGISSEUR', 'SUPER_ADMIN']}
+            allowedRoles={['AGENT_REGISTER', 'REGISSEUR', 'SUPER_ADMIN']}
             requiredStep="REGISSEUR"
           >
             <RegisseurStep 
@@ -124,51 +136,36 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
             allowedRoles={['AGENT_REVISION', 'SUPER_ADMIN']}
             requiredStep="REVISION"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape REVISION</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités de révision en cours de développement
-                </p>
-              </div>
-            </div>
+            <RevisionStep 
+              onDossierUpdate={handleDossierUpdate}
+            />
           </RoleProtectedRoute>
         );
       
-      case 'IMPOT':
+      case 'IMPOTS':
         return (
           <RoleProtectedRoute 
             allowedRoles={['AGENT_IMPOT', 'SUPER_ADMIN']}
-            requiredStep="IMPOT"
+            requiredStep="IMPOTS"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape IMPÔTS</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités fiscales en cours de développement
-                </p>
-              </div>
-            </div>
+            <ImpotsStep 
+              canEditStep={canEditStep}
+              onDossierUpdate={handleDossierUpdate}
+            />
           </RoleProtectedRoute>
         );
       
-      case 'RCCM1':
+      
+      case 'TCOM':
         return (
           <RoleProtectedRoute 
-            allowedRoles={['AGENT_RCCM1', 'SUPER_ADMIN']}
-            requiredStep="RCCM1"
+            allowedRoles={['AGENT_TCOM', 'SUPER_ADMIN']}
+            requiredStep="TCOM"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape RCCM Phase 1</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités RCCM Phase 1 en cours de développement
-                </p>
-              </div>
-            </div>
+            <TCOMStep 
+              canEditStep={canEditStep}
+              onDossierUpdate={handleDossierUpdate}
+            />
           </RoleProtectedRoute>
         );
       
@@ -178,15 +175,10 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
             allowedRoles={['AGENT_RCCM2', 'SUPER_ADMIN']}
             requiredStep="RCCM2"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape RCCM Phase 2</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités RCCM Phase 2 en cours de développement
-                </p>
-              </div>
-            </div>
+            <RCCM2Step 
+              canEditStep={canEditStep}
+              onDossierUpdate={handleDossierUpdate}
+            />
           </RoleProtectedRoute>
         );
       
@@ -196,15 +188,9 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
             allowedRoles={['AGENT_NINA', 'SUPER_ADMIN']}
             requiredStep="NINA"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape NINA</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités NINA en cours de développement
-                </p>
-              </div>
-            </div>
+            <NinaStep 
+              onEntrepriseUpdate={handleEntrepriseUpdate}
+            />
           </RoleProtectedRoute>
         );
       
@@ -214,24 +200,18 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
             allowedRoles={['AGENT_RETRAIT', 'SUPER_ADMIN']}
             requiredStep="RETRAIT"
           >
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FolderOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Étape RETRAIT</h3>
-                <p className="text-gray-600">
-                  Fonctionnalités de retrait en cours de développement
-                </p>
-              </div>
-            </div>
+            <RetraitStep 
+              onDossierUpdate={handleDossierUpdate}
+            />
           </RoleProtectedRoute>
         );
       
       default:
         return (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
             <div className="flex items-center">
-              <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 mr-2" />
-              <p className="text-yellow-800">Étape non reconnue: {currentStep}</p>
+              <ExclamationTriangleIcon className="h-5 w-5 text-primary-400 mr-2" />
+              <p className="text-primary-800">Étape non reconnue: {currentStep}</p>
             </div>
           </div>
         );
@@ -240,9 +220,11 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mali-emerald"></div>
-        <span className="ml-2 text-gray-600">Chargement du dossier...</span>
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-sm">Chargement du dossier...</p>
+        </div>
       </div>
     );
   }
@@ -250,48 +232,73 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
   return (
     <div className="flex gap-6">
       {/* Navigation des étapes */}
-      <div className="w-80 flex-shrink-0">
-        <StepNavigation
-          currentStep={currentStep}
-          onStepChange={handleStepChange}
-          dossierStatus={dossier?.statut}
-        />
+      <div className="w-0 flex-shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <StepNavigation
+            currentStep={currentStep}
+            onStepChange={handleStepChange}
+            dossierStatus={dossier?.statut}
+          />
+        </div>
         
         {/* Informations du dossier */}
-        {dossier && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center mb-3">
-              <InformationCircleIcon className="h-5 w-5 text-mali-emerald mr-2" />
-              <h4 className="text-sm font-medium text-gray-900">Informations du dossier</h4>
-            </div>
+        {/* {dossier && (
+          <div className="mt-4 bg-white rounded-xl border border-gray-200 p-4">
+            <h4 className="text-sm font-semibold text-gray-800 mb-3">Informations du dossier</h4>
             <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-gray-600">Référence:</span>
-                <span className="ml-2 font-medium">{dossier.reference}</span>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Référence</span>
+                <span className="font-medium text-gray-800">{dossier.reference}</span>
               </div>
-              <div>
-                <span className="text-gray-600">Entreprise:</span>
-                <span className="ml-2 font-medium">{dossier.nom}</span>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Entreprise</span>
+                <span className="font-medium text-gray-800">{dossier.nom}</span>
               </div>
-              <div>
-                <span className="text-gray-600">Statut:</span>
-                <span className="ml-2 font-medium">{dossier.statut}</span>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Statut</span>
+                <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">{dossier.statut}</span>
               </div>
-              <div>
-                <span className="text-gray-600">Division:</span>
-                <span className="ml-2">{dossier.division}</span>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Division</span>
+                <span className="text-gray-700">{dossier.division}</span>
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
       
       {/* Contenu de l'étape */}
       <div className="flex-1">
-        {renderStepContent()}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {renderStepContent()}
+        </div>
       </div>
     </div>
   );
 };
 
 export default DossierWorkflow;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

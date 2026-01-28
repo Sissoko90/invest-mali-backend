@@ -14,12 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import lombok.Getter;
-import lombok.Setter;
-
 @Entity
-@Getter
-@Setter
 public class Divisions extends BaseEntity {
 
   @Column(name="code", nullable = false, unique = true)
@@ -48,4 +43,26 @@ public class Divisions extends BaseEntity {
   @JsonIgnore
   @OneToMany(mappedBy = "division", cascade = CascadeType.ALL) 
   private List<Entreprise> entreprise = new ArrayList<>();
+  
+  // Getters and Setters
+  public String getCode() { return code; }
+  public void setCode(String code) { this.code = code; }
+  
+  public String getNom() { return nom; }
+  public void setNom(String nom) { this.nom = nom; }
+  
+  public DivisionType getDivisionType() { return divisionType; }
+  public void setDivisionType(DivisionType divisionType) { this.divisionType = divisionType; }
+  
+  public Divisions getParent() { return parent; }
+  public void setParent(Divisions parent) { this.parent = parent; }
+  
+  public List<Divisions> getEnfants() { return enfants; }
+  public void setEnfants(List<Divisions> enfants) { this.enfants = enfants; }
+  
+  public List<Persons> getPersonne() { return personne; }
+  public void setPersonne(List<Persons> personne) { this.personne = personne; }
+  
+  public List<Entreprise> getEntreprise() { return entreprise; }
+  public void setEntreprise(List<Entreprise> entreprise) { this.entreprise = entreprise; }
 }

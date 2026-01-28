@@ -15,9 +15,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -27,6 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain chain) throws ServletException, IOException {
 
         final String requestTokenHeader = request.getHeader("Authorization");
+        String requestURI = request.getRequestURI();
+
+        // Logs de diagnostic pour Orange Money V2
+        if (requestURI.contains("/orange-money/v2/")) {
+            logger.info("🔍 [JWT] Requête Orange Money V2: {}", requestURI);
+            logger.info("🔍 [JWT] Header Authorization: {}", requestTokenHeader != null ? "PRÉSENT" : "ABSENT");
+        }
 
         String username = null;
         String jwtToken = null;
@@ -36,9 +47,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtUtil.getUsernameFromToken(jwtToken);
+                if (requestURI.contains("/orange-money/v2/")) {
+                    logger.info("🔍 [JWT] Username extrait du token: {}", username);
+                }
             } catch (Exception e) {
-                logger.error("Impossible d'obtenir le nom d'utilisateur du token JWT", e);
+                logger.error("❌ [JWT] Impossible d'obtenir le nom d'utilisateur du token JWT", e);
             }
+        } else if (requestURI.contains("/orange-money/v2/")) {
+            logger.warn("⚠️ [JWT] Aucun token Bearer trouvé pour Orange Money V2");
         }
 
         // Une fois que nous obtenons le token, validons-le

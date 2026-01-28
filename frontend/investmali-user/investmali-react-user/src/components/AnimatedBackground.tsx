@@ -31,27 +31,27 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   return (
     <div className={`absolute top-0 left-0 w-full h-full pointer-events-none select-none overflow-hidden ${className}`}>
       {/* Formes géométriques animées */}
-      <div className={`absolute top-20 left-10 ${sizes.large} bg-mali-gold/${opacity.replace('0.', '')}0 rounded-full animate-pulse`}></div>
+      <div className={`absolute top-20 left-10 ${sizes.large} bg-investmali-warning/${opacity.replace('0.', '')}0 rounded-full animate-pulse`}></div>
       <div 
-        className={`absolute top-40 right-20 ${sizes.medium} bg-mali-emerald/${opacity.replace('0.', '')}0 rounded-full animate-bounce`} 
+        className={`absolute top-40 right-20 ${sizes.medium} bg-investmali-accent/${opacity.replace('0.', '')}0 rounded-full animate-bounce`} 
         style={{animationDelay: '1s'}}
       ></div>
       <div 
-        className={`absolute bottom-20 left-1/4 ${sizes.small} bg-mali-purple/${opacity.replace('0.', '')}0 rounded-full animate-ping`} 
+        className={`absolute bottom-20 left-1/4 ${sizes.small} bg-investmali-primary/${opacity.replace('0.', '')}0 rounded-full animate-ping`} 
         style={{animationDelay: '2s'}}
       ></div>
       
       {/* Formes supplémentaires pour plus de dynamisme */}
       <div 
-        className={`absolute top-1/3 right-1/3 w-20 h-20 bg-mali-emerald/${opacity.replace('0.', '')}0 rounded-full animate-pulse`}
+        className={`absolute top-1/3 right-1/3 w-20 h-20 bg-investmali-accent/${opacity.replace('0.', '')}0 rounded-full animate-pulse`}
         style={{animationDelay: '0.5s'}}
       ></div>
       <div 
-        className={`absolute bottom-1/3 right-10 w-14 h-14 bg-mali-gold/${opacity.replace('0.', '')}0 rounded-full animate-bounce`}
+        className={`absolute bottom-1/3 right-10 w-14 h-14 bg-investmali-warning/${opacity.replace('0.', '')}0 rounded-full animate-bounce`}
         style={{animationDelay: '1.5s'}}
       ></div>
       <div 
-        className={`absolute top-1/2 left-20 w-8 h-8 bg-mali-purple/${opacity.replace('0.', '')}0 rounded-full animate-ping`}
+        className={`absolute top-1/2 left-20 w-8 h-8 bg-investmali-primary/${opacity.replace('0.', '')}0 rounded-full animate-ping`}
         style={{animationDelay: '3s'}}
       ></div>
 
@@ -72,7 +72,7 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className={`absolute w-2 h-2 bg-mali-emerald/${opacity.replace('0.', '')}0 rounded-full animate-bounce`}
+            className={`absolute w-2 h-2 bg-investmali-accent/${opacity.replace('0.', '')}0 rounded-full animate-bounce`}
             style={{
               left: `${10 + i * 15}%`,
               top: `${20 + i * 10}%`,
@@ -114,3 +114,4 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 };
 
 export default AnimatedBackground;
+

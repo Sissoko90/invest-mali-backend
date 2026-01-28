@@ -13,7 +13,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.MessageType;
 public class Message extends BaseEntity {
 
     // Référence à la conversation
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
 

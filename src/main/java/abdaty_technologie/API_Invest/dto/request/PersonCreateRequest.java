@@ -40,6 +40,13 @@ public class PersonCreateRequest {
     public String divisionCode;
     // Division ID (UUID) optionnel
     public String division_id;
-    // Localité précise optionnelle
+    // Localité précise optionnelle (rue)
     public String localite;
+    // Numéro de porte optionnel
+    public String porte;
+    // Adresse libre optionnelle
+    public String adresseLibre;
+    // Champs spécifiques aux personnes morales (optionnels)
+    public String paysEmissionRccm;
+    public String denominationEntreprise;
 }

@@ -71,8 +71,7 @@ public class EntrepriseRequest {
     @NotNull
     public FormeJuridique formeJuridique;
 
-    /** Domaine d'activité principal */
-    @NotNull
+    /** Domaine d'activité principal (optionnel - seulement si le domaine non réglementé nécessite une réglementation) */
     public DomaineActivites domaineActivite;
 
     /** Domaine d'activité réglementé (optionnel) */
@@ -82,6 +81,15 @@ public class EntrepriseRequest {
     /** Code de la division (localisation la plus précise connue) */
     @NotBlank
     public String divisionCode;
+    
+    /** Nom de la rue où est située l'entreprise (optionnel) */
+    public String rue;
+    
+    /** Numéro de porte/portail de l'entreprise (optionnel) */
+    public String porte;
+
+    /** Adresse libre du représentant/promoteur (optionnel) */
+    public String representativeAdresseLibre;
 
     /**
      * Participants à l'entreprise (obligatoire): chaque entrée précise le rôle, le pourcentage de parts,

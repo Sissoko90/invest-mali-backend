@@ -13,7 +13,7 @@ import lombok.Setter;
 public class ReferenceSequence {
 
     @Id
-    @Column(name = "year", nullable = false)
+    @Column(name = "`year`", nullable = false)
     private Integer year;
 
     @Column(name = "last_number", nullable = false)

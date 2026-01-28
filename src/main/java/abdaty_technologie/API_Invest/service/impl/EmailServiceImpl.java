@@ -21,25 +21,51 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.from:}")
     private String from;
 
+    @Value("${app.mail.enabled:false}")
+    private boolean mailEnabled;
+
     public EmailServiceImpl(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
     @Override
     public void sendTo(String to, String subject, String text) {
-        if (to == null || to.isBlank()) return;
+        log.info("📧 [EmailService] Tentative d'envoi email - to: {} | subject: {} | mailEnabled: {}", to, subject, mailEnabled);
+        
+        if (!mailEnabled) {
+            log.warn("❌ [EmailService] Mail désactivé (app.mail.enabled=false). Message ignoré pour {} | subject='{}'", to, subject);
+            return;
+        }
+
+        if (to == null || to.isBlank()) {
+            log.warn("❌ [EmailService] Email destinataire vide ou null: '{}'", to);
+            return;
+        }
+        
+        log.info("🔧 [EmailService] Configuration - from: {} | mailSender: {}", from, mailSender != null ? "OK" : "NULL");
+        
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             if (from != null && !from.isBlank()) {
                 msg.setFrom(from);
+                log.debug("✅ [EmailService] From défini: {}", from);
+            } else {
+                log.warn(" [EmailService] Aucun 'from' défini dans la configuration");
             }
             msg.setTo(to);
             msg.setSubject(subject);
             msg.setText(text);
+            
+            log.info(" [EmailService] Envoi en cours vers {} avec mailSender...", to);
             mailSender.send(msg);
-            log.info("[EmailService] Mail envoyé à {} | subject='{}'", to, subject);
-        } catch (Exception ex) {
-            log.warn("[EmailService] Échec envoi mail à {} | subject='{}' | cause={}", to, subject, ex.getMessage());
+            log.info(" [EmailService] Email envoyé avec succès à {}", to);
+        } catch (Exception e) {
+            log.error(" [EmailService] Erreur lors de l'envoi à {} : {}", to, e.getMessage(), e);
+            log.error(" [EmailService] Détails de l'erreur: {}", e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                log.error(" [EmailService] Cause racine: {}", e.getCause().getMessage());
+            }
+            throw e;
         }
     }
 

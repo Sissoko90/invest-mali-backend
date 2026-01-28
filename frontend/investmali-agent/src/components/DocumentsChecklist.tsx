@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   DocumentCheckIcon,
   CloudArrowUpIcon,
@@ -195,11 +195,11 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
   const getStatusIcon = (statut: string) => {
     switch (statut) {
       case 'VALIDE':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircleIcon className="h-5 w-5 text-primary-500" />;
       case 'REJETE':
         return <XCircleIcon className="h-5 w-5 text-red-500" />;
       case 'UPLOADE':
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <ClockIcon className="h-5 w-5 text-primary-500" />;
       default:
         return <ExclamationTriangleIcon className="h-5 w-5 text-gray-400" />;
     }
@@ -290,7 +290,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleDocumentValidation(document.id, true)}
-                      className="px-3 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+                      className="px-3 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
                     >
                       Valider
                     </button>
@@ -323,7 +323,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleValidateToRegisseur}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
           >
             <CheckCircleIcon className="h-4 w-4 mr-2" />
             Valider vers REGISSEUR
@@ -339,7 +339,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
           
           <button
             onClick={handlePutOnHold}
-            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center"
           >
             <ClockIcon className="h-4 w-4 mr-2" />
             Mettre en attente
@@ -383,3 +383,27 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
 };
 
 export default DocumentsChecklist;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

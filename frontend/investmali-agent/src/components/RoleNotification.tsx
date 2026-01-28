@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { 
   InformationCircleIcon,
@@ -37,8 +37,7 @@ const RoleNotification: React.FC = () => {
       'REGISSEUR': 'Vous gérez l\'étape de régie, vérifiez les documents et traitez les aspects administratifs.',
       'AGENT_REVISION': 'Vous contrôlez et révisez les documents soumis, validez leur conformité.',
       'AGENT_IMPOT': 'Vous traitez les aspects fiscaux et les déclarations d\'impôts des entreprises.',
-      'AGENT_RCCM1': 'Vous gérez la première phase du registre de commerce et du crédit mobilier.',
-      'AGENT_RCCM2': 'Vous finalisez le registre de commerce et du crédit mobilier.',
+      'AGENT_RCCM2': 'Vous gérez le registre de commerce et du crédit mobilier (RCCM).',
       'AGENT_NINA': 'Vous gérez l\'attribution du numéro d\'identification nationale des entreprises.',
       'AGENT_RETRAIT': 'Vous finalisez le processus et gérez la remise des documents aux clients.',
       'SUPER_ADMIN': 'Vous avez un accès complet à toutes les étapes et pouvez forcer les transitions.'
@@ -56,9 +55,9 @@ const RoleNotification: React.FC = () => {
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
           {hasRole('SUPER_ADMIN') ? (
-            <ShieldCheckIcon className="h-6 w-6 text-yellow-500" />
+            <ShieldCheckIcon className="h-6 w-6 text-primary-500" />
           ) : (
-            <InformationCircleIcon className="h-6 w-6 text-blue-500" />
+            <InformationCircleIcon className="h-6 w-6 text-primary-500" />
           )}
         </div>
         
@@ -106,3 +105,27 @@ const RoleNotification: React.FC = () => {
 };
 
 export default RoleNotification;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

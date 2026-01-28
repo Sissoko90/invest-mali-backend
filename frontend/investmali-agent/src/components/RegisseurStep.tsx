@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   CurrencyDollarIcon, 
   CreditCardIcon, 
@@ -7,10 +7,13 @@ import {
   CheckCircleIcon,
   ArrowLeftIcon,
   ClockIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { DemandeEntreprise } from '../types';
+import { API_CONFIG } from '../config/api.config';
+import PaymentMethodModal from './PaymentMethodModal';
 
 interface Paiement {
   id: string;
@@ -21,6 +24,24 @@ interface Paiement {
   dateInitiation: string;
   dateConfirmation?: string;
   reference: string;
+}
+
+interface PaiementResponse {
+  id: string;
+  typePaiement: string;
+  statut: string;
+  montant: number | string; // Peut être un BigDecimal du backend
+  referenceTransaction: string;
+  description?: string;
+  datePaiement?: string;
+  dateCreation?: string;
+  numeroTelephone?: string;
+  numeroCompte?: string;
+  personneId?: string;
+  personneNom?: string;
+  personnePrenom?: string;
+  entrepriseId?: string;
+  entrepriseNom?: string;
 }
 
 interface Frais {
@@ -38,22 +59,45 @@ interface DemandeRegisseur extends DemandeEntreprise {
   dateValidationAccueil?: string;
   noteValidation?: string;
   agentAccueil?: string;
+  totalAmount?: number;
 }
 
 interface RegisseurStepProps {
+  dossier?: any;
   onDossierUpdate?: (dossier: any) => void;
 }
 
-const RegisseurStep: React.FC<RegisseurStepProps> = ({ onDossierUpdate }) => {
+const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate }) => {
   const { agent, canEditStep } = useAgentAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<'demandes' | 'paiements'>('demandes');
   const [isLoading, setIsLoading] = useState(false);
   const [regisseurDemandes, setRegisseurDemandes] = useState<DemandeRegisseur[]>([]);
   const [selectedDemande, setSelectedDemande] = useState<DemandeRegisseur | null>(null);
-  const [paiementMethod, setPaiementMethod] = useState<'CASH' | 'ORANGE_MONEY' | 'MOOV_MONEY' | 'STRIPE'>('CASH');
+  const [paiementMethod, setPaiementMethod] = useState<'CASH' | 'MOOV_MONEY' |  'ORANGE_MONEY' | 'STRIPE'>('CASH');
   const [fraisCalcules, setFraisCalcules] = useState<any>(null);
+  const [paiementsConfirmes, setPaiementsConfirmes] = useState<PaiementResponse[]>([]);
+
+  // États pour le modal de paiement
+  const [paiementModalOpen, setPaiementModalOpen] = useState(false);
+  const [paiementEntreprise, setPaiementEntreprise] = useState<{
+    id: string;
+    nom: string;
+    totalAmount?: number;
+  } | null>(null);
 
   const canEdit = canEditStep('REGISSEUR');
+
+  // Effet pour détecter le scroll et appliquer le sticky
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setIsScrolled(scrollTop > 100); // Devient sticky après 100px de scroll
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   const REGISSEUR_DEMANDES_KEY = 'investmali_regisseur_demandes';
   const REVISION_DEMANDES_KEY = 'investmali_revision_demandes';
 
@@ -62,16 +106,28 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ onDossierUpdate }) => {
     // Nettoyer automatiquement les données de simulation au démarrage
     localStorage.removeItem(REGISSEUR_DEMANDES_KEY);
     localStorage.removeItem(REVISION_DEMANDES_KEY);
-    console.log('🗑️ Données de simulation REGISSEUR automatiquement supprimées');
     
     // Charger directement depuis la base de données
     syncFromDatabase();
+    
+    // Charger les paiements confirmés
+    loadPaiementsConfirmes().then(paiements => {
+      setPaiementsConfirmes(paiements);
+    });
   }, []);
+
+  // Recharger les paiements quand on change d'onglet vers "paiements"
+  useEffect(() => {
+    if (activeTab === 'paiements') {
+      loadPaiementsConfirmes().then(paiements => {
+        setPaiementsConfirmes(paiements);
+      });
+    }
+  }, [activeTab]);
 
   const loadRegisseurDemandes = () => {
     try {
       // Priorité à la synchronisation avec la base de données
-      console.log('📦 Chargement des demandes régisseur...');
       console.log('🎯 Priorité: Base de données (vraies données)');
       
       // Charger depuis localStorage seulement comme fallback temporaire
@@ -102,75 +158,104 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ onDossierUpdate }) => {
   // Synchroniser avec la base de données
   const syncFromDatabase = async () => {
     try {
-      console.log('🔄 Chargement des vraies données REGISSEUR depuis la base de données...');
       
       // Importer l'API des entreprises
       const { entreprisesAPI } = await import('../services/api');
       
-      // Charger toutes les entreprises depuis l'API
-      const response = await entreprisesAPI.list({
+      // Charger les entreprises à l'étape REGISSEUR avec les informations d'assignation
+      const response = await entreprisesAPI.getByEtape('REGISSEUR', {
         page: 0,
         size: 100
       });
       
-      const allEntreprises = response.data?.content || response.data?.data || response.data?.rows || response.data || [];
-      console.log('📊 Total entreprises chargées depuis DB:', allEntreprises.length);
-      
-      // Filtrer celles qui ont etapeActuelle: 'REGISSEUR' ou etapeValidation: 'REGISSEUR'
-      const entreprisesRegisseur = allEntreprises.filter((entreprise: any) => {
-        const etapeActuelle = entreprise.etapeActuelle || entreprise.etape_actuelle || entreprise.etapeValidation || entreprise.etape_validation;
-        const isRegisseur = etapeActuelle === 'REGISSEUR';
-        
-        if (isRegisseur) {
-          console.log(`✅ Entreprise REGISSEUR trouvée: ${entreprise.nom} (${entreprise.id})`);
-        }
-        
-        return isRegisseur;
-      });
-      
-      console.log('🎯 Entreprises pour REGISSEUR trouvées:', entreprisesRegisseur.length);
+      // L'endpoint /etape/REGISSEUR retourne déjà les entreprises filtrées
+      const entreprisesRegisseur = response.data || [];
       
       if (entreprisesRegisseur.length > 0) {
         // Convertir au format attendu par le régisseur
         const demandesForRegisseur = await Promise.all(entreprisesRegisseur.map(async (entreprise: any) => {
           const gerantPersonne = entreprise.gerant || entreprise.gerantPersonne || {};
           
-          // Récupérer les informations de l'agent qui a validé
+          // Récupérer les informations de l'agent qui a validé via assigne_to
           let agentAccueilNom = 'Agent non spécifié';
+          let agentAccueilEmail = null;
+          let agentAccueilId = null;
           
-          // Priorité 1: Nom complet déjà formaté
-          if (entreprise.agentAccueil && entreprise.agentAccueil !== 'Système' && entreprise.agentAccueil !== 'Agent non spécifié') {
-            agentAccueilNom = entreprise.agentAccueil;
+          // Priorité 1: assignedTo (agent qui a fait l'assignation)
+          // Priorité 2: createdBy (agent qui a créé l'entreprise) comme fallback
+          let assigneToData = null;
+          let isUsingFallback = false;
+          
+          if (entreprise.assignedTo) {
+            assigneToData = entreprise.assignedTo;
+          } else {
+            assigneToData = entreprise.createdBy;
+            isUsingFallback = true;
           }
-          // Priorité 2: Prénom et nom séparés
+          
+          
+          if (assigneToData) {
+            
+            // Si assigneToData est un objet (agent complet)
+            if (assigneToData && typeof assigneToData === 'object') {
+              // Extraire les informations de l'objet agent
+              if (assigneToData.firstName && assigneToData.lastName) {
+                agentAccueilNom = `${assigneToData.firstName} ${assigneToData.lastName}`;
+              } else if (assigneToData.nom && assigneToData.prenom) {
+                agentAccueilNom = `${assigneToData.prenom} ${assigneToData.nom}`;
+              } else if (assigneToData.email) {
+                agentAccueilNom = assigneToData.email;
+              } else if (assigneToData.username) {
+                agentAccueilNom = assigneToData.username;
+              } else if (assigneToData.id) {
+                agentAccueilNom = `Agent ID: ${assigneToData.id}`;
+              } else {
+                agentAccueilNom = 'Agent assigné';
+              }
+              
+              agentAccueilEmail = assigneToData.email;
+              agentAccueilId = assigneToData.id;
+              
+            }
+            // Si assigneToData est un simple ID string
+            else if (assigneToData && typeof assigneToData === 'string') {
+              // Essayer de récupérer les infos de l'agent depuis les données disponibles
+              if (entreprise.agentAssigne) {
+                agentAccueilNom = entreprise.agentAssigne;
+              } else if (entreprise.agentAssigneNom && entreprise.agentAssignePrenom) {
+                agentAccueilNom = `${entreprise.agentAssignePrenom} ${entreprise.agentAssigneNom}`;
+              } else if (entreprise.agentAssigneEmail) {
+                agentAccueilNom = entreprise.agentAssigneEmail;
+              } else {
+                agentAccueilNom = `Agent ID: ${assigneToData}`;
+              }
+              
+              agentAccueilEmail = entreprise.agentAssigneEmail;
+              agentAccueilId = assigneToData;
+              
+            }
+          }
+          // Priorité 2: Données stockées dans l'entreprise (fallback)
+          else if (entreprise.agentAccueil && entreprise.agentAccueil !== 'Système' && entreprise.agentAccueil !== 'Agent non spécifié') {
+            agentAccueilNom = entreprise.agentAccueil;
+            agentAccueilEmail = entreprise.agentAccueilEmail;
+            agentAccueilId = entreprise.agentAccueilId;
+          }
+          // Priorité 3: Prénom et nom séparés
           else if (entreprise.agentAccueilPrenom && entreprise.agentAccueilNom) {
             agentAccueilNom = `${entreprise.agentAccueilPrenom} ${entreprise.agentAccueilNom}`;
-          }
-          // Priorité 3: Email comme fallback
-          else if (entreprise.agentAccueilEmail && entreprise.agentAccueilEmail !== 'Agent non spécifié') {
-            agentAccueilNom = entreprise.agentAccueilEmail;
-          }
-          // Priorité 4: ID comme dernier recours
-          else if (entreprise.agentAccueilId) {
-            agentAccueilNom = `Agent ID: ${entreprise.agentAccueilId}`;
+            agentAccueilEmail = entreprise.agentAccueilEmail;
+            agentAccueilId = entreprise.agentAccueilId;
           }
           
-          console.log(`🔍 Agent validation pour ${entreprise.nom}:`, {
-            agentAccueil: entreprise.agentAccueil,
-            agentAccueilPrenom: entreprise.agentAccueilPrenom,
-            agentAccueilNom: entreprise.agentAccueilNom,
-            agentAccueilEmail: entreprise.agentAccueilEmail,
-            agentAccueilId: entreprise.agentAccueilId,
-            result: agentAccueilNom
-          });
-          
-          return {
+          const demandeData = {
             id: entreprise.id,
             nom: entreprise.nom || 'Nom inconnu',
             sigle: entreprise.sigle || '',
             formeJuridique: entreprise.formeJuridique || entreprise.forme_juridique || 'Non spécifiée',
             typeEntreprise: entreprise.typeEntreprise || entreprise.type_entreprise || 'Non spécifié',
             dateCreation: entreprise.dateCreation || entreprise.date_creation || new Date().toISOString(),
+            dateValidationAccueil: entreprise.dateValidationAccueil || entreprise.dateCreation || new Date().toISOString(),
             statut: 'VALIDE',
             demandeur: {
               nom: gerantPersonne.nom || 'Nom inconnu',
@@ -179,21 +264,39 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ onDossierUpdate }) => {
               telephone: gerantPersonne.telephone1 || gerantPersonne.telephone || 'Téléphone inconnu'
             },
             etapeActuelle: 'REGISSEUR',
-            dateValidationAccueil: entreprise.dateValidationAccueil || new Date().toISOString(),
             noteValidation: entreprise.noteValidation || 'Entreprise avec etapeActuelle: REGISSEUR chargée depuis la base de données',
             agentAccueil: agentAccueilNom,
-            agentAccueilEmail: entreprise.agentAccueilEmail,
-            agentAccueilId: entreprise.agentAccueilId
+            agentAccueilNom: agentAccueilNom,
+            agentAccueilEmail: agentAccueilEmail,
+            agentAccueilId: agentAccueilId,
+            totalAmount: entreprise.totalAmount || 0
           };
+          
+          return demandeData;
         }));
         
         // Mettre à jour l'état directement (pas de localStorage)
         setRegisseurDemandes(demandesForRegisseur);
-        console.log('✅ Vraies données REGISSEUR chargées:', demandesForRegisseur.length);
       }
       
-    } catch (error) {
-      console.error('Erreur synchronisation base de données:', error);
+    } catch (error: any) {
+      console.error('❌ [RegisseurStep] Erreur synchronisation base de données:', error);
+      console.error('❌ [RegisseurStep] Détails de l\'erreur:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url
+      });
+      
+      // Afficher un message d'erreur à l'utilisateur mais continuer avec les données mockées
+      if (error.response?.status === 500) {
+        console.warn('⚠️ [RegisseurStep] Erreur serveur 500 - Utilisation des données de fallback');
+        // Optionnel: afficher une notification à l'utilisateur
+        // alert('⚠️ Problème de connexion au serveur. Utilisation des données de démonstration.');
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        console.warn('⚠️ [RegisseurStep] Serveur inaccessible - Utilisation des données de fallback');
+      }
     }
   };
 
@@ -317,6 +420,35 @@ Agent: ${agent?.firstName} ${agent?.lastName}
     alert('🖨️ Reçu imprimé avec succès!\n\n' + recu);
   };
 
+  // Récupérer les paiements confirmés depuis la base de données
+  const loadPaiementsConfirmes = async (): Promise<PaiementResponse[]> => {
+    try {
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/paiements/confirmes`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const paiements = await response.json();
+      
+      // Debug détaillé de chaque paiement
+      paiements.forEach((paiement: PaiementResponse, index: number) => {
+        // Log removed for production
+      });
+      
+      return paiements;
+    } catch (error) {
+      console.error('❌ [RegisseurStep] Erreur lors du chargement des paiements:', error);
+      return [];
+    }
+  };
+
   // Valider vers REVISION
   const validerVersRevision = (demandeId: string) => {
     const demande = regisseurDemandes.find(d => d.id === demandeId);
@@ -393,55 +525,107 @@ Agent: ${agent?.firstName} ${agent?.lastName}
     }
   };
 
+  // Fonction pour ouvrir le modal de paiement
+  const handlePasserAuPaiement = (demandeId: string) => {
+    // Trouver la demande dans les demandes du régisseur
+    const demande = regisseurDemandes.find(d => d.id === demandeId);
+    if (!demande) {
+      alert('Erreur: Demande non trouvée');
+      return;
+    }
+    
+    console.log(`💳 Ouverture du modal de paiement pour: ${demande.nom}`);
+    
+    // Préparer les données pour le modal
+    setPaiementEntreprise({
+      id: demande.id,
+      nom: demande.nom,
+      totalAmount: (demande as any).totalAmount || 14500 // Montant par défaut en FCFA
+    });
+    
+    // Ouvrir le modal
+    setPaiementModalOpen(true);
+  };
+
+  // Fonction appelée après validation/annulation du paiement
+  const handlePaiementComplete = async () => {
+    try {
+      // Recharger les données depuis la base de données
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await syncFromDatabase();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('✅ Données rechargées après paiement');
+    } catch (error) {
+      console.error('❌ Erreur lors du rechargement après paiement:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Étape RÉGISSEUR</h2>
-            <p className="text-gray-600 mt-1">
-              Calcul des frais, gestion des paiements et validation - Agent: {agent?.firstName} {agent?.lastName}
-            </p>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => {
-                  console.log('🔄 Rechargement des vraies données REGISSEUR...');
-                  syncFromDatabase();
-                }}
-                className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
-                title="Recharger les données depuis la base de données"
-              >
-                🔄 Actualiser
-              </button>
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">Étape RÉGISSEUR</h2>
+                <p className="text-slate-600 font-medium mt-1">
+                  Calcul des frais, gestion des paiements et validation - Agent: {agent?.firstName} {agent?.lastName}
+                </p>
+              </div>
             </div>
+            
+            {/* Statistiques des paiements */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
+                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
+                  <CheckCircleIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-sm text-primary-600 font-bold">
+                  {paiementsConfirmes.filter(p => p.statut === 'VALIDE').length} Payés
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
+                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
+                  <ClockIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-sm text-primary-600 font-bold">
+                  {regisseurDemandes.filter(d => (d as any).statutPaiement === 'EN_COURS').length} En cours
+                </span>
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
 
       {/* Navigation des onglets */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
+        <div className="border-b border-white/40">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('demandes')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
                 activeTab === 'demandes'
-                  ? 'border-mali-emerald text-mali-emerald'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
-              Demandes à traiter ({regisseurDemandes.length})
+              📋 Demandes à traiter ({regisseurDemandes.length})
             </button>
             <button
               onClick={() => setActiveTab('paiements')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
                 activeTab === 'paiements'
-                  ? 'border-mali-emerald text-mali-emerald'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
-              Suivi des paiements
+              💳 Suivi des paiements
             </button>
           </nav>
         </div>
@@ -459,90 +643,163 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                 </div>
               ) : (
                 regisseurDemandes.map((demande) => (
-                  <div key={demande.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{demande.nom}</h3>
-                        <p className="text-sm text-gray-600">{demande.formeJuridique} - {demande.typeEntreprise}</p>
-                        <p className="text-sm text-gray-500">
-                          Validé par: {(demande as any).agentAccueil} le {new Date((demande as any).dateValidationAccueil).toLocaleDateString()}
-                        </p>
-                        {demande.frais && (
-                          <div className="mt-2 text-sm">
-                            <span className="font-medium">Frais calculés: {demande.frais.fraisTotal} FCFA</span>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
+                            <span className="text-lg">🏢</span>
                           </div>
-                        )}
-                        {(demande as any).statutPaiement && (
-                          <div className="mt-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                              (demande as any).statutPaiement === 'REUSSI' 
-                                ? 'bg-green-100 text-green-800'
-                                : (demande as any).statutPaiement === 'EN_COURS'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              Paiement: {(demande as any).statutPaiement}
-                            </span>
+                          <div>
+                            <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
+                            <p className="text-sm text-slate-600 font-medium">{demande.formeJuridique} - {demande.typeEntreprise}</p>
+                          </div>
+                        </div>
+                        <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-4 border border-primary-200 mb-3 shadow-sm">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-gradient-to-r from-primary-500 to-[#2d6aa0] rounded-lg shadow-md">
+                              <span className="text-white text-sm">👤</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-slate-800 font-semibold">
+                                <span className="text-primary-700 font-bold">Validé par:</span> 
+                                <span className="ml-2 px-2 py-1 bg-primary-100 rounded-lg text-primary-800 font-bold">
+                                  {(demande as any).agentAccueil || 'Agent non spécifié'}
+                                </span>
+                              </p>
+                              {(demande as any).agentAccueilEmail && (
+                                <p className="text-xs text-slate-500 mt-1">
+                                  <span className="font-medium">Contact:</span> 
+                                  <span className="ml-1">{(demande as any).agentAccueilEmail}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {demande.frais && (
+                          <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-3 border border-primary-200">
+                            <span className="text-sm font-bold text-primary-700">💰 Frais calculés: {demande.frais.fraisTotal} FCFA</span>
                           </div>
                         )}
                       </div>
                       
                       <div className="flex flex-col space-y-2 ml-6">
-                        {!demande.frais && (
-                          <button
-                            onClick={() => calculerFrais(demande)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                          >
-                            <CurrencyDollarIcon className="h-4 w-4 mr-1" />
-                            Calculer Frais
-                          </button>
-                        )}
+                        {/* Statut des paiements */}
+                        <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
+                          <h4 className="text-sm font-black text-slate-800 mb-3 flex items-center">
+                            <span className="mr-2">💳</span>
+                            Statut Paiement
+                          </h4>
+                          
+                          {!demande.frais ? (
+                            <div className="flex flex-col space-y-2">
+                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800 shadow-lg">
+                                <ClockIcon className="h-3 w-3 mr-2" />
+                                En attente
+                              </span>
+                              <span className="text-xs text-slate-600 font-medium">
+                                Montant à payer: <span className="font-bold text-primary-700">
+                                  {demande.totalAmount !== undefined && demande.totalAmount !== null ? `${demande.totalAmount.toLocaleString('fr-FR')} FCFA` : 'Non calculé'}
+                                </span>
+                              </span>
+                              
+                              {/* Bouton Passer au paiement */}
+                              <button
+                                onClick={() => handlePasserAuPaiement(demande.id)}
+                                disabled={isLoading}
+                                className="inline-flex items-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] hover:from-[#1e5987]/90 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#412A5C] disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
+                              >
+                                <CreditCardIcon className="h-4 w-4 mr-1" />
+                                Passer au paiement
+                              </button>
+                            </div>
+                          ) : !((demande as any).statutPaiement) ? (
+                            <div className="flex flex-col space-y-2">
+                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-primary-100 to-amber-200 text-primary-800 shadow-lg">
+                                <ExclamationTriangleIcon className="h-3 w-3 mr-2" />
+                                Frais calculés
+                              </span>
+                              <span className="text-xs text-slate-700 font-bold">{demande.frais.fraisTotal} FCFA</span>
+                              <span className="text-xs text-primary-600 font-medium">⏳ En attente de paiement</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col space-y-2">
+                              <span className={`inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl shadow-lg ${
+                                (demande as any).statutPaiement === 'REUSSI' 
+                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
+                                  : (demande as any).statutPaiement === 'EN_COURS'
+                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
+                                  : 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800'
+                              }`}>
+                                {(demande as any).statutPaiement === 'REUSSI' ? (
+                                  <>
+                                    <CheckCircleIcon className="h-3 w-3 mr-2" />
+                                    Payé
+                                  </>
+                                ) : (demande as any).statutPaiement === 'EN_COURS' ? (
+                                  <>
+                                    <ClockIcon className="h-3 w-3 mr-2" />
+                                    En cours
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircleIcon className="h-3 w-3 mr-2" />
+                                    Échec
+                                  </>
+                                )}
+                              </span>
+                              <span className="text-xs text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
+                              {(demande as any).statutPaiement === 'REUSSI' && (
+                                <span className="text-xs text-primary-600 font-bold">✓ Paiement confirmé</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         
                         {demande.frais && !(demande as any).statutPaiement && (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <select
                               value={paiementMethod}
                               onChange={(e) => setPaiementMethod(e.target.value as any)}
-                              className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              className="block w-full px-4 py-3 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-[#412A5C] focus:border-transparent shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
                             >
-                              <option value="CASH">Cash</option>
-                              <option value="ORANGE_MONEY">Orange Money</option>
-                              <option value="MOOV_MONEY">Moov Money</option>
-                              <option value="STRIPE">Carte bancaire</option>
+                              <option value="CASH">💵 Cash</option>
+                              <option value="MOOV_MONEY">🔵 Moov Money</option>
+                              <option value="STRIPE">💳 Carte bancaire</option>
                             </select>
                             <button
                               onClick={() => initierPaiement(demande.id, paiementMethod)}
                               disabled={isLoading}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              <CreditCardIcon className="h-4 w-4 mr-1" />
+                              <CreditCardIcon className="h-4 w-4 mr-2" />
                               Initier Paiement
                             </button>
                           </div>
                         )}
                         
                         {(demande as any).statutPaiement === 'REUSSI' && (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <button
                               onClick={() => imprimerRecu(demande)}
-                              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              <PrinterIcon className="h-4 w-4 mr-1" />
-                              Imprimer Reçu
+                              <PrinterIcon className="h-4 w-4 mr-2" />
+                              🖨️ Imprimer Reçu
                             </button>
                             <button
                               onClick={() => validerVersRevision(demande.id)}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                             >
-                              <CheckCircleIcon className="h-4 w-4 mr-1" />
-                              Valider → RÉVISION
+                              <CheckCircleIcon className="h-4 w-4 mr-2" />
+                              🎯 Passer chez le RÉGISSEUR
                             </button>
                             <button
                               onClick={() => retournerVersAccueil(demande.id)}
-                              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              <ArrowLeftIcon className="h-4 w-4 mr-1" />
-                              Retour ACCUEIL
+                              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+                              ↩️ Retour ACCUEIL
                             </button>
                           </div>
                         )}
@@ -556,39 +813,165 @@ Agent: ${agent?.firstName} ${agent?.lastName}
 
           {activeTab === 'paiements' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">Suivi des paiements en temps réel</h3>
-              {regisseurDemandes.filter(d => (d as any).statutPaiement).map((demande) => (
-                <div key={demande.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
+                    <span className="text-lg">💳</span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-800">Paiements confirmés</h3>
+                </div>
+                <button
+                  onClick={async () => {
+                    const paiements = await loadPaiementsConfirmes();
+                    setPaiementsConfirmes(paiements);
+                  }}
+                  className="bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-4 py-2 rounded-xl text-sm font-bold hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  title="Recharger les paiements confirmés"
+                >
+                  🔄 Actualiser
+                </button>
+              </div>
+              {paiementsConfirmes.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h4 className="mt-2 text-sm font-medium text-gray-900">Aucun paiement confirmé</h4>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Les paiements confirmés depuis la base de données apparaîtront ici.
+                  </p>
+                </div>
+              ) : (
+                paiementsConfirmes.map((paiement: PaiementResponse) => (
+                <div key={paiement.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{demande.nom}</h4>
-                      <p className="text-sm text-gray-600">
-                        Référence: {(demande as any).paiement?.reference}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Montant: {demande.frais?.fraisTotal} FCFA
-                      </p>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-4">
+                        {/* Déterminer le type de paiement selon le montant et la description */}
+                        {(() => {
+                          const isAgreement = paiement.description?.includes('agrément') || 
+                                            paiement.description?.includes('Paiement frais d\'agrément') ||
+                                            (paiement.montant && Number(paiement.montant) >= 300000);
+                          
+                          if (isAgreement) {
+                            return (
+                              <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
+                                <span className="text-lg">🏆</span>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
+                                <span className="text-lg">🏢</span>
+                              </div>
+                            );
+                          }
+                        })()}
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-black text-slate-800">
+                              {paiement.entrepriseNom || 
+                               paiement.description?.match(/(?:pour|-)?\s*([A-Za-zÀ-ÿ\s]+?)(?:\s*-|\s*\(|$)/)?.[1]?.trim() || 
+                               'Entreprise'}
+                            </h4>
+                            {/* Badge pour identifier le type */}
+                            {(() => {
+                              const isAgreement = paiement.description?.includes('agrément') || 
+                                                paiement.description?.includes('Paiement frais d\'agrément') ||
+                                                (paiement.montant && Number(paiement.montant) >= 300000);
+                              
+                              if (isAgreement) {
+                                return (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+                                    🏆 Agrément
+                                  </span>
+                                );
+                              } else {
+                                return (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                                    🏢 Entreprise
+                                  </span>
+                                );
+                              }
+                            })()}
+                          </div>
+                          <p className="text-sm text-slate-600 font-medium">
+                            Référence: {paiement.referenceTransaction || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                          <p className="text-xs text-slate-500 font-medium">Montant</p>
+                          <p className="text-sm text-slate-700 font-bold">
+                            {paiement.montant ? Number(paiement.montant).toLocaleString('fr-FR') : 'N/A'} FCFA
+                          </p>
+                        </div>
+                        <div className="bg-white/50 rounded-xl p-3 border border-white/40">
+                          <p className="text-xs text-slate-500 font-medium">Méthode</p>
+                          <p className="text-sm text-slate-700 font-bold">{paiement.typePaiement || 'N/A'}</p>
+                        </div>
+                      </div>
+                      
+                      {paiement.datePaiement && (
+                        <div className="mt-3 bg-white/50 rounded-xl p-3 border border-white/40">
+                          <p className="text-xs text-slate-500 font-medium">Date de confirmation</p>
+                          <p className="text-sm text-slate-700 font-bold">
+                            {new Date(paiement.datePaiement).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        (demande as any).statutPaiement === 'REUSSI' 
-                          ? 'bg-green-100 text-green-800'
-                          : (demande as any).statutPaiement === 'EN_COURS'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {(demande as any).statutPaiement}
+                    
+                    <div className="text-right ml-6">
+                      <span className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 shadow-lg">
+                        <CheckCircleIcon className="h-4 w-4 mr-2" />
+                        ✅ Confirmé
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Modal de paiement */}
+      {paiementModalOpen && paiementEntreprise && (
+        <PaymentMethodModal
+          isOpen={paiementModalOpen}
+          onClose={() => setPaiementModalOpen(false)}
+          entreprise={paiementEntreprise}
+          onPaiementComplete={handlePaiementComplete}
+        />
+      )}
     </div>
   );
 };
 
 export default RegisseurStep;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

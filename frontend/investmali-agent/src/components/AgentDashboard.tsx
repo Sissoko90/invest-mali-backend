@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { agentBusinessAPI } from '../services/api';
 import AnimatedBackground from './AnimatedBackground';
+import AgentConversationsModal from './AgentConversationsModal';
 
 // Fonction pour mapper les statuts backend vers frontend
 const mapBackendStatusToFrontend = (backendStatus: string): 'pending' | 'pending_validation' | 'in_review' | 'approved' | 'rejected' | 'requires_info' => {
@@ -58,6 +59,7 @@ const AgentDashboard: React.FC = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'applications' | 'assigned-applications' | 'user-requests' | 'reports'>('dashboard');
+  const [conversationsModalOpen, setConversationsModalOpen] = useState(false);
 
   // Données de démonstration pour les demandes de création d'utilisateur
   const [userRequests, setUserRequests] = useState([
@@ -437,12 +439,12 @@ const AgentDashboard: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'pending_validation': return 'bg-yellow-100 text-yellow-800';
-      case 'in_review': return 'bg-blue-100 text-blue-800';
-      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-primary-100 text-primary-800';
+      case 'pending_validation': return 'bg-primary-100 text-primary-800';
+      case 'in_review': return 'bg-primary-100 text-primary-800';
+      case 'approved': return 'bg-primary-100 text-primary-800';
       case 'rejected': return 'bg-red-100 text-red-800';
-      case 'requires_info': return 'bg-orange-100 text-orange-800';
+      case 'requires_info': return 'bg-primary-100 text-primary-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -475,9 +477,9 @@ const AgentDashboard: React.FC = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'low': return 'bg-primary-100 text-primary-800';
+      case 'medium': return 'bg-primary-100 text-primary-800';
+      case 'high': return 'bg-primary-100 text-primary-800';
       case 'urgent': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -540,6 +542,15 @@ const AgentDashboard: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setConversationsModalOpen(true)}
+                  className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-mali-emerald/90 transition-colors duration-300 text-sm font-medium flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>Conversations</span>
+                </button>
                 <div className="text-right">
                   <p className="text-sm font-medium text-mali-dark">{agent?.firstName} {agent?.lastName}</p>
                   <p className="text-xs text-gray-600 capitalize">{agent?.role} - {agent?.department}</p>
@@ -589,10 +600,10 @@ const AgentDashboard: React.FC = () => {
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { title: 'Total des demandes', value: stats.total, color: 'bg-blue-500', icon: '📊' },
-                  { title: 'À traiter', value: stats.unassigned, color: 'bg-yellow-500', icon: '⏳' },
+                  { title: 'Total des demandes', value: stats.total, color: 'bg-primary-500', icon: '📊' },
+                  { title: 'À traiter', value: stats.unassigned, color: 'bg-primary-500', icon: '⏳' },
                   { title: 'Mes dossiers', value: stats.assignedToMe, color: 'bg-mali-emerald', icon: '👤' },
-                  { title: 'Approuvées', value: stats.approved, color: 'bg-green-500', icon: '✅' }
+                  { title: 'Approuvées', value: stats.approved, color: 'bg-primary-500', icon: '✅' }
                 ].map((stat, index) => (
                   <div key={index} className="bg-white rounded-xl shadow-lg p-6 animate-slide-up" style={{animationDelay: `${index * 0.1}s`}}>
                     <div className="flex items-center">
@@ -609,22 +620,22 @@ const AgentDashboard: React.FC = () => {
               </div>
 
               {/* Boutons de test pour debug */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-medium text-yellow-800">🧪 Mode Debug</h4>
-                    <p className="text-xs text-yellow-600">Tester l'assignation et charger les vraies données</p>
+                    <h4 className="text-sm font-medium text-primary-800">🧪 Mode Debug</h4>
+                    <p className="text-xs text-primary-600">Tester l'assignation et charger les vraies données</p>
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={handleTestAssign}
-                      className="bg-yellow-500 text-white px-3 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                      className="bg-primary-500 text-white px-3 py-2 rounded-lg hover:bg-primary-600 transition-colors text-sm"
                     >
                       Assigner Demo
                     </button>
                     <button
                       onClick={handleLoadRealData}
-                      className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                      className="bg-primary-500 text-white px-3 py-2 rounded-lg hover:bg-primary-600 transition-colors text-sm"
                     >
                       Charger API
                     </button>
@@ -799,7 +810,7 @@ const AgentDashboard: React.FC = () => {
                               </button>
                             )}
                             {app.assignedAgent === agent?.id && (
-                              <span className="text-green-600 text-sm font-medium">
+                              <span className="text-primary-600 text-sm font-medium">
                                 Assigné à moi
                               </span>
                             )}
@@ -927,7 +938,7 @@ const AgentDashboard: React.FC = () => {
                             </button>
                             <button
                               onClick={() => handleStatusUpdate(app.id, 'in_review')}
-                              className="text-blue-600 hover:text-blue-900 transition-colors duration-300"
+                              className="text-primary-600 hover:text-primary-900 transition-colors duration-300"
                             >
                               Mettre à jour
                             </button>
@@ -993,17 +1004,17 @@ const AgentDashboard: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex space-x-2">
                               {request.documents.identityCard && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                                   CNI
                                 </span>
                               )}
                               {request.documents.proofOfAddress && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                                   Justif. domicile
                                 </span>
                               )}
                               {request.documents.photo && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                                   Photo
                                 </span>
                               )}
@@ -1023,7 +1034,7 @@ const AgentDashboard: React.FC = () => {
                                 <>
                                   <button
                                     onClick={() => handleUserRequestAction(request.id, 'approve')}
-                                    className="text-green-600 hover:text-green-900"
+                                    className="text-primary-600 hover:text-primary-900"
                                     title="Approuver"
                                   >
                                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1046,7 +1057,7 @@ const AgentDashboard: React.FC = () => {
                                   // TODO: Implémenter la prévisualisation des documents
                                   alert(`Prévisualisation des documents pour ${request.firstName} ${request.lastName}`);
                                 }}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="text-primary-600 hover:text-primary-900"
                                 title="Voir les documents"
                               >
                                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1114,7 +1125,7 @@ const AgentDashboard: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     {Object.entries(selectedApplication.documents).map(([key, value]) => (
                       <div key={key} className="flex items-center">
-                        <span className={`w-3 h-3 rounded-full mr-2 ${value ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        
                         {key === 'identityCard' ? 'Pièce d\'identité' :
                          key === 'proofOfAddress' ? 'Justificatif de domicile' :
                          key === 'businessPlan' ? 'Plan d\'affaires' :
@@ -1129,7 +1140,7 @@ const AgentDashboard: React.FC = () => {
               <div className="flex space-x-4 pt-4 border-t">
                 <button
                   onClick={() => handleStatusUpdate(selectedApplication.id, 'approved')}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors duration-300"
+                  className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-300"
                 >
                   Approuver
                 </button>
@@ -1141,7 +1152,7 @@ const AgentDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleStatusUpdate(selectedApplication.id, 'requires_info')}
-                  className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition-colors duration-300"
+                  className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-300"
                 >
                   Demander des infos
                 </button>
@@ -1150,8 +1161,38 @@ const AgentDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal des conversations */}
+      <AgentConversationsModal
+        isOpen={conversationsModalOpen}
+        onClose={() => setConversationsModalOpen(false)}
+      />
     </div>
   );
 };
 
 export default AgentDashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

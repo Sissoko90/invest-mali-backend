@@ -187,5 +187,21 @@ public class PaiementController {
         }
     }
 
+    @GetMapping("/confirmes")
+    @Operation(summary = "Récupérer les paiements confirmés", description = "Récupère tous les paiements avec le statut REUSSI")
+    public ResponseEntity<?> getPaiementsConfirmes() {
+        try {
+            System.out.println("🔍 [PaiementController] Récupération des paiements confirmés...");
+            
+            List<PaiementResponse> paiementsConfirmes = paiementService.getPaiementsByStatut(StatutPaiement.VALIDE);
+            
+            System.out.println("✅ [PaiementController] " + paiementsConfirmes.size() + " paiements confirmés trouvés");
+            
+            return ResponseEntity.ok(paiementsConfirmes);
+        } catch (Exception e) {
+            System.err.println("❌ [PaiementController] Erreur lors de la récupération des paiements confirmés: " + e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse("Erreur lors de la récupération des paiements confirmés: " + e.getMessage()));
+        }
+    }
 
 }

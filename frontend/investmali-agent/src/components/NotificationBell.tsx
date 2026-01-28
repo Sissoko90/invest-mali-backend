@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { BellIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 export type NotificationItem = {
@@ -44,13 +44,13 @@ const NotificationBell: React.FC<Props> = ({ items, onChangeItems }) => {
   const typeColor = (t?: NotificationItem['type']) => {
     switch (t) {
       case 'success':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300';
       case 'warning':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300';
       case 'error':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       default:
-        return 'bg-primary-50 text-primary-700 dark:bg-blue-900/30 dark:text-blue-300';
+        return 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300';
     }
   };
 
@@ -148,7 +148,7 @@ const NotificationBell: React.FC<Props> = ({ items, onChangeItems }) => {
               <li className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-300">Aucune notification</li>
             )}
             {list.map((n) => (
-              <li key={n.id} className={`px-4 py-3 ${n.read ? 'bg-white dark:bg-gray-800' : 'bg-primary-50/40 dark:bg-blue-900/10'}`} role="none">
+              <li key={n.id} className={`px-4 py-3 ${n.read ? 'bg-white dark:bg-gray-800' : 'bg-primary-50/40 dark:bg-primary-900/10'}`} role="none">
                 <div className="flex items-start gap-3">
                   <span className={`px-2 py-0.5 text-[10px] rounded-full ${typeColor(n.type)}`}>{n.type || 'info'}</span>
                   <div className="flex-1 min-w-0">
@@ -159,7 +159,7 @@ const NotificationBell: React.FC<Props> = ({ items, onChangeItems }) => {
                     {n.time && <p className="text-[11px] text-gray-400 mt-1">{fmt(n.time)}</p>}
                   </div>
                   {!n.read && (
-                    <button onClick={() => markOne(n.id)} className="text-gray-400 hover:text-green-600" title="Marquer comme lue" role="menuitem">
+                    <button onClick={() => markOne(n.id)} className="text-gray-400 hover:text-primary-600" title="Marquer comme lue" role="menuitem">
                       <CheckIcon className="h-5 w-5" />
                     </button>
                   )}
@@ -174,3 +174,27 @@ const NotificationBell: React.FC<Props> = ({ items, onChangeItems }) => {
 };
 
 export default NotificationBell;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

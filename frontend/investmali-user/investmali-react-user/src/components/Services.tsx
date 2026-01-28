@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { FaBuilding, FaShieldAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaBuilding, FaShieldAlt, FaFileAlt } from 'react-icons/fa';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -11,9 +12,11 @@ interface ServiceCardProps {
   description: string;
   delay: string;
   price: string;
+  frais?: string;
+  frais2?: string;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ icon, title, description, delay, price }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ icon, title, description, delay, price, frais, frais2 }) => {
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 services-card-anim">
       <div className="w-16 h-16 bg-gradient-to-br from-investmali-primary to-investmali-accent rounded-2xl flex items-center justify-center mb-6 shadow-lg">
@@ -28,6 +31,16 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ icon, title, description, del
         </svg>
       </div>
       <div className="mt-4 text-investmali-secondary font-bold text-xl">{price}</div>
+      {frais && (
+        <div className="mt-2 text-sm text-gray-600">
+          • {frais}
+        </div>
+      )}
+      {frais2 && (
+        <div className="mt-1 text-sm text-gray-600">
+          • {frais2}
+        </div>
+      )}
     </div>
   );
 };
@@ -39,6 +52,9 @@ const Services: React.FC = () => {
   const cardsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Attendre que le DOM soit complètement chargé
+    if (!document.body || !servicesRef.current) return;
+
     const ctx = gsap.context(() => {
       // Animation du titre et sous-titre avec ScrollTrigger
       gsap.fromTo(titleRef.current,
@@ -75,7 +91,8 @@ const Services: React.FC = () => {
       );
 
       // Animation des cartes de service avec stagger
-      gsap.fromTo(cardsRef.current?.children || [],
+      if (cardsRef.current && cardsRef.current.children.length > 0) {
+        gsap.fromTo(cardsRef.current.children,
         { 
           opacity: 0, 
           y: 60,
@@ -95,7 +112,8 @@ const Services: React.FC = () => {
             toggleActions: "play none none reverse"
           }
         }
-      );
+        );
+      }
 
       // Animation de hover pour les cartes
       const cards = cardsRef.current?.children;
@@ -136,9 +154,11 @@ const Services: React.FC = () => {
     {
       icon: <ServiceIcon IconComponent={FaBuilding} />,
       title: "Création d'entreprise",
-      description: "Créez votre entreprise en ligne avec tous les documents officiels. Processus 100% digitalisé avec suivi en temps réel et accompagnement personnalisé.",
-      delay: "24h à 7 jours",
-      price: "À partir de 40 000 FCFA"
+      description: "Créez votre entreprise en ligne en toute simplicité Un processus entièrement digitalisé, sécurisé, avec un suivi en temps réel et un accompagnement personnalisé à chaque étape.",
+      delay: "24h à 72h",
+      price: "À partir de 10 000 FCFA",
+      frais: "Commerce, prestations de services, commerce de détail : 10 000 FCFA",
+      frais2: "Activités soumises à autorisation et import-export (entreprise individuelle) : 28 000 FCFA",
     },
     {
       icon: <ServiceIcon IconComponent={FaShieldAlt} />,
@@ -153,11 +173,11 @@ const Services: React.FC = () => {
     <section ref={servicesRef} className="py-20 bg-white" style={{ marginTop: '-20rem' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 ref={titleRef} className="text-4xl font-extrabold text-mali-dark mb-4">
+          <h2 ref={titleRef} className="text-4xl font-extrabold text-investmali-neutral-dark mb-4">
             Nos Services
           </h2>
           <p ref={subtitleRef} className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Une gamme complète de services pour accompagner votre projet d'investissement au Mali
+           Tous les services nécessaires pour accompagner votre projet d’investissement au Mali.
           </p>
         </div>
         
@@ -170,8 +190,33 @@ const Services: React.FC = () => {
               description={service.description}
               delay={service.delay}
               price={service.price}
+              frais={service.frais}
+              frais2={service.frais2}
             />
           ))}
+        </div>
+
+        {/* Section Activités Réglementées */}
+        <div className="mt-20 text-center">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 border border-blue-100">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl">
+              <ServiceIcon IconComponent={FaFileAlt} />
+            </div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-6">
+              Guide des Activités Réglementées
+            </h3>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Découvrez toutes les pièces jointes requises pour chaque type d'activité réglementée au Mali. 
+              Un guide complet pour préparer votre dossier en toute simplicité.
+            </p>
+            <Link 
+              to="/activites-reglementees"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              <ServiceIcon IconComponent={FaFileAlt} />
+              <span className="ml-3">Consulter le guide</span>
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -179,3 +224,4 @@ const Services: React.FC = () => {
 };
 
 export default Services;
+

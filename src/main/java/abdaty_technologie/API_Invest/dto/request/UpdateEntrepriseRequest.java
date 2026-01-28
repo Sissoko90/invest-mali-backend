@@ -1,6 +1,6 @@
 package abdaty_technologie.API_Invest.dto.request;
 
-
+import com.fasterxml.jackson.annotation.JsonSetter;
 import abdaty_technologie.API_Invest.Entity.Enum.*;
 
 /**
@@ -33,4 +33,27 @@ public class UpdateEntrepriseRequest {
 
     // Mise à jour de la localisation via code de division
     public String divisionCode;
+    
+    // Champs de localisation spécifique de l'entreprise
+    public String rue;
+    public String porte;
+    
+    /**
+     * Setter personnalisé pour domaineActivite qui accepte les chaînes vides
+     * et les convertit en null pour éviter les erreurs de désérialisation.
+     */
+    @JsonSetter("domaineActivite")
+    public void setDomaineActivite(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            this.domaineActivite = null;
+        } else {
+            try {
+                this.domaineActivite = DomaineActivites.valueOf(value.trim());
+            } catch (IllegalArgumentException e) {
+                // Si la valeur n'est pas valide, on met null plutôt que de lever une exception
+                System.out.println("⚠️ Valeur domaineActivite invalide ignorée: '" + value + "'");
+                this.domaineActivite = null;
+            }
+        }
+    }
 }

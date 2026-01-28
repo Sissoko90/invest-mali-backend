@@ -26,5 +26,7 @@ public class PersonUpdateRequest {
     public Roles role; // si null, on garde l'actuel
     public String divisionCode; // si null, inchangé; vide -> supprime
     public String division_id; // Division ID (UUID) optionnel
-    public String localite; // Localité précise optionnelle
+    public String localite; // Localité précise optionnelle (rue)
+    public String porte; // Numéro de porte optionnel
+    public String adresseLibre; // Adresse libre optionnelle
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { API_CONFIG } from '../config/api.config';
 
 const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
   const { user: authUser } = useAuth();
@@ -12,6 +13,9 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
   const [isInitializing, setIsInitializing] = useState(false);
   const [userConversations, setUserConversations] = useState([]);
   const [showConversationList, setShowConversationList] = useState(false);
+  const [userEntreprises, setUserEntreprises] = useState([]);
+  const [selectedEntrepriseId, setSelectedEntrepriseId] = useState(entrepriseId);
+  const [showEntrepriseSelector, setShowEntrepriseSelector] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -24,6 +28,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 
   useEffect(() => {
     if (isOpen) {
+      loadUserEntreprises();
       if (userConversations.length === 0) {
         loadUserConversations();
       } else if (!conversation) {
@@ -31,6 +36,13 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
       }
     }
   }, [isOpen]);
+
+  // Recharger les conversations quand l'entreprise sélectionnée change
+  useEffect(() => {
+    if (isOpen && selectedEntrepriseId) {
+      loadUserConversations();
+    }
+  }, [selectedEntrepriseId]);
 
   const loadUserConversations = async () => {
     try {
@@ -42,12 +54,10 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
         return;
       }
 
-      console.log('🔍 Chargement des conversations pour:', userId, 'entrepriseId:', entrepriseId);
+      console.log('🔍 Chargement des conversations pour:', userId, 'entrepriseId:', selectedEntrepriseId);
       
-      let url = `http://localhost:8080/api/v1/chat/conversations/user/${userId}`;
-      if (entrepriseId) {
-        url += `?entrepriseId=${entrepriseId}`;
-      }
+      // ✅ NOUVEAU : Utiliser le nouveau endpoint /conversations/user/{userId}
+      let url = `${API_CONFIG.BASE_URL}/conversations/user/${userId}`;
       
       const response = await fetch(url);
       const data = await response.json();
@@ -69,6 +79,48 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
     } catch (error) {
       console.error('❌ Erreur lors du chargement des conversations:', error);
       initializeChat();
+    }
+  };
+
+  // Charger les entreprises de l'utilisateur
+  const loadUserEntreprises = async () => {
+    try {
+      const userId = authUser?.id || authUser?.personne_id || user?.id;
+      
+      if (!userId) {
+        console.error('❌ Aucun ID utilisateur trouvé pour charger les entreprises');
+        return;
+      }
+
+      console.log('🔍 Chargement des entreprises pour:', userId);
+      
+      // Utiliser l'API existante pour récupérer les demandes de l'utilisateur
+      const response = await fetch(`${API_CONFIG.BASE_URL.replace('/api/v1', '')}/api/v1/business/my-applications`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const entreprises = Array.isArray(data) ? data : (data?.data || []);
+        
+        console.log('✅ Entreprises chargées:', entreprises);
+        setUserEntreprises(entreprises);
+        
+        // Si aucune entreprise sélectionnée et qu'il y en a plusieurs, afficher le sélecteur
+        if (!selectedEntrepriseId && entreprises.length > 1) {
+          setShowEntrepriseSelector(true);
+        } else if (!selectedEntrepriseId && entreprises.length === 1) {
+          // S'il n'y a qu'une entreprise, la sélectionner automatiquement
+          setSelectedEntrepriseId(entreprises[0].id);
+        }
+      } else {
+        console.warn('⚠️ Erreur lors du chargement des entreprises:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des entreprises:', error);
     }
   };
 
@@ -103,8 +155,12 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
       // D'abord, essayer de récupérer les conversations existantes de l'utilisateur
       console.log('🔍 Recherche des conversations existantes pour:', userId);
       try {
-        const userConversationsResponse = await fetch(`http://localhost:8080/api/v1/chat/conversations/user/${userId}`);
+        const userConversationsResponse = await fetch(`${API_CONFIG.BASE_URL}/conversations/user/${userId}`);
         const userConversationsData = await userConversationsResponse.json();
+        
+        // Utiliser l'entreprise sélectionnée ou une valeur par défaut
+        const realEntrepriseId = selectedEntrepriseId || "default-entreprise";
+        console.log("🏢 Entreprise utilisée pour utilisateur:", userId, "->", realEntrepriseId);
         
         if (userConversationsData.status === 'SUCCESS' && userConversationsData.conversations.length > 0) {
           // Utiliser la conversation la plus récente
@@ -331,7 +387,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-mali-emerald to-mali-gold text-white p-4 rounded-t-2xl flex items-center justify-between">
+        <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning text-white p-4 rounded-t-2xl flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,9 +407,30 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                     </svg>
                   </button>
                 )}
-                <h3 className="font-semibold">
-                  {showConversationList ? 'Mes Conversations' : 'Assistance InvestMali'}
-                </h3>
+                <div>
+                  <h3 className="font-semibold">
+                    {showConversationList ? 'Mes Conversations' : 'Assistance InvestMali'}
+                  </h3>
+                  {/* Afficher l'entreprise sélectionnée */}
+                  {selectedEntrepriseId && userEntreprises.length > 0 && (
+                    <p className="text-xs opacity-75">
+                      {userEntreprises.find(e => e.id === selectedEntrepriseId)?.companyName || 
+                       userEntreprises.find(e => e.id === selectedEntrepriseId)?.businessName || 'Entreprise'}
+                    </p>
+                  )}
+                </div>
+                {/* Bouton pour changer d'entreprise */}
+                {userEntreprises.length > 1 && !showConversationList && (
+                  <button
+                    onClick={() => setShowEntrepriseSelector(true)}
+                    className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
+                    title="Changer d'entreprise"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </button>
+                )}
               </div>
               <p className="text-sm opacity-90">
                 {showConversationList ? `${userConversations.length} conversation(s)` : 
@@ -373,10 +450,48 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 
         {/* Contenu */}
         <div className="flex-1 overflow-y-auto p-4">
+          {/* Sélecteur d'entreprise */}
+          {showEntrepriseSelector && userEntreprises.length > 1 && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-800 mb-3">Choisir une entreprise :</h4>
+              <div className="space-y-2">
+                {userEntreprises.map((entreprise) => (
+                  <button
+                    key={entreprise.id}
+                    onClick={() => {
+                      setSelectedEntrepriseId(entreprise.id);
+                      setShowEntrepriseSelector(false);
+                      setConversation(null);
+                      setMessages([]);
+                      setUserConversations([]);
+                    }}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      selectedEntrepriseId === entreprise.id
+                        ? 'bg-blue-100 border-blue-300 text-blue-800'
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-medium">
+                      {entreprise.companyName || entreprise.businessName || 'Entreprise'}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Statut: {entreprise.status || 'En cours'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowEntrepriseSelector(false)}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
           {isInitializing ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mali-emerald mx-auto mb-2"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-investmali-accent mx-auto mb-2"></div>
                 <p className="text-gray-600">Connexion à l'assistance...</p>
               </div>
             </div>
@@ -387,7 +502,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                 <h3 className="text-lg font-semibold text-gray-800">Mes conversations</h3>
                 <button
                   onClick={startNewConversation}
-                  className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-sm"
+                  className="bg-investmali-accent text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-sm"
                 >
                   + Nouvelle conversation
                 </button>
@@ -398,7 +513,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                   <p>Aucune conversation pour le moment</p>
                   <button
                     onClick={startNewConversation}
-                    className="mt-4 bg-mali-emerald text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors"
+                    className="mt-4 bg-investmali-accent text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors"
                   >
                     Démarrer une conversation
                   </button>
@@ -446,7 +561,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                 <p className="text-red-600 mb-4">{error}</p>
                 <button
                   onClick={initializeChat}
-                  className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-mali-emerald/90 transition-colors"
+                  className="bg-investmali-accent text-white px-4 py-2 rounded-lg hover:bg-investmali-accent/90 transition-colors"
                 >
                   Réessayer
                 </button>
@@ -462,7 +577,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                       message.sender === 'user'
-                        ? 'bg-mali-emerald text-white'
+                        ? 'bg-investmali-accent text-white'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
@@ -501,7 +616,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || isLoading}
-                className="bg-mali-emerald text-white p-2 rounded-full hover:bg-mali-emerald/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-investmali-accent text-white p-2 rounded-full hover:bg-investmali-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -520,3 +635,4 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 };
 
 export default UserChatModal;
+

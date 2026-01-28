@@ -8,7 +8,12 @@ public enum TypeDocuments {
     REGISTRE_COMMERCE("Registre de commerce"),
     STATUS_SOCIETE("Status de société"),     
     CASIER_JUDICIAIRE("Casier judiciaire"),
-    EXTRAIT_NAISSANCE("Extrait de naissance");
+    EXTRAIT_NAISSANCE("Extrait de naissance"),
+    PIECE_NATIONALITE("Pièce de nationalité"),
+    NIF("Numéro d'Identification Fiscale"),
+    RCCM("Registre de Commerce et du Crédit Mobilier"),
+    NINA("Numéro d'Identification National des Entreprises et Associations"),
+    AUTRES("Autres documents");
     
     
     private final String value;
