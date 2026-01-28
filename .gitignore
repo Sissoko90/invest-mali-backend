@@ -52,3 +52,4 @@ frontend/*/.next/
 uploads/
 *.backup
 *.corrupted
+.env
