@@ -47,8 +47,9 @@ yarn-error.log*
 frontend/*/build/
 frontend/*/dist/
 frontend/*/.next/
-/frontend/*
+#/frontend/*
 .DS_Store
 uploads/
 *.backup
 *.corrupted
+.env
