@@ -136,8 +136,8 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
     try {
       const divisions = await divisionService.searchDivisions(searchQuery, filterType as any);
       
-      // Limiter à 50 résultats pour éviter la surcharge
-      const limitedResults = divisions.slice(0, 50);
+      // Limiter à 100 résultats pour un meilleur affichage
+      const limitedResults = divisions.slice(0, 100);
       
       setResults(limitedResults);
       setIsOpen(limitedResults.length > 0);
@@ -274,7 +274,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto"
         >
           {error ? (
             <div className="px-4 py-3 text-sm text-gray-500 text-center">

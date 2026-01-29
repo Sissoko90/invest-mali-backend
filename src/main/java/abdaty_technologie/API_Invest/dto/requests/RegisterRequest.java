@@ -23,7 +23,6 @@ public class RegisterRequest {
     @NotNull(message = "Le sexe est obligatoire")
     private Sexes sexe;
 
-    @NotBlank(message = "L'email est obligatoire")
     @Email(message = "L'email n'est pas valide")
     private String email;
 

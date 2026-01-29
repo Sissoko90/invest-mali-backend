@@ -26,7 +26,7 @@ const AgentLogin: React.FC = () => {
         const redirectPath = result.redirectUrl || '/agent/dashboard';
         navigate(redirectPath);
       } else {
-        setError('Email ou mot de passe incorrect');
+        setError('Identifiant ou mot de passe incorrect');
       }
     } catch (err) {
       setError('Erreur lors de la connexion');
@@ -70,15 +70,15 @@ const AgentLogin: React.FC = () => {
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email professionnel
+                  Email ou Téléphone
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={loginData.email}
                   onChange={(e) => setLoginData({...loginData, email: e.target.value})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                  placeholder="votre.nom@investmali.com"
+                  placeholder="email@exemple.com ou +223 70000000"
                 />
               </div>
               

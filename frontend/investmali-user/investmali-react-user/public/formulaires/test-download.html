@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Téléchargement Formulaires</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .formulaire { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .download-btn { background: #007bff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Test de Téléchargement des Formulaires</h1>
+    <p>Cette page permet de tester si tous les formulaires sont accessibles après déploiement.</p>
+    
+    <div class="formulaire">
+        <h3>Administrateurs et Agents Immobiliers</h3>
+        <a href="./Administrateurs et Agents Immobiliers 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Architecte</h3>
+        <a href="./Architecte 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>BTP</h3>
+        <a href="./BTP 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Code des Investissements</h3>
+        <a href="./Code des Investissements 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Cartographie Topographie</h3>
+        <a href="./Cartographie Topographie 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Géomètres - Experts</h3>
+        <a href="./Géomètres - Experts 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Ingénieur - Conseil</h3>
+        <a href="./Ingénieur - Conseil 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Stations</h3>
+        <a href="./Stations 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Transport</h3>
+        <a href="./Transport 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <div class="formulaire">
+        <h3>Urbaniste</h3>
+        <a href="./Urbaniste 2023.doc" class="download-btn" download>Télécharger</a>
+    </div>
+    
+    <script>
+        // Test automatique des liens
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('.download-btn');
+            console.log(`${links.length} formulaires détectés pour téléchargement`);
+            
+            links.forEach((link, index) => {
+                link.addEventListener('click', function(e) {
+                    console.log(`Téléchargement initié: ${this.href}`);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

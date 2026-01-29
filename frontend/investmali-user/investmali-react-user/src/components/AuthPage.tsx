@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AnimatedBackground from './AnimatedBackground';
 import PhoneInput from './PhoneInput';
+import apiLogo from '../assets/images/api-logo.png';
 
 const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -55,6 +56,9 @@ const AuthPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  
+  // État pour détecter le type d'input de connexion (phone ou email)
+  const [loginInputType, setLoginInputType] = useState<'phone' | 'email'>('email');
 
   const handleCivilityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const civilityValue = e.target.value;
@@ -91,6 +95,15 @@ const AuthPage: React.FC = () => {
       sexe: sexeValue,
       civility: autoCivility
     }));
+  };
+
+  // Fonction pour détecter automatiquement le type d'input
+  const handleLoginInputChange = (value: string) => {
+    setLoginData({...loginData, email: value});
+    
+    // Détection automatique: si commence par + ou contient uniquement des chiffres/espaces, c'est un téléphone
+    const isPhone = /^[+\d\s]/.test(value) || /^\d/.test(value);
+    setLoginInputType(isPhone ? 'phone' : 'email');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -181,10 +194,12 @@ const AuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center animate-slide-up">
             <div className="flex justify-center mb-6">
-              <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-3 rounded-2xl shadow-lg">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+              <div className="bg-white p-4 rounded-2xl shadow-lg">
+                <img 
+                  src={apiLogo} 
+                  alt="API Mali Logo" 
+                  className="w-24 h-24 object-contain"
+                />
               </div>
             </div>
             <h2 className="text-3xl font-bold text-investmali-neutral-dark">
@@ -246,16 +261,25 @@ const AuthPage: React.FC = () => {
               <form onSubmit={handleLogin} className="space-y-4 animate-fade-in">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse email
+                    Email ou Téléphone
                   </label>
-                  <input
-                    type="email"
-                    required
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                    placeholder="votre@email.com"
-                  />
+                  {loginInputType === 'phone' ? (
+                    <PhoneInput
+                      value={loginData.email}
+                      onChange={handleLoginInputChange}
+                      placeholder="XX XX XX XX"
+                      required
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      required
+                      value={loginData.email}
+                      onChange={(e) => handleLoginInputChange(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
+                      placeholder="votre@email.com"
+                    />
+                  )}
                 </div>
                 
                 <div>
@@ -268,7 +292,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={loginData.password}
                       onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       placeholder="••••••••"
                     />
                     <button
@@ -290,7 +314,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-gradient-to-r from-investmali-primary to-investmali-accent text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -317,7 +341,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.firstName}
                       onChange={(e) => setRegisterData({...registerData, firstName: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       placeholder="Votre prénom"
                     />
                   </div>
@@ -331,7 +355,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.lastName}
                       onChange={(e) => setRegisterData({...registerData, lastName: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       placeholder="Votre nom"
                     />
                   </div>
@@ -347,7 +371,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.civility}
                       onChange={handleCivilityChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                     >
                       <option value="">Sélectionnez votre civilité</option>
                       <option value="MONSIEUR">Monsieur</option>
@@ -364,7 +388,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.sexe}
                       onChange={handleSexeChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                     >
                       <option value="">Sélectionnez votre sexe</option>
                       <option value="MASCULIN">Masculin</option>
@@ -375,14 +399,13 @@ const AuthPage: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse email
+                    Adresse email <span className="text-gray-500 text-xs">(optionnel)</span>
                   </label>
                   <input
                     type="email"
-                    required
                     value={registerData.email}
                     onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                     placeholder="votre@email.com"
                   />
                 </div>
@@ -409,7 +432,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.password}
                       onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       placeholder="••••••••"
                     />
                     <button
@@ -438,7 +461,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       placeholder="••••••••"
                     />
                     <button
@@ -460,7 +483,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-gradient-to-r from-investmali-primary to-investmali-accent text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">

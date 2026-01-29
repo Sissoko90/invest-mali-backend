@@ -457,8 +457,6 @@ const Hero: React.FC = () => {
               transformStyle: 'preserve-3d'
             }}
           >
-            {/* Dark overlay for better text visibility */}
-            <div className="absolute inset-0 bg-black/40"></div>
           </div>
         ))}
         {/* Canvas for Disintegration Effect */}
@@ -470,14 +468,6 @@ const Hero: React.FC = () => {
             imageRendering: 'pixelated'
           }}
         />
-        {/* Overlay gradient with 360° effect */}
-        <div 
-          className="absolute inset-0 bg-gradient-to-br from-investmali-primary/70 via-investmali-primary/50 to-investmali-primary/70 transition-transform duration-200 ease-out"
-          style={{
-            transform: `rotateX(${mousePosition.y * 2}deg) rotateY(${mousePosition.x * 2}deg)`,
-            transformStyle: 'preserve-3d'
-          }}
-        ></div>
       </div>
       {/* Animated background shapes harmonized with background images */}
       <div 
@@ -540,20 +530,21 @@ const Hero: React.FC = () => {
             {/* Badge animé */}
             <div 
               ref={badgeRef} 
-              className="inline-flex items-center px-6 py-3 bg-investmali-accent/20 rounded-full border-2 border-investmali-accent/40 backdrop-blur-sm shadow-lg transition-all duration-200 ease-out"
+              className="inline-flex items-center px-6 py-3 bg-investmali-accent/90 rounded-full border-2 border-white/40 backdrop-blur-md shadow-2xl transition-all duration-200 ease-out"
               style={{
                 transform: `translateZ(${mousePosition.x * 15}px) rotateZ(${mousePosition.x * 8}deg) rotateX(${mousePosition.y * 5}deg) scale(${1 + Math.abs(mousePosition.x) * 0.1})`,
                 boxShadow: '0 8px 32px rgba(89, 175, 71, 0.3)'
               }}
             >
-              <span className="w-3 h-3 bg-investmali-accent rounded-full mr-3 animate-pulse shadow-sm"></span>
-              <span className="text-investmali-accent font-bold text-base tracking-wide">{currentSlideData.badge}</span>
+              <span className="w-3 h-3 bg-white rounded-full mr-3 animate-pulse shadow-sm"></span>
+              <span className="text-white font-bold text-base tracking-wide">{currentSlideData.badge}</span>
             </div>
             
             <h1 
               ref={titleRef} 
               className="text-5xl lg:text-6xl font-extrabold leading-tight text-white transition-all duration-200 ease-out"
               style={{
+                textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5)',
                 transform: `translateZ(${mousePosition.y * 25}px) rotateX(${mousePosition.y * 8}deg) rotateY(${mousePosition.x * 6}deg) scale(${1 + Math.abs(mousePosition.y) * 0.05})`
               }}
             >
@@ -572,8 +563,9 @@ const Hero: React.FC = () => {
             
             <p 
               ref={subtitleRef} 
-              className="text-xl leading-relaxed text-white/90 transition-all duration-200 ease-out"
+              className="text-xl leading-relaxed text-white bg-black/30 backdrop-blur-sm p-4 rounded-xl transition-all duration-200 ease-out"
               style={{
+                textShadow: '0 2px 10px rgba(0,0,0,0.8), 0 1px 4px rgba(0,0,0,0.9)',
                 transform: `translateZ(${-mousePosition.x * 12}px) rotateY(${mousePosition.x * 4}deg) rotateX(${mousePosition.y * 2}deg) scale(${1 + Math.abs(mousePosition.x) * 0.03})`
               }}
             >
@@ -588,7 +580,7 @@ const Hero: React.FC = () => {
                 transform: `translateZ(${mousePosition.y * 18}px) rotateX(${mousePosition.y * 6}deg) rotateY(${mousePosition.x * 3}deg) scale(${1 + Math.abs(mousePosition.y) * 0.04})`
               }}
             >
-              <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
+              <div className="flex items-center gap-3 group bg-white/80 backdrop-blur-md p-4 rounded-xl hover:bg-white/95 transition-all duration-300 shadow-lg">
                 <div className="w-12 h-12 bg-gradient-to-r from-investmali-accent to-investmali-accent/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -600,7 +592,7 @@ const Hero: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
+              <div className="flex items-center gap-3 group bg-white/80 backdrop-blur-md p-4 rounded-xl hover:bg-white/95 transition-all duration-300 shadow-lg">
                 <div className="w-12 h-12 bg-gradient-to-r from-investmali-warning to-investmali-warning/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -612,8 +604,8 @@ const Hero: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-purple-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="flex items-center gap-3 group bg-white/80 backdrop-blur-md p-4 rounded-xl hover:bg-white/95 transition-all duration-300 shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-primary to-investmali-accent rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
                   </svg>
@@ -624,8 +616,8 @@ const Hero: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="flex items-center gap-3 group bg-white/80 backdrop-blur-md p-4 rounded-xl hover:bg-white/95 transition-all duration-300 shadow-lg">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-primary to-investmali-accent rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
                   </svg>

@@ -116,6 +116,11 @@ export const API_ENDPOINTS = {
     USER_CONVERSATIONS: (userId) => `/conversations/user/${userId}`,
   },
   
+  // Contact
+  CONTACT: {
+    SEND: '/contact/send',
+  },
+  
   // Enums
   ENUMS: {
     FORME_JURIDIQUE: '/enums/forme-juridique',

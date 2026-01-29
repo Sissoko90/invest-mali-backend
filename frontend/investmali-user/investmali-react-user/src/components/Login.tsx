@@ -81,21 +81,21 @@ const Login: React.FC = () => {
         {/* Form */}
         <form className="mt-8 space-y-6 animate-slide-up" style={{animationDelay: '0.2s'}} onSubmit={handleSubmit}>
           <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-            {/* Email */}
+            {/* Email ou Téléphone */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse email
+                Email ou Téléphone
               </label>
               <div className="relative">
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="text"
                   required
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full px-4 py-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-lg"
-                  placeholder="votre@email.com"
+                  placeholder="email@exemple.com ou +223 70000000"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

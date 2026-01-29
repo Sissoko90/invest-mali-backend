@@ -58,13 +58,59 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public LoginResponse authenticate(LoginRequest loginRequest) {
-        log.info("Tentative de connexion pour l'email: {}", loginRequest.getEmail());
+        String identifiant = loginRequest.getEmail();
+        log.info("Tentative de connexion avec l'identifiant: {}", identifiant);
         
-        // Rechercher directement l'utilisateur par son email
-        Optional<Utilisateurs> userOpt = utilisateursRepository.findByUtilisateur(loginRequest.getEmail());
+        // Rechercher l'utilisateur par nom d'utilisateur, email ou téléphone
+        Optional<Utilisateurs> userOpt = utilisateursRepository.findByUtilisateur(identifiant);
+        
+        // Si non trouvé par nom d'utilisateur, chercher par email
+        if (!userOpt.isPresent()) {
+            log.info("Utilisateur non trouvé par nom d'utilisateur, recherche par email...");
+            userOpt = utilisateursRepository.findByPersonneEmail(identifiant);
+        }
+        
+        // Si non trouvé par email, chercher par téléphone avec différentes variantes
+        if (!userOpt.isPresent()) {
+            log.info("Utilisateur non trouvé par email, recherche par téléphone...");
+            
+            // Essayer avec l'identifiant tel quel
+            userOpt = utilisateursRepository.findByPersonneTelephone(identifiant);
+            
+            // Si pas trouvé et que l'identifiant ressemble à un numéro (commence par + ou contient que des chiffres)
+            if (!userOpt.isPresent() && (identifiant.startsWith("+") || identifiant.matches("\\d+"))) {
+                // Essayer avec +223 si pas déjà présent (SANS espace d'abord)
+                if (!identifiant.startsWith("+")) {
+                    String withPrefixNoSpace = "+223" + identifiant;
+                    log.info("Tentative avec indicatif sans espace: {}", withPrefixNoSpace);
+                    userOpt = utilisateursRepository.findByPersonneTelephone(withPrefixNoSpace);
+                    
+                    // Si pas trouvé, essayer avec espace
+                    if (!userOpt.isPresent()) {
+                        String withPrefixSpace = "+223 " + identifiant;
+                        log.info("Tentative avec indicatif et espace: {}", withPrefixSpace);
+                        userOpt = utilisateursRepository.findByPersonneTelephone(withPrefixSpace);
+                    }
+                }
+                
+                // Essayer sans espaces
+                if (!userOpt.isPresent()) {
+                    String noSpaces = identifiant.replaceAll("\\s+", "");
+                    log.info("Tentative sans espaces: {}", noSpaces);
+                    userOpt = utilisateursRepository.findByPersonneTelephone(noSpaces);
+                }
+                
+                // Essayer avec espaces après l'indicatif
+                if (!userOpt.isPresent() && identifiant.startsWith("+223") && !identifiant.contains(" ")) {
+                    String withSpace = identifiant.substring(0, 4) + " " + identifiant.substring(4);
+                    log.info("Tentative avec espace après indicatif: {}", withSpace);
+                    userOpt = utilisateursRepository.findByPersonneTelephone(withSpace);
+                }
+            }
+        }
         
         if (!userOpt.isPresent()) {
-            log.error("Aucun utilisateur trouvé avec l'email: {}", loginRequest.getEmail());
+            log.error("Aucun utilisateur trouvé avec l'identifiant: {}", identifiant);
             throw new BadCredentialsException(Messages.UTILISATEUR_NON_TROUVE);
         }
         
@@ -170,8 +216,10 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         // Vérification des doublons
-        if (personsRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Cette adresse email est déjà utilisée");
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            if (personsRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Cette adresse email est déjà utilisée");
+            }
         }
         if (personsRepository.existsByTelephone1(request.getTelephone1())) {
             throw new RuntimeException("Ce numéro de téléphone est déjà utilisé");
@@ -191,8 +239,13 @@ public class AuthServiceImpl implements IAuthService {
         
 
         // Création du compte utilisateur avec mot de passe haché
+        // Utiliser l'email si fourni, sinon le téléphone comme identifiant
+        String identifiant = (request.getEmail() != null && !request.getEmail().trim().isEmpty()) 
+            ? request.getEmail() 
+            : request.getTelephone1();
+        
         Utilisateurs utilisateur = new Utilisateurs();
-        utilisateur.setUtilisateur(request.getEmail());
+        utilisateur.setUtilisateur(identifiant);
         utilisateur.setMotdepasse(passwordEncoder.encode(request.getMotdepasse()));
         utilisateur.setPersonne(person);
         

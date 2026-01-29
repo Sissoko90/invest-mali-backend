@@ -376,7 +376,7 @@ public class XmlBuilderService {
         xml.append("\t\t<dosFormalityMandatary id=\"\">\n");
         xml.append("\t\t\t<mandataryName>").append(safe(r.getFirstName())).append(" ").append(safe(r.getLastName())).append("</mandataryName>\n");
         xml.append("\t\t\t<mandataryAddress>").append(safe(r.getCity(), "Bamako")).append("</mandataryAddress>\n");
-        xml.append("\t\t\t<mandataryInternet>").append(safe(r.getEmail(), "contact@investmali.com")).append("</mandataryInternet>\n");
+        xml.append("\t\t\t<mandataryInternet>").append(safe(r.getEmail(), "formalisation@apimali.gov.ml")).append("</mandataryInternet>\n");
         xml.append("\t\t</dosFormalityMandatary>\n");
         
         // Personne physique
@@ -429,7 +429,7 @@ public class XmlBuilderService {
         // Email
         xml.append("\t\t\t<internetAddress>\n");
         xml.append("\t\t\t\t<prsInternetAddress id=\"\">\n");
-        xml.append("\t\t\t\t\t<emailAddress>").append(safe(r.getEmail(), "contact@investmali.com")).append("</emailAddress>\n");
+        xml.append("\t\t\t\t\t<emailAddress>").append(safe(r.getEmail(), "formalisation@apimali.gov.ml")).append("</emailAddress>\n");
         xml.append("\t\t\t\t</prsInternetAddress>\n");
         xml.append("\t\t\t</internetAddress>\n");
         xml.append("\t\t</prsIndividual>\n");

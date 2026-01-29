@@ -111,20 +111,29 @@ public class FinalDivisionController {
     @GetMapping("/regions/{regionCode}/cercles")
     public ResponseEntity<List<Map<String, Object>>> getCercles(@PathVariable String regionCode) {
         try {
+            System.out.println("🔍 [FinalDivisionController] Récupération cercles pour région: " + regionCode);
+            String url = INSTAT_BASE_URL + "/get/cercles/" + regionCode;
+            System.out.println("🔍 [FinalDivisionController] URL INSTAT: " + url);
+            
             RestTemplate restTemplate = new RestTemplate();
             HttpEntity<?> entity = new HttpEntity<>(createHeaders());
             
             ResponseEntity<List> response = restTemplate.exchange(
-                INSTAT_BASE_URL + "/get/cercles/" + regionCode,
+                url,
                 HttpMethod.GET,
                 entity,
                 List.class
             );
             
+            System.out.println("✅ [FinalDivisionController] Réponse INSTAT reçue, status: " + response.getStatusCode());
+            
             List<Map<String, Object>> cercles = (List<Map<String, Object>>) response.getBody();
+            System.out.println("✅ [FinalDivisionController] Nombre de cercles bruts: " + (cercles != null ? cercles.size() : 0));
+            
             if (cercles != null && !cercles.isEmpty()) {
                 List<Map<String, Object>> result = new ArrayList<>();
                 for (Map<String, Object> cercle : cercles) {
+                    System.out.println("🔍 [FinalDivisionController] Cercle brut: " + cercle);
                     Map<String, Object> transformed = Map.of(
                         "id", cercle.getOrDefault("code", ""),
                         "code", cercle.getOrDefault("code", ""),
@@ -136,13 +145,16 @@ public class FinalDivisionController {
                     result.add(transformed);
                 }
                 
+                System.out.println("✅ [FinalDivisionController] Retour de " + result.size() + " cercles transformés");
                 return ResponseEntity.ok(result);
             }
             
+            System.out.println("⚠️ [FinalDivisionController] Aucun cercle trouvé pour la région " + regionCode);
             return ResponseEntity.ok(new ArrayList<>());
             
         } catch (Exception e) {
-            System.err.println("Erreur récupération cercles: " + e.getMessage());
+            System.err.println("❌ [FinalDivisionController] Erreur récupération cercles: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.ok(new ArrayList<>());
         }
     }

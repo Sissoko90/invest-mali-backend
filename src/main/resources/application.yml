@@ -1,6 +1,6 @@
 spring:
   application:
-    name: A kera
+    name: AKERA
   profiles:
     active: dev  # <-- profil actif en local (using MySQL database)
   jackson:
@@ -59,6 +59,8 @@ rccm:
     timeout: 30000
 
 app:
+  contact:
+    email: ${APP_CONTACT_EMAIL:abdaty11@gmail.com}
   rate-limit:
     capacity: 10000  # Augmenter pour le développement
     refill-tokens: 5000  # Augmenter pour le développement

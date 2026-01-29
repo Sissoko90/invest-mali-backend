@@ -970,6 +970,11 @@ interface PersonalInfo {
   porte: string; // Numéro de porte
   adresseLibre?: string; // Adresse libre (champ texte libre)
   divisionId: string; // ID de la division administrative
+  // IDs de sélection pour restauration
+  selectedRegionId?: string;
+  selectedCercleId?: string;
+  selectedCommuneId?: string;
+  selectedQuartierId?: string;
   position: string;
   powers: string[];
   roleId: number;
@@ -1078,6 +1083,54 @@ const PersonalLocationStep: React.FC<{
 
   // Flag pour éviter les conflits entre restauration et useEffect de chargement
   const [isRestoringPersonalData, setIsRestoringPersonalData] = useState(false);
+
+  // Restaurer les états de sélection de localisation depuis data.personalInfo (localStorage)
+  useEffect(() => {
+    if (data.personalInfo?.selectedRegionId && personalRegions.length > 0) {
+      console.log('🔄 [LOCALSTORAGE] Restauration des sélections de localisation...');
+      
+      const regionId = data.personalInfo.selectedRegionId;
+      const cercleId = data.personalInfo.selectedCercleId;
+      const communeId = data.personalInfo.selectedCommuneId;
+      const quartierId = data.personalInfo.selectedQuartierId;
+      
+      setPersonalSelectedRegionId(regionId || '');
+      
+      // Charger les cercles si une région est sélectionnée
+      if (regionId) {
+        const region = personalRegions.find(r => r.id === regionId);
+        if (region?.code) {
+          divisionService.getCerclesByRegion(region.code).then((cercles) => {
+            setPersonalCercles(cercles || []);
+            setPersonalSelectedCercleId(cercleId || '');
+            
+            // Charger les communes si un cercle est sélectionné
+            if (cercleId) {
+              const cercle = cercles?.find((c: any) => c.id === cercleId);
+              if (cercle?.code) {
+                divisionService.getCommunesByCercle(cercle.code).then((communes) => {
+                  setPersonalCommunes(communes || []);
+                  setPersonalSelectedCommuneId(communeId || '');
+                  
+                  // Charger les quartiers si une commune est sélectionnée
+                  if (communeId) {
+                    const commune = communes?.find((c: any) => c.id === communeId);
+                    if (commune?.code) {
+                      divisionService.getQuartiersByCommune(commune.code).then((quartiers) => {
+                        setPersonalQuartiers(quartiers || []);
+                        setPersonalSelectedQuartierId(quartierId || '');
+                        console.log('✅ [LOCALSTORAGE] Localisation complète restaurée');
+                      });
+                    }
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+    }
+  }, [data.personalInfo?.selectedRegionId, personalRegions.length]);
 
   // Restaurer les sélections personnelles depuis data.personalInfo.divisionId
   useEffect(() => {
@@ -1336,6 +1389,13 @@ const PersonalLocationStep: React.FC<{
 
   // Charger cercles quand personalSelectedRegionId change
   useEffect(() => {
+    console.log('🔥 USEEFFECT CERCLES DECLENCHE!', {
+      personalSelectedRegionId,
+      personalSelectedRegionCode,
+      isRestoringPersonalData,
+      willExecute: !!(personalSelectedRegionId && !isRestoringPersonalData)
+    });
+    
     let mounted = true;
     if (personalSelectedRegionId && !isRestoringPersonalData) {
       // Vérifier si c'est Bamako District (structure différente)
@@ -1345,9 +1405,12 @@ const PersonalLocationStep: React.FC<{
       if (isBamakoDistrict) {
         // Pour Bamako District, utiliser la logique unifiée
         // Pour Bamako, adapter à la nouvelle structure INSTAT Mali
-        divisionService.getCerclesByRegion(personalSelectedRegionId).then((cercles: any[]) => {
+        console.log('🔍 [CERCLES] Chargement cercles Bamako, code:', personalSelectedRegionCode || selectedRegion?.code);
+        divisionService.getCerclesByRegion(personalSelectedRegionCode || selectedRegion?.code).then((cercles: any[]) => {
+          console.log('✅ [CERCLES] Cercles Bamako reçus:', cercles?.length || 0, cercles);
           if (mounted) {
             setPersonalCercles(cercles || []);
+            console.log('✅ [CERCLES] Cercles Bamako stockés dans state');
             // Réinitialiser les listes suivantes seulement si pas de valeurs restaurées
             if (!personalSelectedCercleId && !personalSelectedCommuneId && !personalSelectedQuartierId) {
               setPersonalCommunes([]);
@@ -1359,7 +1422,8 @@ const PersonalLocationStep: React.FC<{
               console.log('🔍 [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des cercles');
             }
           }
-        }).catch(() => {
+        }).catch((error) => {
+          console.error('❌ [CERCLES] Erreur chargement cercles Bamako:', error);
           if (mounted) {
             setPersonalCercles([]);
             setPersonalCommunes([]);
@@ -1368,9 +1432,13 @@ const PersonalLocationStep: React.FC<{
         });
       } else {
         // Structure INSTAT Mali : charger les cercles
-        divisionService.getCerclesByRegion(personalSelectedRegionId).then((res: any[]) => {
+        const regionCode = personalSelectedRegionCode || selectedRegion?.code;
+        console.log('🔥 APPEL API CERCLES - Region:', selectedRegion?.nom, 'Code:', regionCode);
+        divisionService.getCerclesByRegion(regionCode).then((res: any[]) => {
+          console.log('🔥 API REPONSE - Cercles:', res?.length || 0, res);
           if (mounted) {
             setPersonalCercles(res || []);
+            console.log('✅ [CERCLES] Cercles stockés dans state, total:', res?.length || 0);
             // Réinitialiser les listes suivantes seulement si pas de valeurs restaurées
             if (!personalSelectedCercleId && !personalSelectedCommuneId && !personalSelectedQuartierId) {
               setPersonalCommunes([]);
@@ -1379,10 +1447,12 @@ const PersonalLocationStep: React.FC<{
               setPersonalSelectedCommuneId('');
               setPersonalSelectedQuartierId('');
             } else {
-              console.log('🔍 [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des cercles (INSTAT)');
+              console.log(' [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des cercles (INSTAT)');
             }
           }
-        }).catch(() => {});
+        }).catch((error) => {
+          console.error(' [CERCLES] Erreur chargement cercles région:', error);
+        });
       }
     } else {
       // Réinitialiser toutes les listes (STRUCTURE INSTAT - 4 NIVEAUX) seulement si pas en cours de restauration
@@ -1396,7 +1466,7 @@ const PersonalLocationStep: React.FC<{
       }
     }
     return () => { mounted = false; };
-  }, [personalSelectedRegionId, personalRegions, isRestoringPersonalData]);
+  }, [personalSelectedRegionId, personalSelectedRegionCode, personalRegions, isRestoringPersonalData, personalSelectedCercleId, personalSelectedCommuneId, personalSelectedQuartierId]);
 
   // Charger communes quand personalSelectedCercleId change (NOUVELLE STRUCTURE INSTAT)
   useEffect(() => {
@@ -1457,10 +1527,23 @@ const PersonalLocationStep: React.FC<{
   // Fonction pour gérer la sélection depuis la recherche
   const handleDivisionSearch = async (division: any) => {
     try {
+      // Activer le flag pour éviter le chargement en cascade
+      setIsRestoringPersonalData(true);
+      
       const hierarchy = await buildDivisionHierarchy(division);
-      if (!hierarchy || Object.keys(hierarchy).length === 0) return;
+      if (!hierarchy || Object.keys(hierarchy).length === 0) {
+        setIsRestoringPersonalData(false);
+        return;
+      }
+      
       await applyDivisionHierarchySequential(hierarchy);
+      
+      // Désactiver le flag après un court délai
+      setTimeout(() => {
+        setIsRestoringPersonalData(false);
+      }, 500);
     } catch (error) {
+      setIsRestoringPersonalData(false);
     }
   };
 
@@ -1687,49 +1770,63 @@ const PersonalLocationStep: React.FC<{
 
   // Appliquer la hiérarchie aux sélecteurs de manière séquentielle (structure INSTAT unifiée)
   const applyDivisionHierarchySequential = async (hierarchy: any) => {
-    
     try {
-      // Étape 1: Appliquer la région et attendre que les useEffect se terminent
+      // Charger toutes les données nécessaires en parallèle
+      const promises: Promise<any>[] = [];
+      
+      // Charger cercles si on a une région
+      if (hierarchy.region) {
+        promises.push(
+          divisionService.getCerclesByRegion(hierarchy.region.code)
+            .then(cercles => setPersonalCercles(cercles || []))
+            .catch(() => setPersonalCercles([]))
+        );
+      }
+      
+      // Charger communes si on a un cercle
+      if (hierarchy.cercle) {
+        promises.push(
+          divisionService.getCommunesByCercle(hierarchy.cercle.code)
+            .then(communes => setPersonalCommunes(communes || []))
+            .catch(() => setPersonalCommunes([]))
+        );
+      }
+      
+      // Charger quartiers si on a une commune
+      if (hierarchy.commune) {
+        promises.push(
+          divisionService.getQuartiersByCommune(hierarchy.commune.code)
+            .then(quartiers => setPersonalQuartiers(quartiers || []))
+            .catch(() => setPersonalQuartiers([]))
+        );
+      }
+      
+      // Attendre que toutes les données soient chargées
+      await Promise.all(promises);
+      
+      // Maintenant définir les valeurs sélectionnées
       if (hierarchy.region) {
         setPersonalSelectedRegionId(hierarchy.region.id);
         setPersonalSelectedRegionCode(hierarchy.region.code);
-        
-        // Attendre que le useEffect région se termine
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Étape 2: Appliquer le cercle (structure INSTAT unifiée)
       if (hierarchy.cercle) {
         setPersonalSelectedCercleId(hierarchy.cercle.id);
         setPersonalSelectedCercleCode(hierarchy.cercle.code);
-        
-        // Attendre que le useEffect cercle se termine
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Étape 3: Appliquer la commune (structure INSTAT unifiée)
       if (hierarchy.commune) {
         setPersonalSelectedCommuneId(hierarchy.commune.id);
         setPersonalSelectedCommuneCode(hierarchy.commune.code);
-        
-        // Attendre que le useEffect commune se termine
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Étape 4: Appliquer le quartier (structure INSTAT unifiée)
       if (hierarchy.quartier) {
-        // Structure INSTAT unifiée - application directe du quartier
-        
         setPersonalSelectedQuartierId(hierarchy.quartier.id);
         setPersonalSelectedQuartierCode(hierarchy.quartier.code);
       }
       
-      // Étape finale: Mettre à jour divisionId dans personalInfo
-      
-      // Déterminer le divisionId selon la hiérarchie (même logique que les sélecteurs)
+      // Mettre à jour divisionId dans personalInfo
       let finalDivisionId = '';
-      
-      // Structure INSTAT Mali unifiée : priorité du plus spécifique au plus général
       if (hierarchy.quartier) {
         finalDivisionId = hierarchy.quartier.id;
       } else if (hierarchy.commune) {
@@ -1745,11 +1842,9 @@ const PersonalLocationStep: React.FC<{
           ...data.personalInfo,
           divisionId: finalDivisionId
         });
-      } else {
       }
-      
-      
     } catch (error) {
+      console.error('Erreur lors de l\'application de la hiérarchie:', error);
     }
   };
 
@@ -1765,7 +1860,7 @@ const PersonalLocationStep: React.FC<{
         setPersonalSelectedRegionCode(hierarchy.region.code);
         
         // Charger les cercles (structure INSTAT unifiée)
-        const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+        const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
         setPersonalCercles(cercles || []);
         
         // Attendre que les cercles soient bien mis à jour dans le state
@@ -1865,13 +1960,12 @@ const PersonalLocationStep: React.FC<{
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Région */}
         <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Région</label>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Région *</label>
         <select
           value={personalSelectedRegionId}
           onChange={isReadOnly ? undefined : (e) => {
             // Désactiver le flag de restauration lors d'interaction manuelle
             setIsRestoringPersonalData(false);
-            console.log('🔍 [PERSONAL SYNC] Flag désactivé par interaction manuelle - région');
             
             const regionId = e.target.value;
             const region = personalRegions.find(r => r.id === regionId);
@@ -1885,15 +1979,33 @@ const PersonalLocationStep: React.FC<{
             setPersonalSelectedCommuneId(''); setPersonalSelectedCommuneCode('');
             setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
             
-            // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-            const divisionId = regionId || '';
-            updateData('personalInfo', { ...data.personalInfo, divisionId });
+            // Sauvegarder les IDs de sélection dans businessData pour localStorage
+            updateData('personalInfo', { 
+              ...data.personalInfo, 
+              divisionId: '',
+              selectedRegionId: regionId,
+              selectedCercleId: '',
+              selectedCommuneId: '',
+              selectedQuartierId: ''
+            });
+            
+            // CHARGER LES CERCLES IMMEDIATEMENT
+            if (regionCode) {
+              divisionService.getCerclesByRegion(regionCode).then((cercles) => {
+                setPersonalCercles(cercles || []);
+              }).catch((error) => {
+                console.error('Erreur chargement cercles:', error);
+                setPersonalCercles([]);
+              });
+            } else {
+              setPersonalCercles([]);
+            }
           }}
           disabled={isReadOnly}
           className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
             isReadOnly 
               ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-              : 'border-gray-300 focus:ring-mali-emerald'
+              : 'border-gray-300 focus:ring-investmali-accent'
           }`}
         >
           <option value="">Sélectionnez une région</option>
@@ -1914,10 +2026,13 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Cercle</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Cercle *</label>
             <select
               value={personalSelectedCercleId}
               onChange={isReadOnly ? undefined : (e) => {
+                // Désactiver le flag de restauration lors d'interaction manuelle
+                setIsRestoringPersonalData(false);
+                
                 const cercleId = e.target.value;
                 const cercle = personalCercles.find(c => c.id === cercleId);
                 const cercleCode = cercle?.code || '';
@@ -1929,15 +2044,32 @@ const PersonalLocationStep: React.FC<{
                 setPersonalSelectedCommuneId(''); setPersonalSelectedCommuneCode('');
                 setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
                 
-                // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-                const divisionId = cercleId || personalSelectedRegionId || '';
-                updateData('personalInfo', { ...data.personalInfo, divisionId });
+                // Sauvegarder les IDs de sélection dans businessData pour localStorage
+                updateData('personalInfo', { 
+                  ...data.personalInfo, 
+                  divisionId: '',
+                  selectedCercleId: cercleId,
+                  selectedCommuneId: '',
+                  selectedQuartierId: ''
+                });
+                
+                // CHARGER LES COMMUNES IMMEDIATEMENT
+                if (cercleCode) {
+                  divisionService.getCommunesByCercle(cercleCode).then((communes) => {
+                    setPersonalCommunes(communes || []);
+                  }).catch((error) => {
+                    console.error('Erreur chargement communes:', error);
+                    setPersonalCommunes([]);
+                  });
+                } else {
+                  setPersonalCommunes([]);
+                }
               }}
               disabled={isReadOnly || !personalSelectedRegionId}
               className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
                 isReadOnly || !personalSelectedRegionId
                   ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                  : 'border-gray-300 focus:ring-mali-emerald'
+                  : 'border-gray-300 focus:ring-investmali-accent'
               }`}
             >
               <option value="">Sélectionnez un cercle</option>
@@ -1961,10 +2093,13 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Commune</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Commune *</label>
             <select
               value={personalSelectedCommuneId}
               onChange={isReadOnly ? undefined : (e) => {
+                // Désactiver le flag de restauration lors d'interaction manuelle
+                setIsRestoringPersonalData(false);
+                
                 const communeId = e.target.value;
                 const commune = personalCommunes.find(c => c.id === communeId);
                 const communeCode = commune?.code || '';
@@ -1975,15 +2110,31 @@ const PersonalLocationStep: React.FC<{
                 // Reset des niveaux inférieurs
                 setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
                 
-                // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-                const divisionId = communeId || personalSelectedCercleId || personalSelectedRegionId || '';
-                updateData('personalInfo', { ...data.personalInfo, divisionId });
+                // Sauvegarder les IDs de sélection dans businessData pour localStorage
+                updateData('personalInfo', { 
+                  ...data.personalInfo, 
+                  divisionId: '',
+                  selectedCommuneId: communeId,
+                  selectedQuartierId: ''
+                });
+                
+                // CHARGER LES QUARTIERS IMMEDIATEMENT
+                if (communeCode) {
+                  divisionService.getQuartiersByCommune(communeCode).then((quartiers) => {
+                    setPersonalQuartiers(quartiers || []);
+                  }).catch((error) => {
+                    console.error('Erreur chargement quartiers:', error);
+                    setPersonalQuartiers([]);
+                  });
+                } else {
+                  setPersonalQuartiers([]);
+                }
               }}
               disabled={isReadOnly || !personalSelectedCercleId}
               className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
                 isReadOnly || !personalSelectedCercleId
                   ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                  : 'border-gray-300 focus:ring-mali-emerald'
+                  : 'border-gray-300 focus:ring-investmali-accent'
               }`}
             >
               <option value="">Sélectionnez une commune</option>
@@ -1997,7 +2148,7 @@ const PersonalLocationStep: React.FC<{
 
       {/* Quartier */}
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Quartier</label>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Quartier *</label>
         <select
           value={personalSelectedQuartierId}
           onChange={isReadOnly ? undefined : (e) => {
@@ -2008,15 +2159,13 @@ const PersonalLocationStep: React.FC<{
             setPersonalSelectedQuartierId(quartierId);
             setPersonalSelectedQuartierCode(quartierCode);
             
-            // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-            // Pour Bamako District : quartierId || arrondissementId || regionId
-            // Pour les autres : quartierId || communeId || arrondissementId || cercleId || regionId
-            const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
-            const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-            const divisionId = isBamakoDistrict 
-              ? (quartierId || personalSelectedCercleId || personalSelectedRegionId || '')
-              : (quartierId || personalSelectedCommuneId || personalSelectedCercleId || personalSelectedRegionId || '');
-            updateData('personalInfo', { ...data.personalInfo, divisionId });
+            // Sauvegarder les IDs de sélection dans businessData pour localStorage
+            const divisionId = quartierId || '';
+            updateData('personalInfo', { 
+              ...data.personalInfo, 
+              divisionId,
+              selectedQuartierId: quartierId
+            });
           }}
           disabled={(() => {
             if (isReadOnly) return true;
@@ -2032,7 +2181,7 @@ const PersonalLocationStep: React.FC<{
               return isBamakoDistrict ? !personalSelectedCercleId : !personalSelectedCommuneId;
             })()
               ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-              : 'border-gray-300 focus:ring-mali-emerald'
+              : 'border-gray-300 focus:ring-investmali-accent'
           }`}
         >
           <option value="">Sélectionnez un quartier</option>
@@ -2756,7 +2905,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
             
             <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 sm:gap-4 md:gap-6">
              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Nom</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Nom *</label>
                 <input
                   type="text"
                   value={data.personalInfo?.lastName || ''}
@@ -2764,12 +2913,12 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                     ...data.personalInfo,
                     lastName: e.target.value
                   })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                   placeholder=""
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Prénom</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Prénom *</label>
                 <input
                   type="text"
                   value={data.personalInfo?.firstName || ''}
@@ -2777,7 +2926,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                     ...data.personalInfo,
                     firstName: e.target.value
                   })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                   placeholder=""
                 />
               </div>    
@@ -2785,11 +2934,11 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
                   Civilité
-                  {isForSelf && (
+                  {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
-                  )}
+                  )} */}
                 </label>
                 <select
                   value={data.personalInfo?.civility || ''}
@@ -2801,7 +2950,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                   className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf 
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                      : 'border-gray-300 focus:ring-mali-emerald'
+                      : 'border-gray-300 focus:ring-investmali-accent'
                   }`}
                 >
                   <option value="">Sélectionnez...</option>
@@ -2816,12 +2965,12 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
-                  Date de naissance
-                  {isForSelf && (
+                  Date de naissance *
+                  {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
-                  )}
+                  )} */}
                 </label>
                 <input
                   type="date"
@@ -2841,7 +2990,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                   className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf && hasProfileBirthDate
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                      : 'border-gray-300 focus:ring-mali-emerald'
+                      : 'border-gray-300 focus:ring-investmali-accent'
                   }`}
                   required
                 />
@@ -2870,7 +3019,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                   className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf && hasProfileBirthPlace
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                      : 'border-gray-300 focus:ring-mali-emerald'
+                      : 'border-gray-300 focus:ring-investmali-accent'
                   }`}
                   placeholder=""
                   required
@@ -2885,7 +3034,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                     ...data.personalInfo,
                     email: e.target.value
                   })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                   placeholder=""
                 />
               </div>
@@ -2898,7 +3047,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       <button 
                         type="button" 
                         onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       >
                         <img 
                           alt={`Drapeau ${selectedCountry.iso}`} 
@@ -2943,7 +3092,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                         ...data.personalInfo,
                         phone: phone
                       }))}
-                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
+                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
                       placeholder={phonePlaceholder}
                       maxLength={phoneMaxLength}
                       required
@@ -2964,7 +3113,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       <button 
                         type="button" 
                         onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
                       >
                         <img 
                           alt={`Drapeau ${selectedCountry.iso}`} 
@@ -3009,7 +3158,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                         ...data.personalInfo,
                         phone2: phone
                       }))}
-                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
+                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
                       placeholder={phonePlaceholder}
                       maxLength={phoneMaxLength}
                     />
@@ -3032,7 +3181,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       ...data.personalInfo,
                       localite: e.target.value
                     })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                     placeholder=""
                   />
                 </div>
@@ -3047,7 +3196,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       ...data.personalInfo,
                       porte: e.target.value
                     })}
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                     placeholder=""
                   />
                 </div>
@@ -3062,7 +3211,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                     ...data.personalInfo,
                     adresseLibre: e.target.value
                   })}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent text-sm sm:text-base"
                   placeholder="Saisissez votre adresse complète (ex: Quartier Lafiabougou, Rue 427, Porte 231, près de la pharmacie)"
                   rows={3}
                 />
@@ -3322,28 +3471,8 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
           </div>
         </div>
       ) : (
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                Nous allons maintenant collecter les informations sur l'entreprise.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <button
-              onClick={handleNext}
-              className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Continuer
-            </button>
-          </div>
-        </div>
+        <></>
+        // Message informatif supprimé - affichage direct du formulaire
       )}
     </div>
   );
@@ -3601,7 +3730,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         
         // Charger manuellement les cercles depuis la région
         try {
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setCercles(cercles || []);
         } catch (error) {
         }
@@ -3670,7 +3799,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
     
     if (hierarchy.region) {
       // Construire la hiérarchie complète de manière asynchrone
-      divisionService.getCerclesByRegion(hierarchy.region.id).then((cerclesList: any[]) => {
+      divisionService.getCerclesByRegion(hierarchy.region.code).then((cerclesList: any[]) => {
         hierarchy.cercle = cerclesList?.find((c: any) => c.code === cercleCode);
         
         if (hierarchy.cercle) {
@@ -3868,7 +3997,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               
               // Charger les cercles pour cette région (si pas Bamako District)
               if (!isBamakoDistrict && hierarchy.cercle) {
-                divisionService.getCerclesByRegion(hierarchy.region.id).then((cerclesList: any[]) => {
+                divisionService.getCerclesByRegion(hierarchy.region.code).then((cerclesList: any[]) => {
                   setCercles(cerclesList || []);
                 }).catch(() => {});
               } else if (isBamakoDistrict) {
@@ -4070,9 +4199,12 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         });
       } else {
         // Structure classique : charger les cercles
-        divisionService.getCerclesByRegion(selectedRegionId).then((res: any[]) => {
-          if (mounted) setCercles(res || []);
-        }).catch(() => {});
+        const regionCode = selectedRegionCode || selectedRegion?.code;
+        if (regionCode) {
+          divisionService.getCerclesByRegion(regionCode).then((res: any[]) => {
+            if (mounted) setCercles(res || []);
+          }).catch(() => {});
+        }
       }
     } else {
       setCercles([]);
@@ -4381,7 +4513,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
           
           setArrondissements(finalArrondissements || []);
         } else {
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setCercles(cercles || []);
         }
       }
@@ -4487,8 +4619,8 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, nom: e.target.value })}
                 className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
                   showValidation && !data.companyInfo?.nom && data.companyInfo?.typeEntreprise === 'SOCIETE' 
-                    ? 'border-red-400 focus:ring-red-400' 
-                    : 'border-gray-300 focus:ring-mali-emerald'
+                    ? 'border-red-400 focus:ring-investmali-accent' 
+                    : 'border-gray-300 focus:ring-investmali-accent'
                 }`}
                 placeholder={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
                   ? `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim() || 'Nom automatique du gérant'
@@ -4509,7 +4641,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 type="text"
                 value={data.companyInfo?.sigle || ''}
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, sigle: e.target.value })}
-                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-500 text-sm sm:text-base"
                 placeholder=""
               />
             </div>
@@ -4522,13 +4654,11 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   type="text"
                   value={data.companyInfo?.capitale || ''}
                   onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, capitale: e.target.value })}
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.capitale ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.capitale ? 'border-red-400 focus:ring-investmali-accent' : 'border-gray-300 focus:ring-investmali-accent'}`}
                   placeholder="Ex: 1 000 000 "
                 />
               </div>
             )}
-
-
 
             {/* Type d'entreprise - masqué pour les entreprises individuelles */}
             {data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
@@ -4540,28 +4670,28 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                     {data.companyInfo.typeEntreprise === 'SOCIETE' ? 'Société' : 'Entreprise individuelle'}
                     <span className="text-xs text-gray-500 ml-2"></span>
                   </div>
-              ) : (
-                // Select normal si aucun type n'est sélectionné
-                <select
-                  value={data.companyInfo?.typeEntreprise || ''}
-                  onChange={(e) => {
-                    const newTypeEntreprise = e.target.value as TypeEntreprise;
-                    // Auto-sélectionner E_I si Entreprise Individuelle
-                    const newFormeJuridique = newTypeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : data.companyInfo?.formeJuridique;
-                    updateBusinessData('companyInfo', { 
-                      ...data.companyInfo, 
-                      typeEntreprise: newTypeEntreprise,
-                      formeJuridique: newFormeJuridique
-                    });
-                  }}
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.typeEntreprise ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
-                >
-                  <option value="">Sélectionnez</option>
-                  {typeEntrepriseOptions.map((option: any) => (
-                    <option key={option.key} value={option.key}>{option.value}</option>
-                  ))}
-                </select>
-              )}
+                ) : (
+                  // Select normal si aucun type n'est sélectionné
+                  <select
+                    value={data.companyInfo?.typeEntreprise || ''}
+                    onChange={(e) => {
+                      const newTypeEntreprise = e.target.value as TypeEntreprise;
+                      // Auto-sélectionner E_I si Entreprise Individuelle
+                      const newFormeJuridique = newTypeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : data.companyInfo?.formeJuridique;
+                      updateBusinessData('companyInfo', { 
+                        ...data.companyInfo, 
+                        typeEntreprise: newTypeEntreprise,
+                        formeJuridique: newFormeJuridique
+                      });
+                    }}
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.typeEntreprise ? 'border-red-400 focus:ring-investmali-accent' : 'border-gray-300 focus:ring-investmali-accent'}`}
+                  >
+                    <option value="">Sélectionnez</option>
+                    {typeEntrepriseOptions.map((option: any) => (
+                      <option key={option.key} value={option.key}>{option.value}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
 
@@ -4571,7 +4701,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               <select
                 value={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : (data.companyInfo?.formeJuridique || '')}
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, formeJuridique: e.target.value as FormeJuridique })}
-                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.formeJuridique ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.formeJuridique ? 'border-red-400 focus:ring-investmali-accent' : 'border-gray-300 focus:ring-investmali-accent'}`}
                 disabled={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE'}
               >
                 <option value="">Sélectionnez</option>
@@ -4593,7 +4723,8 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Forme juridique automatiquement sélectionnée pour une entreprise individuelle</p>
               )} */}
             </div>
-                {/* Domaine d'activité non réglementé */}
+
+            {/* Domaine d'activité non réglementé */}
             <div className="animate-slide-up" style={{animationDelay: '0.52s'}}>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé</label>
               <select
@@ -4614,7 +4745,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   
                   updateBusinessData('companyInfo', updatedCompanyInfo);
                 }}
-                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 text-sm sm:text-base"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-500 text-sm sm:text-base"
               >
                 <option value="">Sélectionnez (optionnel)</option>
                 {domaineActiviteNrOptions.map((option) => (
@@ -4623,6 +4754,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               </select>
               {/* <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Sélectionnez votre domaine d'activité non réglementé (optionnel)</p> */}
             </div>
+
             {/* Domaine d'activité réglementé */}
             {(() => {
               // Vérifier si le domaine non réglementé sélectionné a une correspondance
@@ -4634,72 +4766,72 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 return null; // Masquer complètement le champ
               }
               
-              return (
-                <div className="animate-slide-up" style={{animationDelay: '0.5s'}}>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité réglementé *</label>
-                  {(() => {
-                    const isDisabled = Boolean(hasCorrespondence);
+              // return (
+              //   <div className="animate-slide-up" style={{animationDelay: '0.5s'}}>
+              //     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité réglementé *</label>
+              //     {(() => {
+              //       const isDisabled = Boolean(hasCorrespondence);
                 
-                return (
-                  <>
-                    <select
-                      value={data.companyInfo?.domaineActivite || ''}
-                      onChange={(e) => {
-                        const selectedActivite = e.target.value as DomaineActivites;
-                        let updatedCompanyInfo = { 
-                          ...data.companyInfo, 
-                          domaineActivite: selectedActivite || undefined 
-                        };
+              //   return (
+              //     <>
+              //       <select
+              //         value={data.companyInfo?.domaineActivite || ''}
+              //         onChange={(e) => {
+              //           const selectedActivite = e.target.value as DomaineActivites;
+              //           let updatedCompanyInfo = { 
+              //             ...data.companyInfo, 
+              //             domaineActivite: selectedActivite || undefined 
+              //           };
                         
-                        // Si ce domaine réglementé a une correspondance, sélectionner automatiquement le domaine non réglementé
-                        if (selectedActivite && DOMAINE_MAPPING_INVERSE[selectedActivite]) {
-                          updatedCompanyInfo.domaineActiviteNr = DOMAINE_MAPPING_INVERSE[selectedActivite];
-                        }
+              //           // Si ce domaine réglementé a une correspondance, sélectionner automatiquement le domaine non réglementé
+              //           if (selectedActivite && DOMAINE_MAPPING_INVERSE[selectedActivite]) {
+              //             updatedCompanyInfo.domaineActiviteNr = DOMAINE_MAPPING_INVERSE[selectedActivite];
+              //           }
                         
-                        updateBusinessData('companyInfo', updatedCompanyInfo);
-                      }}
-                      disabled={isDisabled}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                        isDisabled 
-                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
-                          : showValidation && !data.companyInfo?.domaineActivite 
-                            ? 'border-red-400 focus:ring-red-400' 
-                            : 'border-gray-300 focus:ring-mali-emerald'
-                      }`}
-                    >
-                      <option value="">Sélectionnez</option>
-                      {domaineActiviteOptions.map((option: any) => (
-                        <option key={option.key} value={option.key}>{option.value}</option>
-                      ))}
-                    </select>
-                    {isDisabled && (
-                      <div className="mt-1">
-                        <p className="text-sm text-blue-600 flex items-center">
-                          <span className="mr-1">ℹ️</span>
-                          Cette activité est soumise à une demande d'autorisation d'exercice
-                        </p>
-                        {/* Bouton masqué - sera dans une étape séparée
-                        <button
-                          onClick={() => {
-                            const selectedNr = data.companyInfo?.domaineActiviteNr;
-                            if (selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0) {
-                              const domaineReglemente = DOMAINE_MAPPING[selectedNr][0];
-                              generateAutorisationDocument(domaineReglemente, data);
-                            }
-                          }}
-                          className="mt-2 px-3 py-1 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 transition-colors"
-                        >
-                          Générer la demande d'autorisation
-                        </button>
-                        */}
-                      </div>
+              //           updateBusinessData('companyInfo', updatedCompanyInfo);
+              //         }}
+              //         disabled={isDisabled}
+              //         className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
+              //           isDisabled 
+              //             ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+              //             : showValidation && !data.companyInfo?.domaineActivite 
+              //               ? 'border-red-400 focus:ring-investmali-accent' 
+              //               : 'border-gray-300 focus:ring-investmali-accent'
+              //         }`}
+              //       >
+              //         <option value="">Sélectionnez</option>
+              //         {domaineActiviteOptions.map((option: any) => (
+              //           <option key={option.key} value={option.key}>{option.value}</option>
+              //         ))}
+              //       </select>
+              //       {isDisabled && (
+              //         <div className="mt-1">
+              //           <p className="text-sm text-blue-600 flex items-center">
+              //             <span className="mr-1">ℹ️</span>
+              //             Cette activité est soumise à une demande d'autorisation d'exercice
+              //           </p>
+              //           {/* Bouton masqué - sera dans une étape séparée
+              //           <button
+              //             onClick={() => {
+              //               const selectedNr = data.companyInfo?.domaineActiviteNr;
+              //               if (selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0) {
+              //                 const domaineReglemente = DOMAINE_MAPPING[selectedNr][0];
+              //                 generateAutorisationDocument(domaineReglemente, data);
+              //               }
+              //             }}
+              //             className="mt-2 px-3 py-1 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 transition-colors"
+              //           >
+              //             Générer la demande d'autorisation
+              //           </button>
+              //           */}
+              //         </div>
                       
-                    )}
-                  </>
-                    );
-                  })()}
-                </div>
-              );
+              //       )}
+              //     </>
+              //       );
+              //     })()}
+              //   </div>
+              // );
             })()}
                         {/* Activité secondaire */}
                         <div className="animate-slide-up md:col-span-2" style={{animationDelay: '0.38s'}}>
@@ -4707,7 +4839,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               <textarea
                 value={data.companyInfo?.activiteSecondaire || ''}
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, activiteSecondaire: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-500"
                 placeholder=""
                 rows={3}
               />
@@ -4821,7 +4953,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   });
                 }}
                 disabled={false}
-                className="w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-investmali-accent"
               >
                 <option value="">Sélectionnez une région</option>
                 {regions.map((r: any) => (
@@ -4872,7 +5004,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   });
                 }}
                 disabled={!selectedRegionId}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 border-gray-300 focus:ring-investmali-accent disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez un cercle</option>
                 {cercles.map((c: any) => (
@@ -4913,7 +5045,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   });
                 }}
                 disabled={!selectedCercleId}
-                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-investmali-accent disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez une commune</option>
                 {communes.map((c: any) => (
@@ -4950,7 +5082,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
                   return isBamakoDistrict ? !selectedArrondissementId : !selectedCommuneId;
                 })()}
-                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-investmali-accent disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez un quartier</option>
                 {quartiers.map((q: any) => (
@@ -4970,7 +5102,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   rue: e.target.value
                 })}
                 disabled={false}
-                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-mali-emerald`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-investmali-accent`}
                 placeholder="Nom de la rue"
               />
             </div>
@@ -4986,7 +5118,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   porte: e.target.value
                 })}
                 disabled={false}
-                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-mali-emerald`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-investmali-accent`}
                 placeholder="Numéro de porte"
               />
             </div>
@@ -5065,7 +5197,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     statutesPages: undefined
                   });
                 }}
-                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
+                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-investmali-accent focus:ring-2"
               />
               <div className="flex-1">
                 <label htmlFor="upload-statutes" className="block text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">
@@ -5091,7 +5223,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     statutesName: ''
                   });
                 }}
-                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
+                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-investmali-accent focus:ring-2"
               />
               <div className="flex-1">
                 <label htmlFor="draft-statutes" className="block text-sm font-medium text-gray-700 cursor-pointer">
@@ -5175,7 +5307,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                           statutesPages: parseInt(e.target.value) || undefined
                         });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent"
                     >
                       <option value="">Sélectionnez le nombre de pages</option>
                       {documentPlans.map((plan) => {
@@ -5233,7 +5365,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     commerceRegistryName: e.target.checked ? data.documents?.commerceRegistryName : ''
                   });
                 }}
-                className="w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
+                className="w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 rounded focus:ring-investmali-accent focus:ring-2"
               />
               <span className="text-gray-700">J'ai déjà un registre de commerce</span>
             </label>
@@ -5429,9 +5561,13 @@ const SummaryAndSubmissionStep: React.FC<{
   useEffect(() => {
     let mounted = true;
     if (selectedRegionId) {
-      divisionService.getCerclesByRegion(selectedRegionId).then((res: any[]) => {
-        if (mounted) setCercles(res || []);
-      }).catch(() => {});
+      const region = regions.find(r => r.id === selectedRegionId);
+      const regionCode = selectedRegionCode || region?.code;
+      if (regionCode) {
+        divisionService.getCerclesByRegion(regionCode).then((res: any[]) => {
+          if (mounted) setCercles(res || []);
+        }).catch(() => {});
+      }
     } else {
       setCercles([]);
       setArrondissements([]);
@@ -6228,6 +6364,10 @@ const SummaryAndSubmissionStep: React.FC<{
       
       setSubmitSuccess(successMessage);
       
+      // Nettoyer le localStorage après une soumission réussie
+      localStorage.removeItem('businessCreationData');
+      localStorage.removeItem('businessCreationStep');
+      
     } catch (error: any) {
       setSubmitError(error?.message || 'Erreur lors de la création de l\'entreprise');
     } finally {
@@ -6556,6 +6696,8 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 };
 
 const BusinessCreation: React.FC = () => {
+  console.log('🚀 [BUSINESSCREATION] Composant chargé');
+  
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -6610,7 +6752,7 @@ const BusinessCreation: React.FC = () => {
       typeEntreprise: 'ENTREPRISE_INDIVIDUELLE' as TypeEntreprise,
       formeJuridique: 'E_I' as FormeJuridique,
       domaineActivite: undefined, // Pas de valeur par défaut - sera défini seulement si nécessaire
-      domaineActiviteNr: 'ELEVAGE' as DomaineActiviteNr, // Domaine non réglementé par défaut
+      domaineActiviteNr: undefined, // Pas de valeur par défaut
       divisionCode: '',
       adresseDifferentIdentite: false,
       extraitJudiciaire: false,
@@ -6652,6 +6794,50 @@ const BusinessCreation: React.FC = () => {
       }
     }
   });
+
+  // Flag pour éviter de sauvegarder pendant la restauration initiale
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Charger les données depuis localStorage au montage du composant
+  useEffect(() => {
+    console.log('🔄 [LOCALSTORAGE] Tentative de restauration des données...');
+    const savedData = localStorage.getItem('businessCreationData');
+    const savedStep = localStorage.getItem('businessCreationStep');
+    
+    console.log('🔄 [LOCALSTORAGE] savedData:', savedData ? 'Trouvé' : 'Non trouvé');
+    console.log('🔄 [LOCALSTORAGE] savedStep:', savedStep);
+    
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        console.log('✅ [LOCALSTORAGE] Données restaurées:', parsedData);
+        setBusinessData(parsedData);
+      } catch (error) {
+        console.error('❌ [LOCALSTORAGE] Erreur lors du chargement des données sauvegardées:', error);
+      }
+    }
+    
+    if (savedStep) {
+      const step = parseInt(savedStep, 10);
+      console.log('✅ [LOCALSTORAGE] Étape restaurée:', step);
+      setCurrentStep(step);
+    }
+    
+    // Marquer la restauration comme terminée après un court délai
+    setTimeout(() => {
+      setIsInitialLoad(false);
+      console.log('✅ [LOCALSTORAGE] Restauration terminée, sauvegarde automatique activée');
+    }, 1000);
+  }, []);
+
+  // Sauvegarder les données dans localStorage à chaque modification (sauf pendant le chargement initial)
+  useEffect(() => {
+    if (!isInitialLoad) {
+      console.log('💾 [LOCALSTORAGE] Sauvegarde des données...');
+      localStorage.setItem('businessCreationData', JSON.stringify(businessData));
+      localStorage.setItem('businessCreationStep', currentStep.toString());
+    }
+  }, [businessData, currentStep, isInitialLoad]);
 
   // Division state (backend-driven)
   const [regions, setRegions] = useState<Array<{ id: string; nom: string }>>([]);
@@ -6811,7 +6997,12 @@ const BusinessCreation: React.FC = () => {
     }
     (async () => {
       try {
-        const list = await divisionService.getCerclesByRegion(selectedRegionId);
+        const region = regions.find(r => r.id === selectedRegionId);
+        if (!region) return;
+        // Les régions de l'API ont un champ 'code' - vérifier le type
+        const regionCode = (region as any).code;
+        if (!regionCode) return;
+        const list = await divisionService.getCerclesByRegion(regionCode);
         setCercles(list || []);
         setArrondissements([]); setCommunes([]);
         setSelectedCercleId(''); setSelectedArrondissementId(''); setSelectedCommuneId('');
@@ -6928,10 +7119,9 @@ const BusinessCreation: React.FC = () => {
         }
       }
       
-      // Validation de la localisation personnelle
-      
-      if (!personal.divisionId && !personal.localite) {
-        return 'Votre localisation est requise. Veuillez sélectionner au moins une région ou saisir une localité.';
+      // Validation de la localisation personnelle (obligatoire)
+      if (!personal.divisionId) {
+        return 'Votre localisation complète est requise. Veuillez sélectionner Région, Cercle, Commune et Quartier.';
       }
       
       return null;
@@ -6948,9 +7138,7 @@ const BusinessCreation: React.FC = () => {
       if (!company.typeEntreprise) return "Le type d'entreprise est requis.";
       if (!company.formeJuridique) return "La forme juridique est requise.";
       
-      // Validation du domaine d'activité : requis seulement si le domaine non réglementé nécessite une réglementation
-      if (!company.domaineActiviteNr) return "Le domaine d'activité non réglementé est requis.";
-      
+      // Validation du domaine d'activité : optionnel
       const selectedNr = company.domaineActiviteNr;
       const requiresRegulatedDomain = selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0;
       
@@ -7057,7 +7245,12 @@ const BusinessCreation: React.FC = () => {
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 1:
-        return businessData.personalInfo?.firstName && businessData.personalInfo?.lastName;
+        // Vérifier que tous les champs obligatoires sont remplis
+        const personal = businessData.personalInfo;
+        return personal?.firstName && 
+               personal?.lastName && 
+               personal?.birthDate &&
+               personal?.divisionId;
       case 2:
         return businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' || businessData.companyInfo?.nom;
       case 3:
@@ -8308,13 +8501,25 @@ const BusinessCreation: React.FC = () => {
       <div className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 relative">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Création d'entreprise
             </h1>
             <p className="text-gray-600">
               Suivez les étapes pour créer votre entreprise
             </p>
+            <button
+              onClick={() => {
+                if (window.confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire ? Toutes les données seront perdues.')) {
+                  localStorage.removeItem('businessCreationData');
+                  localStorage.removeItem('businessCreationStep');
+                  window.location.reload();
+                }
+              }}
+              className="absolute right-0 top-0 text-sm text-red-600 hover:text-red-700 underline"
+            >
+              Réinitialiser le formulaire
+            </button>
           </div>
 
           {/* Progress Steps */}
@@ -8334,7 +8539,7 @@ const BusinessCreation: React.FC = () => {
               <div key={step.number} className="flex items-center">
                 <button
                   onClick={() => goToStep(step.number)}
-                  className="flex flex-col items-center group cursor-pointer transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 rounded-lg p-2"
+                  className="flex flex-col items-center group cursor-pointer transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-investmali-accent focus:ring-opacity-50 rounded-lg p-2"
                   title={`Aller à l'étape ${step.number}: ${step.name}`}
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-200 ${

@@ -50,7 +50,9 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 // Endpoints publics (sans authentification)
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Autoriser toutes les requêtes OPTIONS pour CORS preflight
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/contact/**").permitAll() // Endpoints de contact
                 .requestMatchers("/api/v1/chat/**").permitAll() // Endpoints de chat
                 .requestMatchers("/api/v1/entreprises").permitAll() // Ancien endpoint public
                 .requestMatchers("/api/v1/agent/entreprises-test/**").permitAll() // Endpoint de test temporaire

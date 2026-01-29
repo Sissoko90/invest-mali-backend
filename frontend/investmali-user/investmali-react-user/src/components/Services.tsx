@@ -199,7 +199,7 @@ const Services: React.FC = () => {
         {/* Section Activités Réglementées */}
         <div className="mt-20 text-center">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 border border-blue-100">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl">
+            <div className="w-20 h-20 bg-gradient-to-br from-investmali-primary to-investmali-accent  rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl">
               <ServiceIcon IconComponent={FaFileAlt} />
             </div>
             <h3 className="text-3xl font-bold text-gray-900 mb-6">
@@ -211,7 +211,7 @@ const Services: React.FC = () => {
             </p>
             <Link 
               to="/activites-reglementees"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-investmali-primary to-investmali-accent  text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <ServiceIcon IconComponent={FaFileAlt} />
               <span className="ml-3">Consulter le guide</span>

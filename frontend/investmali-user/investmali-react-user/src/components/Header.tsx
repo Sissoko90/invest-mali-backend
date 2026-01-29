@@ -111,8 +111,8 @@ const Header: React.FC = () => {
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className={`text-lg sm:text-xl font-bold transition-colors duration-300 ${getTextClasses.heading.primary}`}>
-              A kera
+            <span className={`text-lg sm:text-xl font-bold transition-colors duration-300  ${getTextClasses.heading.primary}`}>
+              AKERA
             </span>
           </Link>
           <nav ref={navRef} className="hidden lg:flex space-x-4 xl:space-x-6 2xl:space-x-8">
@@ -163,7 +163,7 @@ const Header: React.FC = () => {
                 <Link to="/auth" className="text-investmali-primary hover:text-investmali-accent transition-colors duration-300 font-medium text-sm xl:text-base whitespace-nowrap">
                   Se connecter
                 </Link>
-                <Link to="/auth" className="bg-gradient-to-r from-investmali-secondary to-investmali-secondary/90 text-white px-3 xl:px-6 py-1 xl:py-2 rounded-full hover:from-investmali-secondary/90 hover:to-investmali-secondary transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl text-sm xl:text-base whitespace-nowrap">
+                <Link to="/auth" className="bg-gradient-to-r from-investmali-primary to-investmali-accent/90 text-white px-3 xl:px-6 py-1 xl:py-2 rounded-full hover:from-investmali-accent/90 hover:to-investmali-accent transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl text-sm xl:text-base whitespace-nowrap">
                   S'inscrire
                 </Link>
               </>

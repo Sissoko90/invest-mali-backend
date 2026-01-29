@@ -185,15 +185,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     setSelectedCountry(country);
     setIsDropdownOpen(false);
     // Mettre à jour la valeur complète avec le nouvel indicatif
-    const fullNumber = phoneNumber ? `${country.dialCode} ${phoneNumber}` : country.dialCode;
+    const fullNumber = phoneNumber ? `${country.dialCode} ${phoneNumber}` : '';
     onChange(fullNumber);
   };
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const number = e.target.value;
     setPhoneNumber(number);
-    // Construire le numéro complet avec l'indicatif
-    const fullNumber = number ? `${selectedCountry.dialCode} ${number}` : selectedCountry.dialCode;
+    // Construire le numéro complet avec l'indicatif (vide si pas de numéro)
+    const fullNumber = number ? `${selectedCountry.dialCode} ${number}` : '';
     onChange(fullNumber);
   };
 
@@ -205,7 +205,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+            className="flex items-center px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
           >
             <FlagIcon countryCode={selectedCountry.flag} className="w-6 h-4 mr-2" />
             <span className="text-sm font-medium text-gray-700">{selectedCountry.dialCode}</span>
@@ -216,7 +216,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
           {/* Dropdown des pays */}
           {isDropdownOpen && (
-            <div className="absolute top-full left-0 z-50 w-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 z-[9999] w-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
               {countries.map((country) => (
                 <button
                   key={country.code}
@@ -240,14 +240,14 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           value={phoneNumber}
           onChange={handlePhoneNumberChange}
           placeholder={placeholder}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
         />
       </div>
 
       {/* Overlay pour fermer le dropdown */}
       {isDropdownOpen && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[9998]"
           onClick={() => setIsDropdownOpen(false)}
         />
       )}

@@ -109,17 +109,6 @@ export const divisionService = {
     }
   },
 
-  // NOUVELLE STRUCTURE INSTAT : Cercle → Commune directement
-  getCommunesByCercle: async (cercleCode) => {
-    try {
-      const communes = await rawRequest(`/divisions/cercles/${cercleCode}/communes`);
-      return communes || [];
-    } catch (error) {
-      console.error('Erreur lors du chargement des communes:', error);
-      return [];
-    }
-  },
-
   // OBSOLÈTE : Mapping pour compatibilité temporaire
   getArrondissementsByCercle: async (cercleCode) => {
     console.warn('⚠️ getArrondissementsByCercle est obsolète - utilisez getCommunesByCercle()');

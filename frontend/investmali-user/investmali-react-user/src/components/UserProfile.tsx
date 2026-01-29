@@ -1020,7 +1020,7 @@ const UserProfile: React.FC = () => {
     switch (status) {
       case 'completed':
         return (
-          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-investmali-accent rounded-full flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -1037,7 +1037,7 @@ const UserProfile: React.FC = () => {
         );
       case 'failed':
         return (
-          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-investmali-warning rounded-full flex items-center justify-center">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1054,9 +1054,9 @@ const UserProfile: React.FC = () => {
 
   const getTrackingStatusColor = (status: TrackingStep['status']) => {
     switch (status) {
-      case 'completed': return 'text-green-600';
+      case 'completed': return 'text-investmali-accent';
       case 'in-progress': return 'text-investmali-accent';
-      case 'failed': return 'text-red-600';
+      case 'failed': return 'text-investmali-warning';
       default: return 'text-gray-500';
     }
   };
@@ -1144,10 +1144,10 @@ const UserProfile: React.FC = () => {
 
   const getStatusColor = (status: BusinessApplication['status']) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-investmali-accent/10 text-investmali-accent';
+      case 'in-progress': return 'bg-investmali-primary/10 text-investmali-primary';
+      case 'pending': return 'bg-investmali-warning/10 text-investmali-warning';
+      case 'rejected': return 'bg-investmali-warning/10 text-investmali-warning';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -1516,7 +1516,7 @@ const UserProfile: React.FC = () => {
         {toasts.length > 0 && (
           <div className="fixed top-4 right-4 space-y-2 z-50">
             {toasts.map(t => (
-              <div key={t.id} className={`px-4 py-3 rounded-lg shadow ${t.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+              <div key={t.id} className={`px-4 py-3 rounded-lg shadow ${t.type === 'success' ? 'bg-investmali-accent text-white' : 'bg-investmali-warning text-white'}`}>
                 {t.text}
               </div>
             ))}
@@ -1599,13 +1599,13 @@ const UserProfile: React.FC = () => {
                   </svg>
                   <span className="text-xs sm:text-sm">Messages</span>
                   {totalUnreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center animate-pulse text-xs">
+                    <span className="absolute -top-1 -right-1 bg-investmali-warning text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center animate-pulse text-xs">
                       {totalUnreadCount}
                     </span>
                   )}
                 </div>
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex-1 py-3 px-2 sm:py-4 sm:px-6 text-center font-medium transition-colors ${
                   activeTab === 'settings'
@@ -1623,13 +1623,13 @@ const UserProfile: React.FC = () => {
                     <span className="sm:hidden">Config</span>
                   </span>
                 </div>
-              </button>
+              </button> */}
             </div>
 
             {/* Messages */}
             {message && (
               <div className={`mx-6 mt-4 p-4 rounded-xl ${
-                message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                message.type === 'success' ? 'bg-investmali-accent/10 text-investmali-accent border border-investmali-accent/20' : 'bg-investmali-warning/10 text-investmali-warning border border-investmali-warning/20'
               }`}>
                 {message.text}
               </div>
@@ -1845,25 +1845,25 @@ const UserProfile: React.FC = () => {
                           </div>
 
                           {app.status === 'in-progress' && app.currentStep && (
-                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <p className="text-blue-800 text-sm">
+                            <div className="mt-4 p-3 bg-investmali-primary/10 rounded-lg border border-investmali-primary/20">
+                              <p className="text-investmali-primary text-sm">
                                 <strong>Étape actuelle :</strong> {app.steps.find(step => step.status === 'in-progress')?.title || 'En cours...'}
                               </p>
                             </div>
                           )}
 
                           {/* Message d'étape et contrôles */}
-                          <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="mt-4 p-3 sm:p-4 bg-investmali-primary/10 border border-investmali-primary/20 rounded-lg">
                             <div className="flex items-start space-x-3">
-                              <div className="text-blue-500 text-sm sm:text-base">ℹ️</div>
+                              <div className="text-investmali-primary text-sm sm:text-base">ℹ️</div>
                               <div className="flex-1">
-                                <h4 className="text-sm sm:text-base font-medium text-blue-900 mb-1">
+                                <h4 className="text-sm sm:text-base font-medium text-investmali-primary mb-1">
                                   Étape actuelle: {(() => {
                                     const backendStage = appDetails[app.id]?.etapeValidation || appDetails[app.id]?.etape_validation;
                                     return normalizeStage(backendStage);
                                   })()}
                                 </h4>
-                                <p className="text-xs sm:text-sm text-blue-700">
+                                <p className="text-xs sm:text-sm text-investmali-primary/80">
                                   {getStageMessage(app)}
                                 </p>
                               </div>
@@ -1891,7 +1891,7 @@ const UserProfile: React.FC = () => {
                                             <button 
                                               onClick={() => !downloads.rccm && handleDownloadDocument(app.id, 'RCCM')}
                                               disabled={downloads.rccm}
-                                              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              className="flex items-center px-4 py-2 bg-investmali-primary text-white rounded-lg hover:bg-investmali-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5 mr-2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -1901,7 +1901,7 @@ const UserProfile: React.FC = () => {
                                             <button 
                                               onClick={() => !downloads.nina && handleDownloadDocument(app.id, 'NINA')}
                                               disabled={downloads.nina}
-                                              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              className="flex items-center px-4 py-2 bg-investmali-accent text-white rounded-lg hover:bg-investmali-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5 mr-2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -1911,7 +1911,7 @@ const UserProfile: React.FC = () => {
                                             {bothDownloaded && (
                                               <button 
                                                 onClick={() => handleMarkAsRetired(app.id)}
-                                                className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                                                className="flex items-center px-4 py-2 bg-investmali-accent text-white rounded-lg hover:bg-investmali-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
                                               >
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5 mr-2">
                                                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -1922,8 +1922,8 @@ const UserProfile: React.FC = () => {
                                           </div>
                                         </>
                                       ) : (
-                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                          <p className="text-green-800 font-medium flex items-center">
+                                        <div className="p-4 bg-investmali-accent/10 border border-investmali-accent/20 rounded-lg">
+                                          <p className="text-investmali-accent font-medium flex items-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5 mr-2">
                                               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                             </svg>
@@ -1995,10 +1995,10 @@ const UserProfile: React.FC = () => {
                                 <p className="text-gray-500 text-sm">Chargement des informations...</p>
                               )}
                               {appDetailsError[app.id] && (
-                                <p className="text-red-600 text-sm">{appDetailsError[app.id]}</p>
+                                <p className="text-investmali-warning text-sm">{appDetailsError[app.id]}</p>
                               )}
                               {appDetailsSuccess[app.id] && (
-                                <p className="text-green-600 text-sm">{appDetailsSuccess[app.id]}</p>
+                                <p className="text-investmali-accent text-sm">{appDetailsSuccess[app.id]}</p>
                               )}
                               {!appDetailsLoading[app.id] && !appDetailsError[app.id] && (
                                 <div className="space-y-4">
@@ -2336,8 +2336,8 @@ const UserProfile: React.FC = () => {
                                       
                                       {/* Formulaire d'édition des données de l'étape */}
                                       {stepDataEditMode[`${app.id}-${step.id}`] && step.id === 'company-info' && (
-                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                          <h6 className="font-medium text-blue-800 mb-3">Modification des informations de l'entreprise</h6>
+                                        <div className="mt-4 p-4 bg-investmali-primary/5 border border-investmali-primary/20 rounded-lg">
+                                          <h6 className="font-medium text-investmali-primary mb-3">Modification des informations de l'entreprise</h6>
                                           <div className="space-y-4">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                               <div>
@@ -2455,8 +2455,8 @@ const UserProfile: React.FC = () => {
 
                                       {/* Formulaire pour les informations personnelles */}
                                       {stepDataEditMode[`${app.id}-${step.id}`] && step.id === 'personal-info' && (
-                                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                          <h6 className="font-medium text-green-800 mb-3">Modification des informations personnelles</h6>
+                                        <div className="mt-4 p-4 bg-investmali-accent/5 border border-investmali-accent/20 rounded-lg">
+                                          <h6 className="font-medium text-investmali-accent mb-3">Modification des informations personnelles</h6>
                                           <div className="space-y-4">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                               <div>
@@ -2515,8 +2515,8 @@ const UserProfile: React.FC = () => {
 
                                       {/* Formulaire pour les participants et associés */}
                                       {stepDataEditMode[`${app.id}-${step.id}`] && step.id === 'participants' && (
-                                        <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                                          <h6 className="font-medium text-purple-800 mb-4">Gestion des participants et associés</h6>
+                                        <div className="mt-4 p-4 bg-investmali-primary/5 border border-investmali-primary/20 rounded-lg">
+                                          <h6 className="font-medium text-investmali-primary mb-4">Gestion des participants et associés</h6>
                                           
                                           {/* Liste des participants */}
                                           <div className="space-y-4">
@@ -2535,7 +2535,7 @@ const UserProfile: React.FC = () => {
                                                     <p className="text-sm text-gray-500 mb-4">
                                                       Les membres n'ont pas encore été ajoutés ou ne sont pas disponibles dans les données.
                                                     </p>
-                                                    <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                                    <button className="bg-investmali-primary text-white px-4 py-2 rounded-lg hover:bg-investmali-primary/90 transition-colors">
                                                       ➕ Ajouter le premier membre
                                                     </button>
                                                   </div>
@@ -2545,7 +2545,7 @@ const UserProfile: React.FC = () => {
                                               return membres.map((membre: any, index: number) => (
                                                 <form 
                                                   key={membre.personId || index} 
-                                                  className="bg-white p-4 rounded-lg border border-purple-200"
+                                                  className="bg-white p-4 rounded-lg border border-investmali-primary/20"
                                                   data-membre-id={membre.personId || index}
                                                 >
                                                   <div className="flex items-center justify-between mb-3">
@@ -2683,8 +2683,8 @@ const UserProfile: React.FC = () => {
                                             })()}
 
                                             {/* Bouton pour ajouter un nouveau participant */}
-                                            <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center">
-                                              <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                                            <div className="border-2 border-dashed border-investmali-primary/30 rounded-lg p-6 text-center">
+                                              <button className="bg-investmali-primary text-white px-4 py-2 rounded-lg hover:bg-investmali-primary/90 transition-colors">
                                                 ➕ Ajouter un nouveau participant
                                               </button>
                                             </div>
@@ -2707,8 +2707,8 @@ const UserProfile: React.FC = () => {
                                               const fondateurs = membres.filter((m: any) => m.role === 'FONDATEUR').length;
                                               
                                               return (
-                                                <div className="bg-purple-100 p-4 rounded-lg">
-                                                  <h6 className="font-medium text-purple-800 mb-2 block">Résumé des participations</h6>
+                                                <div className="bg-investmali-primary/10 p-4 rounded-lg">
+                                                  <h6 className="font-medium text-investmali-primary mb-2 block">Résumé des participations</h6>
                                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                                     <div>
                                                       <span className="text-gray-600">Total des parts :</span>
@@ -2756,7 +2756,7 @@ const UserProfile: React.FC = () => {
                                           </div>
 
                                           {/* Boutons de contrôle */}
-                                          <div className="flex justify-end space-x-3 pt-4 mt-6 border-t border-purple-200">
+                                          <div className="flex justify-end space-x-3 pt-4 mt-6 border-t border-investmali-primary/20">
                                             <button 
                                               onClick={async () => {
                                                 console.log('💾 Sauvegarde des participants et associés');
@@ -2922,7 +2922,7 @@ const UserProfile: React.FC = () => {
                                                               getPieceTypeName((doc.typePiece || doc.type_piece) || '') : 'Document sans type'}
                                                           </h3>
                                                           {(doc.typePiece || doc.type_piece) && (doc.typeDocument || doc.type_document) && (
-                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-investmali-primary/10 text-investmali-primary">
                                                               {getPieceTypeName((doc.typePiece || doc.type_piece) || '')}
                                                             </span>
                                                           )}
@@ -3263,7 +3263,7 @@ const UserProfile: React.FC = () => {
             )}
 
             {/* Settings Tab */}
-            {activeTab === 'settings' && (
+            {/* {activeTab === 'settings' && (
               <div className="p-4 sm:p-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-investmali-neutral-dark mb-6">Paramètres du Compte</h2>
                 
@@ -3312,13 +3312,13 @@ const UserProfile: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
         {/* Bouton de chat flottant */}
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
-          <button
+          {/* <button
             onClick={() => {
               setIsChatOpen(true);
               resetUnreadCount(); // Réinitialiser le compteur quand on ouvre le chat
@@ -3334,7 +3334,7 @@ const UserProfile: React.FC = () => {
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
-          </button>
+          </button> */}
         </div>
 
         {/* Modal de chat */}

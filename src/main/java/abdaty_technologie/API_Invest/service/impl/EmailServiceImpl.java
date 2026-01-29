@@ -3,11 +3,13 @@ package abdaty_technologie.API_Invest.service.impl;
 import java.util.Collection;
 import java.util.Objects;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import abdaty_technologie.API_Invest.service.EmailService;
@@ -45,26 +47,31 @@ public class EmailServiceImpl implements EmailService {
         log.info("🔧 [EmailService] Configuration - from: {} | mailSender: {}", from, mailSender != null ? "OK" : "NULL");
         
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
             if (from != null && !from.isBlank()) {
-                msg.setFrom(from);
+                helper.setFrom(from);
                 log.debug("✅ [EmailService] From défini: {}", from);
             } else {
                 log.warn(" [EmailService] Aucun 'from' défini dans la configuration");
             }
-            msg.setTo(to);
-            msg.setSubject(subject);
-            msg.setText(text);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text, true); // true = HTML
             
             log.info(" [EmailService] Envoi en cours vers {} avec mailSender...", to);
-            mailSender.send(msg);
+            mailSender.send(mimeMessage);
             log.info(" [EmailService] Email envoyé avec succès à {}", to);
-        } catch (Exception e) {
+        } catch (MessagingException e) {
             log.error(" [EmailService] Erreur lors de l'envoi à {} : {}", to, e.getMessage(), e);
             log.error(" [EmailService] Détails de l'erreur: {}", e.getClass().getSimpleName());
             if (e.getCause() != null) {
                 log.error(" [EmailService] Cause racine: {}", e.getCause().getMessage());
             }
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        } catch (Exception e) {
+            log.error(" [EmailService] Erreur inattendue lors de l'envoi à {} : {}", to, e.getMessage(), e);
             throw e;
         }
     }

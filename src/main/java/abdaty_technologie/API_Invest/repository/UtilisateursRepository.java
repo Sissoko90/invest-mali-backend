@@ -22,6 +22,14 @@ public interface UtilisateursRepository extends JpaRepository<Utilisateurs, Stri
     @Query("SELECT u FROM Utilisateurs u WHERE u.personne.id = :personneId")
     Optional<Utilisateurs> findByPersonneId(@Param("personneId") String personneId);
     
+    // Recherche par email de la personne
+    @Query("SELECT u FROM Utilisateurs u WHERE u.personne.email = :email")
+    Optional<Utilisateurs> findByPersonneEmail(@Param("email") String email);
+    
+    // Recherche par téléphone de la personne
+    @Query("SELECT u FROM Utilisateurs u WHERE u.personne.telephone1 = :telephone")
+    Optional<Utilisateurs> findByPersonneTelephone(@Param("telephone") String telephone);
+    
     /**
      * Trouve tous les utilisateurs qui ont un rôle différent de USER (donc les agents)
      * avec pagination

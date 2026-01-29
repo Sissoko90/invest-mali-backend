@@ -1486,7 +1486,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
             <select
               value={userRole}
               onChange={(e) => setUserRole(e.target.value as EntrepriseRole)}
-              className="px-3 py-2 sm:py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm sm:text-base"
+              className="px-3 py-2 sm:py-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent bg-white text-sm sm:text-base"
             >
               {(data.companyInfo?.typeEntreprise as TypeEntreprise) === 'ENTREPRISE_INDIVIDUELLE' ? (
                 <option value="PROMOTEUR">Promoteur</option>
