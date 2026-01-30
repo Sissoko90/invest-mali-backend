@@ -205,6 +205,7 @@ public enum DomaineActiviteNr {
     EDITION_DIFFUSION_RADIO("Édition et diffusion de programmes radio"),
     PROGRAMMATION_TELEVISUELLE("Programmation télévisuelle et télédiffusion"),
     TELECOMMUNICATIONS("Télécommunications"),
+    TELECOMS_ET_TIC("Télécoms et TIC"),
     PROGRAMMATION_INFORMATIQUE("Programmation informatique"),
     CONSEIL_ACTIVITES_INFORMATIQUES("Conseil et autres activités informatiques"),
     TRAITEMENT_DONNEES_HEBERGEMENT("Traitement de données, hébergement et portails Internet"),

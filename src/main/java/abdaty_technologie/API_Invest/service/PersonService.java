@@ -11,4 +11,5 @@ public interface PersonService {
     List<PersonResponse> list();
     PersonResponse update(String id, PersonUpdateRequest req);
     void delete(String id);
+    PersonResponse findByTelephone(String telephone);
 }

@@ -12,6 +12,7 @@ import SuperAdminDashboard from '../components/SuperAdminDashboard';
 import DossierWorkflow from '../components/DossierWorkflow';
 import AgrementManagement from '../components/AgrementManagement';
 import { LayoutDashboard, Users, Building2, BarChart3, FolderOpen, FileText, LogOut, Menu, X } from 'lucide-react';
+import apiLogo from '../assets/logos/api-logo.png';
 
 const AgentDashboard: React.FC = () => {
   const { agent, logout } = useAgentAuth();
@@ -138,14 +139,17 @@ const AgentDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-100 flex">
         
-        {/* Sidebar - pousse le contenu au lieu de le superposer */}
+        {/* Sidebar - pousse le contenu au lieu de le superposer - Masquée dans la section dossier */}
         <div className={`bg-sky-50 shadow-lg flex flex-col transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'w-56' : 'w-0'
+          activeSection === 'dossier' ? 'w-0' : (sidebarOpen ? 'w-56' : 'w-0')
         } overflow-hidden flex-shrink-0`}>
           
-          {/* Header sidebar avec bouton fermer */}
+          {/* Header sidebar avec logo et bouton fermer */}
           <div className="p-4 flex items-center justify-between border-b border-sky-100">
-            <span className="font-semibold text-sky-800">Menu</span>
+            <div className="flex items-center space-x-2">
+              <img src={apiLogo} alt="API-MALI" className="w-10 h-10" />
+              <span className="font-bold text-lg text-sky-800">API-MALI</span>
+            </div>
             <button 
               onClick={() => setSidebarOpen(false)}
               className="p-1 rounded-lg hover:bg-sky-100 text-sky-600"
@@ -161,77 +165,77 @@ const AgentDashboard: React.FC = () => {
                 {agent.firstName?.charAt(0)}{agent.lastName?.charAt(0)}
               </span>
             </div>
-            <p className="text-sky-800 font-medium text-sm">{agent.firstName} {agent.lastName}</p>
-            <p className="text-sky-600 text-xs">{agent.email || 'admin@investmali.ml'}</p>
+            <p className="text-sky-800 font-semibold text-lg">{agent.firstName} {agent.lastName}</p>
+            <p className="text-sky-600 text-base">{agent.email || 'admin@investmali.ml'}</p>
           </div>
           
           {/* Navigation */}
           <nav className="flex-1 py-4">
             <button
               onClick={() => setActiveSection('dashboard')}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold transition-colors ${
                 activeSection === 'dashboard' 
                   ? 'bg-sky-100 text-sky-800 border-l-4 border-sky-600' 
                   : 'text-sky-700 hover:bg-sky-100'
               }`}
             >
-              <LayoutDashboard className="w-5 h-5" />
+              <LayoutDashboard className="w-7 h-7" />
               <span>Dashboard</span>
             </button>
             
             <button
               onClick={() => setActiveSection('agents')}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold transition-colors ${
                 activeSection === 'agents' 
                   ? 'bg-sky-100 text-sky-800 border-l-4 border-sky-600' 
                   : 'text-sky-700 hover:bg-sky-100'
               }`}
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-7 h-7" />
               <span>Agents</span>
             </button>
             
             <button
               onClick={() => setActiveSection('entreprises')}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold transition-colors ${
                 activeSection === 'entreprises' 
                   ? 'bg-sky-100 text-sky-800 border-l-4 border-sky-600' 
                   : 'text-sky-700 hover:bg-sky-100'
               }`}
             >
-              <Building2 className="w-5 h-5" />
+              <Building2 className="w-7 h-7" />
               <span>Entreprises</span>
             </button>
             
             <button
               onClick={() => setActiveSection('rapports')}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold transition-colors ${
                 activeSection === 'rapports' 
                   ? 'bg-sky-100 text-sky-800 border-l-4 border-sky-600' 
                   : 'text-sky-700 hover:bg-sky-100'
               }`}
             >
-              <BarChart3 className="w-5 h-5" />
+              <BarChart3 className="w-7 h-7" />
               <span>Rapports</span>
             </button>
             
             <button
               onClick={() => setActiveSection('dossier')}
-              className={`w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold transition-colors ${
                 activeSection === 'dossier' 
                   ? 'bg-sky-100 text-sky-800 border-l-4 border-sky-600' 
                   : 'text-sky-700 hover:bg-sky-100'
               }`}
             >
-              <FolderOpen className="w-5 h-5" />
+              <FolderOpen className="w-7 h-7" />
               <span>Dossiers</span>
             </button>
             
             <button
               onClick={() => window.location.href = '/agrement-workflow'}
-              className="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100 transition-colors"
+              className="w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold text-sky-700 hover:bg-sky-100 transition-colors"
             >
-              <FileText className="w-5 h-5" />
+              <FileText className="w-7 h-7" />
               <span>Agréments</span>
             </button>
           </nav>
@@ -240,9 +244,9 @@ const AgentDashboard: React.FC = () => {
           <div className="p-4 border-t border-sky-100">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="w-full flex items-center space-x-3 px-6 py-4 text-lg font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-7 h-7" />
               <span>Déconnexion</span>
             </button>
           </div>
@@ -251,21 +255,25 @@ const AgentDashboard: React.FC = () => {
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6">
+          <header className="bg-gradient-to-r from-sky-600 via-blue-600 to-sky-700 shadow-lg h-20 flex items-center justify-between px-6">
             <div className="flex items-center space-x-4">
               {/* Bouton menu pour toggle le sidebar */}
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                className="p-2 rounded-lg hover:bg-white/20 text-white"
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-xl font-semibold text-slate-800">
-                Bienvenue, {agent.firstName} !
-              </h1>
+              <img src={apiLogo} alt="API-MALI" className="w-14 h-14 drop-shadow-lg" />
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  API-MALI
+                </h1>
+                <p className="text-white/90 text-lg font-medium">Bienvenue, {agent.firstName} !</p>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-500">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span className="text-lg font-medium text-white/90">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
           </header>
           
@@ -276,11 +284,11 @@ const AgentDashboard: React.FC = () => {
                 {/* Overview Section */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-slate-800">Overview</h2>
+                    <h2 className="text-2xl font-bold text-slate-800">Overview</h2>
                     <button
                       onClick={loadDashboardStats}
                       disabled={loading}
-                      className="px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
+                      className="px-6 py-3 bg-sky-600 text-white text-lg font-semibold rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
                     >
                       {loading ? 'Chargement...' : 'Actualiser'}
                     </button>
@@ -288,7 +296,7 @@ const AgentDashboard: React.FC = () => {
                   
                   {statsError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-700 text-sm">
+                      <p className="text-red-700 text-lg">
                         Erreur: {statsError}
                       </p>
                     </div>
@@ -297,54 +305,54 @@ const AgentDashboard: React.FC = () => {
                   {/* Cartes statistiques */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Carte Agents */}
-                    <div className="bg-sky-50 rounded-lg border border-sky-100 p-4 flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                        <Users className="w-5 h-5 text-sky-600" />
+                    <div className="bg-sky-50 rounded-lg border border-sky-100 p-6 flex items-center space-x-4">
+                      <div className="w-14 h-14 bg-sky-100 rounded-lg flex items-center justify-center">
+                        <Users className="w-7 h-7 text-sky-600" />
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-gray-800">
+                        <p className="text-4xl font-bold text-gray-800">
                           {loading ? '...' : dashboardStats.totalAgents}
                         </p>
-                        <p className="text-sm text-gray-500">Total Agents</p>
+                        <p className="text-lg font-semibold text-gray-600">Total Agents</p>
                       </div>
                     </div>
                     
                     {/* Carte Approuvées */}
-                    <div className="bg-green-50 rounded-lg border border-green-100 p-4 flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-green-600" />
+                    <div className="bg-green-50 rounded-lg border border-green-100 p-6 flex items-center space-x-4">
+                      <div className="w-14 h-14 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-7 h-7 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-gray-800">
+                        <p className="text-4xl font-bold text-gray-800">
                           {loading ? '...' : dashboardStats.approvedApplications}
                         </p>
-                        <p className="text-sm text-gray-500">Approuvées</p>
+                        <p className="text-lg font-semibold text-gray-600">Approuvées</p>
                       </div>
                     </div>
                     
                     {/* Carte En cours */}
-                    <div className="bg-yellow-50 rounded-lg border border-yellow-100 p-4 flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-yellow-600" />
+                    <div className="bg-yellow-50 rounded-lg border border-yellow-100 p-6 flex items-center space-x-4">
+                      <div className="w-14 h-14 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <BarChart3 className="w-7 h-7 text-yellow-600" />
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-gray-800">
+                        <p className="text-4xl font-bold text-gray-800">
                           {loading ? '...' : dashboardStats.pendingApplications}
                         </p>
-                        <p className="text-sm text-gray-500">En cours</p>
+                        <p className="text-lg font-semibold text-gray-600">En cours</p>
                       </div>
                     </div>
                     
                     {/* Carte Total */}
-                    <div className="bg-purple-50 rounded-lg border border-purple-100 p-4 flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <FolderOpen className="w-5 h-5 text-purple-600" />
+                    <div className="bg-purple-50 rounded-lg border border-purple-100 p-6 flex items-center space-x-4">
+                      <div className="w-14 h-14 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <FolderOpen className="w-7 h-7 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-gray-800">
+                        <p className="text-4xl font-bold text-gray-800">
                           {loading ? '...' : dashboardStats.totalApplications}
                         </p>
-                        <p className="text-sm text-gray-500">Total</p>
+                        <p className="text-lg font-semibold text-gray-600">Total</p>
                       </div>
                     </div>
                   </div>

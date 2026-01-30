@@ -395,94 +395,92 @@ l'Institut National de la Statistique (INSTAT)
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6">
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
             <DocumentArrowDownIcon className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-black bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] bg-clip-text text-transparent">Étape RETRAIT</h2>
-            <p className="text-slate-600 font-medium">Téléchargement et remise des documents finaux</p>
+            <h2 className="text-2xl font-black text-slate-800">Étape RETRAIT</h2>
+            <p className="text-lg text-slate-600 font-medium">Téléchargement et remise des documents finaux</p>
           </div>
         </div>
       </div>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Dossiers prêts</p>
-              <p className="text-2xl font-bold text-gray-900">{entreprises.length}</p>
+              <p className="text-lg text-slate-600 font-medium">Dossiers prêts</p>
+              <p className="text-2xl font-black text-slate-800">{entreprises.length}</p>
             </div>
-            <ClockIcon className="h-10 w-10 text-primary-500" />
+            <ClockIcon className="h-10 w-10 text-blue-600" />
           </div>
         </div>
         
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Documents disponibles</p>
-              <p className="text-2xl font-bold text-gray-900">{entreprises.length * 2}</p>
+              <p className="text-lg text-slate-600 font-medium">Documents disponibles</p>
+              <p className="text-2xl font-black text-slate-800">{entreprises.length * 2}</p>
             </div>
-            <DocumentTextIcon className="h-10 w-10 text-primary-500" />
+            <DocumentTextIcon className="h-10 w-10 text-blue-600" />
           </div>
         </div>
         
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">En attente de retrait</p>
-              <p className="text-2xl font-bold text-gray-900">{entreprises.length}</p>
+              <p className="text-lg text-slate-600 font-medium">En attente de retrait</p>
+              <p className="text-2xl font-black text-slate-800">{entreprises.length}</p>
             </div>
-            <DocumentArrowDownIcon className="h-10 w-10 text-primary-500" />
+            <DocumentArrowDownIcon className="h-10 w-10 text-blue-600" />
           </div>
         </div>
       </div>
 
       {/* Liste des entreprises */}
       {entreprises.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
-          <CheckCircleIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="text-center py-12">
+          <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
+          </div>
+          <h3 className="text-xl font-black text-slate-800 mb-3">
             Aucun dossier en attente de retrait
           </h3>
-          <p className="text-gray-600">
+          <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">
             Tous les documents ont été remis ou aucune entreprise n'a encore terminé l'étape NINA.
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Entreprises prêtes pour le retrait ({entreprises.length})
-          </h3>
-          
           {entreprises.map((entreprise) => (
             <div
               key={entreprise.id}
-              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+              className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">{entreprise.nom}</h4>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <h4 className="text-xl font-black text-slate-800 mb-2">{entreprise.nom}</h4>
+                  <div className="grid grid-cols-2 gap-3 text-lg text-slate-600">
                     <div>
-                      <span className="text-gray-600">Référence:</span>
-                      <span className="ml-2 font-semibold text-gray-900">{entreprise.reference}</span>
+                      <span className="font-medium">Référence:</span>
+                      <span className="ml-2 font-semibold text-slate-800">{entreprise.reference}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Forme juridique:</span>
-                      <span className="ml-2 font-semibold text-gray-900">{entreprise.formeJuridique || 'N/A'}</span>
+                      <span className="font-medium">Forme juridique:</span>
+                      <span className="ml-2 font-semibold text-slate-800">{entreprise.formeJuridique || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">N° RCCM:</span>
-                      <span className="ml-2 font-mono font-semibold text-primary-700">
+                      <span className="font-medium">N° RCCM:</span>
+                      <span className="ml-2 font-mono font-semibold text-blue-700">
                         {entreprise.numeroRccm || 'Non attribué'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">N° NINA:</span>
-                      <span className="ml-2 font-mono font-semibold text-primary-700">
+                      <span className="font-medium">N° NINA:</span>
+                      <span className="ml-2 font-mono font-semibold text-blue-700">
                         {entreprise.numeroNina || 'Non attribué'}
                       </span>
                     </div>
@@ -491,13 +489,13 @@ l'Institut National de la Statistique (INSTAT)
               </div>
 
               {/* Boutons de téléchargement */}
-              <div className="border-t border-gray-200 pt-4 mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-3">Documents disponibles:</p>
+              <div className="border-t border-white/40 pt-4 mt-4">
+                <p className="text-lg font-medium text-slate-700 mb-3">Documents disponibles:</p>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleDownloadDocument(entreprise.id, 'RCCM')}
                     disabled={downloading[`${entreprise.id}-RCCM`] || !entreprise.numeroRccm}
-                    className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     {downloading[`${entreprise.id}-RCCM`] ? 'Téléchargement...' : 'Télécharger RCCM'}
@@ -506,7 +504,7 @@ l'Institut National de la Statistique (INSTAT)
                   <button
                     onClick={() => handleDownloadDocument(entreprise.id, 'NINA')}
                     disabled={downloading[`${entreprise.id}-NINA`] || !entreprise.numeroNina}
-                    className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     {downloading[`${entreprise.id}-NINA`] ? 'Téléchargement...' : 'Télécharger NINA'}
@@ -515,7 +513,7 @@ l'Institut National de la Statistique (INSTAT)
                   <button
                     onClick={() => handleMarkAsWithdrawn(entreprise.id)}
                     disabled={marking[entreprise.id]}
-                    className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     <CheckCircleIcon className="h-5 w-5 mr-2" />
                     {marking[entreprise.id] ? 'Traitement...' : 'Marquer comme retiré'}

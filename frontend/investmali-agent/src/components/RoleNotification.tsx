@@ -33,7 +33,7 @@ const RoleNotification: React.FC = () => {
 
   const getRoleDescription = () => {
     const descriptions = {
-      'AGENT_ACCEUIL': 'Vous pouvez créer et gérer les dossiers à l\'étape d\'accueil, uploader les documents initiaux et valider vers l\'étape suivante.',
+      'AGENT_ACCEUIL': 'Vous pouvez créer et gérer les dossiers à l\'étape d\'accueil, téléverser les documents initiaux et valider vers l\'étape suivante.',
       'REGISSEUR': 'Vous gérez l\'étape de régie, vérifiez les documents et traitez les aspects administratifs.',
       'AGENT_REVISION': 'Vous contrôlez et révisez les documents soumis, validez leur conformité.',
       'AGENT_IMPOT': 'Vous traitez les aspects fiscaux et les déclarations d\'impôts des entreprises.',

@@ -1,5 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { 
+  BanknotesIcon,
+  BuildingOffice2Icon,
+  CheckCircleIcon,
+  ArrowLeftIcon
+} from '@heroicons/react/24/outline';
 import { entreprisesAPI, paiementsAPI } from '../services/api';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { generateReceiptData, PaymentReceiptData } from '../services/receiptService';
@@ -220,7 +226,7 @@ const PaymentCashPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/dossier');
+    navigate(-1); // Retour à la page précédente
   };
 
   const handleCloseReceipt = () => {
@@ -234,12 +240,14 @@ const PaymentCashPage: React.FC = () => {
       <div className="max-w-md mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">💵</div>
+          <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <BanknotesIcon className="h-10 w-10 text-white" />
+          </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Validation Paiement Espèces
           </h1>
-          <p className="text-gray-600">Validation agent - Paiement en espèces</p>
-          <p className="text-lg font-semibold text-mali-emerald mt-2">
+          <p className="text-lg text-gray-600">Validation agent - Paiement en espèces</p>
+          <p className="text-2xl font-semibold text-sky-700 mt-2">
             {formatAmount(amount)}
           </p>
         </div>
@@ -248,57 +256,59 @@ const PaymentCashPage: React.FC = () => {
         <div className="max-w-md mx-auto">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="text-center mb-6">
-              <div className="text-4xl mb-2">💵</div>
+              <div className="w-16 h-16 bg-gradient-to-br from-sky-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                <BuildingOffice2Icon className="h-8 w-8 text-white" />
+              </div>
               <h2 className="text-xl font-bold text-gray-900">Validation de paiement</h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-lg text-gray-600 mt-1">
                 Entreprise: <span className="font-semibold">{entrepriseNom}</span>
               </p>
             </div>
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+                <p className="text-red-600 text-lg">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-gray-700 mb-2">
                   Montant payé (FCFA) *
                 </label>
                 <input
                   type="number"
                   value={montantPaye}
                   onChange={(e) => setMontantPaye(e.target.value)}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mali-emerald"
+                  className="w-full px-3 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-gray-700 mb-2">
                   Numéro de reçu (optionnel)
                 </label>
                 <input
                   type="text"
                   value={numeroRecu}
                   onChange={(e) => setNumeroRecu(e.target.value)}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mali-emerald"
+                  className="w-full px-3 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                   placeholder="Laissez vide pour génération automatique"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   Si vide, une référence unique sera générée automatiquement
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-gray-700 mb-2">
                   Agence de réception *
                 </label>
                 <select
                   value={agenceReception}
                   onChange={(e) => setAgenceReception(e.target.value)}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mali-emerald"
+                  className="w-full px-3 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                   required
                 >
                   <option value="">Sélectionnez une agence</option>
@@ -311,14 +321,14 @@ const PaymentCashPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-lg font-medium text-gray-700 mb-2">
                   Notes (optionnel)
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-mali-emerald"
+                  className="w-full px-3 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                   placeholder="Informations complémentaires..."
                 />
               </div>
@@ -328,24 +338,25 @@ const PaymentCashPage: React.FC = () => {
                   type="button"
                   onClick={handleCancel}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="flex-1 px-4 py-3 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
                 >
+                  <ArrowLeftIcon className="h-5 w-5" />
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-mali-emerald text-white rounded-lg hover:bg-mali-emerald-dark disabled:opacity-50 flex items-center justify-center space-x-2"
+                  className="flex-1 px-4 py-3 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all font-bold"
                 >
-                  <span>✅</span>
+                  <CheckCircleIcon className="h-5 w-5" />
                   <span>{loading ? 'Validation...' : 'Valider le paiement'}</span>
                 </button>
               </div>
             </form>
 
-            <div className="mt-6 p-3 bg-primary-50 rounded-lg">
-              <div className="flex items-center space-x-2 text-sm text-primary-600">
-                <span>💵</span>
+            <div className="mt-6 p-3 bg-sky-50 rounded-lg border border-sky-200">
+              <div className="flex items-center space-x-2 text-lg text-sky-700">
+                <BanknotesIcon className="h-5 w-5" />
                 <span>Paiement espèces - Validation agent sécurisée</span>
               </div>
             </div>
@@ -355,9 +366,10 @@ const PaymentCashPage: React.FC = () => {
         <div className="text-center mt-8">
           <button
             onClick={handleCancel}
-            className="text-mali-emerald hover:text-mali-emerald-dark underline"
+            className="text-sky-600 hover:text-sky-700 underline text-lg font-medium flex items-center gap-2 mx-auto"
           >
-            ← Retour aux dossiers
+            <ArrowLeftIcon className="h-5 w-5" />
+            Retour
           </button>
         </div>
       </div>

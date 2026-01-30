@@ -9,6 +9,8 @@ import DossierSearch from './DossierSearch';
 import EntrepriseDetails from './EntrepriseDetails';
 import ChatModal from './ChatModal';
 import PaymentMethodModal from './PaymentMethodModal';
+import PaymentReceipt from './PaymentReceipt';
+import { generateUnpaidReceiptData } from '../services/receiptService';
 import { agentBusinessAPI, entreprisesAPI, agentAuthAPI } from '../services/api';
 // Import du divisionService - créer une version locale ou utiliser l'API directement
 import { Dossier, DemandeEntreprise } from '../types';
@@ -23,8 +25,10 @@ import {
   EyeIcon,
   PencilIcon,
   ChatBubbleLeftRightIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import apiLogo from '../assets/logos/api-logo.png';
 
 // Les interfaces sont maintenant importées depuis ../types
 
@@ -37,7 +41,7 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   const { agent, canEditStep } = useAgentAuth();
   const { isDarkMode } = useTheme();
   const { isModalOpen } = useModal();
-  const [activeTab, setActiveTab] = useState<'demandes' | 'assigned' | 'search' | 'create'>('demandes');
+  const [activeTab, setActiveTab] = useState<'demandes' | 'assigned' | 'search' | 'create'>('create');
   const [currentDossier, setCurrentDossier] = useState<Dossier | null>(dossier || null);
   const [isLoading, setIsLoading] = useState(false);
   const [demandes, setDemandes] = useState<DemandeEntreprise[]>([]);
@@ -67,6 +71,10 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
     totalAmount?: number;
   } | null>(null);
 
+  // États pour le reçu
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
+
   // Hook pour les notifications
   const { unreadCount, resetUnreadCount } = useAgentNotifications();
 
@@ -83,6 +91,23 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
 
   // État pour les compteurs de messages non lus par entreprise
   const [unreadCountsByEntreprise, setUnreadCountsByEntreprise] = useState<{[key: string]: number}>({});
+
+  // Fonction utilitaire pour obtenir le nom d'affichage d'une entreprise
+  // Utilise prénom+nom du gérant si le nom d'entreprise est null
+  const getDisplayName = (entreprise: any, gerantPersonne?: any): string => {
+    if (entreprise.nom) {
+      return entreprise.nom;
+    }
+    
+    // Si pas de nom d'entreprise, utiliser prénom+nom du gérant
+    const personne = gerantPersonne || entreprise.membres?.find((m: any) => m.role === 'GERANT')?.personne;
+    if (personne) {
+      const fullName = `${personne.prenom || ''} ${personne.nom || ''}`.trim();
+      return fullName || 'Entreprise sans nom';
+    }
+    
+    return 'Entreprise sans nom';
+  };
 
   // Fonction pour récupérer les compteurs de messages non lus par entreprise
   const fetchUnreadCountsByEntreprise = async () => {
@@ -316,8 +341,21 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
       // Mapper vers le format DemandeEntreprise avec résolution des divisions
       const demandesFormatted: DemandeEntreprise[] = await Promise.all(
         entreprises.map(async (entreprise: any) => {
+          console.log('🔍 [DEBUG] Entreprise:', {
+            id: entreprise.id,
+            nom: entreprise.nom,
+            membres: entreprise.membres
+          });
+          
           const gerant = entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR' || m.entrepriseRole === 'GERANT' || m.entrepriseRole === 'PROMOTEUR');
           const gerantPersonne = gerant?.personne || gerant;
+          
+          console.log('🔍 [DEBUG] Gérant trouvé:', {
+            gerant: gerant,
+            gerantPersonne: gerantPersonne,
+            prenom: gerantPersonne?.prenom,
+            nom: gerantPersonne?.nom
+          });
           
           // Résoudre la division
           
@@ -332,17 +370,17 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           
           return {
             id: entreprise.id,
-            nom: entreprise.nom || 'Entreprise sans nom',
+            nom: getDisplayName(entreprise, gerantPersonne),
             sigle: entreprise.sigle || '',
             formeJuridique: entreprise.formeJuridique || 'Non spécifiée',
             typeEntreprise: entreprise.typeEntreprise || entreprise.domaineActivite || 'Non spécifié',
             statut: entreprise.statutCreation || 'EN_COURS',
             dateCreation: entreprise.creation || entreprise.dateCreation || new Date().toISOString(),
             demandeur: {
-              nom: gerantPersonne?.nom || 'Nom inconnu',
-              prenom: gerantPersonne?.prenom || 'Prénom inconnu',
-              email: gerantPersonne?.email || 'Email inconnu',
-              telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone inconnu'
+              nom: gerantPersonne?.nom || 'Nom non renseinger',
+              prenom: gerantPersonne?.prenom || 'Prénom non renseinger',
+              email: gerantPersonne?.email || 'Email non renseinger',
+              telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone non renseinger'
             },
             division: divisionName,
             antenne: entreprise.antenne || '',
@@ -445,17 +483,17 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
               
               return {
                 id: entreprise.id,
-                nom: entreprise.nom || 'Entreprise sans nom',
+                nom: getDisplayName(entreprise, gerantPersonne),
                 sigle: entreprise.sigle || '',
                 formeJuridique: entreprise.formeJuridique || 'Non spécifiée',
                 typeEntreprise: entreprise.typeEntreprise || entreprise.domaineActivite || 'Non spécifié',
                 statut: entreprise.statutCreation || 'EN_COURS',
                 dateCreation: entreprise.creation || entreprise.dateCreation || new Date().toISOString(),
                 demandeur: {
-                  nom: gerantPersonne?.nom || 'Nom inconnu',
-                  prenom: gerantPersonne?.prenom || 'Prénom inconnu',
-                  email: gerantPersonne?.email || 'Email inconnu',
-                  telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone inconnu'
+                  nom: gerantPersonne?.nom || 'Nom non renseinger',
+                  prenom: gerantPersonne?.prenom || 'Prénom non renseinger',
+                  email: gerantPersonne?.email || 'Email non renseinger',
+                  telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone non renseinger'
                 },
                 division: divisionName,
                 antenne: entreprise.antenne || '',
@@ -541,17 +579,17 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           
           return {
             id: entreprise.id,
-            nom: entreprise.nom || 'Entreprise sans nom',
+            nom: getDisplayName(entreprise, gerantPersonne),
             sigle: entreprise.sigle || '',
             formeJuridique: entreprise.formeJuridique || 'Non spécifiée',
             typeEntreprise: entreprise.typeEntreprise || entreprise.domaineActivite || 'Non spécifié',
             statut: entreprise.statutCreation || 'EN_COURS',
             dateCreation: entreprise.creation || entreprise.dateCreation || new Date().toISOString(),
             demandeur: {
-              nom: gerantPersonne?.nom || 'Nom inconnu',
-              prenom: gerantPersonne?.prenom || 'Prénom inconnu',
-              email: gerantPersonne?.email || 'Email inconnu',
-              telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone inconnu'
+              nom: gerantPersonne?.nom || 'Nom non renseinger',
+              prenom: gerantPersonne?.prenom || 'Prénom non renseinger',
+              email: gerantPersonne?.email || 'Email non renseinger',
+              telephone: gerantPersonne?.telephone1 || gerantPersonne?.telephone || 'Téléphone non renseinger'
             },
             division: divisionName,
             antenne: entreprise.antenne || '',
@@ -570,9 +608,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   };
 
   const handleDossierCreated = (newDossier: Dossier) => {
-    // Retourner au dashboard principal au lieu d'aller vers les documents
-    setCurrentDossier(null);
-    setActiveTab('demandes');
+    // NE PAS changer d'onglet automatiquement pour permettre au modal de succès de s'afficher
+    // Le modal de succès dans DossierCreationForm gère l'affichage et la fermeture
     
     // NE PAS appeler onDossierUpdate car cela déclenche le useEffect qui force l'onglet documents
     // onDossierUpdate?.(newDossier);
@@ -714,6 +751,70 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
     }
   };
 
+  // Fonction pour afficher le reçu d'une entreprise
+  const handleViewReceipt = async (demande: DemandeEntreprise) => {
+    try {
+      // Récupérer les données complètes de l'entreprise depuis l'API
+      let entrepriseData = null;
+      let totalAmount = 1000000; // Montant par défaut
+      let referenceEntreprise = demande.id;
+      
+      try {
+        const response = await entreprisesAPI.getById(demande.id);
+        entrepriseData = response.data;
+        
+        // Utiliser la vraie référence si disponible
+        if (entrepriseData?.reference) {
+          referenceEntreprise = entrepriseData.reference;
+        }
+        
+        // Utiliser le montant réel depuis l'API si disponible
+        if (entrepriseData?.totalAmount && entrepriseData.totalAmount > 0) {
+          totalAmount = entrepriseData.totalAmount;
+          console.log('✅ Montant réel récupéré depuis l\'API:', totalAmount, 'FCFA');
+        } else {
+          // Fallback: Calculer le montant selon le type d'entreprise
+          if (demande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
+            totalAmount = 180; // Montant par défaut pour E.I.
+          } else {
+            totalAmount = 14500; // Montant par défaut pour sociétés
+          }
+          console.log('⚠️ Montant non disponible dans l\'API, utilisation du montant par défaut:', totalAmount, 'FCFA');
+        }
+        
+        console.log('✅ Données entreprise récupérées:', entrepriseData);
+        console.log('💰 Montant final:', totalAmount, 'FCFA pour', demande.typeEntreprise);
+      } catch (error) {
+        console.warn('⚠️ Impossible de récupérer les données complètes, utilisation des données de base');
+        // Calculer le montant même en cas d'erreur
+        totalAmount = demande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 180 : 14500;
+      }
+      
+      const receipt = generateUnpaidReceiptData(
+        {
+          id: demande.id,
+          nom: demande.nom,
+          typeEntreprise: demande.typeEntreprise,
+          companyName: demande.nom,
+          businessType: demande.typeEntreprise,
+          reference: referenceEntreprise,
+          referenceServeur: referenceEntreprise,
+          numeroReference: referenceEntreprise,
+          localisation: demande.division || entrepriseData?.division?.nom || 'Non spécifiée',
+          adresse: demande.division || entrepriseData?.adresse || 'Non spécifiée',
+          prenom: demande.demandeur?.prenom,
+          nomParticipant: demande.demandeur?.nom
+        },
+        totalAmount,
+        'Agent API-INVEST'
+      );
+      
+      setReceiptData(receipt);
+      setReceiptModalOpen(true);
+    } catch (error) {
+      console.error('Erreur lors de la génération du reçu:', error);
+    }
+  };
 
   // Fonction pour ouvrir le chat avec un utilisateur
   // Fonction pour vérifier et créer une conversation pour une entreprise
@@ -1020,7 +1121,7 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['EN_COURS'];
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-base font-semibold ${config.color}`}>
         {config.text}
       </span>
     );
@@ -1307,36 +1408,47 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
       <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-lg' : 'relative'} bg-white border-b border-gray-200 p-4 backdrop-blur-sm transition-all duration-300`}>
         <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-sky-600 rounded-lg">
-              <FolderPlusIcon className="h-5 w-5 text-white" />
-            </div>
+          <div className="flex items-center space-x-4">
+            <img src={apiLogo} alt="API-MALI" className="w-12 h-12 drop-shadow-lg" />
             <div>
               <div className="flex items-center space-x-3">
-                <h2 className="text-lg font-semibold text-gray-800">Étape ACCUEIL</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Étape ACCUEIL</h2>
                 {unreadCount > 0 && (
-                  <span className="flex items-center space-x-1 bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                  <span className="flex items-center space-x-1 bg-red-100 text-red-700 text-base font-semibold px-3 py-1.5 rounded-full">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                     <span>{unreadCount} message{unreadCount > 1 ? 's' : ''}</span>
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 text-sm font-medium">Création et gestion des dossiers d'entreprise</p>
+              <p className="text-lg text-gray-600 font-medium">Création et gestion des dossiers d'entreprise</p>
               <div className="flex items-center space-x-2 mt-1">
-                <span className="text-sm text-gray-600">{agent?.firstName} {agent?.lastName}</span>
-                <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs font-medium rounded">Agent Accueil</span>
+                <span className="text-base text-gray-600">{agent?.firstName} {agent?.lastName}</span>
+                <span className="px-3 py-1 bg-sky-100 text-sky-700 text-base font-semibold rounded">Agent Accueil</span>
               </div>
             </div>
           </div>
-          {currentDossier && (
-            <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-              {getStatusIcon(currentDossier.statut)}
-              <div>
-                <p className="text-sm font-semibold text-gray-900">{currentDossier.reference}</p>
-                <p className="text-sm text-gray-600">{getStatusText(currentDossier.statut)}</p>
+          <div className="flex items-center space-x-3">
+            {agent?.role === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className="flex items-center space-x-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-lg font-semibold rounded-lg transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Dashboard</span>
+              </button>
+            )}
+            {currentDossier && (
+              <div className="flex items-center space-x-2 bg-gray-50 px-4 py-3 rounded-lg">
+                {getStatusIcon(currentDossier.statut)}
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">{currentDossier.reference}</p>
+                  <p className="text-base text-gray-600">{getStatusText(currentDossier.statut)}</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         </div>
       </div>
@@ -1349,54 +1461,54 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           <nav className="flex space-x-6 px-4">
             <button
               onClick={() => setActiveTab('create')}
-              className={`py-4 px-4 border-b-2 text-base font-medium transition-colors ${
-                activeTab === 'create' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 text-sm font-medium hover:text-gray-700'
+              className={`py-4 px-4 border-b-2 text-lg font-semibold transition-colors ${
+                activeTab === 'create' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
               <div className="flex items-center">
-                <FolderPlusIcon className="h-5 w-5 mr-2" />
+                <FolderPlusIcon className="h-6 w-6 mr-2" />
                 Créer un dossier
               </div>
             </button>
             
             <button
               onClick={() => setActiveTab('demandes')}
-              className={`py-4 px-4 border-b-2 text-base font-medium transition-colors ${
-                activeTab === 'demandes' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 text-sm font-medium hover:text-gray-700'
+              className={`py-4 px-4 border-b-2 text-lg font-semibold transition-colors ${
+                activeTab === 'demandes' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
               <div className="flex items-center">
-                <ListBulletIcon className="h-5 w-5 mr-2" />
+                <ListBulletIcon className="h-6 w-6 mr-2" />
                 Demandes à traiter
                 {demandes.length > 0 && (
-                  <span className="ml-2 bg-sky-600 text-white text-xs px-2 py-1 rounded-full">{demandes.length}</span>
+                  <span className="ml-2 bg-sky-600 text-white text-sm px-3 py-1 rounded-full">{demandes.length}</span>
                 )}
               </div>
             </button>
             
             <button
               onClick={() => setActiveTab('assigned')}
-              className={`py-4 px-4 border-b-2 text-base font-medium transition-colors ${
-                activeTab === 'assigned' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 text-sm font-medium hover:text-gray-700'
+              className={`py-4 px-4 border-b-2 text-lg font-semibold transition-colors ${
+                activeTab === 'assigned' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
               <div className="flex items-center">
-                <ClockIcon className="h-5 w-5 mr-2" />
+                <ClockIcon className="h-6 w-6 mr-2" />
                 Mes demandes assignées
                 {assignedDemandes.length > 0 && (
-                  <span className="ml-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">{assignedDemandes.length}</span>
+                  <span className="ml-2 bg-green-600 text-white text-sm px-3 py-1 rounded-full">{assignedDemandes.length}</span>
                 )}
               </div>
             </button>
             
             <button
               onClick={() => setActiveTab('search')}
-              className={`py-4 px-4 border-b-2 text-base font-medium transition-colors ${
-                activeTab === 'search' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 text-sm font-medium hover:text-gray-700'
+              className={`py-4 px-4 border-b-2 text-lg font-semibold transition-colors ${
+                activeTab === 'search' ? 'border-sky-600 text-sky-600' : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
               <div className="flex items-center">
-                <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
+                <MagnifyingGlassIcon className="h-6 w-6 mr-2" />
                 Rechercher un dossier
               </div>
             </button>
@@ -1409,13 +1521,13 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           {activeTab === 'demandes' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-800">
+                <h3 className="text-xl font-bold text-gray-800">
                   Demandes d'entreprises à traiter ({demandes.length})
                 </h3>
                 <button
                   onClick={loadDemandes}
                   disabled={demandesLoading}
-                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded-lg text-gray-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-lg font-semibold rounded-lg text-gray-700 disabled:opacity-50 transition-colors"
                 >
                   {demandesLoading ? 'Chargement...' : 'Actualiser'}
                 </button>
@@ -1424,13 +1536,13 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
               {demandesLoading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-mali-emerald"></div>
-                  <p className="mt-2 text-gray-600 text-sm font-medium">Chargement des demandes...</p>
+                  <p className="mt-2 text-gray-600 text-lg font-medium">Chargement des demandes...</p>
                 </div>
               ) : demandes.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
                   <ListBulletIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune demande</h3>
-                  <p className="mt-1 text-sm text-gray-600 text-sm font-medium">
+                  <h3 className="mt-2 text-lg font-semibold text-gray-900">Aucune demande</h3>
+                  <p className="mt-1 text-base text-gray-600 font-medium">
                     Il n'y a actuellement aucune demande d'entreprise à traiter.
                   </p>
                 </div>
@@ -1441,24 +1553,24 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="text-lg font-semibold text-gray-900">{demande.nom}</h4>
-                            {demande.sigle && <span className="text-sm text-gray-600 text-sm font-medium">({demande.sigle})</span>}
+                            <h4 className="text-xl font-bold text-gray-900">{demande.nom}</h4>
+                            {demande.sigle && <span className="text-lg text-gray-600 font-medium">({demande.sigle})</span>}
                             {getStatusBadge(demande.statut)}
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-3 mb-3 text-base">
+                          <div className="grid grid-cols-2 gap-3 mb-3 text-lg">
                             <div>
-                              <p className="text-gray-600 text-sm font-medium">Forme juridique</p>
+                              <p className="text-gray-600 text-base font-medium">Forme juridique</p>
                               <p className="font-semibold text-gray-900">{demande.formeJuridique}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-sm font-medium">Type</p>
+                              <p className="text-gray-600 text-base font-medium">Type</p>
                               <p className="font-semibold text-gray-900">{demande.typeEntreprise}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 text-sm font-medium">Demandeur</p>
+                              <p className="text-gray-600 text-base font-medium">Demandeur</p>
                               <p className="font-semibold text-gray-900">{demande.demandeur.prenom} {demande.demandeur.nom}</p>
-                              <p className="text-gray-600 text-sm">{demande.demandeur.email}</p>
+                              <p className="text-gray-600 text-base">{demande.demandeur.email}</p>
                             </div>
                           </div>
                           
@@ -1482,6 +1594,11 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                         </div>
                         
                         <div className="flex flex-col space-y-1.5 ml-4">
+                          <button onClick={() => handleViewReceipt(demande)}
+                            className="px-6 py-3 text-base font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2">
+                            <DocumentTextIcon className="h-5 w-5" />
+                            Voir le reçu
+                          </button>
                           <button onClick={() => handleAssignToMe(demande.id)} disabled={isLoading}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             Assigner
@@ -1526,8 +1643,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
               ) : assignedDemandes.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
                   <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune demande assignée</h3>
-                  <p className="mt-1 text-sm text-gray-600 text-sm font-medium">
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">Aucune demande assignée</h3>
+                  <p className="mt-1 text-lg text-gray-600 text-lg font-medium">
                     Assignez-vous des demandes depuis l'onglet "Demandes à traiter".
                   </p>
                 </div>
@@ -1567,6 +1684,11 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                         </div>
                         
                         <div className="flex flex-col space-y-1.5 ml-4">
+                          <button onClick={() => handleViewReceipt(demande)}
+                            className="px-6 py-3 text-base font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2">
+                            <DocumentTextIcon className="h-5 w-5" />
+                            Voir le reçu
+                          </button>
                           <button onClick={() => handleOpenChat(demande)}
                             className="relative px-6 py-3 text-base font-medium rounded-lg text-white" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             Contacter
@@ -1602,7 +1724,13 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           )}
           
           {activeTab === 'create' && (
-            <DossierCreationForm onDossierCreated={handleDossierCreated} />
+            <DossierCreationForm 
+              onDossierCreated={handleDossierCreated}
+              onClose={() => {
+                setCurrentDossier(null);
+                setActiveTab('demandes');
+              }}
+            />
           )}
         </div>
       </div>
@@ -1629,6 +1757,14 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           onClose={() => setPaiementModalOpen(false)}
           entreprise={paiementEntreprise}
           onPaiementComplete={handlePaiementComplete}
+        />
+      )}
+
+      {/* Modal du reçu */}
+      {receiptModalOpen && receiptData && (
+        <PaymentReceipt
+          paymentData={receiptData}
+          onClose={() => setReceiptModalOpen(false)}
         />
       )}
 

@@ -172,6 +172,9 @@ public class AuthServiceImpl implements IAuthService {
         
         // Générer le token avec le rôle principal et tous les rôles
         String token = jwtUtil.generateTokenWithRoles(utilisateur.getUtilisateur(), mainRole, allRoles);
+        
+        // Générer le refresh token
+        String refreshToken = jwtUtil.generateRefreshToken(utilisateur.getUtilisateur());
 
         // Récupérer la civilité depuis la table persons - si null, utiliser le sexe comme fallback
         System.out.println("DEBUG - Person object: " + person);
@@ -209,7 +212,9 @@ public class AuthServiceImpl implements IAuthService {
         
         System.out.println("DEBUG - Civilité finale: " + civiliteStr);
         
-        return new LoginResponse(token, utilisateur.getUtilisateur(), mainRole, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
+        LoginResponse response = new LoginResponse(token, utilisateur.getUtilisateur(), mainRole, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
+        response.setRefreshToken(refreshToken);
+        return response;
     }
 
     @Override
@@ -353,5 +358,12 @@ public class AuthServiceImpl implements IAuthService {
         }
         
         return response;
+    }
+
+    @Override
+    public LoginResponse refreshToken(String refreshToken) {
+        // TODO: Implémenter complètement le refresh token
+        // Pour l'instant, augmentation de la durée du JWT à 24h
+        throw new RuntimeException("Fonctionnalité refresh token en cours d'implémentation");
     }
 }

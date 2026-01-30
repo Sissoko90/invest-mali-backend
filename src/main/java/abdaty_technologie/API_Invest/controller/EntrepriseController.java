@@ -235,18 +235,21 @@ public class EntrepriseController {
     /**
      * Liste paginée des entreprises.
      * - Paramètres Spring Data: page, size, sort
-     * - Filtre optionnel par code de division (divisionCode)
+     * - Filtres optionnels: divisionCode, etapeValidation, nom, reference, statut
      */
     @GetMapping
     public ResponseEntity<Page<EntrepriseResponse>> listEntreprises(
             @RequestParam(value = "divisionCode", required = false) String divisionCode,
             @RequestParam(value = "etapeValidation", required = false) String etapeValidation,
+            @RequestParam(value = "nom", required = false) String nom,
+            @RequestParam(value = "reference", required = false) String reference,
+            @RequestParam(value = "statut", required = false) String statut,
             Pageable pageable,
             HttpServletRequest httpRequest) {
         
         try {
-            System.out.println("🔍 [EntrepriseController] Début listEntreprises - divisionCode: " + divisionCode + ", etapeValidation: " + etapeValidation);
-            Page<Entreprise> page = entrepriseService.listEntreprises(divisionCode, etapeValidation, pageable);
+            System.out.println("🔍 [EntrepriseController] Début listEntreprises - divisionCode: " + divisionCode + ", etapeValidation: " + etapeValidation + ", nom: " + nom + ", reference: " + reference + ", statut: " + statut);
+            Page<Entreprise> page = entrepriseService.listEntreprises(divisionCode, etapeValidation, nom, reference, statut, pageable);
             System.out.println("✅ [EntrepriseController] Entreprises chargées: " + page.getTotalElements());
             
             // Appliquer le filtrage par antenne de l'agent

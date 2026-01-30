@@ -15,7 +15,8 @@ import {
   ChevronDownIcon,
   XMarkIcon,
   ArrowPathIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { DemandeEntreprise } from '../types';
@@ -453,7 +454,6 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
         
         // Recharger les demandes
         loadDemandesRCCM2();
-        alert('Document RCCM remplacé avec succès ! Le fichier a été mis à jour en conservant le même numéro.');
         
       } else {
         console.log(`📤 [RCCM2Step] Aucun RCCM existant, upload initial du document`);
@@ -642,8 +642,8 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
             <div className="p-4 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
-            <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
-            <p className="text-slate-600 font-medium max-w-md mx-auto">
+            <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
+            <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">
               Il n'y a actuellement aucune entreprise à l'étape RCCM Phase 2.
             </p>
           </div>
@@ -658,10 +658,10 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                         <BuildingOfficeIcon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
-                        <span className={`px-3 py-1 text-xs font-bold rounded-xl shadow-lg ${getStatutColor(demande.statutRCCM2)}`}>
-                          {demande.statutRCCM2 === 'rccm_a_remplacer' ? '🔄 RCCM à remplacer' : 
-                           demande.statutRCCM2 === 'rccm_remplace' ? '✅ RCCM remplacé' : demande.statutRCCM2}
+                        <h3 className="text-xl font-black text-slate-800">{demande.nom}</h3>
+                        <span className={`px-3 py-1 text-sm font-bold rounded-xl shadow-lg flex items-center gap-2 ${getStatutColor(demande.statutRCCM2)}`}>
+                          {demande.statutRCCM2 === 'rccm_a_remplacer' ? <><ArrowPathIcon className="h-4 w-4" /> RCCM à remplacer</> : 
+                           demande.statutRCCM2 === 'rccm_remplace' ? <><CheckCircleIcon className="h-4 w-4" /> RCCM remplacé</> : demande.statutRCCM2}
                         </span>
                       </div>
                     </div>
@@ -682,14 +682,20 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   </div>
                   <div className="flex flex-col items-end space-y-3 ml-6">
                     {canEdit && (
-                      <label className="bg-gradient-to-r from-primary-500 to-amber-600 text-white px-6 py-3 rounded-xl hover:from-amber-600 hover:to-primary-700 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold">
-                        {demande.rccmExistant ? <ArrowPathIcon className="h-5 w-5" /> : <CloudArrowUpIcon className="h-5 w-5" />}
+                      <label className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg">
+                        {replacingRCCM === demande.id ? (
+                          <ClockIcon className="h-5 w-5 animate-spin" />
+                        ) : demande.rccmExistant ? (
+                          <ArrowPathIcon className="h-5 w-5" />
+                        ) : (
+                          <CloudArrowUpIcon className="h-5 w-5" />
+                        )}
                         <span>
                           {replacingRCCM === demande.id 
-                            ? '⏳ Traitement...' 
+                            ? 'Traitement...' 
                             : demande.rccmExistant 
-                              ? '🔄 Remplacer RCCM' 
-                              : '📤 Joindre le RCCM'}
+                              ? 'Remplacer RCCM' 
+                              : 'Joindre le RCCM'}
                         </span>
                         <input
                           type="file"
@@ -712,10 +718,10 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
-                      className="bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-[#412A5C] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                      className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <EyeIcon className="h-5 w-5" />
-                      <span>👁️ Détails</span>
+                      <span>Détails</span>
                     </button>
                   </div>
                 </div>
@@ -727,8 +733,8 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
 
       {/* Modal des détails modernisé */}
       {showDetails && selectedDemande && (
-        <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/50 to-primary-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div className="relative top-8 mx-auto p-8 w-11/12 max-w-6xl">
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/50 to-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+          <div className="relative top-8 mx-auto p-8 w-11/12 max-w-8xl">
             <div className="bg-gradient-to-br from-white/95 via-slate-50/90 to-primary-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
               {/* Header modernisé */}
               <div className="bg-gradient-to-r from-[#1e5987]/90 to-[#2d6aa0]/90 backdrop-blur-xl p-8 border-b border-white/20">
@@ -769,13 +775,13 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   <div className="text-center py-4">
                     {selectedDemande.rccmNumber ? (
                       <div className="flex items-center justify-center space-x-2">
-                        <span className="text-2xl">✅</span>
-                        <span className="text-lg font-bold text-primary-600">Numéro RCCM généré: {selectedDemande.rccmNumber}</span>
+                        <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                        <span className="text-xl font-bold text-green-600">Numéro RCCM généré: {selectedDemande.rccmNumber}</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center space-x-2">
-                        <span className="text-2xl">❌</span>
-                        <span className="text-lg font-bold text-red-600">Aucun numéro RCCM trouvé</span>
+                        <XCircleIcon className="h-8 w-8 text-red-600" />
+                        <span className="text-xl font-bold text-red-600">Aucun numéro RCCM trouvé</span>
                       </div>
                     )}
                   </div>
@@ -786,8 +792,8 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   {selectedDemande.rccmNumber && (
                     <div className="mt-6">
                       <div className="flex items-center space-x-3 mb-6">
-                        <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                          <span className="text-lg">📜</span>
+                        <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                          <DocumentTextIcon className="h-6 w-6 text-white" />
                         </div>
                         <h4 className="text-xl font-black text-slate-800">
                           Certificat RCCM {(selectedDemande.typeEntreprise === 'PERSONNE_PHYSIQUE' || 
@@ -858,8 +864,8 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                 {canEdit && (
                   <div className="bg-gradient-to-r from-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                        <span className="text-lg">⚡</span>
+                      <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                        <BoltIcon className="h-6 w-6 text-white" />
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Actions finales</h4>
                     </div>
@@ -886,10 +892,10 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                         <button
                           onClick={() => setShowStepDropdown(!showStepDropdown)}
                           disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-red-500 to-[#2d6aa0] text-white px-8 py-4 rounded-2xl hover:from-primary-600 hover:to-red-700 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
                         >
                           <XMarkIcon className="h-6 w-6" />
-                          <span>❌ Rejeter et Retourner</span>
+                          <span>Rejeter et Retourner</span>
                           <ChevronDownIcon className="h-5 w-5" />
                         </button>
                         

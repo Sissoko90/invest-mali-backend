@@ -211,7 +211,7 @@ const Services: React.FC = () => {
             </p>
             <Link 
               to="/activites-reglementees"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-investmali-primary to-investmali-accent  text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-investmali-primary to-investmali-accent  text-white font-bold rounded-xl hover:from-investmali-accent hover:to-investmali-primary transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               <ServiceIcon IconComponent={FaFileAlt} />
               <span className="ml-3">Consulter le guide</span>

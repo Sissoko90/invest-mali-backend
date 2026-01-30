@@ -279,7 +279,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
                       ) : (
                         <>
                           <CloudArrowUpIcon className="h-4 w-4 mr-2" />
-                          Uploader
+                          Téléverser
                         </>
                       )}
                     </label>
@@ -308,7 +308,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ dossier, onDoss
                     onClick={() => handleDocumentValidation(document.id, false)}
                     className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    Réuploader
+                    Ré Téléverser
                   </button>
                 )}
               </div>

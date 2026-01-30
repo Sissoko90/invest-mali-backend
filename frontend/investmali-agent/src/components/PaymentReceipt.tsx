@@ -1,6 +1,14 @@
 ﻿import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { 
+  CheckCircleIcon, 
+  XCircleIcon, 
+  UserIcon,
+  DocumentArrowDownIcon,
+  PrinterIcon
+} from '@heroicons/react/24/outline';
+import apiLogo from '../assets/logos/api-logo.png';
 
 interface PaymentReceiptProps {
   paymentData: {
@@ -17,6 +25,8 @@ interface PaymentReceiptProps {
     dossierNumber: string;
     processedByAgent?: boolean;
     agentName?: string;
+    prenom?: string;
+    nom?: string;
   };
   onClose: () => void;
 }
@@ -43,8 +53,21 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
   };
 
   const generateQRCode = () => {
-    // Données pour le QR code avec mention agent
-    const qrData = `API-INVEST-${paymentData.dossierNumber}-${paymentData.transactionId}${paymentData.processedByAgent ? '-AGENT' : ''}`;
+    // Utiliser prénom+nom si entrepriseName est vide
+    const entrepriseDisplay = paymentData.entrepriseName || 
+      (paymentData.prenom && paymentData.nom ? `${paymentData.prenom} ${paymentData.nom}` : 'N/A');
+    
+    // Données complètes pour le QR code avec statut de paiement
+    const qrData = JSON.stringify({
+      dossier: paymentData.dossierNumber,
+      entreprise: entrepriseDisplay,
+      montant: paymentData.amount,
+      statut: paymentData.status === 'success' ? 'PAYE' : 'NON_PAYE',
+      date: paymentData.paymentDate,
+      transaction: paymentData.transactionId,
+      agent: paymentData.processedByAgent ? paymentData.agentName || 'Agent API-INVEST' : 'Client',
+      verification: `API-INVEST-${paymentData.dossierNumber}`
+    });
     return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
   };
 
@@ -87,27 +110,118 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
     }
   };
 
+  const handlePrint = () => {
+    if (!receiptRef.current) return;
+
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Cloner le contenu du reçu
+    const receiptContent = receiptRef.current.innerHTML;
+
+    // Écrire le HTML dans la nouvelle fenêtre
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Reçu de Paiement - ${paymentData.dossierNumber}</title>
+          <style>
+            * {
+              box-sizing: border-box;
+            }
+            body {
+              margin: 0;
+              padding: 10mm;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+              font-size: 11px;
+              line-height: 1.3;
+            }
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                transform: scale(0.85);
+                transform-origin: top left;
+                width: 117.6%;
+              }
+              h1, h2, h3 {
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+              }
+              p {
+                margin: 0.3em 0;
+              }
+              .space-y-4 > * + * {
+                margin-top: 0.5rem !important;
+              }
+              .space-y-2 > * + * {
+                margin-top: 0.25rem !important;
+              }
+              .mb-8 {
+                margin-bottom: 1rem !important;
+              }
+              .mb-6 {
+                margin-bottom: 0.75rem !important;
+              }
+              .mb-4 {
+                margin-bottom: 0.5rem !important;
+              }
+              .p-8 {
+                padding: 1rem !important;
+              }
+              .p-6 {
+                padding: 0.75rem !important;
+              }
+              .p-4 {
+                padding: 0.5rem !important;
+              }
+            }
+          </style>
+          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        </head>
+        <body>
+          ${receiptContent}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    };
+  };
+
   const getStatusBadge = () => {
     switch (paymentData.status) {
       case 'success':
         return (
-          <div className="inline-flex items-center px-4 py-2 rounded-full text-lg font-bold bg-primary-100 text-primary-800 border-2 border-primary-300">
-            
-            ✅ PAYÉ
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-lg font-bold bg-green-100 text-green-800 border-2 border-green-300">
+            <CheckCircleIcon className="h-6 w-6" />
+            PAYÉ
             {paymentData.processedByAgent && ' - AGENT'}
           </div>
         );
       case 'pending':
         return (
-          <div className="inline-flex items-center px-4 py-2 rounded-full text-lg font-bold bg-red-100 text-red-800 border-2 border-red-300">
-            
-            ❌ NON PAYÉ
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-lg font-bold bg-red-100 text-red-800 border-2 border-red-300">
+            <XCircleIcon className="h-6 w-6" />
+            NON PAYÉ
           </div>
         );
       case 'failed':
         return (
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-            
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+            <XCircleIcon className="h-5 w-5" />
             Échec
           </div>
         );
@@ -115,10 +229,12 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <>
+      
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 no-print">
+      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b no-print">
           <h2 className="text-2xl font-bold text-gray-900">
             Reçu de Paiement {paymentData.processedByAgent && '(Agent)'}
           </h2>
@@ -132,16 +248,18 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
 
         {/* Receipt Content */}
         <div className="p-6">
-          <div ref={receiptRef} className="bg-white p-8 border border-gray-200 rounded-lg">
+          <div id="receipt-content" ref={receiptRef} className="bg-white p-8 border border-gray-200 rounded-lg">
             {/* Header with Logo */}
             <div className="flex items-start justify-between mb-8">
               <div className="flex items-center space-x-4">
                 {/* Logo API-MALI */}
-                <div className="w-20 h-20 bg-gradient-to-br from-mali-emerald to-mali-gold rounded-full flex items-center justify-center">
-                  <div className="text-white font-bold text-lg">API</div>
-                </div>
+                <img 
+                  src={apiLogo} 
+                  alt="API-MALI Logo" 
+                  className="w-24 h-24 object-contain"
+                />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">API-MALI</h1>
+                  <h1 className="text-2xl font-bold text-[#2d85c9]">API-MALI</h1>
                   <p className="text-sm text-gray-600">Bd Abderraziz Bouteflika</p>
                   <p className="text-sm text-gray-600">Quartier du Fleuve</p>
                   <p className="text-sm text-gray-600">BP 1980</p>
@@ -170,11 +288,14 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                 {getStatusBadge()}
               </div>
               {paymentData.processedByAgent && (
-                <div className="mt-2 p-2 bg-primary-50 rounded-lg">
-                  <p className="text-sm text-primary-700">
-                    👤 <strong>Traité par agent</strong>
-                    {paymentData.agentName && ` - ${paymentData.agentName}`}
-                  </p>
+                <div className="mt-2 p-3 bg-[#2d85c9]/10 rounded-lg border border-[#2d85c9]/20">
+                  <div className="flex items-center justify-center gap-2">
+                    <UserIcon className="h-5 w-5 text-[#2d85c9]" />
+                    <p className="text-sm text-[#2d85c9] font-medium">
+                      <strong>Traité par agent</strong>
+                      {paymentData.agentName && ` - ${paymentData.agentName}`}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -216,12 +337,17 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Statut:</span>
-                      <span className={`font-bold text-lg ${
-                        paymentData.status === 'success' ? 'text-primary-600' : 
+                      <span className={`font-bold text-lg flex items-center gap-2 ${
+                        paymentData.status === 'success' ? 'text-green-600' : 
                         paymentData.status === 'pending' ? 'text-red-600' : 'text-red-600'
                       }`}>
-                        {paymentData.status === 'success' ? '✅ PAYÉ' : 
-                         paymentData.status === 'pending' ? '❌ NON PAYÉ' : '❌ ÉCHEC'}
+                        {paymentData.status === 'success' ? (
+                          <><CheckCircleIcon className="h-5 w-5" /> PAYÉ</>
+                        ) : paymentData.status === 'pending' ? (
+                          <><XCircleIcon className="h-5 w-5" /> NON PAYÉ</>
+                        ) : (
+                          <><XCircleIcon className="h-5 w-5" /> ÉCHEC</>
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -239,7 +365,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                     {paymentData.processedByAgent && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Mode:</span>
-                        <span className="font-medium text-primary-600">Traité par Agent</span>
+                        <span className="font-medium text-[#2d85c9]">Traité par Agent</span>
                       </div>
                     )}
                   </div>
@@ -247,7 +373,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
 
                 <div className="text-right">
                   <h4 className="font-semibold text-gray-900 mb-3">Montant</h4>
-                  <div className="text-3xl font-bold text-mali-emerald">
+                  <div className="text-3xl font-bold text-[#2d85c9]">
                     {formatAmount(paymentData.amount)}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">Frais de création d'entreprise</p>
@@ -261,10 +387,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
               {paymentData.status === 'success' && (
                 <div className="flex justify-center mb-6">
                   <div className="relative">
-                    <div className="bg-primary-50 border-4 border-primary-500 rounded-full w-32 h-32 flex items-center justify-center transform rotate-12">
+                    <div className="bg-green-50 border-4 border-green-500 rounded-full w-32 h-32 flex items-center justify-center transform rotate-12">
                       <div className="text-center">
-                        <div className="text-2xl font-black text-primary-700">PAYÉ</div>
-                        <div className="text-xs font-bold text-primary-600">{formatDate(paymentData.paymentDate).split(' ')[0]}</div>
+                        <div className="text-2xl font-black text-green-700">PAYÉ</div>
+                        <div className="text-xs font-bold text-green-600">{formatDate(paymentData.paymentDate).split(' ')[0]}</div>
                       </div>
                     </div>
                   </div>
@@ -280,8 +406,9 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                 </p>
                 <p>Conservez ce document pour vos dossiers.</p>
                 {paymentData.processedByAgent && (
-                  <p className="text-sm text-primary-700">
-                    👤 <strong>Traité par agent</strong> - {paymentData.agentName || 'Agent API-INVEST'}
+                  <p className="text-sm text-[#2d85c9] flex items-center justify-center gap-2">
+                    <UserIcon className="h-4 w-4" />
+                    <strong>Traité par agent</strong> - {paymentData.agentName || 'Agent API-INVEST'}
                   </p>
                 )}
                 <p className="mt-2 font-medium">API-INVEST MALI - Agence pour la Promotion des Investissements</p>
@@ -290,34 +417,28 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
           </div>
 
           {/* Actions */}
-          <div className="flex justify-center space-x-4 mt-6">
+          <div className="flex justify-center space-x-4 mt-6 no-print">
             <button
               onClick={downloadPDF}
-              className="bg-mali-emerald text-white px-6 py-3 rounded-lg hover:bg-mali-emerald/90 
-                       transition-colors flex items-center space-x-2"
+              className="bg-[#2d85c9] text-white px-6 py-3 rounded-lg hover:bg-[#2d85c9]/90 
+                       transition-colors flex items-center gap-2 font-medium shadow-lg"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <DocumentArrowDownIcon className="h-5 w-5" />
               <span>Télécharger PDF</span>
             </button>
             
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 
-                       transition-colors flex items-center space-x-2"
+                       transition-colors flex items-center gap-2 font-medium"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
+              <PrinterIcon className="h-5 w-5" />
               <span>Imprimer</span>
             </button>
             
             <button
               onClick={onClose}
-              className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
+              className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
             >
               Fermer
             </button>
@@ -325,6 +446,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
         </div>
       </div>
     </div>
+    </>
   );
 };
 

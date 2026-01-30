@@ -44,4 +44,9 @@ public interface IAuthService {
      * Récupère la liste de tous les utilisateurs
      */
     List<UserAuthResponse> getAllUsersInfo();
+    
+    /**
+     * Rafraîchit un access token à partir d'un refresh token valide
+     */
+    LoginResponse refreshToken(String refreshToken);
 }

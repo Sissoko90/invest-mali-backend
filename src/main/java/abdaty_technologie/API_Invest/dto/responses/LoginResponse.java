@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class LoginResponse {
     
     private String token;
+    private String refreshToken;
     private String type = "Bearer";
     private String utilisateur;
     private String role;

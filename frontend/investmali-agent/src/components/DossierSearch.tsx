@@ -52,6 +52,16 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
     loadDossiers();
   }, []);
 
+  // Recharger les dossiers quand les filtres changent
+  useEffect(() => {
+    // Débounce pour éviter trop de requêtes
+    const timer = setTimeout(() => {
+      loadDossiers();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [filters.nom, filters.reference, filters.statut, filters.localisation]);
+
   useEffect(() => {
     if (filters.nom.length >= 2) {
       checkForDuplicates();
@@ -64,23 +74,33 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
     setIsLoading(true);
     setError(null);
     
-    console.log('🔍 DossierSearch - Chargement des dossiers (même logique que AccueilStep)...');
+    console.log('🔍 DossierSearch - Chargement des dossiers avec filtres...');
     console.log('👤 Agent actuel:', agent);
     console.log('🏢 Antenne de l\'agent:', agent?.antenne);
+    console.log('🔍 Filtres actifs:', filters);
     
     try {
       let response;
       let allEntreprises: any[] = [];
       
+      // Préparer les paramètres avec les filtres
+      const params: any = {
+        etape: 'ACCUEIL',
+        page: 0,
+        size: 100,
+        sort: 'creation,desc'
+      };
+      
+      // Ajouter les filtres s'ils sont définis
+      if (filters.nom) params.nom = filters.nom;
+      if (filters.reference) params.reference = filters.reference;
+      if (filters.statut) params.statut = filters.statut;
+      if (filters.localisation) params.divisionCode = filters.localisation;
+      
       try {
-        // Essayer d'abord /unassigned (même logique que AccueilStep)
-        console.log('🔄 Tentative /unassigned...');
-        response = await entreprisesAPI.unassigned({
-          etape: 'ACCUEIL',
-          page: 0,
-          size: 100,
-          sort: 'creation,desc'
-        });
+        // Essayer d'abord /unassigned avec les filtres
+        console.log('🔄 Tentative /unassigned avec filtres:', params);
+        response = await entreprisesAPI.unassigned(params);
         
         const pageData = response.data;
         allEntreprises = pageData?.content || pageData?.data || pageData?.rows || pageData || [];
@@ -89,12 +109,8 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
       } catch (error) {
         console.warn('⚠️ /unassigned échoue, utilisation de /entreprises avec filtrage...');
         
-        // Fallback sur /entreprises avec filtrage (même logique que AccueilStep)
-        response = await entreprisesAPI.list({
-          page: 0,
-          size: 100,
-          sort: 'creation,desc'
-        });
+        // Fallback sur /entreprises avec filtrage - utiliser les mêmes params
+        response = await entreprisesAPI.list(params);
         
         const pageData = response.data;
         const toutes = pageData?.content || pageData?.data || pageData?.rows || pageData || [];
@@ -197,43 +213,53 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
     setDuplicates(potentialDuplicates);
   };
 
-  const filteredDossiers = dossiers.filter(dossier => {
-    // Filtres avancés uniquement
-    const matchesNom = !filters.nom || 
-      dossier.nom.toLowerCase().includes(filters.nom.toLowerCase()) ||
-      dossier.sigle?.toLowerCase().includes(filters.nom.toLowerCase());
+  const filteredDossiers = React.useMemo(() => {
+    console.log('🔍 Filtrage des dossiers...', {
+      totalDossiers: dossiers.length,
+      filters: filters
+    });
     
-    const matchesReference = !filters.reference || 
-      dossier.reference.toLowerCase().includes(filters.reference.toLowerCase());
+    const filtered = dossiers.filter(dossier => {
+      // Filtres avancés uniquement
+      const matchesNom = !filters.nom || 
+        dossier.nom.toLowerCase().includes(filters.nom.toLowerCase()) ||
+        dossier.sigle?.toLowerCase().includes(filters.nom.toLowerCase());
+      
+      const matchesReference = !filters.reference || 
+        dossier.reference.toLowerCase().includes(filters.reference.toLowerCase());
+      
+      const matchesLocalisation = !filters.localisation || 
+        (dossier.division && dossier.division.toLowerCase().includes(filters.localisation.toLowerCase())) ||
+        (dossier.antenne && dossier.antenne.toLowerCase().includes(filters.localisation.toLowerCase()));
+      
+      const matchesStatut = !filters.statut || dossier.statut === filters.statut;
+      
+      // Note: domaineActivite n'est pas encore dans l'interface Dossier
+      // On peut l'ajouter plus tard quand les données seront disponibles
+      const matchesDomaineActivite = !filters.domaineActivite; // Toujours vrai pour l'instant
+      
+      return matchesNom && matchesReference && matchesLocalisation && 
+             matchesStatut && matchesDomaineActivite;
+    });
     
-    const matchesLocalisation = !filters.localisation || 
-      (dossier.division && dossier.division.toLowerCase().includes(filters.localisation.toLowerCase())) ||
-      (dossier.antenne && dossier.antenne.toLowerCase().includes(filters.localisation.toLowerCase()));
-    
-    const matchesStatut = !filters.statut || dossier.statut === filters.statut;
-    
-    // Note: domaineActivite n'est pas encore dans l'interface Dossier
-    // On peut l'ajouter plus tard quand les données seront disponibles
-    const matchesDomaineActivite = !filters.domaineActivite; // Toujours vrai pour l'instant
-    
-    return matchesNom && matchesReference && matchesLocalisation && 
-           matchesStatut && matchesDomaineActivite;
-  });
+    console.log('✅ Dossiers filtrés:', filtered.length);
+    return filtered;
+  }, [dossiers, filters]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'NOUVEAU':
-        return <ClockIcon className="h-4 w-4 text-primary-500" />;
+        return <ClockIcon className="h-6 w-6 text-sky-600" />;
       case 'EN_COURS':
-        return <ClockIcon className="h-4 w-4 text-primary-500" />;
+        return <ClockIcon className="h-6 w-6 text-sky-600" />;
       case 'INCOMPLET':
-        return <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />;
+        return <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />;
       case 'VALIDE':
-        return <CheckCircleIcon className="h-4 w-4 text-primary-500" />;
+        return <CheckCircleIcon className="h-6 w-6 text-green-600" />;
       case 'REJETE':
-        return <ExclamationTriangleIcon className="h-4 w-4 text-red-600" />;
+        return <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />;
       default:
-        return <ClockIcon className="h-4 w-4 text-gray-500" />;
+        return <ClockIcon className="h-6 w-6 text-gray-500" />;
     }
   };
 
@@ -302,54 +328,54 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
   return (
     <div className="space-y-4">
       {/* Filtres de recherche */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-gray-800">Filtres de recherche</h3>
+          <h3 className="text-xl font-bold text-gray-800">Filtres de recherche</h3>
           <button 
             onClick={resetFilters}
-            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded-lg text-gray-700 transition-colors"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-lg font-semibold rounded-lg text-gray-700 transition-colors"
           >
             Réinitialiser
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+            <label className="block text-base font-semibold text-gray-600 mb-2">Nom</label>
             <input
               type="text"
               placeholder="Rechercher..."
               value={filters.nom}
               onChange={(e) => handleFilterChange('nom', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-sky-600 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Référence</label>
+            <label className="block text-base font-semibold text-gray-600 mb-2">Référence</label>
             <input
               type="text"
               placeholder="CE-2025-..."
               value={filters.reference}
               onChange={(e) => handleFilterChange('reference', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-sky-600 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Localisation</label>
+            <label className="block text-base font-semibold text-gray-600 mb-2">Localisation</label>
             <input
               type="text"
               placeholder="Bamako..."
               value={filters.localisation}
               onChange={(e) => handleFilterChange('localisation', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-sky-600 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Statut</label>
+            <label className="block text-base font-semibold text-gray-600 mb-2">Statut</label>
             <select
               value={filters.statut}
               onChange={(e) => handleFilterChange('statut', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-sky-600 focus:border-transparent"
             >
               <option value="">Tous</option>
               <option value="NOUVEAU">Nouveau</option>
@@ -364,8 +390,8 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
 
       {/* Alerte de déduplication */}
       {duplicates.length > 0 && filters.nom.length >= 2 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <p className="text-sm text-yellow-800">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-lg text-yellow-800 font-medium">
             <strong>Attention:</strong> {duplicates.length} dossier(s) similaire(s) trouvé(s). Vérifiez avant de créer un nouveau.
           </p>
         </div>
@@ -373,26 +399,26 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
 
       {/* Erreur */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-lg text-red-700 font-medium">{error}</p>
         </div>
       )}
 
       {/* Résultats */}
       {isLoading ? (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
-          <p className="mt-2 text-gray-500 text-sm">Chargement des dossiers...</p>
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600"></div>
+          <p className="mt-2 text-gray-600 text-lg font-medium">Chargement des dossiers...</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {filteredDossiers.length === 0 ? (
             <div className="text-center py-8">
-              <MagnifyingGlassIcon className="mx-auto h-10 w-10 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+              <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-lg font-semibold text-gray-900">
                 {Object.values(filters).some(f => f !== '') ? 'Aucun dossier trouvé' : 'Aucun dossier disponible'}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-base text-gray-600 font-medium">
                 {Object.values(filters).some(f => f !== '')
                   ? 'Modifiez vos filtres de recherche.'
                   : 'Aucun dossier dans le système.'}
@@ -403,19 +429,19 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       Référence
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       Entreprise
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       Statut
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       Date création
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -423,29 +449,29 @@ const DossierSearch: React.FC<DossierSearchProps> = ({ onDossierSelected }) => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredDossiers.map((dossier) => (
                     <tr key={dossier.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-lg font-semibold text-gray-900">
                         {dossier.reference}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{dossier.nom}</div>
+                          <div className="text-lg font-semibold text-gray-900">{dossier.nom}</div>
                           {dossier.sigle && (
-                            <div className="text-sm text-gray-500">{dossier.sigle}</div>
+                            <div className="text-base text-gray-500">{dossier.sigle}</div>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {getStatusIcon(dossier.statut)}
-                          <span className="ml-2 text-sm text-gray-900">
+                          <span className="ml-2 text-lg font-medium text-gray-900">
                             {getStatusText(dossier.statut)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-600">
                         {formatDate(dossier.dateCreation)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-lg font-semibold">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => onDossierSelected(dossier)}

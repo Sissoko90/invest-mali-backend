@@ -62,7 +62,7 @@ const IntegrationTest: React.FC = () => {
       const duration = Date.now() - startTime;
 
       if (registerResponse.success) {
-        const email = registerResponse.data?.user?.email || 'email inconnu';
+        const email = registerResponse.data?.user?.email || 'email non renseinger';
         updateTest('User Registration', 'success', `Utilisateur créé: ${email}`, duration);
       } else {
         updateTest('User Registration', 'error', 'Échec de l\'inscription');
@@ -104,7 +104,7 @@ const IntegrationTest: React.FC = () => {
       const duration = Date.now() - startTime;
 
       if (profileResponse.success) {
-        const email = profileResponse.data?.user?.email || 'email inconnu';
+        const email = profileResponse.data?.user?.email || 'email non renseinger';
         updateTest('Get Profile', 'success', `Profil récupéré: ${email}`, duration);
       } else {
         updateTest('Get Profile', 'error', 'Échec de récupération du profil');

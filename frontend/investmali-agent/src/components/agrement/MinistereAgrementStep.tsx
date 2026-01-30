@@ -188,7 +188,7 @@ const MinistereAgrementStep: React.FC<MinistereAgrementStepProps> = ({ onEntrepr
   const handleDelivrerAgrement = async (entreprise: Entreprise) => {
     // Vérifier que l'agrément signé a été uploadé
     if (!entreprise.agrementSignePath) {
-      setError('⚠️ Vous devez d\'abord uploader l\'agrément signé avant de pouvoir délivrer.');
+      setError('Vous devez d\'abord téléverser l\'agrément signé avant de pouvoir délivrer.');
       return;
     }
 
@@ -412,7 +412,7 @@ const MinistereAgrementStep: React.FC<MinistereAgrementStepProps> = ({ onEntrepr
                           {isUploading === entreprise.id ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                           ) : (
-                            'Uploader'
+                            'Téléverser'
                           )}
                         </button>
                       )}

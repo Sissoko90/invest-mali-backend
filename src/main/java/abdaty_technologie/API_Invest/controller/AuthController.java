@@ -99,4 +99,22 @@ public class AuthController {
             return ResponseEntity.internalServerError().body(new ErrorResponse(Messages.ERROR_RETRIEVING_USERS + e.getMessage()));
         }
     }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Rafraîchir le token", description = "Génère un nouveau access token à partir d'un refresh token valide")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        try {
+            String refreshToken = request.get("refreshToken");
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Refresh token manquant"));
+            }
+            
+            LoginResponse response = authService.refreshToken(refreshToken);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse("Erreur lors du rafraîchissement du token"));
+        }
+    }
 }

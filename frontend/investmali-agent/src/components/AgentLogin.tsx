@@ -54,27 +54,25 @@ const AgentLogin: React.FC = () => {
         let redirectPath = result.redirectUrl;
         
         if (!redirectPath) {
-          // Attendre un court moment pour que le contexte se mette à jour
-          setTimeout(() => {
-            // Si pas de redirectUrl du backend, utiliser la logique par rôle
-            const userRole = agent?.role;
-            if (userRole === 'SUPER_ADMIN') {
-              redirectPath = '/dashboard'; // Super Admin vers dashboard
-            } else {
-              redirectPath = '/dossier'; // Autres agents vers dossier
-            }
-            
-            console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
-            console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
-            console.log('🚀 [AgentLogin] Rôle de l\'agent:', userRole);
-            console.log('🚀 [AgentLogin] Fallback utilisé:', !result.redirectUrl);
-            navigate(redirectPath, { replace: true });
-          }, 100); // Petit délai pour permettre au contexte de se mettre à jour
+          // Utiliser l'agent retourné par login() au lieu du contexte
+          const userRole = result.agent?.role;
+          if (userRole === 'SUPER_ADMIN') {
+            redirectPath = '/dashboard'; // Super Admin vers dashboard
+          } else {
+            redirectPath = '/dossier'; // Autres agents vers dossier
+          }
+          
+          console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
+          console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
+          console.log('🚀 [AgentLogin] Rôle de l\'agent:', userRole);
+          console.log('🚀 [AgentLogin] Agent complet:', result.agent);
+          console.log('🚀 [AgentLogin] Fallback utilisé:', !result.redirectUrl);
         } else {
           console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
           console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
-          navigate(redirectPath, { replace: true });
         }
+        
+        navigate(redirectPath, { replace: true });
       } else {
         console.error('❌ [AgentLogin] Échec de connexion');
         setError('E-mail ou mot de passe invalide');
@@ -238,6 +236,11 @@ const AgentLogin: React.FC = () => {
         
         <div className="text-center text-sm text-gray-500 space-y-2">
           <p>Vous n'avez pas de compte agent ? <Link to="/request-access" className="font-medium text-primary-600 hover:text-primary-500">Demander un accès</Link></p>
+          <p className="mt-2">
+            <Link to="/dashboard" className="font-medium text-sky-600 hover:text-sky-700">
+              Accéder au Dashboard
+            </Link>
+          </p>
         </div>
       </div>
     </div>

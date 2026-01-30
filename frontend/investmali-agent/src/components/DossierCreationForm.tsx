@@ -7,7 +7,12 @@ import {
   BuildingOfficeIcon,
   BriefcaseIcon,
   DocumentIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  DocumentTextIcon,
+  XMarkIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import DivisionSearchInput from './DivisionSearchInput';
 import SignatureCanvas from './SignatureCanvas';
@@ -314,6 +319,7 @@ interface Dossier {
 
 interface DossierCreationFormProps {
   onDossierCreated: (dossier: Dossier) => void;
+  onClose?: () => void;
 }
 
 // Liste des pays avec codes téléphoniques et drapeaux (comme cété utilisateur)
@@ -438,13 +444,17 @@ interface FormData {
   antenne: string;
 }
 
-const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCreated }) => {
+const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCreated, onClose }) => {
   const { agent } = useAgentAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isDossierCreated, setIsDossierCreated] = useState(false);
   const [generatedReceipt, setGeneratedReceipt] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<{reference: string, entreprise: string, isSimulated: boolean, emailInfo: string} | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // État pour les documents supplémentaires
@@ -498,8 +508,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const [formData, setFormData] = useState<FormData>({
     // Informations Personnelles
     civilite: 'MONSIEUR',
-    prenom: '',
-    nom: '',
+    prenom: agent?.firstName || '',
+    nom: agent?.lastName || '',
     dateNaissance: '',
     lieuNaissance: '',
     nationalite: 'MALIENNE',
@@ -544,9 +554,66 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     antenne: agent?.antenne || '',
   });
 
+  // Refs pour stocker les valeurs actuelles sans causer de re-renders
+  const currentStepRef = useRef(currentStep);
+  const personalSelectedQuartierIdRef = useRef(personalSelectedQuartierId);
+  const companySelectedQuartierIdRef = useRef(companySelectedQuartierId);
+
+  // Mettre à jour les refs quand les valeurs changent
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
+
+  useEffect(() => {
+    personalSelectedQuartierIdRef.current = personalSelectedQuartierId;
+  }, [personalSelectedQuartierId]);
+
+  useEffect(() => {
+    companySelectedQuartierIdRef.current = companySelectedQuartierId;
+  }, [companySelectedQuartierId]);
+
   // Fonction pour mettre à jour les données du formulaire
   const updateFormData = useCallback((field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Sauvegarder automatiquement dans localStorage (sans les fichiers)
+      // Utiliser setTimeout pour éviter les problèmes de re-render
+      setTimeout(() => {
+        try {
+          const cacheData = {
+            formData: {
+              ...updated,
+              documents: {
+                statuts: null,
+                registreCommerce: null,
+                justificatifDomicile: null,
+              },
+              participants: updated.participants.map(p => ({
+                ...p,
+                documentFile: undefined,
+                extraitNaissanceFile: undefined,
+                pieceNationaliteFile: undefined,
+                casierJudiciaireFile: undefined,
+                declarationHonneurFile: undefined,
+                acteMariageFile: undefined,
+                certificatResidenceFile: undefined,
+                rccmFile: undefined,
+              }))
+            },
+            currentStep: currentStepRef.current,
+            personalSelectedQuartierId: personalSelectedQuartierIdRef.current,
+            companySelectedQuartierId: companySelectedQuartierIdRef.current,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('dossier_creation_cache', JSON.stringify(cacheData));
+        } catch (error) {
+          console.error('Erreur sauvegarde cache:', error);
+        }
+      }, 0);
+      
+      return updated;
+    });
   }, []);
 
   // Helper functions
@@ -771,12 +838,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
   };
 
-  // Synchroniser les localisations UNIQUEMENT quand hasDifferentAddress passe é false
+  // Synchroniser ou vider les localisations selon hasDifferentAddress
   useEffect(() => {
-    const synchronizeCompanyLocation = async () => {
+    const handleCompanyLocation = async () => {
       if (!formData.hasDifferentAddress) {
-        
-        // Synchroniser région
+        // Synchroniser avec la localisation personnelle
         if (personalSelectedRegionId) {
           setCompanySelectedRegionId(personalSelectedRegionId);
           
@@ -816,10 +882,21 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         updateFormData('rueEntreprise', formData.localite);
         updateFormData('porteEntreprise', formData.porte);
         
+      } else {
+        // Vider les champs de localisation de l'entreprise quand l'adresse est différente
+        setCompanySelectedRegionId('');
+        setCompanySelectedCercleId('');
+        setCompanySelectedCommuneId('');
+        setCompanySelectedQuartierId('');
+        setCompanyCercles([]);
+        setCompanyCommunes([]);
+        setCompanyQuartiers([]);
+        updateFormData('rueEntreprise', '');
+        updateFormData('porteEntreprise', '');
       }
     };
     
-    synchronizeCompanyLocation();
+    handleCompanyLocation();
   }, [formData.hasDifferentAddress, personalSelectedRegionId, personalSelectedCercleId, personalSelectedCommuneId, personalSelectedQuartierId, formData.localite, formData.porte]);
 
   // Synchroniser l'adresse de l'entreprise avec celle personnelle seulement quand hasDifferentAddress change
@@ -1473,11 +1550,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     if (!formData.lieuNaissance?.trim()) errors.push('Le lieu de naissance est obligatoire');
     if (!formData.nationalite?.trim()) errors.push('La nationalité est obligatoire');
     if (!formData.telephonePersonnel?.trim()) errors.push('Le téléphone personnel est obligatoire');
-    if (!formData.emailPersonnel?.trim()) {
-      errors.push('L\'email personnel est obligatoire');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailPersonnel)) {
+    // Email optionnel, mais si fourni, doit être valide
+    if (formData.emailPersonnel?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailPersonnel)) {
       errors.push('L\'email personnel n\'est pas valide');
     }
+    
+    // Validation de la localisation personnelle (obligatoire)
+    if (!personalSelectedRegionId) errors.push('La région est obligatoire');
+    if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
+    if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
+    if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
     
     return errors;
   };
@@ -1503,9 +1585,24 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       errors.push('L\'email de l\'entreprise n\'est pas valide');
     }
     
-    // Validation de la localisation
-    if (!companySelectedQuartierId && !personalSelectedQuartierId) {
-      errors.push('La localisation (quartier) est obligatoire');
+    // Validation de la localisation de l'entreprise (obligatoire)
+    // Si l'adresse est différente, utiliser companySelected*, sinon utiliser personalSelected*
+    if (formData.hasDifferentAddress) {
+      if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
+      if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
+      if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
+      if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
+    } else {
+      // Si l'adresse n'est pas différente, vérifier que la localisation personnelle est complète
+      if (!personalSelectedRegionId) errors.push('La région est obligatoire');
+      if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
+      if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
+      if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+    }
+    
+    // Validation du domaine d'activité non réglementé (obligatoire)
+    if (!formData.domaineActiviteNr?.trim()) {
+      errors.push('Le domaine d\'activité est obligatoire');
     }
     
     return errors;
@@ -1514,45 +1611,120 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const validateStep3 = (): string[] => {
     const errors: string[] = [];
     
-    // Pour les entreprises individuelles, valider les participants à l'étape 3
-    if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
-      // Validation des participants
-      if (!formData.participants || formData.participants.length === 0) {
-        errors.push('Au moins un participant est obligatoire');
-        return errors;
+    console.log('🔍 validateStep3 - Début validation, participants:', formData.participants);
+    
+    // Validation des participants (pour tous les types d'entreprise)
+    if (!formData.participants || formData.participants.length === 0) {
+      errors.push('Au moins un participant est obligatoire');
+      return errors;
+    }
+    
+    // Vérifier que chaque participant a les informations obligatoires
+    formData.participants.forEach((participant, index) => {
+      const participantLabel = `Participant ${index + 1}`;
+      
+      console.log(`🔍 Validation ${participantLabel}:`, {
+        civilite: participant.civilite,
+        typePiece: participant.typePiece,
+        documentFile: !!participant.documentFile,
+        role: participant.role,
+        extraitNaissanceFile: !!participant.extraitNaissanceFile,
+        pieceNationaliteFile: !!participant.pieceNationaliteFile,
+        acteMariageFile: !!participant.acteMariageFile,
+        situationMatrimoniale: participant.situationMatrimoniale,
+        hasCriminalRecord: participant.hasCriminalRecord,
+        casierJudiciaireFile: !!participant.casierJudiciaireFile,
+        declarationHonneurFile: !!participant.declarationHonneurFile,
+        signatureDataUrl: !!participant.signatureDataUrl
+      });
+      
+      if (!participant.civilite) {
+        errors.push(`${participantLabel}: La civilité est obligatoire`);
       }
       
-      // Vérifier que chaque participant a les informations obligatoires
-      formData.participants.forEach((participant, index) => {
-        const participantLabel = `Participant ${index + 1}`;
-        
-        if (!participant.civilite) {
-          errors.push(`${participantLabel}: La civilité est obligatoire`);
+      if (participant.civilite === 'PERSONNE_MORALE') {
+        // Validation pour personne morale
+        if (!participant.denominationEntreprise?.trim()) {
+          errors.push(`${participantLabel}: La dénomination est obligatoire`);
         }
-        
-        // Validation pour personne physique (entreprises individuelles)
+        // Pour les personnes morales, le représentant légal est obligatoire
+        if (!participant.representantLegalNom?.trim()) {
+          errors.push(`${participantLabel}: Le nom du représentant légal est obligatoire`);
+        }
+        if (!participant.representantLegalPrenom?.trim()) {
+          errors.push(`${participantLabel}: Le prénom du représentant légal est obligatoire`);
+        }
+      } else {
+        // Validation pour personne physique
         if (!participant.prenom?.trim()) {
           errors.push(`${participantLabel}: Le prénom est obligatoire`);
         }
         if (!participant.nom?.trim()) {
           errors.push(`${participantLabel}: Le nom est obligatoire`);
         }
-        
-        if (!participant.role) {
-          errors.push(`${participantLabel}: Le rôle est obligatoire`);
+        if (!participant.dateNaissance) {
+          errors.push(`${participantLabel}: La date de naissance est obligatoire`);
+        }
+        if (!participant.lieuNaissance?.trim()) {
+          errors.push(`${participantLabel}: Le lieu de naissance est obligatoire`);
+        }
+        if (!participant.nationalite?.trim()) {
+          errors.push(`${participantLabel}: La nationalité est obligatoire`);
+        }
+        if (!participant.sexe) {
+          errors.push(`${participantLabel}: Le sexe est obligatoire`);
+        }
+        if (!participant.situationMatrimoniale) {
+          errors.push(`${participantLabel}: La situation matrimoniale est obligatoire`);
         }
         
-        // Pour les entreprises individuelles, le promoteur doit avoir 100% des parts
-        if (participant.role === 'PROMOTEUR' && participant.pourcentageParts !== 100) {
-          errors.push(`${participantLabel}: Le promoteur doit avoir 100% des parts pour une entreprise individuelle`);
+        // Validation des documents obligatoires pour les personnes physiques
+        if (!participant.typePiece) {
+          errors.push(`${participantLabel}: Le type de pièce d'identité est obligatoire`);
         }
-      });
-    } else {
-      // Pour les sociétés, validation des domaines d'activité seulement
-      // Note: Les domaines d'activité peuvent être optionnels selon la sélection
-      // La validation est gérée par les champs required dans le formulaire
-      // L'activité secondaire est optionnelle
-    }
+        // Le numéro de pièce est optionnel
+        if (!participant.documentFile) {
+          errors.push(`${participantLabel}: La pièce d'identité (fichier) est obligatoire`);
+        }
+        
+        // Documents obligatoires pour les gérants et promoteurs
+        if (participant.role === 'GERANT' || participant.role === 'PROMOTEUR') {
+          if (!participant.extraitNaissanceFile) {
+            errors.push(`${participantLabel}: L'extrait de naissance est obligatoire pour les gérants/promoteurs`);
+          }
+          
+          // Pièce de nationalité obligatoire pour les entreprises individuelles
+          if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && !participant.pieceNationaliteFile) {
+            errors.push(`${participantLabel}: La pièce de nationalité est obligatoire pour les entreprises individuelles`);
+          }
+          
+          // Acte de mariage obligatoire si marié
+          if (participant.situationMatrimoniale === 'MARIE' && !participant.acteMariageFile) {
+            errors.push(`${participantLabel}: L'acte de mariage est obligatoire pour les personnes mariées`);
+          }
+          
+          // Validation casier judiciaire OU déclaration sur l'honneur avec signature
+          // Vérifier d'abord si la question a été répondue
+          if (participant.hasCriminalRecord === undefined || participant.hasCriminalRecord === null) {
+            errors.push(`${participantLabel}: Vous devez répondre à la question sur le casier judiciaire`);
+          } else if (participant.hasCriminalRecord === true) {
+            // Si oui au casier judiciaire, le fichier casier est obligatoire
+            if (!participant.casierJudiciaireFile) {
+              errors.push(`${participantLabel}: Le casier judiciaire est obligatoire`);
+            }
+          } else if (participant.hasCriminalRecord === false) {
+            // Si non au casier judiciaire, la déclaration sur l'honneur (fichier uploadé OU signature) est obligatoire
+            if (!participant.declarationHonneurFile && !participant.signatureDataUrl) {
+              errors.push(`${participantLabel}: La déclaration sur l'honneur avec signature est obligatoire (ou uploadez le document)`);
+            }
+          }
+        }
+      }
+      
+      if (!participant.role) {
+        errors.push(`${participantLabel}: Le rôle est obligatoire`);
+      }
+    });
     
     return errors;
   };
@@ -1695,11 +1867,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     // Valider l'étape actuelle avant de passer é la suivante
     const errors = validateCurrentStep();
     
+    console.log('🔍 handleNext - Erreurs de validation:', errors);
+    console.log('🔍 handleNext - Nombre d\'erreurs:', errors.length);
+    console.log('🔍 handleNext - Step actuel:', currentStep);
+    
     if (errors.length > 0) {
+      console.log('🔍 handleNext - Affichage des erreurs de validation');
       setValidationErrors(errors);
+      // Scroll vers le haut pour voir les erreurs
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
+    console.log('🔍 handleNext - Aucune erreur, passage au step suivant');
     setValidationErrors([]);
     
     if (currentStep < totalSteps) {
@@ -2390,6 +2570,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           participantLocalite = participant.adresse || null;
         }
 
+        console.log('📤 [DEBUG ENVOI] Données du participant à envoyer:', {
+          nom: participant.nom,
+          prenom: participant.prenom,
+          role: participant.role,
+          typePersonne: participant.typePersonne,
+          isPersonneMorale: isPersonneMorale
+        });
+        
         const personRequest = {
           nom: isPersonneMorale ? participant.representantLegalNom : participant.nom,
           prenom: isPersonneMorale ? participant.representantLegalPrenom : participant.prenom,
@@ -2430,7 +2618,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           })(),
           telephone2: (() => {
             // Gérer le téléphone 2 s'il existe
-            if (!participant.telephone2) return '';
+            if (!participant.telephone2) return undefined;
             
             let phone2 = participant.telephone2.replace(/[\s\-\(\)]/g, '');
             
@@ -2450,7 +2638,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               return `${personalSelectedCountry.code}${phone2}`;
             }
             
-            return '';
+            return undefined;
           })(),
           email: (() => {
             const email = participant.email;
@@ -2513,6 +2701,30 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             tokenStart: token?.substring(0, 20) + '...'
           });
           
+          // ÉTAPE 1: Vérifier si le participant existe déjà par téléphone
+          console.log(`?? Vérification existence participant par téléphone: ${personRequest.telephone1}`);
+          
+          try {
+            const searchResponse = await fetch(`${getApiBaseUrl()}/persons/search?telephone=${encodeURIComponent(personRequest.telephone1)}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (searchResponse.ok) {
+              const existingPerson = await searchResponse.json();
+              console.log(`✅ Participant existant trouvé:`, existingPerson);
+              participant.id = existingPerson.id;
+              console.log(`✅ Réutilisation du participant existant avec ID: ${participant.id}`);
+              continue; // Passer au participant suivant
+            }
+          } catch (searchError) {
+            console.log(`ℹ️ Participant non trouvé, création d'un nouveau participant`);
+          }
+          
+          // ÉTAPE 2: Créer un nouveau participant si non trouvé
           console.log(`?? Envoi requéte POST /api/v1/persons pour ${participant.prenom} ${participant.nom}:`, personRequest);
           
           const response = await fetch(`${getApiBaseUrl()}/persons`, {
@@ -2614,6 +2826,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // éTAPE 4: Créer l'entreprise
       console.log('?? éTAPE 4 - Création de l\'entreprise...');
       
+      console.log('🔍 DEBUG - formData.participants AVANT mapping:', formData.participants.map(p => ({
+        id: p.id,
+        nom: p.nom,
+        prenom: p.prenom,
+        role: p.role,
+        typePersonne: p.typePersonne
+      })));
+      
       const allParticipants = formData.participants
         .filter(p => {
           // Filtrer les participants vides selon leur type
@@ -2676,9 +2896,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       // Structure de données conforme au backend (comme cété utilisateur)
       const entrepriseRequest = {
-        nom: formData.nomEntreprise || (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
-          ? `${formData.prenom || ''} ${formData.nom || ''}`.trim() 
-          : ''),
+        // Pour les E.I., si le nom n'est pas renseigné, on envoie null (pas prénom+nom)
+        // Pour les sociétés sans nom, on envoie aussi null pour déclencher la validation backend
+        nom: formData.nomEntreprise && formData.nomEntreprise.trim() !== '' 
+          ? formData.nomEntreprise.trim() 
+          : null,
         sigle: formData.sigleEntreprise || '',
         adresse: formData.adresse || formData.adressePersonnelle || '',
         telephone: formData.telephone || formData.telephonePersonnel || '',
@@ -2720,6 +2942,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             personId: p.personId,
             role: p.role
           })));
+          
+          // IMPORTANT: Si aucun participant réel, le backend rejettera la requête
+          if (realParticipants.length === 0) {
+            console.error('❌ ERREUR CRITIQUE: Aucun participant avec ID réel trouvé!');
+            console.error('❌ Le backend exige au moins un participant avec un ID valide.');
+            console.error('❌ Vérifiez que les participants ont bien été créés à l\'étape 3.');
+          }
           
           // Ajuster les pourcentages pour que la somme soit exactement 100% (exclure ADMINISTRATEUR)
           if (realParticipants.length > 0) {
@@ -2827,8 +3056,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       };
 
       // Validation finale des données
-      if (!entrepriseRequest.nom) {
-        throw new Error('Le nom de l\'entreprise est obligatoire');
+      // Le nom est obligatoire uniquement pour les sociétés, pas pour les entreprises individuelles
+      if (!entrepriseRequest.nom && entrepriseRequest.typeEntreprise === 'SOCIETE') {
+        throw new Error('Le nom de l\'entreprise est obligatoire pour les sociétés');
       }
       if (!entrepriseRequest.divisionCode) {
         throw new Error('La division est obligatoire');
@@ -2841,6 +3071,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         console.warn('?? Aucun participant réel trouvé - l\'entreprise sera créée sans participants');
       }
 
+      console.log('?? DEBUG NOM ENTREPRISE:', {
+        nomEntreprise: formData.nomEntreprise,
+        typeEntreprise: formData.typeEntreprise,
+        nomEnvoyé: entrepriseRequest.nom,
+        typeDeNom: typeof entrepriseRequest.nom,
+        estNull: entrepriseRequest.nom === null,
+        estUndefined: entrepriseRequest.nom === undefined,
+        estVide: entrepriseRequest.nom === ''
+      });
       console.log('?? Données entreprise é envoyer:', entrepriseRequest);
       console.log('?? Participants formatés (AVANT correction):', allParticipants);
       console.log('?? Participants finaux (APRéS correction):', entrepriseRequest.participants);
@@ -2928,15 +3167,52 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         
         entRes = { data: await response.json() };
         console.log('? Entreprise créée avec succés via l\'endpoint réel');
+        console.log('? Réponse complète du backend:', JSON.stringify(entRes.data, null, 2));
       } catch (error) {
         console.error('? Erreur lors de la création de l\'entreprise:', error);
         
-        // Extraire le message d'erreur détaillé
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        // Extraire et traduire le message d'erreur pour l'utilisateur
+        let userFriendlyMessage = 'Une erreur est survenue lors de la création de l\'entreprise.';
         
-        // Bloquer et afficher l'erreur réelle
+        if (error instanceof Error) {
+          const errorMsg = error.message.toLowerCase();
+          
+          // D'abord, essayer d'extraire le message spécifique du backend
+          const backendMessageMatch = error.message.match(/Erreur \d+: (.+)/);
+          const backendMessage = backendMessageMatch ? backendMessageMatch[1] : null;
+          
+          // Si le message du backend est clair et ne contient pas d'erreur SQL technique, l'utiliser
+          if (backendMessage && 
+              !backendMessage.toLowerCase().includes('could not execute') && 
+              !backendMessage.toLowerCase().includes('sql') &&
+              !backendMessage.toLowerCase().includes('constraint violation') &&
+              backendMessage.length > 10) {
+            userFriendlyMessage = backendMessage;
+          }
+          // Sinon, traduire les erreurs techniques en messages clairs
+          else if (errorMsg.includes('column') && errorMsg.includes('cannot be null')) {
+            userFriendlyMessage = 'Erreur de configuration: certains champs obligatoires sont manquants. Veuillez contacter l\'administrateur.';
+          } else if (errorMsg.includes('duplicate') || errorMsg.includes('unique')) {
+            userFriendlyMessage = 'Une entreprise avec ce nom existe déjà. Veuillez choisir un nom différent.';
+          } else if (errorMsg.includes('constraint')) {
+            userFriendlyMessage = 'Les données fournies ne respectent pas les contraintes du système. Veuillez vérifier vos informations.';
+          } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+            userFriendlyMessage = 'Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.';
+          } else if (errorMsg.includes('timeout')) {
+            userFriendlyMessage = 'Le serveur met trop de temps à répondre. Veuillez réessayer dans quelques instants.';
+          } else if (errorMsg.includes('401') || errorMsg.includes('403')) {
+            userFriendlyMessage = 'Vous n\'êtes pas autorisé à effectuer cette action. Veuillez vous reconnecter.';
+          } else if (errorMsg.includes('404')) {
+            userFriendlyMessage = 'Le service demandé est introuvable. Veuillez contacter l\'administrateur.';
+          } else if (errorMsg.includes('500') || errorMsg.includes('internal server')) {
+            userFriendlyMessage = 'Une erreur interne du serveur s\'est produite. Veuillez réessayer plus tard ou contacter l\'administrateur.';
+          }
+        }
+        
+        // Bloquer et afficher l'erreur dans un modal
         setIsLoading(false);
-        alert(`? Erreur lors de la création de l'entreprise:\n\n${errorMessage}\n\nVeuillez corriger le probléme et réessayer.`);
+        setErrorMessage(userFriendlyMessage);
+        setShowErrorModal(true);
         throw error; // Propager l'erreur pour arréter l'exécution
       }
       
@@ -3195,8 +3471,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
       console.log(' Dossier créé avec succés:', response.data);
       
-      // Créer l'objet Dossier pour l'interface
-      const newDossier: Dossier = {
+      // Créer l'objet Dossier pour l'interface (pour affichage interne)
+      const createdDossier: Dossier = {
         id: response.data.id,
         reference: response.data.reference,
         nom: formData.nomEntreprise,
@@ -3235,40 +3511,76 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       const receiptCommune = companyCommunes.find(c => c.id === companySelectedCommuneId);
       const receiptRegion = companyRegions.find(r => r.id === companySelectedRegionId);
       
+      // Récupérer les données réelles du gérant depuis la réponse du backend
+      const gerantBackend = created.membres?.find((m: any) => m.role === 'GERANT') || created.membres?.[0];
+      const prenomReel = gerantBackend?.prenom || formData.prenom;
+      const nomReel = gerantBackend?.nom || formData.nom;
+      
+      // Utiliser le nom de l'entreprise ou prénom+nom réel si l'entreprise est individuelle sans nom
+      const displayName = created.nom || formData.nomEntreprise || `${prenomReel} ${nomReel}`;
+      
+      console.log('📋 Données pour le reçu:', {
+        entrepriseNom: created.nom,
+        formDataNom: formData.nomEntreprise,
+        gerantPrenom: prenomReel,
+        gerantNom: nomReel,
+        displayName: displayName
+      });
+      
       const receiptData = generateUnpaidReceiptData(
         {
-          id: response.data.id,
-          nom: formData.nomEntreprise,
-          typeEntreprise: formData.typeEntreprise,
-          companyName: formData.nomEntreprise,
-          businessType: formData.typeEntreprise,
-          reference: response.data.reference,
-          referenceServeur: response.data.reference,
-          numeroReference: response.data.reference,
+          id: created.id,
+          nom: displayName,
+          typeEntreprise: created.typeEntreprise || formData.typeEntreprise,
+          companyName: displayName,
+          businessType: created.typeEntreprise || formData.typeEntreprise,
+          reference: created.reference,
+          referenceServeur: created.reference,
+          numeroReference: created.reference,
           // Informations de localisation
           quartierNom: receiptQuartier?.nom || formData.adresse,
           communeNom: receiptCommune?.nom || 'Bamako',
           regionNom: receiptRegion?.nom || 'Bamako',
           localisation: receiptQuartier?.nom || formData.adresse,
-          adresse: formData.adresse
+          adresse: formData.adresse,
+          // Informations du participant pour le QR code - utiliser les données réelles
+          prenom: prenomReel,
+          nomParticipant: nomReel
         },
         totalAmount,
         'Agent API-INVEST'
       );
       
       setGeneratedReceipt(receiptData);
-      setShowReceipt(true);
+      // Ne pas afficher le reçu automatiquement, il sera ouvert via le bouton dans le modal de succès
+      // setShowReceipt(true);
 
-      const message = isSimulated 
-        ? ` Dossier créé avec succés (simulation) !\n\n Référence: ${response.data.reference}\n Entreprise: ${formData.nomEntreprise}\n\n Mode simulation - Aucune donnée réelle créée${emailInfo}\n\n Un réçu temporaire NON PAYé a été généré.`
-        : ` Dossier créé avec succés !\n\n Référence: ${response.data.reference}\n Entreprise: ${formData.nomEntreprise}\n\n Création réelle avec la logique backend compléte !${emailInfo}\n\n Un réçu temporaire NON PAYé a été généré.`;
+      // Préparer les données pour le modal de succès
+      setSuccessData({
+        reference: response.data.reference,
+        entreprise: displayName,
+        isSimulated: isSimulated,
+        emailInfo: emailInfo
+      });
       
-      alert(message);
+      // Afficher le modal de succès en premier
+      setShowSuccessModal(true);
       
       // Marquer le dossier comme créé avec succés
       setIsDossierCreated(true);
       
-      // onDossierCreated(newDossier); // Commenté pour rester sur la page récapitulatif
+      // Appeler onDossierCreated pour rafraîchir la liste des demandes
+      const newDossier: Dossier = {
+        id: response.data.id,
+        reference: response.data.reference,
+        nom: displayName,
+        sigle: created.sigle || formData.sigleEntreprise,
+        statut: 'EN_COURS',
+        dateCreation: new Date().toISOString(),
+        entrepriseId: response.data.id,
+        documentsManquants: []
+      };
+      onDossierCreated(newDossier);
       
       // Réinitialisation commentée pour rester sur la page récapitulatif
       /*
@@ -3339,8 +3651,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         errorMessage = `Erreur: ${error.message}`;
       }
       
-      // Ici vous pouvez ajouter une notification toast ou un modal d'erreur
-      alert(errorMessage);
+      // L'erreur est déjà affichée dans le modal d'erreur (ligne 3158)
+      // alert(errorMessage); // Supprimé pour éviter la double alerte
     } finally {
       setIsLoading(false);
     }
@@ -3457,7 +3769,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
 
-         <div>
+         {/* Message d'avertissement */}
+        {/* <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm text-amber-800">
+              <strong className="font-semibold">Important :</strong> Saisissez vos <strong>vraies données personnelles</strong> (nom, prénom, etc.). N'utilisez pas de données de test comme "Test Test".
+            </div>
+          </div>
+        </div> */}
+
+       <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
             Nom *
           </label>
@@ -3467,7 +3791,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             defaultValue={formData.nom}
             onBlur={(e) => updateFormData('nom', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            placeholder=""
+            placeholder={agent?.lastName || "Votre nom de famille"}
           />
         </div>
 
@@ -3481,7 +3805,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             defaultValue={formData.prenom}
             onBlur={(e) => updateFormData('prenom', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            placeholder=""
+            placeholder={agent?.firstName || "Votre prénom"}
           />
         </div>
 
@@ -3962,7 +4286,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Région</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Région *</label>
                 <select
                   value={personalSelectedRegionId}
                   onChange={async (e) => {
@@ -3997,7 +4321,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Cercle</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Cercle *</label>
                   <select
                     value={personalSelectedCercleId}
                     disabled={personalCercles.length === 0}
@@ -4033,7 +4357,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Commune</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Commune *</label>
                 <select
                   value={personalSelectedCommuneId}
                   onChange={async (e) => {
@@ -4061,7 +4385,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Quartier</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Quartier *</label>
                 <select
                   value={personalSelectedQuartierId}
                   onChange={(e) => {
@@ -4528,7 +4852,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Cercle</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Cercle *</label>
                 <select
                     value={companySelectedCercleId}
                     onChange={async (e) => {
@@ -4564,7 +4888,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Commune</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Commune *</label>
                 <select
                     value={companySelectedCommuneId}
                     onChange={async (e) => {
@@ -5587,7 +5911,20 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
                   required
                   value={newParticipant.civilite}
-                  onChange={(e) => updateParticipantField('civilite', e.target.value)}
+                  onChange={(e) => {
+                    const civilite = e.target.value;
+                    
+                    // Sélection automatique du sexe selon la civilité
+                    let sexe = newParticipant.sexe;
+                    if (civilite === 'MONSIEUR') {
+                      sexe = 'MASCULIN';
+                    } else if (civilite === 'MADAME' || civilite === 'MADEMOISELLE') {
+                      sexe = 'FEMININ';
+                    }
+                    
+                    // Mettre à jour civilité et sexe en une seule opération
+                    setNewParticipant(prev => ({ ...prev, civilite, sexe }));
+                  }}
                 >
                   <option value="">Sélectionnez une civilité</option>
                   <option value="MONSIEUR">Monsieur</option>
@@ -5885,7 +6222,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   {/* Pièce de nationalité - Obligatoire pour les entreprises individuelles */}
                   {formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Pièce de nationalité *</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Certificat de nationalité *</label>
                       <input
                         accept=".pdf,.jpg,.jpeg,.png"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2d85c9] file:text-white hover:file:bg-[#2d85c9]/90"
@@ -5898,7 +6235,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   )}
 
                   {/* Acte de mariage conditionnel */}
-                  {formData.isMarried && (
+                  {newParticipant.situationMatrimoniale === 'MARIE' && (
                     <div className="md:col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">Acte de mariage *</label>
                       <input
@@ -6927,6 +7264,39 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </div>
       </div>
 
+      {/* Affichage des erreurs de validation */}
+      {validationErrors.length > 0 && (
+        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-red-800">
+                Veuillez corriger les erreurs suivantes :
+              </h3>
+              <div className="mt-2 text-sm text-red-700">
+                <ul className="list-disc list-inside space-y-1">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <button
+              onClick={() => setValidationErrors([])}
+              className="ml-3 flex-shrink-0 text-red-500 hover:text-red-700"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Step Content */}
       <div className="bg-white rounded-lg shadow-lg p-8" style={{ 
         transform: 'translate3d(0, 0, 0)',
@@ -6994,44 +7364,190 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         )}
       </div>
 
-      {/* Modal du reu temporaire NON PAYé */}
-      {showReceipt && generatedReceipt && (
+      {/* Modal de succès de création */}
+      {showSuccessModal && successData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Réçu Temporaire - NON PAYé</h2>
-                <button
-                  onClick={() => setShowReceipt(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                >
-                  
-                </button>
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl transform transition-all">
+            <div className="p-8">
+              {/* Icône de succès */}
+              <div className="flex justify-center mb-6">
+                <div className="rounded-full bg-green-100 p-4">
+                  <CheckCircleIcon className="h-16 w-16 text-green-600" />
+                </div>
               </div>
               
-              <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
-                <p className="text-primary-800 font-medium">
-                   Ce réçu est temporaire et indique un statut "NON PAYé". 
-                  Il n'est pas sauvegardé en base de données et sert d'aperéu pour le client.
+              {/* Titre */}
+              <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
+                {successData.isSimulated ? 'Dossier créé avec succès (Simulation)' : 'Dossier créé avec succès !'}
+              </h2>
+              
+              {/* Informations principales */}
+              <div className="bg-gradient-to-r from-[#2d85c9]/10 to-green-50 rounded-xl p-6 mb-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <span className="text-gray-600 font-medium">Référence:</span>
+                    <span className="text-xl font-bold text-[#2d85c9]">{successData.reference}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <span className="text-gray-600 font-medium">Entreprise:</span>
+                    <span className="text-lg font-semibold text-gray-900">{successData.entreprise}</span>
+                  </div>
+                  
+                  {successData.emailInfo && (
+                    <div className="pt-2">
+                      <p className="text-sm text-gray-600">{successData.emailInfo}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Message selon le mode */}
+              <div className={`rounded-lg p-4 mb-6 ${successData.isSimulated ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`text-center font-medium ${successData.isSimulated ? 'text-yellow-800' : 'text-green-800'}`}>
+                  {successData.isSimulated 
+                    ? '🧪 Mode simulation - Aucune donnée réelle créée' 
+                    : '✅ Création réelle avec la logique backend complète !'}
                 </p>
               </div>
               
+              {/* Note sur le reçu */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-800 text-center">
+                  Un reçu temporaire <span className="font-bold">NON PAYÉ</span> a été généré
+                </p>
+              </div>
+              
+              {/* Boutons d'action */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Retourner aux demandes après la fermeture du modal
+                    if (onClose) {
+                      onClose();
+                    }
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Retour aux demandes
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setShowReceipt(true);
+                  }}
+                  className="flex-1 px-6 py-3 bg-[#2d85c9] text-white rounded-lg hover:bg-[#2d85c9]/90 transition-colors font-medium shadow-lg"
+                >
+                  Voir le reçu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'erreur */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl transform transition-all">
+            <div className="p-8">
+              {/* Icône d'erreur */}
+              <div className="flex justify-center mb-6">
+                <div className="rounded-full bg-red-100 p-4">
+                  <XCircleIcon className="h-16 w-16 text-red-600" />
+                </div>
+              </div>
+              
+              {/* Titre */}
+              <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
+                Erreur lors de la création
+              </h2>
+              
+              {/* Message d'erreur */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+                <p className="text-red-800 text-center whitespace-pre-line">{errorMessage}</p>
+              </div>
+              
+              {/* Note */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800">
+                    Veuillez corriger le problème et réessayer.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Bouton */}
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full px-6 py-3 bg-[#2d85c9] text-white rounded-lg hover:bg-[#2d85c9]/90 transition-colors font-medium shadow-lg"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal du reçu temporaire NON PAYÉ */}
+      {showReceipt && generatedReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-8">
+              {/* En-tête avec icône */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-[#2d85c9]/10 p-3">
+                    <DocumentTextIcon className="h-8 w-8 text-[#2d85c9]" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Reçu Temporaire</h2>
+                    <p className="text-sm text-gray-600">Statut: NON PAYÉ</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowReceipt(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <XMarkIcon className="h-8 w-8" />
+                </button>
+              </div>
+              
+              {/* Alerte informative */}
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-900 font-medium mb-1">Reçu temporaire</p>
+                    <p className="text-amber-800 text-sm">
+                      Ce reçu est temporaire et indique un statut "NON PAYÉ". 
+                      Il n'est pas sauvegardé en base de données et sert d'aperçu pour le client.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Composant du reçu */}
               <PaymentReceipt 
                 paymentData={generatedReceipt} 
                 onClose={() => setShowReceipt(false)} 
               />
               
-              <div className="mt-6 flex justify-end space-x-4">
+              {/* Boutons d'action */}
+              <div className="mt-8 flex justify-end gap-4">
                 <button
                   onClick={() => setShowReceipt(false)}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
                   Fermer
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 bg-[#2d85c9] text-white rounded-lg hover:bg-[#2d85c9]/90 transition-colors font-medium shadow-lg"
                 >
+                  <DocumentArrowDownIcon className="h-5 w-5" />
                   Imprimer
                 </button>
               </div>

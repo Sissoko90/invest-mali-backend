@@ -57,6 +57,11 @@ public class PersonController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping(path = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PersonResponse> searchByTelephone(@RequestParam String telephone) {
+        return ResponseEntity.ok(personService.findByTelephone(telephone));
+    }
+
     @GetMapping(path = "/{id}/can-be-manager", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> canBeManager(@PathVariable String id) {
         // Vérifier si la personne est déjà gérant d'une entreprise

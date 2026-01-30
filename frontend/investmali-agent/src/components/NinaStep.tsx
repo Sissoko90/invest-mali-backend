@@ -477,16 +477,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
   const getStatusBadge = (entreprise: Entreprise) => {
     if (entreprise.numeroNina) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-          <CheckCircleIcon className="w-4 h-4 mr-1" />
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <CheckCircleIcon className="w-5 h-5 mr-1" />
           NINA Généré
         </span>
       );
     }
     
     return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-        <ClockIcon className="w-4 h-4 mr-1" />
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+        <ClockIcon className="w-5 h-5 mr-1" />
         En attente
       </span>
     );
@@ -900,8 +900,8 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-200 border-t-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des entreprises...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-slate-600 font-medium">Chargement des entreprises...</p>
         </div>
       </div>
     );
@@ -910,20 +910,14 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <DocumentTextIcon className="w-6 h-6 mr-2 text-primary-600" />
-              Génération des Numéros NINA
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Générer les numéros d'identification nationale des entreprises via l'API INSTAT Mali
-            </p>
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
+        <div className="flex items-center mb-6">
+          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
+            <DocumentTextIcon className="h-8 w-8 text-white" />
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Agent: {agent?.firstName} {agent?.lastName}</p>
-            <p className="text-sm text-gray-500">Rôle: {agent?.role}</p>
+          <div>
+            <h2 className="text-2xl font-black text-slate-800">Étape NINA</h2>
+            <p className="text-lg text-slate-600 font-medium">Génération des numéros d'identification nationale des entreprises via l'API INSTAT Mali</p>
           </div>
         </div>
       </div>
@@ -934,12 +928,12 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
           <div className="flex items-start">
             <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h4 className="text-red-800 font-medium text-sm mb-1">Erreur de génération NINA</h4>
-              <div className="text-red-700 text-sm whitespace-pre-line">{error}</div>
+              <h4 className="text-red-800 font-medium text-lg mb-1">Erreur de génération NINA</h4>
+              <div className="text-red-700 text-lg whitespace-pre-line">{error}</div>
               <div className="mt-2">
                 <button
                   onClick={() => setError(null)}
-                  className="text-red-600 hover:text-red-800 text-xs underline"
+                  className="text-red-600 hover:text-red-800 text-sm underline"
                 >
                   Fermer ce message
                 </button>
@@ -950,32 +944,31 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       )}
 
       {/* Liste des entreprises */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Entreprises à l'étape NINA ({entreprises.length})
-          </h3>
-        </div>
-
+      <div className="space-y-4">
         {entreprises.length === 0 ? (
-          <div className="p-6 text-center">
-            <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Aucune entreprise à l'étape NINA</p>
+          <div className="text-center py-12">
+            <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+              <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
+            <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">
+              Il n'y a actuellement aucune entreprise à l'étape NINA.
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="space-y-4">
             {entreprises.map((entreprise) => (
-              <div key={entreprise.id} className="p-6">
+              <div key={entreprise.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="text-lg font-medium text-gray-900">
+                      <h4 className="text-xl font-black text-slate-800">
                         {entreprise.nom}
                       </h4>
                       {getStatusBadge(entreprise)}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg text-slate-600 mb-4">
                       <div>
                         <span className="font-medium">Référence:</span> {entreprise.reference}
                       </div>
@@ -992,9 +985,9 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
 
                     {/* Affichage détaillé de la localisation */}
                     {entreprise.divisionCode && (
-                      <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
-                        <h5 className="text-primary-800 font-medium text-sm mb-1">Localisation INSTAT</h5>
-                        <p className="text-primary-700 text-xs">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <h5 className="text-blue-800 font-medium text-lg mb-1">Localisation INSTAT</h5>
+                        <p className="text-blue-700 text-sm">
                           {(() => {
                             const location = extractLocationFromDivisionCode(entreprise.divisionCode);
                             return `${location.region} - ${location.cercle} - ${location.commune} - ${location.vfq}`;
@@ -1005,13 +998,13 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
 
                     {/* Affichage du NINA s'il existe */}
                     {entreprise.numeroNina && (
-                      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            <CheckCircleIcon className="h-5 w-5 text-primary-400 mr-2" />
+                            <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2" />
                             <div>
-                              <p className="text-primary-800 font-medium">Numéro NINA généré</p>
-                              <p className="text-primary-700 font-mono text-lg">{entreprise.numeroNina}</p>
+                              <p className="text-blue-800 font-medium text-lg">Numéro NINA généré</p>
+                              <p className="text-blue-700 font-mono text-xl">{entreprise.numeroNina}</p>
                             </div>
                           </div>
                           
@@ -1019,16 +1012,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                           <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() => setShowCertificatePreview(entreprise.id)}
-                              className="inline-flex items-center px-3 py-2 border border-primary-300 text-sm font-medium rounded-md text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Prévisualiser le certificat NINA"
                             >
-                              <EyeIcon className="w-4 h-4 mr-1" />
+                              <EyeIcon className="w-5 h-5 mr-1" />
                               Prévisualiser
                             </button>
                             
                             <button
                               onClick={() => setShowSignatureUpload(entreprise.id)}
-                              className="inline-flex items-center px-3 py-2 border border-primary-300 text-sm font-medium rounded-md text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Ajouter une signature au certificat"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1039,16 +1032,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                             
                             <button
                               onClick={() => handleGenerateCertificate(entreprise)}
-                              className="inline-flex items-center px-3 py-2 border border-primary-300 text-sm font-medium rounded-md text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Télécharger le certificat NINA"
                             >
-                              <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
-                              Certificat PDF
+                              <DocumentArrowDownIcon className="w-5 h-5 mr-1" />
+                              Télécharger
                             </button>
                             
                             <button
                               onClick={() => window.print()}
-                              className="inline-flex items-center px-3 py-2 border border-primary-300 text-sm font-medium rounded-md text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Imprimer le certificat NINA"
                             >
                               <PrinterIcon className="w-4 h-4 mr-1" />
@@ -1058,9 +1051,10 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                         </div>
                         
                         {/* Informations supplémentaires */}
-                        <div className="mt-3 pt-3 border-t border-primary-200">
-                          <p className="text-primary-600 text-xs">
-                            📄 Vous pouvez maintenant générer le certificat d'immatriculation officiel NINA
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                          <p className="text-blue-600 text-sm flex items-center gap-2">
+                            <DocumentTextIcon className="w-5 h-5" />
+                            Vous pouvez maintenant générer le certificat d'immatriculation officiel NINA
                           </p>
                         </div>
                       </div>
@@ -1072,7 +1066,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                         <button
                           onClick={() => handlePasserARetrait(entreprise.id)}
                           disabled={isChangingEtape === entreprise.id}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Faire passer l'entreprise à l'étape RETRAIT"
                         >
                           {isChangingEtape === entreprise.id ? (
@@ -1094,12 +1088,12 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                       <button
                         onClick={() => handleRetourArriere(entreprise.id)}
                         disabled={isChangingEtape === entreprise.id}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center px-4 py-2 border border-slate-300 text-lg font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Faire retourner l'entreprise à l'étape RCCM2"
                       >
                         {isChangingEtape === entreprise.id ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent mr-2"></div>
                             Traitement...
                           </>
                         ) : (
@@ -1119,21 +1113,23 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                         <div className="space-y-4">
                           {/* Affichage du numéro RCCM depuis la BDD */}
                           {entreprise.numeroRccm ? (
-                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-                              <label className="block text-sm font-medium text-primary-800 mb-1">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <label className="block text-lg font-medium text-blue-800 mb-1">
                                 Numéro RCCM (depuis la base de données)
                               </label>
-                              <p className="text-primary-900 font-mono text-lg font-semibold">
+                              <p className="text-blue-900 font-mono text-xl font-semibold">
                                 {entreprise.numeroRccm}
                               </p>
-                              <p className="text-xs text-primary-600 mt-1">
-                                ✅ Ce numéro RCCM sera utilisé pour générer le NINA via l'API INSTAT
+                              <p className="text-sm text-blue-600 mt-1 flex items-center gap-2">
+                                <CheckCircleIcon className="h-4 w-4" />
+                                Ce numéro RCCM sera utilisé pour générer le NINA via l'API INSTAT
                               </p>
                             </div>
                           ) : (
-                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-                              <p className="text-primary-800 text-sm">
-                                ⚠️ Aucun numéro RCCM trouvé. Veuillez d'abord générer le RCCM pour cette entreprise.
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <p className="text-blue-800 text-lg flex items-center gap-2">
+                                <ExclamationTriangleIcon className="h-5 w-5" />
+                                Aucun numéro RCCM trouvé. Veuillez d'abord générer le RCCM pour cette entreprise.
                               </p>
                             </div>
                           )}
@@ -1141,16 +1137,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                           <button
                             onClick={() => handleGenerateNina(entreprise)}
                             disabled={isGenerating === entreprise.id || !entreprise.numeroRccm?.trim()}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isGenerating === entreprise.id ? (
                               <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
                                 Génération en cours...
                               </>
                             ) : (
                               <>
-                                <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                                <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
                                 Générer le NINA
                               </>
                             )}
@@ -1167,16 +1163,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       </div>
 
       {/* Informations sur l'API NINA */}
-      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start">
-          <EyeIcon className="h-5 w-5 text-primary-400 mr-2 mt-0.5" />
+          <EyeIcon className="h-6 w-6 text-blue-600 mr-2 mt-0.5" />
           <div>
-            <h4 className="text-primary-800 font-medium">À propos de l'API NINA INSTAT Mali</h4>
-            <p className="text-primary-700 text-sm mt-1">
+            <h4 className="text-blue-900 font-bold text-xl mt-1">À propos de l'API NINA INSTAT Mali</h4>
+            <p className="text-blue-800 font-medium text-lg mt-1">
               Le système génère automatiquement les numéros NINA en utilisant les informations de l'entreprise :
               nom, sigle, gérant, localisation INSTAT, et type d'entreprise. Le numéro RCCM doit être fourni manuellement.
             </p>
-            <ul className="text-primary-700 text-sm mt-2 space-y-1">
+            <ul className="text-blue-800 font-medium text-lg mt-2 space-y-1">
               <li>• Type 3 : Entreprise Individuelle</li>
               <li>• Type 4 : Société</li>
               <li>• Type 5 : GIE (Groupement d'Intérêt Économique)</li>
@@ -1188,7 +1184,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       {/* Modal de prévisualisation du certificat */}
       {showCertificatePreview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
+          <div className="bg-white rounded-lg max-w-6xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-medium">Prévisualisation du Certificat NINA</h3>
               <button
@@ -1294,7 +1290,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                     // NE PAS fermer la modal ici - elle sera fermée dans handleGenerateCertificate après génération
                   }
                 }}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Télécharger PDF
               </button>
@@ -1332,9 +1328,9 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   Formats acceptés : PNG, JPG, GIF, SVG (recommandé : PNG avec fond transparent)
                   <br />Taille max : 2MB, dimensions recommandées : 300x150px
                 </p>
@@ -1343,7 +1339,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                 {signatureValidation && (
                   <div className={`mt-2 p-2 rounded text-sm ${
                     signatureValidation.isValid 
-                      ? 'bg-primary-50 text-primary-700 border border-primary-200'
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
                       : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
                     <div className="flex items-center">
@@ -1359,7 +1355,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                       {signatureValidation.message}
                     </div>
                     {signatureMetadata && signatureValidation.isValid && (
-                      <div className="mt-1 text-xs text-gray-600">
+                      <div className="mt-1 text-sm text-gray-600">
                         Fichier : {signatureMetadata.name} ({(signatureMetadata.size / 1024).toFixed(1)} KB)
                       </div>
                     )}
@@ -1386,14 +1382,14 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                           setSignatureValidation(null);
                           setSignatureMetadata(null);
                         }}
-                        className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                         title="Supprimer la signature"
                       >
                         ×
                       </button>
                     </div>
                     <div className="mt-2 text-center">
-                      <p className="text-xs text-gray-600">Cette signature sera intégrée au certificat NINA</p>
+                      <p className="text-sm text-gray-600">Cette signature sera intégrée au certificat NINA</p>
                     </div>
                   </div>
                 </div>
@@ -1424,7 +1420,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                     }
                     setShowSignatureUpload(null);
                   }}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   disabled={!!(signatureFile && signatureValidation && !signatureValidation.isValid)}
                 >
                   {signatureFile ? 'Générer et sauvegarder le certificat' : 'Continuer sans signature'}

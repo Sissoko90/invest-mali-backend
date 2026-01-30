@@ -32,7 +32,7 @@ public class Entreprise extends BaseEntity {
   @Column(name="activiteSecondaire", nullable = false,  length = 5000)
   private String activiteSecondaire;
 
-  @Column(name="nom", nullable = false, unique = true, length = 150)
+  @Column(name="nom", nullable = true, unique = true, length = 150)
   private String nom;
 
   @Column(name="sigle", nullable = true, unique = true, length = 50)

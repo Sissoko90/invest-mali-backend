@@ -99,7 +99,6 @@ public class EntrepriseServiceImpl implements EntrepriseService {
     public Entreprise createEntreprise(EntrepriseRequest req, Utilisateurs createdBy) {
         // Vérification de la validité de la requête
         if (req == null) throw new BadRequestException(Messages.REQ_INVALIDE);
-        if (req.nom == null || req.nom.isBlank()) throw new BadRequestException(Messages.NOM_OBLIGATOIRE);
         if (req.capitale == null || req.capitale.isBlank()) throw new BadRequestException("Le capital est obligatoire");
         if (req.typeEntreprise == null) throw new BadRequestException(Messages.TYPE_ENTREPRISE_OBLIGATOIRE);
         if (req.statutCreation == null) throw new BadRequestException(Messages.STATUT_CREATION_OBLIGATOIRE);
@@ -109,10 +108,16 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         if (req.divisionCode == null || req.divisionCode.isBlank()) throw new BadRequestException(Messages.DIVISION_CODE_OBLIGATOIRE);
         if (req.participants == null || req.participants.isEmpty()) throw new BadRequestException(Messages.PARTICIPANTS_OBLIGATOIRES);
 
-        // Vérification de l'unicité du nom et du sigle
-        if (entrepriseRepository.existsByNom(req.nom)) {
+        // Vérification du nom: obligatoire pour les sociétés, optionnel pour les entreprises individuelles
+        if (req.typeEntreprise == TypeEntreprise.SOCIETE && (req.nom == null || req.nom.isBlank())) {
+            throw new BadRequestException("Le nom de l'entreprise est obligatoire pour les sociétés");
+        }
+        
+        // Vérification de l'unicité du nom seulement s'il est fourni
+        if (req.nom != null && !req.nom.isBlank() && entrepriseRepository.existsByNom(req.nom)) {
             throw new BadRequestException(Messages.ENTREPRISE_NOM_EXISTE);
         }
+        
         // Vérifier l'unicité du sigle seulement s'il est fourni
         if (req.sigle != null && !req.sigle.isBlank() && entrepriseRepository.existsBySigle(req.sigle)) {
             throw new BadRequestException(Messages.ENTREPRISE_SIGLE_EXISTE);
@@ -128,6 +133,33 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
         // Valider participants (rôles/dates/parts/âge/autorisation)
         validateParticipants(req);
+        
+        // Vérifier qu'un participant ne crée pas plusieurs entreprises avec le même domaine d'activité
+        if (req.participants != null && !req.participants.isEmpty()) {
+            for (var participant : req.participants) {
+                if (participant.personId != null && !participant.personId.isBlank()) {
+                    List<Entreprise> existingEntreprises = entrepriseRepository.findByParticipantId(participant.personId);
+                    for (Entreprise existing : existingEntreprises) {
+                        // Vérifier le domaine d'activité réglementé
+                        if (req.domaineActivite != null && existing.getDomaineActivite() != null && 
+                            existing.getDomaineActivite().equals(req.domaineActivite)) {
+                            throw new BadRequestException(
+                                "Ce participant a déjà une entreprise dans le domaine d'activité réglementé '" + 
+                                req.domaineActivite + "'. Veuillez choisir un domaine différent pour éviter les conflits de génération du RCCM."
+                            );
+                        }
+                        // Vérifier le domaine d'activité non réglementé
+                        if (req.domaineActiviteNr != null && existing.getDomaineActiviteNr() != null && 
+                            existing.getDomaineActiviteNr().equals(req.domaineActiviteNr)) {
+                            throw new BadRequestException(
+                                "Ce participant a déjà une entreprise dans le domaine d'activité '" + 
+                                req.domaineActiviteNr + "'. Veuillez choisir un domaine différent pour éviter les conflits de génération du RCCM."
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         // Générer la référence unique selon la nomenclature.
         String generatedReference = generateReference();
@@ -135,7 +167,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         // Instancier et remplir l'entité persistée.
         Entreprise e = new Entreprise();
         e.setReference(generatedReference);
-        e.setNom(req.nom.trim());
+        e.setNom(req.nom != null && !req.nom.isBlank() ? req.nom.trim() : null);
         e.setSigle(req.sigle != null && !req.sigle.isBlank() ? req.sigle.trim() : null);
         
         // Convertir le capital de String vers BigDecimal
@@ -363,7 +395,6 @@ public class EntrepriseServiceImpl implements EntrepriseService {
     public Entreprise createEntrepriseForAgent(EntrepriseRequest req) {
         // Vérification de la validité de la requête
         if (req == null) throw new BadRequestException(Messages.REQ_INVALIDE);
-        if (req.nom == null || req.nom.isBlank()) throw new BadRequestException(Messages.NOM_OBLIGATOIRE);
         if (req.capitale == null || req.capitale.isBlank()) throw new BadRequestException("Le capital est obligatoire");
         if (req.typeEntreprise == null) throw new BadRequestException(Messages.TYPE_ENTREPRISE_OBLIGATOIRE);
         if (req.statutCreation == null) throw new BadRequestException(Messages.STATUT_CREATION_OBLIGATOIRE);
@@ -372,10 +403,16 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         if (req.divisionCode == null || req.divisionCode.isBlank()) throw new BadRequestException(Messages.DIVISION_CODE_OBLIGATOIRE);
         if (req.participants == null || req.participants.isEmpty()) throw new BadRequestException(Messages.PARTICIPANTS_OBLIGATOIRES);
 
-        // Vérification de l'unicité du nom et du sigle
-        if (entrepriseRepository.existsByNom(req.nom)) {
+        // Vérification du nom: obligatoire pour les sociétés, optionnel pour les entreprises individuelles
+        if (req.typeEntreprise == TypeEntreprise.SOCIETE && (req.nom == null || req.nom.isBlank())) {
+            throw new BadRequestException("Le nom de l'entreprise est obligatoire pour les sociétés");
+        }
+        
+        // Vérification de l'unicité du nom seulement s'il est fourni
+        if (req.nom != null && !req.nom.isBlank() && entrepriseRepository.existsByNom(req.nom)) {
             throw new BadRequestException(Messages.ENTREPRISE_NOM_EXISTE);
         }
+        
         if (req.sigle != null && !req.sigle.isBlank() && entrepriseRepository.existsBySigle(req.sigle)) {
             throw new BadRequestException(Messages.ENTREPRISE_SIGLE_EXISTE);
         }
@@ -387,6 +424,33 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
         // Valider participants
         validateParticipants(req);
+        
+        // Vérifier qu'un participant ne crée pas plusieurs entreprises avec le même domaine d'activité
+        if (req.participants != null && !req.participants.isEmpty()) {
+            for (var participant : req.participants) {
+                if (participant.personId != null && !participant.personId.isBlank()) {
+                    List<Entreprise> existingEntreprises = entrepriseRepository.findByParticipantId(participant.personId);
+                    for (Entreprise existing : existingEntreprises) {
+                        // Vérifier le domaine d'activité réglementé
+                        if (req.domaineActivite != null && existing.getDomaineActivite() != null && 
+                            existing.getDomaineActivite().equals(req.domaineActivite)) {
+                            throw new BadRequestException(
+                                "Ce participant a déjà une entreprise dans le domaine d'activité réglementé '" + 
+                                req.domaineActivite + "'. Veuillez choisir un domaine différent pour éviter les conflits de génération du RCCM."
+                            );
+                        }
+                        // Vérifier le domaine d'activité non réglementé
+                        if (req.domaineActiviteNr != null && existing.getDomaineActiviteNr() != null && 
+                            existing.getDomaineActiviteNr().equals(req.domaineActiviteNr)) {
+                            throw new BadRequestException(
+                                "Ce participant a déjà une entreprise dans le domaine d'activité '" + 
+                                req.domaineActiviteNr + "'. Veuillez choisir un domaine différent pour éviter les conflits de génération du RCCM."
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         // Générer la référence unique
         String generatedReference = generateReference();
@@ -394,7 +458,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         // Créer l'entité entreprise
         Entreprise e = new Entreprise();
         e.setReference(generatedReference);
-        e.setNom(req.nom.trim());
+        e.setNom(req.nom != null && !req.nom.isBlank() ? req.nom.trim() : null);
         e.setSigle(req.sigle != null && !req.sigle.isBlank() ? req.sigle.trim() : null);
         
         // Convertir le capital
@@ -839,6 +903,65 @@ public class EntrepriseServiceImpl implements EntrepriseService {
             // Si l'étape n'est pas valide, retourner une page vide
             return Page.empty(pageable);
         }
+    }
+    
+    @Override
+    public Page<Entreprise> listEntreprises(String divisionCode, String etapeValidation, String nom, String reference, String statut, Pageable pageable) {
+        System.out.println("🔍 [EntrepriseService] Filtrage avec: divisionCode=" + divisionCode + ", etapeValidation=" + etapeValidation + ", nom=" + nom + ", reference=" + reference + ", statut=" + statut);
+        
+        // Construire la Specification dynamiquement
+        org.springframework.data.jpa.domain.Specification<Entreprise> spec = (root, query, criteriaBuilder) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            
+            // Filtre par divisionCode
+            if (divisionCode != null && !divisionCode.isBlank()) {
+                predicates.add(criteriaBuilder.equal(root.get("divisionCode"), divisionCode.trim()));
+            }
+            
+            // Filtre par etapeValidation
+            if (etapeValidation != null && !etapeValidation.isBlank()) {
+                try {
+                    EtapeValidation etape = EtapeValidation.valueOf(etapeValidation.trim().toUpperCase());
+                    predicates.add(criteriaBuilder.equal(root.get("etapeValidation"), etape));
+                } catch (IllegalArgumentException e) {
+                    System.out.println("⚠️ [EntrepriseService] Étape invalide: " + etapeValidation);
+                }
+            }
+            
+            // Filtre par nom (recherche partielle insensible à la casse dans nom OU sigle)
+            if (nom != null && !nom.isBlank()) {
+                String nomPattern = "%" + nom.toLowerCase() + "%";
+                jakarta.persistence.criteria.Predicate nomPredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("nom")), nomPattern);
+                jakarta.persistence.criteria.Predicate siglePredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("sigle")), nomPattern);
+                predicates.add(criteriaBuilder.or(nomPredicate, siglePredicate));
+            }
+            
+            // Filtre par référence (recherche partielle insensible à la casse)
+            if (reference != null && !reference.isBlank()) {
+                String refPattern = "%" + reference.toLowerCase() + "%";
+                predicates.add(criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("reference")), refPattern));
+            }
+            
+            // Filtre par statut
+            if (statut != null && !statut.isBlank()) {
+                try {
+                    StatutCreation statutEnum = StatutCreation.valueOf(statut.toUpperCase());
+                    predicates.add(criteriaBuilder.equal(root.get("statutCreation"), statutEnum));
+                } catch (IllegalArgumentException e) {
+                    System.out.println("⚠️ [EntrepriseService] Statut invalide: " + statut);
+                }
+            }
+            
+            return criteriaBuilder.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        
+        Page<Entreprise> page = entrepriseRepository.findAll(spec, pageable);
+        System.out.println("✅ [EntrepriseService] Entreprises trouvées: " + page.getTotalElements());
+        
+        return page;
     }
     
     @Override

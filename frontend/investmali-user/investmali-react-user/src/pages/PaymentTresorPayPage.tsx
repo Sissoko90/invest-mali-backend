@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  CreditCardIcon, 
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  PhoneIcon,
+  ArrowLeftIcon,
+  LinkIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../services/api';
 
@@ -119,15 +127,15 @@ const PaymentTresorPayPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/mes-demandes');
+    navigate(-1); // Retour à la page précédente
   };
 
   if (!paymentData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-investmali-accent mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-600">Chargement...</p>
         </div>
       </div>
     );
@@ -139,19 +147,17 @@ const PaymentTresorPayPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img 
-                src={carteBancaireImg} 
-                alt="TresorPay"
-                className="w-12 h-12 object-contain rounded"
-              />
+              <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                <CreditCardIcon className="h-8 w-8 text-white" />
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Paiement TresorPay</h1>
-                <p className="text-gray-600">Paiement sécurisé</p>
+                <p className="text-lg text-gray-600">Paiement sécurisé</p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Montant à payer</p>
-              <p className="text-2xl font-bold text-investmali-accent">
+              <p className="text-2xl font-bold text-sky-700">
                 {formatAmount(parseInt(paymentData.amount))}
               </p>
             </div>
@@ -163,22 +169,24 @@ const PaymentTresorPayPage: React.FC = () => {
             <div className="space-y-6">
               <div className="text-center">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Paiement via TresorPay</h2>
-                <p className="text-gray-600">Vous serez redirigé vers la plateforme sécurisée TresorPay pour effectuer votre paiement</p>
+                <p className="text-lg text-gray-600">Vous serez redirigé vers la plateforme sécurisée TresorPay pour effectuer votre paiement</p>
               </div>
               
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
                 <div className="flex items-start space-x-3">
-                  <div className="text-blue-500 text-lg">🔒</div>
+                  <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg shadow-md">
+                    <ShieldCheckIcon className="h-5 w-5 text-white" />
+                  </div>
                   <div>
-                    <h4 className="font-medium text-blue-900">Paiement sécurisé</h4>
-                    <p className="text-sm text-blue-700 mt-1">TresorPay est la plateforme officielle de paiement du Trésor Public du Mali. Toutes les transactions sont sécurisées et chiffrées.</p>
+                    <h4 className="text-lg font-medium text-sky-900">Paiement sécurisé</h4>
+                    <p className="text-lg text-sky-700 mt-1">TresorPay est la plateforme officielle de paiement du Trésor Public du Mali. Toutes les transactions sont sécurisées et chiffrées.</p>
                   </div>
                 </div>
               </div>
               
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Informations de paiement</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Informations de paiement</h3>
+                <div className="space-y-2 text-lg">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Montant:</span>
                     <span className="font-semibold">{formatAmount(parseInt(paymentData.amount))}</span>
@@ -195,15 +203,18 @@ const PaymentTresorPayPage: React.FC = () => {
               </div>
               
               <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-4">Informations de paiement mobile</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                  <PhoneIcon className="h-5 w-5 text-sky-600" />
+                  Informations de paiement mobile
+                </h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mode de paiement</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-2">Mode de paiement</label>
                     <select
                       value={formData.paymentProvider}
                       onChange={(e) => setFormData({...formData, paymentProvider: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-investmali-accent focus:border-transparent"
+                      className="w-full px-3 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     >
                       <option value="ORANGE_MONEY">Orange Money</option>
                       <option value="MOOV_MONEY">Moov Money</option>
@@ -212,7 +223,7 @@ const PaymentTresorPayPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-2">Numéro de téléphone</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span className="text-gray-500 text-sm">+223</span>
@@ -222,11 +233,11 @@ const PaymentTresorPayPage: React.FC = () => {
                         value={formData.phoneNumber}
                         onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                         placeholder="76 12 34 56"
-                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-investmali-accent focus:border-transparent"
+                        className="w-full pl-12 pr-3 py-2 text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         maxLength={10}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Saisissez votre numéro de téléphone mobile money (8 chiffres)</p>
+                    <p className="text-sm text-gray-500 mt-1">Saisissez votre numéro de téléphone mobile money (8 chiffres)</p>
                   </div>
                 </div>
               </div>
@@ -234,14 +245,15 @@ const PaymentTresorPayPage: React.FC = () => {
               <div className="flex space-x-4">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 text-lg border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2"
                 >
+                  <ArrowLeftIcon className="h-5 w-5" />
                   Annuler
                 </button>
                 <button
                   onClick={handleInitiatePayment}
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-investmali-accent text-white rounded-md hover:bg-investmali-accent-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
                 >
                   {isProcessing ? 'Redirection...' : 'Procéder au paiement'}
                 </button>
@@ -251,23 +263,21 @@ const PaymentTresorPayPage: React.FC = () => {
 
           {currentStep === 'processing' && (
             <div className="text-center space-y-6">
-              <div className="w-16 h-16 bg-investmali-accent rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                <CheckCircleIcon className="w-8 h-8 text-white" />
               </div>
               
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   Avis de paiement créé avec succès
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-lg text-gray-600 mb-4">
                   Référence: <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{paymentReference}</span>
                 </p>
-                <p className="text-gray-600 mb-4">
+                <p className="text-lg text-gray-600 mb-4">
                   Votre numéro <strong>{formData.phoneNumber}</strong> ({formData.paymentProvider.replace('_', ' ')}) est maintenant autorisé pour ce paiement.
                 </p>
-                <p className="text-gray-600">
+                <p className="text-lg text-gray-600">
                   Cliquez sur le bouton ci-dessous pour accéder à la plateforme TresorPay et finaliser votre paiement.
                 </p>
               </div>
@@ -275,12 +285,13 @@ const PaymentTresorPayPage: React.FC = () => {
               <div className="space-y-4">
                 <button
                   onClick={() => window.location.href = paymentUrl}
-                  className="w-full px-6 py-3 bg-investmali-accent text-white rounded-md hover:bg-investmali-accent-dark transition-colors text-lg font-medium"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-lg font-bold flex items-center justify-center gap-2"
                 >
-                  🔗 Accéder à TresorPay pour payer
+                  <LinkIcon className="h-5 w-5" />
+                  Accéder à TresorPay pour payer
                 </button>
                 
-                <p className="text-sm text-gray-500">
+                <p className="text-lg text-gray-500">
                   Vous serez redirigé vers la plateforme sécurisée TresorPay
                 </p>
               </div>

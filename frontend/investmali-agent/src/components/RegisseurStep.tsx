@@ -8,7 +8,11 @@ import {
   ArrowLeftIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-  XCircleIcon
+  XCircleIcon,
+  BuildingOffice2Icon,
+  UserIcon,
+  BanknotesIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { DemandeEntreprise } from '../types';
@@ -258,9 +262,9 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
             dateValidationAccueil: entreprise.dateValidationAccueil || entreprise.dateCreation || new Date().toISOString(),
             statut: 'VALIDE',
             demandeur: {
-              nom: gerantPersonne.nom || 'Nom inconnu',
-              prenom: gerantPersonne.prenom || 'Prénom inconnu',
-              email: gerantPersonne.email || 'Email inconnu',
+              nom: gerantPersonne.nom || 'Nom non renseinger',
+              prenom: gerantPersonne.prenom || 'Prénom non renseinger',
+              email: gerantPersonne.email || 'Email non renseinger',
               telephone: gerantPersonne.telephone1 || gerantPersonne.telephone || 'Téléphone inconnu'
             },
             etapeActuelle: 'REGISSEUR',
@@ -568,12 +572,12 @@ Agent: ${agent?.firstName} ${agent?.lastName}
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center space-x-4 mb-4">
-              <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
-                <span className="text-2xl">💰</span>
+              <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg">
+                <BanknotesIcon className="h-8 w-8 text-white" />
               </div>
               <div>
                 <h2 className="text-2xl font-black text-slate-800">Étape RÉGISSEUR</h2>
-                <p className="text-slate-600 font-medium mt-1">
+                <p className="text-lg text-slate-600 font-medium mt-1">
                   Calcul des frais, gestion des paiements et validation - Agent: {agent?.firstName} {agent?.lastName}
                 </p>
               </div>
@@ -582,18 +586,18 @@ Agent: ${agent?.firstName} ${agent?.lastName}
             {/* Statistiques des paiements */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
-                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
-                  <CheckCircleIcon className="h-3 w-3 text-white" />
+                <div className="p-1 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+                  <CheckCircleIcon className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm text-primary-600 font-bold">
+                <span className="text-lg text-green-600 font-bold">
                   {paiementsConfirmes.filter(p => p.statut === 'VALIDE').length} Payés
                 </span>
               </div>
               <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
-                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
-                  <ClockIcon className="h-3 w-3 text-white" />
+                <div className="p-1 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
+                  <ClockIcon className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm text-primary-600 font-bold">
+                <span className="text-lg text-amber-600 font-bold">
                   {regisseurDemandes.filter(d => (d as any).statutPaiement === 'EN_COURS').length} En cours
                 </span>
               </div>
@@ -609,23 +613,25 @@ Agent: ${agent?.firstName} ${agent?.lastName}
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('demandes')}
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
+              className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 flex items-center gap-2 ${
                 activeTab === 'demandes'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  ? 'border-sky-600 text-sky-600 shadow-lg'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
-              📋 Demandes à traiter ({regisseurDemandes.length})
+              <DocumentTextIcon className="h-5 w-5" />
+              Demandes à traiter ({regisseurDemandes.length})
             </button>
             <button
               onClick={() => setActiveTab('paiements')}
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
+              className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 flex items-center gap-2 ${
                 activeTab === 'paiements'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  ? 'border-sky-600 text-sky-600 shadow-lg'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
-              💳 Suivi des paiements
+              <CreditCardIcon className="h-5 w-5" />
+              Suivi des paiements
             </button>
           </nav>
         </div>
@@ -636,8 +642,8 @@ Agent: ${agent?.firstName} ${agent?.lastName}
               {regisseurDemandes.length === 0 ? (
                 <div className="text-center py-12">
                   <CurrencyDollarIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune demande</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">Aucune demande</h3>
+                  <p className="mt-1 text-lg text-gray-500">
                     Aucune demande n'a été transférée par l'accueil pour le moment.
                   </p>
                 </div>
@@ -647,28 +653,28 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
-                          <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                            <span className="text-lg">🏢</span>
+                          <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                            <BuildingOffice2Icon className="h-6 w-6 text-white" />
                           </div>
                           <div>
                             <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
-                            <p className="text-sm text-slate-600 font-medium">{demande.formeJuridique} - {demande.typeEntreprise}</p>
+                            <p className="text-lg text-slate-600 font-medium">{demande.formeJuridique} - {demande.typeEntreprise}</p>
                           </div>
                         </div>
                         <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-4 border border-primary-200 mb-3 shadow-sm">
                           <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-gradient-to-r from-primary-500 to-[#2d6aa0] rounded-lg shadow-md">
-                              <span className="text-white text-sm">👤</span>
+                            <div className="p-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-lg shadow-md">
+                              <UserIcon className="h-5 w-5 text-white" />
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm text-slate-800 font-semibold">
-                                <span className="text-primary-700 font-bold">Validé par:</span> 
-                                <span className="ml-2 px-2 py-1 bg-primary-100 rounded-lg text-primary-800 font-bold">
+                              <p className="text-lg text-slate-800 font-semibold">
+                                <span className="text-sky-700 font-bold">Validé par:</span> 
+                                <span className="ml-2 px-2 py-1 bg-sky-100 rounded-lg text-sky-800 font-bold">
                                   {(demande as any).agentAccueil || 'Agent non spécifié'}
                                 </span>
                               </p>
                               {(demande as any).agentAccueilEmail && (
-                                <p className="text-xs text-slate-500 mt-1">
+                                <p className="text-sm text-slate-500 mt-1">
                                   <span className="font-medium">Contact:</span> 
                                   <span className="ml-1">{(demande as any).agentAccueilEmail}</span>
                                 </p>
@@ -677,8 +683,9 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           </div>
                         </div>
                         {demande.frais && (
-                          <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-3 border border-primary-200">
-                            <span className="text-sm font-bold text-primary-700">💰 Frais calculés: {demande.frais.fraisTotal} FCFA</span>
+                          <div className="bg-gradient-to-r from-green-50 to-green-50 rounded-xl p-3 border border-green-200 flex items-center gap-2">
+                            <BanknotesIcon className="h-5 w-5 text-green-600" />
+                            <span className="text-lg font-bold text-green-700">Frais calculés: {demande.frais.fraisTotal} FCFA</span>
                           </div>
                         )}
                       </div>
@@ -686,19 +693,19 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                       <div className="flex flex-col space-y-2 ml-6">
                         {/* Statut des paiements */}
                         <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
-                          <h4 className="text-sm font-black text-slate-800 mb-3 flex items-center">
-                            <span className="mr-2">💳</span>
+                          <h4 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
+                            <CreditCardIcon className="h-5 w-5 text-sky-600" />
                             Statut Paiement
                           </h4>
                           
                           {!demande.frais ? (
                             <div className="flex flex-col space-y-2">
-                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800 shadow-lg">
-                                <ClockIcon className="h-3 w-3 mr-2" />
+                              <span className="inline-flex items-center px-3 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800 shadow-lg">
+                                <ClockIcon className="h-4 w-4 mr-2" />
                                 En attente
                               </span>
-                              <span className="text-xs text-slate-600 font-medium">
-                                Montant à payer: <span className="font-bold text-primary-700">
+                              <span className="text-sm text-slate-600 font-medium">
+                                Montant à payer: <span className="font-bold text-sky-700">
                                   {demande.totalAmount !== undefined && demande.totalAmount !== null ? `${demande.totalAmount.toLocaleString('fr-FR')} FCFA` : 'Non calculé'}
                                 </span>
                               </span>
@@ -707,7 +714,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               <button
                                 onClick={() => handlePasserAuPaiement(demande.id)}
                                 disabled={isLoading}
-                                className="inline-flex items-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] hover:from-[#1e5987]/90 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#412A5C] disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
+                                className="inline-flex items-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
                               >
                                 <CreditCardIcon className="h-4 w-4 mr-1" />
                                 Passer au paiement
@@ -715,42 +722,48 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             </div>
                           ) : !((demande as any).statutPaiement) ? (
                             <div className="flex flex-col space-y-2">
-                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-primary-100 to-amber-200 text-primary-800 shadow-lg">
-                                <ExclamationTriangleIcon className="h-3 w-3 mr-2" />
+                              <span className="inline-flex items-center px-3 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 shadow-lg">
+                                <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
                                 Frais calculés
                               </span>
-                              <span className="text-xs text-slate-700 font-bold">{demande.frais.fraisTotal} FCFA</span>
-                              <span className="text-xs text-primary-600 font-medium">⏳ En attente de paiement</span>
+                              <span className="text-sm text-slate-700 font-bold">{demande.frais.fraisTotal} FCFA</span>
+                              <span className="text-sm text-amber-600 font-medium flex items-center gap-1">
+                                <ClockIcon className="h-4 w-4" />
+                                En attente de paiement
+                              </span>
                             </div>
                           ) : (
                             <div className="flex flex-col space-y-2">
-                              <span className={`inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl shadow-lg ${
+                              <span className={`inline-flex items-center px-3 py-2 text-sm font-bold rounded-xl shadow-lg ${
                                 (demande as any).statutPaiement === 'REUSSI' 
-                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
+                                  ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800'
                                   : (demande as any).statutPaiement === 'EN_COURS'
-                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
-                                  : 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800'
+                                  ? 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800'
+                                  : 'bg-gradient-to-r from-red-100 to-red-200 text-red-800'
                               }`}>
                                 {(demande as any).statutPaiement === 'REUSSI' ? (
                                   <>
-                                    <CheckCircleIcon className="h-3 w-3 mr-2" />
+                                    <CheckCircleIcon className="h-4 w-4 mr-2" />
                                     Payé
                                   </>
                                 ) : (demande as any).statutPaiement === 'EN_COURS' ? (
                                   <>
-                                    <ClockIcon className="h-3 w-3 mr-2" />
+                                    <ClockIcon className="h-4 w-4 mr-2" />
                                     En cours
                                   </>
                                 ) : (
                                   <>
-                                    <XCircleIcon className="h-3 w-3 mr-2" />
+                                    <XCircleIcon className="h-4 w-4 mr-2" />
                                     Échec
                                   </>
                                 )}
                               </span>
-                              <span className="text-xs text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
+                              <span className="text-sm text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
                               {(demande as any).statutPaiement === 'REUSSI' && (
-                                <span className="text-xs text-primary-600 font-bold">✓ Paiement confirmé</span>
+                                <span className="text-sm text-green-600 font-bold flex items-center gap-1">
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                  Paiement confirmé
+                                </span>
                               )}
                             </div>
                           )}
@@ -761,18 +774,18 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             <select
                               value={paiementMethod}
                               onChange={(e) => setPaiementMethod(e.target.value as any)}
-                              className="block w-full px-4 py-3 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-[#412A5C] focus:border-transparent shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
+                              className="block w-full px-4 py-3 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-lg hover:shadow-xl transition-all duration-300 text-lg font-medium"
                             >
-                              <option value="CASH">💵 Cash</option>
-                              <option value="MOOV_MONEY">🔵 Moov Money</option>
-                              <option value="STRIPE">💳 Carte bancaire</option>
+                              <option value="CASH">Cash</option>
+                              <option value="MOOV_MONEY">Moov Money</option>
+                              <option value="STRIPE">Carte bancaire</option>
                             </select>
                             <button
                               onClick={() => initierPaiement(demande.id, paiementMethod)}
                               disabled={isLoading}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              <CreditCardIcon className="h-4 w-4 mr-2" />
+                              <CreditCardIcon className="h-5 w-5 mr-2" />
                               Initier Paiement
                             </button>
                           </div>
@@ -782,21 +795,21 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           <div className="space-y-3">
                             <button
                               onClick={() => imprimerRecu(demande)}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-lg font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
-                              <PrinterIcon className="h-4 w-4 mr-2" />
-                              🖨️ Imprimer Reçu
+                              <PrinterIcon className="h-5 w-5 mr-2" />
+                              Imprimer Reçu
                             </button>
                             <button
                               onClick={() => validerVersRevision(demande.id)}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                             >
-                              <CheckCircleIcon className="h-4 w-4 mr-2" />
-                              🎯 Passer chez le RÉGISSEUR
+                              <CheckCircleIcon className="h-5 w-5 mr-2" />
+                              Passer chez le RÉGISSEUR
                             </button>
                             <button
                               onClick={() => retournerVersAccueil(demande.id)}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-lg font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
                               <ArrowLeftIcon className="h-4 w-4 mr-2" />
                               ↩️ Retour ACCUEIL
@@ -815,27 +828,28 @@ Agent: ${agent?.firstName} ${agent?.lastName}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                    <span className="text-lg">💳</span>
+                  <div className="p-2 bg-gradient-to-br from-green-600 to-green-700 rounded-xl shadow-lg">
+                    <CreditCardIcon className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-black text-slate-800">Paiements confirmés</h3>
+                  <h3 className="text-xl font-black text-slate-800">Paiements confirmés</h3>
                 </div>
                 <button
                   onClick={async () => {
                     const paiements = await loadPaiementsConfirmes();
                     setPaiementsConfirmes(paiements);
                   }}
-                  className="bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-4 py-2 rounded-xl text-sm font-bold hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg font-bold hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
                   title="Recharger les paiements confirmés"
                 >
-                  🔄 Actualiser
+                  <ArrowLeftIcon className="h-5 w-5 transform rotate-90" />
+                  Actualiser
                 </button>
               </div>
               {paiementsConfirmes.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h4 className="mt-2 text-sm font-medium text-gray-900">Aucun paiement confirmé</h4>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h4 className="mt-2 text-lg font-medium text-gray-900">Aucun paiement confirmé</h4>
+                  <p className="mt-1 text-lg text-gray-500">
                     Les paiements confirmés depuis la base de données apparaîtront ici.
                   </p>
                 </div>
@@ -853,23 +867,23 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           
                           if (isAgreement) {
                             return (
-                              <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
-                                <span className="text-lg">🏆</span>
+                              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                                <CheckCircleIcon className="h-6 w-6 text-white" />
                               </div>
                             );
                           } else {
                             return (
-                              <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                                <span className="text-lg">🏢</span>
+                              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                                <BuildingOffice2Icon className="h-6 w-6 text-white" />
                               </div>
                             );
                           }
                         })()}
                         <div>
                           <div className="flex items-center space-x-2">
-                            <h4 className="font-black text-slate-800">
+                            <h4 className="text-lg font-black text-slate-800">
                               {paiement.entrepriseNom || 
-                               paiement.description?.match(/(?:pour|-)?\s*([A-Za-zÀ-ÿ\s]+?)(?:\s*-|\s*\(|$)/)?.[1]?.trim() || 
+                               paiement.description?.match(/(?:pour|-)?\ s*([A-Za-zÀ-ÿ\s]+?)(?:\s*-|\s*\(|$)/)?.[1]?.trim() || 
                                'Entreprise'}
                             </h4>
                             {/* Badge pour identifier le type */}
@@ -880,20 +894,22 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               
                               if (isAgreement) {
                                 return (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
-                                    🏆 Agrément
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 gap-1">
+                                    <CheckCircleIcon className="h-4 w-4" />
+                                    Agrément
                                   </span>
                                 );
                               } else {
                                 return (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                                    🏢 Entreprise
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-bold bg-sky-100 text-sky-800 gap-1">
+                                    <BuildingOffice2Icon className="h-4 w-4" />
+                                    Entreprise
                                   </span>
                                 );
                               }
                             })()}
                           </div>
-                          <p className="text-sm text-slate-600 font-medium">
+                          <p className="text-lg text-slate-600 font-medium">
                             Référence: {paiement.referenceTransaction || 'N/A'}
                           </p>
                         </div>
@@ -901,21 +917,30 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                       
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-                          <p className="text-xs text-slate-500 font-medium">Montant</p>
-                          <p className="text-sm text-slate-700 font-bold">
+                          <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
+                            <BanknotesIcon className="h-4 w-4" />
+                            Montant
+                          </p>
+                          <p className="text-lg text-slate-700 font-bold">
                             {paiement.montant ? Number(paiement.montant).toLocaleString('fr-FR') : 'N/A'} FCFA
                           </p>
                         </div>
                         <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-                          <p className="text-xs text-slate-500 font-medium">Méthode</p>
-                          <p className="text-sm text-slate-700 font-bold">{paiement.typePaiement || 'N/A'}</p>
+                          <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
+                            <CreditCardIcon className="h-4 w-4" />
+                            Méthode
+                          </p>
+                          <p className="text-lg text-slate-700 font-bold">{paiement.typePaiement || 'N/A'}</p>
                         </div>
                       </div>
                       
                       {paiement.datePaiement && (
                         <div className="mt-3 bg-white/50 rounded-xl p-3 border border-white/40">
-                          <p className="text-xs text-slate-500 font-medium">Date de confirmation</p>
-                          <p className="text-sm text-slate-700 font-bold">
+                          <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
+                            <ClockIcon className="h-4 w-4" />
+                            Date de confirmation
+                          </p>
+                          <p className="text-lg text-slate-700 font-bold">
                             {new Date(paiement.datePaiement).toLocaleDateString()}
                           </p>
                         </div>
@@ -923,9 +948,9 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                     </div>
                     
                     <div className="text-right ml-6">
-                      <span className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 shadow-lg">
-                        <CheckCircleIcon className="h-4 w-4 mr-2" />
-                        ✅ Confirmé
+                      <span className="inline-flex items-center px-4 py-2 text-lg font-bold rounded-xl bg-gradient-to-r from-green-100 to-green-200 text-green-800 shadow-lg">
+                        <CheckCircleIcon className="h-5 w-5 mr-2" />
+                        Confirmé
                       </span>
                     </div>
                   </div>

@@ -17,6 +17,7 @@ public interface EntrepriseService {
     Page<Entreprise> listEntreprises(Pageable pageable);
     Page<Entreprise> listEntreprises(String divisionCode, Pageable pageable);
     Page<Entreprise> listEntreprises(String divisionCode, String etapeValidation, Pageable pageable);
+    Page<Entreprise> listEntreprises(String divisionCode, String etapeValidation, String nom, String reference, String statut, Pageable pageable);
     Page<Entreprise> listEntreprisesByAntenne(Pageable pageable, AntenneAgents antenne);
     Page<Entreprise> listEntreprisesByAgentAntennes(Pageable pageable, List<AntenneAgents> antennes);
 

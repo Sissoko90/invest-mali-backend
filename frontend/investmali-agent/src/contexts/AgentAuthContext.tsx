@@ -1,5 +1,6 @@
 ﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { agentAuthAPI } from '../services/api';
+import { tokenRefreshService } from '../services/tokenRefreshService';
 
 // Nouveaux rôles agents alignés aux étapes du processus
 type AgentRole = 
@@ -47,11 +48,17 @@ interface Agent {
   antenne?: string;
 }
 
+interface LoginResult {
+  success: boolean;
+  redirectUrl?: string;
+  agent?: Agent;
+}
+
 interface AgentAuthContextType {
   agent: Agent | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; redirectUrl?: string }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   updateAgent: (patch: Partial<Agent>) => void;
   // Nouvelles fonctions RBAC
@@ -94,6 +101,12 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initialiser l'intercepteur de rafraîchissement de token
+  useEffect(() => {
+    tokenRefreshService.setupInterceptor();
+    console.log('✅ Intercepteur de rafraîchissement de token initialisé');
+  }, []);
+
   // Vérifier si l'agent est déjà connecté au chargement
   useEffect(() => {
     const savedAgent = localStorage.getItem('investmali_agent');
@@ -112,7 +125,7 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; redirectUrl?: string }> => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     console.log('Tentative de connexion avec:', email);
     setIsLoading(true);
     setAgent(null);
@@ -228,14 +241,21 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
       localStorage.setItem('investmali_agent_token', token);
       localStorage.setItem('investmali_agent', JSON.stringify(agent));
       
+      // Stocker le refresh token s'il est présent
+      if (payload.refreshToken) {
+        tokenRefreshService.storeRefreshToken(payload.refreshToken);
+        console.log('✅ Refresh token stocké');
+      }
+      
       setAgent(agent);
       
       // Récupérer la redirectUrl du payload
       const redirectUrl = payload?.redirectUrl;
       console.log('🎯 [AgentAuth] RedirectUrl reçue du backend:', redirectUrl);
       console.log('🎯 [AgentAuth] Payload complet:', payload);
+      console.log('🎯 [AgentAuth] Agent créé avec rôle:', agent.role);
       
-      return { success: true, redirectUrl };
+      return { success: true, redirectUrl, agent };
     } catch (error) {
       console.error('Erreur lors de la connexion agent:', error);
       // En cas d'erreur, s'assurer que l'état est bien nettoyé
@@ -251,7 +271,7 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
   const logout = () => {
     setAgent(null);
     localStorage.removeItem('investmali_agent');
-    localStorage.removeItem('investmali_agent_token');
+    tokenRefreshService.clearTokens();
     // Optional: Call the logout API endpoint if available
     // agentAuthAPI.logout?.().catch(console.error);
   };

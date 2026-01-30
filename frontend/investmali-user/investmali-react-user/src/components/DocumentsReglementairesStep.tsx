@@ -160,7 +160,7 @@ const DocumentsReglementairesStep: React.FC<DocumentsReglementairesStepProps> = 
           {/* Upload du formulaire signé */}
           <div className="border-t border-gray-200 pt-4">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
-              Uploader le formulaire signé et timbré <span className="text-red-500">*</span>
+              Téléverser la fiche signé et timbré <span className="text-red-500">*</span>
             </label>
             
             {!isDocumentUploaded('formulaire', activiteData.formulaire.nom) ? (
@@ -283,7 +283,7 @@ const DocumentsReglementairesStep: React.FC<DocumentsReglementairesStepProps> = 
             <>
               <XCircleIcon className="h-6 w-6 text-yellow-600" />
               <p className="text-yellow-800 font-semibold">
-                Veuillez uploader tous les documents obligatoires (marqués d'un *)
+                Veuillez téléverser tous les documents obligatoires (marqués d'un *)
               </p>
             </>
           )}

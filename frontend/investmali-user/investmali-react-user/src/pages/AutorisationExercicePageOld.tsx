@@ -884,7 +884,7 @@ const AutorisationExercicePage: React.FC = () => {
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('❌ [User] Erreur téléchargement:', response.status, errorData);
-        alert(errorData.error || 'L\'agrément n\'est pas encore disponible. L\'agent au ministère doit d\'abord uploader le document signé.');
+        alert(errorData.error || 'L\'agrément n\'est pas encore disponible. L\'agent au ministère doit d\'abord téléverser le document signé.');
       }
     } catch (error) {
       console.error('Erreur téléchargement agrément:', error);

@@ -11,7 +11,28 @@ import {
   IdentificationIcon,
   EyeIcon,
   ArrowDownTrayIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  TagIcon,
+  ScaleIcon,
+  BriefcaseIcon,
+  ChartBarIcon,
+  GlobeAltIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  DevicePhoneMobileIcon,
+  CakeIcon,
+  HeartIcon,
+  ShieldCheckIcon,
+  ExclamationCircleIcon,
+  UserCircleIcon,
+  HomeIcon,
+  MapIcon,
+  BuildingLibraryIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 
 interface EntrepriseDetailsProps {
@@ -68,6 +89,9 @@ interface EntrepriseDetail {
   domaineActivite: string;
   domaineActiviteNr: string;
   domaineActiviteLabel: string;
+  domaineActiviteSecondaire?: string;
+  domaineActiviteSecondaireNr?: string;
+  domaineActiviteSecondaireLabel?: string;
   statutSociete: boolean;
   divisionCode: string;
   divisionNom: string;
@@ -97,13 +121,15 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
   const [selectedDocumentName, setSelectedDocumentName] = useState<string>('');
 
   useEffect(() => {
-    loadEntrepriseDetails();
-    loadDocuments();
+    loadData();
   }, [entrepriseId]);
 
-  const loadEntrepriseDetails = async () => {
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      
+      // Charger les détails de l'entreprise
       const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${entrepriseId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
@@ -116,39 +142,33 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
       }
 
       const data = await response.json();
-      
-      
       setEntreprise(data);
-    } catch (error) {
-      setError('Erreur lors du chargement des détails de l\'entreprise');
-    }
-  };
 
-  const loadDocuments = async () => {
-    try {
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/documents/entreprise/${entrepriseId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`
+      // Charger les documents
+      try {
+        const docResponse = await fetch(`${API_CONFIG.BASE_URL}/documents/entreprise/${entrepriseId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`
+          }
+        });
+
+        if (docResponse.ok) {
+          const docData = await docResponse.json();
+          // Filtrer les doublons basés sur l'ID
+          const uniqueDocuments = docData.filter((doc: any, index: number, self: any[]) => 
+            index === self.findIndex((d: any) => d.id === doc.id)
+          );
+          setDocuments(uniqueDocuments);
+        } else {
+          setDocuments([]);
         }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Vérifier les doublons
-        const documentIds = data.map((doc: any) => doc.id);
-        const duplicateIds = documentIds.filter((id: string, index: number) => documentIds.indexOf(id) !== index);
-        
-        // Filtrer les doublons basés sur l'ID
-        const uniqueDocuments = data.filter((doc: any, index: number, self: any[]) => 
-          index === self.findIndex((d: any) => d.id === doc.id)
-        );
-        setDocuments(uniqueDocuments);
-      } else {
+      } catch (docError) {
+        // Les documents ne sont pas critiques, on continue
         setDocuments([]);
       }
     } catch (error) {
-      setDocuments([]);
+      setError('Erreur lors du chargement des détails de l\'entreprise');
+      setEntreprise(null);
     } finally {
       setLoading(false);
     }
@@ -197,32 +217,33 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'EN_ATTENTE': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'En attente',
-        icon: '⏳'
+        icon: ClockIcon
       },
       'EN_COURS': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'En cours',
-        icon: '🔄'
+        icon: ArrowPathIcon
       },
       'VALIDEE': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-green-600 text-white shadow-lg', 
         text: 'Validée',
-        icon: '✅'
+        icon: CheckCircleIcon
       },
       'REFUSEE': { 
         color: 'bg-red-500 text-white shadow-lg', 
         text: 'Refusée',
-        icon: '❌'
+        icon: XCircleIcon
       }
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['EN_COURS'];
+    const IconComponent = config.icon;
     
     return (
-      <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-bold ${config.color} min-w-0 flex-shrink-0`}>
-        <span className="mr-1 sm:mr-2">{config.icon}</span>
+      <span className={`inline-flex items-center px-3 py-2 rounded-xl text-base font-bold ${config.color} min-w-0 flex-shrink-0`}>
+        <IconComponent className="w-5 h-5 mr-2" />
         {config.text}
       </span>
     );
@@ -231,37 +252,38 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
   const getRoleBadge = (role: string) => {
     const roleConfig = {
       'GERANT': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'Gérant',
-        icon: '👑'
+        icon: UserCircleIcon
       },
       'PROMOTEUR': { 
-        color: 'bg-blue-600 text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'Promoteur',
-        icon: '🚀'
+        icon: BriefcaseIcon
       },
       'DIRIGEANT': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'Dirigeant',
-        icon: '🎯'
+        icon: ChartBarIcon
       },
       'ASSOCIE': { 
-        color: 'bg-slate-500 text-white shadow-lg', 
+        color: 'bg-slate-600 text-white shadow-lg', 
         text: 'Associé',
-        icon: '🤝'
+        icon: UserGroupIcon
       },
       'ADMINISTRATEUR': { 
-        color: 'bg-[#1e5987] text-white shadow-lg', 
+        color: 'bg-[#2d85c9] text-white shadow-lg', 
         text: 'Administrateur',
-        icon: '⚙️'
+        icon: IdentificationIcon
       }
     };
     
     const config = roleConfig[role as keyof typeof roleConfig] || roleConfig['ASSOCIE'];
+    const IconComponent = config.icon;
     
     return (
-      <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-bold ${config.color} min-w-0 flex-shrink-0`}>
-        <span className="mr-1 sm:mr-2">{config.icon}</span>
+      <span className={`inline-flex items-center px-3 py-2 rounded-xl text-base font-bold ${config.color} min-w-0 flex-shrink-0`}>
+        <IconComponent className="w-5 h-5 mr-2" />
         {config.text}
       </span>
     );
@@ -347,23 +369,23 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
-        <div className="bg-white rounded-3xl shadow-2xl border p-16 text-center max-w-md mx-auto">
-          <div className="relative inline-block mb-8">
-            <div className="w-20 h-20 border-4 border-[#1e5987]/30 rounded-full"></div>
-            <div className="w-20 h-20 border-4 border-[#1e5987] border-t-transparent rounded-full animate-spin absolute top-0"></div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg border p-8 text-center max-w-md mx-auto">
+          <div className="relative inline-block mb-6">
+            <div className="w-16 h-16 border-4 border-[#2d85c9]/30 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-[#2d85c9] border-t-transparent rounded-full animate-spin absolute top-0"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl animate-pulse">🏢</span>
+              <BuildingOfficeIcon className="w-8 h-8 text-[#2d85c9] animate-pulse" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-[#1e5987] mb-4">
+          <h3 className="text-2xl font-bold text-[#2d85c9] mb-3">
             Chargement des détails
           </h3>
-          <p className="text-slate-500 text-lg">Récupération des informations de l'entreprise...</p>
-          <div className="flex justify-center mt-6 space-x-2">
-            <div className="w-3 h-3 bg-[#1e5987] rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-[#1e5987] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-3 h-3 bg-[#1e5987] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+          <p className="text-slate-500 text-base">Récupération des informations de l'entreprise...</p>
+          <div className="flex justify-center mt-4 space-x-2">
+            <div className="w-2 h-2 bg-[#2d85c9] rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-[#2d85c9] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+            <div className="w-2 h-2 bg-[#2d85c9] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
           </div>
         </div>
       </div>
@@ -372,24 +394,23 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
 
   if (error || !entreprise) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
-        <div className="bg-white rounded-3xl shadow-2xl border p-16 text-center max-w-md mx-auto">
-          <div className="relative inline-block mb-8">
-            <div className="p-3 sm:p-4 lg:p-6 bg-red-100 rounded-full shadow-2xl animate-pulse">
-              <ExclamationTriangleIcon className="w-16 h-16 text-red-600" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg border p-8 text-center max-w-md mx-auto">
+          <div className="relative inline-block mb-6">
+            <div className="p-4 bg-red-100 rounded-full shadow-lg">
+              <ExclamationTriangleIcon className="w-12 h-12 text-red-600" />
             </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#1e5987] rounded-full animate-ping"></div>
           </div>
-          <h3 className="text-3xl font-black text-red-600 mb-4">
+          <h3 className="text-2xl font-bold text-red-600 mb-3">
             Erreur de chargement
           </h3>
-          <p className="text-slate-600 text-lg mb-8">{error || "Impossible de charger les détails de l'entreprise"}</p>
+          <p className="text-slate-600 text-base mb-6">{error || "Impossible de charger les détails de l'entreprise"}</p>
           <button
             onClick={onBack}
-            className="px-8 py-4 bg-[#1e5987] text-white font-black rounded-3xl shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 text-lg"
+            className="px-6 py-3 bg-[#2d85c9] text-white font-bold rounded-xl shadow-lg hover:bg-[#2563a3] transition-all duration-200 text-base"
           >
-            <div className="flex items-center space-x-3">
-              <ArrowLeftIcon className="w-6 h-6" />
+            <div className="flex items-center space-x-2">
+              <ArrowLeftIcon className="w-5 h-5" />
               <span>Retour à la liste</span>
             </div>
           </button>
@@ -417,19 +438,19 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
               
               <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
                 <div className="relative">
-                  <div className="p-3 sm:p-4 bg-[#1e5987] rounded-3xl shadow-xl">
-                    <BuildingOfficeIcon className="w-8 h-8 text-white" />
+                  <div className="p-3 sm:p-4 bg-[#2d85c9] rounded-3xl shadow-xl">
+                    <BuildingOfficeIcon className="w-10 h-10 text-white" />
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#1e5987] rounded-full animate-pulse"></div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#2d85c9] rounded-full animate-pulse"></div>
                 </div>
                 
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#1e5987] break-words">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2d85c9] break-words">
                     {entreprise.nom || 'Entreprise'}
                   </h1>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
-                    <div className="px-3 py-1 bg-[#1e5987]/10 rounded-full border border-[#1e5987]/30">
-                      <span className="text-[#1e5987] font-semibold text-sm">Réf: {entreprise.reference}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+                    <div className="px-4 py-2 bg-[#2d85c9]/10 rounded-full border border-[#2d85c9]/30">
+                      <span className="text-[#2d85c9] font-semibold text-base">Réf: {entreprise.reference}</span>
                     </div>
                     {getStatusBadge(entreprise.statutCreation || 'EN_COURS')}
                   </div>
@@ -442,67 +463,82 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
       </div>
 
       {/* Contenu principal moderne */}
-      <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4 py-4 sm:py-6 lg:py-8 w-full">
-        <div className="grid grid-cols-1 2xl:grid-cols-3 gap-4 lg:gap-6 w-full min-w-0">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 w-full">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 w-full min-w-0">
           
           {/* Colonne principale */}
-          <div className="2xl:col-span-2 space-y-8">
+          <div className="xl:col-span-2 space-y-4">
             
             {/* Informations générales modernisées */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-4 sm:p-6 lg:p-8">
-              <div className="flex items-center mb-4 sm:mb-6 lg:mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
                   <BuildingOfficeIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
+                <h2 className="text-xl font-bold text-[#2d85c9]">
                   Informations générales
                 </h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🏢</span>
-                    <span>Nom de l'entreprise</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <BuildingOfficeIcon className="w-4 h-4" />
+                    <span>{entreprise.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'Nom du gérant' : 'Nom de l\'entreprise'}</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800 break-words">{entreprise.nom}</p>
+                  <p className="text-base font-semibold text-slate-800 break-words">
+                    {entreprise.nom || (() => {
+                      const gerant = entreprise.membres?.find(m => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+                      return gerant ? `${gerant.prenom} ${gerant.nom}` : 'Non renseigné';
+                    })()}
+                  </p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🏷️</span>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <TagIcon className="w-4 h-4" />
                     <span>Sigle</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800 break-words">{entreprise.sigle || 'Non spécifié'}</p>
+                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.sigle || 'Non spécifié'}</p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">⚖️</span>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <ScaleIcon className="w-4 h-4" />
                     <span>Forme juridique</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800 break-words">{entreprise.formeJuridique}</p>
+                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.formeJuridique}</p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🏭</span>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <BuildingLibraryIcon className="w-4 h-4" />
                     <span>Type d'entreprise</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800 break-words">{entreprise.typeEntreprise}</p>
+                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.typeEntreprise}</p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🎯</span>
-                    <span>Domaine d'activité</span>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <BriefcaseIcon className="w-4 h-4" />
+                    <span>Activité principale</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800 break-words">{entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr || 'Non spécifié'}</p>
+                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr || 'Non spécifié'}</p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">📊</span>
+                {(entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr) && (
+                  <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                      <BriefcaseIcon className="w-4 h-4" />
+                      <span>Activité secondaire</span>
+                    </label>
+                    <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr}</p>
+                  </div>
+                )}
+                
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <ChartBarIcon className="w-4 h-4" />
                     <span>Statut</span>
                   </label>
                   <div className="mt-1">
@@ -510,14 +546,20 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                   </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Étape de validation</label>
-                  <p className="mt-1 text-sm text-gray-900">{entreprise.etapeValidation}</p>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <ArrowPathIcon className="w-4 h-4" />
+                    <span>Étape de validation</span>
+                  </label>
+                  <p className="text-base font-semibold text-slate-800">{entreprise.etapeValidation}</p>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-500">Statuts de société</label>
-                  <p className="mt-1 text-sm text-gray-900">
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <DocumentDuplicateIcon className="w-4 h-4" />
+                    <span>Statuts de société</span>
+                  </label>
+                  <p className="text-base font-semibold text-slate-800">
                     {entreprise.statutSociete ? 'Oui' : 'Non'}
                   </p>
                 </div>
@@ -525,80 +567,82 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
             </div>
 
             {/* Localisation modernisée */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-8">
-              <div className="flex items-center mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
                   <MapPinIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
+                <h2 className="text-xl font-bold text-[#2d85c9]">
                   Localisation
                 </h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 hover:border-[#1e5987] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🔢</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <IdentificationIcon className="w-4 h-4" />
                     <span>Code division</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800">{entreprise.divisionCode}</p>
+                  <p className="text-base font-semibold text-slate-800">{entreprise.divisionCode}</p>
                 </div>
                 
-                <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-violet-200 hover:border-[#412a6c] transition-all duration-300">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                    <span className="text-lg">🏙️</span>
+                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <BuildingOfficeIcon className="w-4 h-4" />
                     <span>Division</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800">{entreprise.divisionNom}</p>
+                  <p className="text-base font-semibold text-slate-800">{entreprise.divisionNom}</p>
                 </div>
                 
                 {entreprise.regionNom && (
-                  <div className="group p-3 sm:p-4 lg:p-6 bg-slate-50 rounded-2xl border-2 border-primary-200 hover:border-[#412a6c] transition-all duration-300">
-                    <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                      <span className="text-lg">🗺️</span>
+                  <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                      <MapIcon className="w-4 h-4" />
                       <span>Région</span>
                     </label>
-                    <p className="text-lg font-semibold text-slate-800">{entreprise.regionNom}</p>
+                    <p className="text-base font-semibold text-slate-800">{entreprise.regionNom}</p>
                   </div>
                 )}
                 
                 {entreprise.quartierNom && (
-                  <div className="group p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-[#412a6c]/50 to-[#412a6c]/20 rounded-2xl border-2 border-[#412a6c]/50 hover:border-[#412a6c] transition-all duration-300">
-                    <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-3">
-                      <span className="text-lg">�️</span>
+                  <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                      <HomeIcon className="w-4 h-4" />
                       <span>Quartier</span>
                     </label>
-                    <p className="text-lg font-semibold text-slate-800">{entreprise.quartierNom}</p>
+                    <p className="text-base font-semibold text-slate-800">{entreprise.quartierNom}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Membres modernisés */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-8">
-              <div className="flex items-center mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
                   <UserGroupIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
+                <h2 className="text-xl font-bold text-[#2d85c9]">
                   Membres ({entreprise.membres.length})
                 </h2>
               </div>
               
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {entreprise.membres.map((membre, index) => (
-                  <div key={index} className="bg-white rounded-3xl border-2 border-slate-200 p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-                      <div className="flex items-center space-x-4 mb-4 lg:mb-0">
-                        <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg">
-                          <span className="text-white text-2xl">
-                            {isPersonneMorale(membre) ? '🏢' : '👤'}
-                          </span>
+                  <div key={index} className="bg-white rounded-xl border border-slate-200 p-4 shadow-md hover:shadow-lg transition-all duration-200">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3">
+                      <div className="flex items-center space-x-3 mb-3 lg:mb-0">
+                        <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg">
+                          {isPersonneMorale(membre) ? (
+                            <BuildingOfficeIcon className="w-8 h-8 text-white" />
+                          ) : (
+                            <UserCircleIcon className="w-8 h-8 text-white" />
+                          )}
                         </div>
                         <div>
                           {isPersonneMorale(membre) ? (
                             <div>
-                              <h3 className="text-xl font-black text-slate-800">
+                              <h3 className="text-lg font-bold text-slate-800">
                                 {membre.denominationEntreprise}
                               </h3>
                               <p className="text-sm text-slate-600 font-medium">
@@ -606,16 +650,16 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                               </p>
                             </div>
                           ) : (
-                            <h3 className="text-xl font-black text-slate-800">
+                            <h3 className="text-lg font-bold text-slate-800">
                               {membre.prenom} {membre.nom}
                             </h3>
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         {isPersonneMorale(membre) && (
-                          <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-bold bg-[#1e5987] text-white shadow-lg min-w-0 flex-shrink-0">
-                            <span className="mr-1 sm:mr-2">🏢</span>
+                          <span className="inline-flex items-center px-2 py-1 rounded-lg text-sm font-bold bg-[#2d85c9] text-white shadow min-w-0 flex-shrink-0">
+                            <BuildingOfficeIcon className="w-4 h-4 mr-1" />
                             Personne Morale
                           </span>
                         )}
@@ -623,38 +667,38 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mt-4 sm:mt-6">
-                      <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                        <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                          <span>📊</span>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-3">
+                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                        <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                          <ChartBarIcon className="w-3 h-3" />
                           <span>Parts</span>
                         </label>
-                        <p className="text-lg font-bold text-slate-800">{membre.pourcentageParts}%</p>
+                        <p className="text-sm font-bold text-slate-800">{membre.pourcentageParts}%</p>
                       </div>
                       
                       {isPersonneMorale(membre) ? (
                         <>
                           {/* Champs spécifiques aux personnes morales */}
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-200">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>🏢</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <BuildingOfficeIcon className="w-3 h-3" />
                               <span>Dénomination</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{membre.denominationEntreprise}</p>
                           </div>
                           
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>🌍</span>
-                              <span>Pays émission RCCM</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <GlobeAltIcon className="w-3 h-3" />
+                              <span>Pays RCCM</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{membre.paysEmissionRccm}</p>
                           </div>
                           
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>👤</span>
-                              <span>Représentant légal</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <UserCircleIcon className="w-3 h-3" />
+                              <span>Représentant</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{membre.prenom} {membre.nom}</p>
                           </div>
@@ -662,44 +706,44 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                       ) : (
                         <>
                           {/* Champs spécifiques aux personnes physiques */}
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-300">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>📧</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <EnvelopeIcon className="w-3 h-3" />
                               <span>Email</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{membre.email || 'Non renseigné'}</p>
                           </div>
                           
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-300">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>📞</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <PhoneIcon className="w-3 h-3" />
                               <span>Téléphone</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{membre.telephone || 'Non renseigné'}</p>
                           </div>
                           
                           {membre.telephone2 && (
-                            <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-300">
-                              <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                                <span>📱</span>
-                                <span>Téléphone 2</span>
+                            <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                              <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                <DevicePhoneMobileIcon className="w-3 h-3" />
+                                <span>Tél 2</span>
                               </label>
                               <p className="text-sm font-semibold text-slate-800 break-words">{membre.telephone2}</p>
                             </div>
                           )}
                           
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>🎂</span>
-                              <span>Date de naissance</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <CakeIcon className="w-3 h-3" />
+                              <span>Naissance</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">{formatDate(membre.dateNaissance)}</p>
                           </div>
                           
-                          <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <label className="flex items-center space-x-2 text-xs font-bold text-[#1e5987] mb-2">
-                              <span>💑</span>
-                              <span>Situation matrimoniale</span>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                            <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                              <HeartIcon className="w-3 h-3" />
+                              <span>Situation</span>
                             </label>
                             <p className="text-sm font-semibold text-slate-800 break-words">
                               {membre.situationMatrimonialeStr === 'MARIE' ? 'Marié(e)' : 
@@ -734,27 +778,27 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
             </div>
 
             {/* Documents modernisés */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-8">
-              <div className="flex items-center mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
                   <DocumentTextIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
+                <h2 className="text-xl font-bold text-[#2d85c9]">
                   Documents ({documents.length})
                 </h2>
               </div>
               
               {documents.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-3">
                   {Object.entries(groupDocumentsByType(documents)).map(([typeName, docs]) => (
-                    <div key={typeName} className="bg-white rounded-3xl border-2 border-slate-200 p-3 sm:p-4 lg:p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <div key={typeName} className="bg-white rounded-xl border border-slate-200 p-3 shadow-md hover:shadow-lg transition-all duration-200">
                       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-                            <div className="p-2 bg-[#1e5987] rounded-xl shadow-lg">
-                              <span className="text-white text-lg">📄</span>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <div className="p-2 bg-[#2d85c9] rounded-lg shadow">
+                              <DocumentTextIcon className="w-4 h-4 text-white" />
                             </div>
-                            <h3 className="text-lg sm:text-xl font-black text-slate-800 break-words">
+                            <h3 className="text-base font-bold text-slate-800 break-words">
                               {typeName}
                               {docs.length > 1 && (
                                 <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -795,7 +839,7 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                                       doc.id, 
                                       typeName
                                     )}
-                                    className="group px-4 py-2 bg-[#1e5987] text-white text-sm font-bold rounded-lg shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                                    className="group px-4 py-2 bg-[#2d85c9] hover:bg-[#2563a3] text-white text-base font-bold rounded-lg shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                                   >
                                     <div className="flex items-center space-x-2">
                                       <EyeIcon className="w-4 h-4" />
@@ -807,7 +851,7 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                                       doc.id, 
                                       typeName
                                     )}
-                                    className="group px-4 py-2 bg-gradient-to-r from-primary-600 to-violet-700 text-white text-sm font-bold rounded-lg shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                                    className="group px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-base font-bold rounded-lg shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                                   >
                                     <div className="flex items-center space-x-2">
                                       <ArrowDownTrayIcon className="w-4 h-4" />
@@ -827,15 +871,15 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
               ) : (
                 <div className="text-center py-16">
                   <div className="relative inline-block mb-8">
-                    <div className="p-8 bg-gradient-to-br from-primary-100 to-red-200 rounded-full shadow-2xl animate-pulse">
-                      <DocumentTextIcon className="w-16 h-16 text-primary-600" />
+                    <div className="p-8 bg-slate-100 rounded-full shadow-2xl animate-pulse">
+                      <DocumentTextIcon className="w-16 h-16 text-slate-400" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-primary-400 to-red-500 rounded-full animate-ping"></div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#2d85c9] rounded-full animate-ping"></div>
                   </div>
-                  <h3 className="text-2xl font-black bg-gradient-to-r from-primary-600 to-red-600 bg-clip-text text-transparent mb-4">
+                  <h3 className="text-3xl font-black text-slate-700 mb-4">
                     Aucun document disponible
                   </h3>
-                  <p className="text-slate-500 text-lg">Les documents de l'entreprise apparaîtront ici</p>
+                  <p className="text-slate-500 text-xl">Les documents de l'entreprise apparaîtront ici</p>
                 </div>
               )}
             </div>
@@ -845,57 +889,57 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
           <div className="space-y-6">
             
             {/* Informations système modernisées */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-4 sm:p-6 lg:p-8">
-              <div className="flex items-center mb-4 sm:mb-6 lg:mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
                   <CalendarIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
+                <h2 className="text-xl font-bold text-[#2d85c9]">
                   Informations système
                 </h2>
               </div>
               
-              <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-2">
-                    <span>🔖</span>
+              <div className="space-y-3">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <IdentificationIcon className="w-4 h-4" />
                     <span>Référence</span>
                   </label>
-                  <p className="text-lg font-mono font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-lg">
+                  <p className="text-base font-mono font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-lg">
                     {entreprise.reference}
                   </p>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-2">
-                    <span>📅</span>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <CalendarIcon className="w-4 h-4" />
                     <span>Date de création</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800">{formatDate(entreprise.creation)}</p>
+                  <p className="text-sm font-semibold text-slate-800">{formatDate(entreprise.creation)}</p>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-2">
-                    <span>🔄</span>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <ArrowPathIcon className="w-4 h-4" />
                     <span>Dernière modification</span>
                   </label>
-                  <p className="text-lg font-semibold text-slate-800">{formatDate(entreprise.modification)}</p>
+                  <p className="text-sm font-semibold text-slate-800">{formatDate(entreprise.modification)}</p>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#1e5987] mb-2">
-                    <span>🛡️</span>
-                    <span>Statut bannissement</span>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                    <ShieldCheckIcon className="w-4 h-4" />
+                    <span>Statut</span>
                   </label>
-                  <div className="mt-2">
+                  <div className="mt-1">
                     {entreprise.banni ? (
-                      <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-bold bg-red-500 text-white shadow-lg min-w-0 flex-shrink-0">
-                        <span className="mr-1 sm:mr-2">❌</span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-lg text-sm font-bold bg-red-500 text-white shadow min-w-0 flex-shrink-0">
+                        <XCircleIcon className="w-4 h-4 mr-1" />
                         Bannie
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-xl text-xs sm:text-sm font-bold bg-[#1e5987] text-white shadow-lg min-w-0 flex-shrink-0">
-                        <span className="mr-1 sm:mr-2">✅</span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-lg text-sm font-bold bg-green-600 text-white shadow min-w-0 flex-shrink-0">
+                        <CheckCircleIcon className="w-4 h-4 mr-1" />
                         Active
                       </span>
                     )}
@@ -903,94 +947,94 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                 </div>
                 
                 {entreprise.banni && entreprise.motifBannissement && (
-                  <div className="p-3 sm:p-4 bg-red-50 rounded-2xl border border-red-200">
+                  <div className="p-3 bg-red-50 rounded-xl border border-red-200">
                     <label className="flex items-center space-x-2 text-sm font-bold text-red-800 mb-2">
-                      <span>⚠️</span>
-                      <span>Motif bannissement</span>
+                      <ExclamationCircleIcon className="w-4 h-4" />
+                      <span>Motif</span>
                     </label>
-                    <p className="text-lg font-semibold text-slate-800">{entreprise.motifBannissement}</p>
+                    <p className="text-sm font-semibold text-slate-800">{entreprise.motifBannissement}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Résumé validation modernisé */}
-            <div className="bg-white rounded-3xl shadow-2xl border p-4 sm:p-6 lg:p-8">
-              <div className="flex items-center mb-4 sm:mb-6 lg:mb-8">
-                <div className="p-3 bg-[#1e5987] rounded-2xl shadow-lg mr-4">
-                  <IdentificationIcon className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-2xl shadow-lg border p-4">
+              <div className="flex items-center mb-4">
+                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
+                  <ChartBarIcon className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-[#1e5987]">
-                  Résumé validation
+                <h2 className="text-xl font-bold text-[#2d85c9]">
+                  Résumé
                 </h2>
               </div>
               
-              <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>📊</span>
-                      <span>Statut actuel</span>
+              <div className="space-y-2">
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <ChartBarIcon className="w-3 h-3" />
+                      <span>Statut</span>
                     </span>
                     {getStatusBadge(entreprise.statutCreation)}
                   </div>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-200">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>🎯</span>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <ArrowPathIcon className="w-3 h-3" />
                       <span>Étape</span>
                     </span>
-                    <span className="px-3 py-1 bg-[#1e5987] text-white font-bold rounded-xl text-sm">
+                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
                       {entreprise.etapeValidation}
                     </span>
                   </div>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-200">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>👥</span>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <UserGroupIcon className="w-3 h-3" />
                       <span>Membres</span>
                     </span>
-                    <span className="px-2 sm:px-3 py-1 bg-[#1e5987] text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg min-w-0 flex-shrink-0">
+                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
                       {entreprise.membres.length}
                     </span>
                   </div>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>📄</span>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <DocumentTextIcon className="w-3 h-3" />
                       <span>Documents</span>
                     </span>
-                    <span className="px-2 sm:px-3 py-1 bg-[#1e5987] text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg min-w-0 flex-shrink-0">
+                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
                       {documents.length}
                     </span>
                   </div>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-primary-300">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>👑</span>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <UserCircleIcon className="w-3 h-3" />
                       <span>Gérants</span>
                     </span>
-                    <span className="px-2 sm:px-3 py-1 bg-[#1e5987] text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg min-w-0 flex-shrink-0">
+                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
                       {entreprise.membres.filter(m => m.role === 'GERANT').length}
                     </span>
                   </div>
                 </div>
                 
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-violet-300">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                    <span className="flex items-center space-x-1 sm:space-x-2 text-sm font-bold text-[#1e5987] min-w-0 flex-1">
-                      <span>💯</span>
-                      <span>Total parts</span>
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                      <ChartBarIcon className="w-3 h-3" />
+                      <span>Parts</span>
                     </span>
-                    <span className="px-2 sm:px-3 py-1 bg-[#1e5987] text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg min-w-0 flex-shrink-0">
+                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
                       {entreprise.membres.reduce((sum, m) => sum + m.pourcentageParts, 0)}%
                     </span>
                   </div>

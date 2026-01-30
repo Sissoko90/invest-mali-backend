@@ -6,7 +6,11 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ChevronDownIcon,
-  XMarkIcon
+  XMarkIcon,
+  CpuChipIcon,
+  PencilSquareIcon,
+  CloudArrowDownIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { entreprisesAPI } from '../services/api';
@@ -560,10 +564,10 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="p-4 bg-gradient-to-br from-[#1e5987] to-primary-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+          <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
           </div>
-          <p className="text-slate-600 font-medium">Chargement des demandes T-COM...</p>
+          <p className="text-lg text-slate-600 font-medium">Chargement des demandes T-COM...</p>
         </div>
       </div>
     );
@@ -571,40 +575,40 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-[#1e5987] to-primary-600 rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
             <DocumentCheckIcon className="h-8 w-8 text-white" />
           </div>
           <div>
             <h2 className="text-2xl font-black text-slate-800">Étape T-COM</h2>
-            <p className="text-slate-600 font-medium">Traitement et communication - Génération RCCM pour entreprises individuelles</p>
+            <p className="text-lg text-slate-600 font-medium">Traitement et communication - Génération RCCM pour entreprises individuelles</p>
           </div>
         </div>
 
         {demandes.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-4 bg-gradient-to-br from-[#1e5987] to-primary-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
-            <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
-            <p className="text-slate-600 font-medium max-w-md mx-auto">
+            <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
+            <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">
               Il n'y a actuellement aucune entreprise à l'étape T-COM.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {demandes.map((demande) => (
-              <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
+                      <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
                         <DocumentCheckIcon className="h-6 w-6 text-white" />
                       </div>
                       <div>
                         <h3 className="text-xl font-black text-slate-800">{demande.nom}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-slate-600">
+                        <div className="flex items-center space-x-4 text-lg text-slate-600">
                           <span className="font-medium">Type: {demande.typeEntreprise}</span>
                           <span className="font-medium">Forme: {demande.formeJuridique}</span>
                           <span className="font-medium">Secteur: {demande.secteurActivite}</span>
@@ -615,8 +619,9 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                   
                   <div className="flex items-center space-x-3">
                     {demande.rccmGenerated && (
-                      <div className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-medium">
-                        ✅ RCCM Généré
+                      <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-lg font-medium flex items-center gap-2">
+                        <CheckCircleIcon className="h-5 w-5" />
+                        RCCM Généré
                       </div>
                     )}
                     
@@ -625,7 +630,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
-                      className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <EyeIcon className="h-5 w-5" />
                       <span>Voir détails</span>
@@ -641,7 +646,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       {/* Modal de détails */}
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-8xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black text-slate-800">Détails - {selectedDemande.nom}</h3>
@@ -658,22 +663,22 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
 
               {/* Génération RCCM automatique pour entreprises individuelles */}
               {canEdit && (selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && (
-                <div className="bg-gradient-to-r from-primary-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-primary-200 mb-6">
+                <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
-                      <span className="text-lg">🤖</span>
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                      <CpuChipIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Génération RCCM Automatique</h4>
                   </div>
                   
-                  <p className="text-slate-600 mb-4">
+                  <p className="text-lg text-slate-600 mb-4">
                     Pour les entreprises individuelles, vous pouvez générer automatiquement le numéro RCCM via l'API OHADA.
                   </p>
                   
                   <button
                     onClick={() => handleGenerateRCCM(selectedDemande.id)}
                     disabled={generatingRCCM === selectedDemande.id}
-                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-4 rounded-xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {generatingRCCM === selectedDemande.id ? (
                       <>
@@ -682,7 +687,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                       </>
                     ) : (
                       <>
-                        <span className="text-lg">🚀</span>
+                        <BoltIcon className="h-6 w-6" />
                         <span>Générer le RCCM automatiquement</span>
                       </>
                     )}
@@ -692,21 +697,21 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
 
               {/* Saisie manuelle RCCM pour sociétés */}
               {canEdit && (selectedDemande.typeEntreprise === 'SOCIETE' || selectedDemande.formeJuridique === 'SARL' || selectedDemande.formeJuridique === 'SA') && (
-                <div className="bg-gradient-to-r from-primary-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-primary-200 mb-6">
+                <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
-                      <span className="text-lg">📝</span>
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                      <PencilSquareIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Saisie Manuelle RCCM - Société</h4>
                   </div>
                   
-                  <p className="text-slate-600 mb-4">
+                  <p className="text-lg text-slate-600 mb-4">
                     Pour les sociétés, veuillez saisir manuellement le numéro RCCM obtenu du Tribunal de Commerce.
                   </p>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-lg font-medium text-gray-700 mb-2">
                         Numéro RCCM
                       </label>
                       <input
@@ -714,10 +719,10 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         value={manualRccmNumber}
                         onChange={(e) => setManualRccmNumber(e.target.value)}
                         placeholder="Ex: ML-BKO-01-2024-A-00123"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                        className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         disabled={savingManualRccm === selectedDemande.id}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500 mt-1">
                         Format: ML-[VILLE]-[SECTION]-[ANNÉE]-[TYPE]-[NUMÉRO]
                       </p>
                     </div>
@@ -726,7 +731,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                       <button
                         onClick={() => handleSaveManualRccm(selectedDemande.id)}
                         disabled={savingManualRccm === selectedDemande.id || !manualRccmNumber.trim()}
-                        className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {savingManualRccm === selectedDemande.id ? (
                           <>
@@ -735,7 +740,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                           </>
                         ) : (
                           <>
-                            <span className="text-lg">💾</span>
+                            <CloudArrowDownIcon className="h-5 w-5" />
                             <span>Sauvegarder le numéro RCCM</span>
                           </>
                         )}
@@ -743,9 +748,10 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     </div>
                     
                     {selectedDemande.rccmNumber && (
-                      <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
-                        <p className="text-primary-800 text-sm font-medium">
-                          ✅ Numéro RCCM enregistré: <span className="font-mono">{selectedDemande.rccmNumber}</span>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-blue-800 text-lg font-medium flex items-center gap-2">
+                          <CheckCircleIcon className="h-5 w-5" />
+                          Numéro RCCM enregistré: <span className="font-mono">{selectedDemande.rccmNumber}</span>
                         </p>
                       </div>
                     )}
@@ -755,10 +761,10 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
 
               {/* Actions finales */}
               {canEdit && (
-                <div className="bg-gradient-to-r from-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40">
+                <div className="bg-gradient-to-r from-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40">
                   <div className="flex items-center space-x-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
-                      <span className="text-lg">⚡</span>
+                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                      <BoltIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Actions finales</h4>
                   </div>
@@ -775,20 +781,20 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         handleFinaliserTCOM(selectedDemande.id, 'approuve', commentaire || undefined);
                       }}
                       disabled={(selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && !selectedDemande.rccmNumber}
-                      className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white px-8 py-4 rounded-2xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <CheckCircleIcon className="h-6 w-6" />
-                      <span>✅ Approuver et Transférer au RCCM</span>
+                      <span>Approuver et Transférer au RCCM</span>
                     </button>
                     
                     {/* Bouton de retour d'étape avec menu déroulant */}
                     <div className="relative flex-1">
                       <button
                         onClick={() => setShowRejectModal(true)}
-                        className="w-full bg-[#1e5987] text-white px-8 py-4 rounded-2xl hover:bg-[#2563a3] flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg"
                       >
                         <XMarkIcon className="h-6 w-6" />
-                        <span>❌ Rejeter et Retourner à RÉVISION</span>
+                        <span>Rejeter et Retourner à RÉVISION</span>
                       </button>
                       
                     </div>
@@ -806,7 +812,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800">Motif de rejet</h3>
+                <h3 className="text-xl font-bold text-gray-800">Motif de rejet</h3>
                 <button
                   onClick={() => {
                     setShowRejectModal(false);
@@ -821,7 +827,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             </div>
             
             <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-lg text-gray-600 mb-4">
                 Sélectionnez le motif de retour à l'étape RÉVISION :
               </p>
               
@@ -834,23 +840,23 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                       value={reason}
                       checked={selectedRejectReason === reason}
                       onChange={(e) => setSelectedRejectReason(e.target.value)}
-                      className="text-[#1e5987] focus:ring-[#1e5987]"
+                      className="text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">{reason}</span>
+                    <span className="text-lg text-gray-700">{reason}</span>
                   </label>
                 ))}
               </div>
               
               {selectedRejectReason === 'Autres' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-gray-700 mb-2">
                     Précisez le motif :
                   </label>
                   <textarea
                     value={customRejectReason}
                     onChange={(e) => setCustomRejectReason(e.target.value)}
                     placeholder="Saisissez le motif de rejet..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] resize-none"
+                    className="w-full px-3 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     rows={3}
                   />
                 </div>
@@ -863,7 +869,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     setSelectedRejectReason('');
                     setCustomRejectReason('');
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Annuler
                 </button>
@@ -878,7 +884,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     }
                   }}
                   disabled={!selectedRejectReason || (selectedRejectReason === 'Autres' && !customRejectReason.trim())}
-                  className="flex-1 px-4 py-2 bg-[#1e5987] text-white rounded-lg hover:bg-[#2563a3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
                 >
                   Confirmer le rejet
                 </button>

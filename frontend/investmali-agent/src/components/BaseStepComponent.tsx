@@ -59,16 +59,16 @@ const BaseStepComponent: React.FC<BaseStepProps> = ({
         
         return {
           id: entreprise.id,
-          nom: entreprise.nom || 'Nom inconnu',
+          nom: entreprise.nom || 'Nom non renseinger',
           sigle: entreprise.sigle || '',
           formeJuridique: entreprise.formeJuridique || entreprise.forme_juridique || 'Non spécifiée',
           typeEntreprise: entreprise.typeEntreprise || entreprise.type_entreprise || 'Non spécifié',
           dateCreation: entreprise.dateCreation || entreprise.date_creation || new Date().toISOString(),
           statut: entreprise.statut || 'EN_COURS',
           demandeur: {
-            nom: gerantPersonne.nom || 'Nom inconnu',
-            prenom: gerantPersonne.prenom || 'Prénom inconnu',
-            email: gerantPersonne.email || 'Email inconnu',
+            nom: gerantPersonne.nom || 'Nom non renseinger',
+            prenom: gerantPersonne.prenom || 'Prénom non renseinger',
+            email: gerantPersonne.email || 'Email non renseinger',
             telephone: gerantPersonne.telephone1 || gerantPersonne.telephone || 'Téléphone inconnu'
           },
           etapeActuelle: stepName,

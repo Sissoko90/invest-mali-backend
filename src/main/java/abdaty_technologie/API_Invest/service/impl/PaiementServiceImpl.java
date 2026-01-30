@@ -294,15 +294,21 @@ public class PaiementServiceImpl implements IPaiementService {
         
         List<PaiementResponse> allPayments = new ArrayList<>();
         
-        // 1. Récupérer les paiements de l'ancienne table "paiement" (ESPECES, etc.)
-        List<Paiement> paiements = paiementRepository.findByStatutWithRelations(statut);
-        System.out.println("✅ [PaiementService] " + paiements.size() + " paiements trouvés dans table 'paiement' avec statut " + statut);
-        
-        // Convertir les anciens paiements
-        List<PaiementResponse> oldPayments = paiements.stream()
-                .map(this::convertirEnResponse)
-                .collect(Collectors.toList());
-        allPayments.addAll(oldPayments);
+        try {
+            // 1. Récupérer les paiements de l'ancienne table "paiement" (ESPECES, etc.)
+            List<Paiement> paiements = paiementRepository.findByStatutWithRelations(statut);
+            System.out.println("✅ [PaiementService] " + paiements.size() + " paiements trouvés dans table 'paiement' avec statut " + statut);
+            
+            // Convertir les anciens paiements
+            List<PaiementResponse> oldPayments = paiements.stream()
+                    .map(this::convertirEnResponse)
+                    .collect(Collectors.toList());
+            allPayments.addAll(oldPayments);
+        } catch (Exception e) {
+            System.err.println("❌ [PaiementService] Erreur lors de la récupération des paiements anciens: " + e.getMessage());
+            e.printStackTrace();
+            // Continuer avec une liste vide pour les anciens paiements
+        }
         
         // 2. Récupérer les paiements TresorPay de la nouvelle table "payments" avec statut PAID
         if (statut == StatutPaiement.VALIDE) {

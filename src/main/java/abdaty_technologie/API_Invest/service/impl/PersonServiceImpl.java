@@ -506,6 +506,13 @@ public class PersonServiceImpl implements PersonService {
         personsRepository.delete(p);
     }
 
+    @Override
+    public PersonResponse findByTelephone(String telephone) {
+        Persons p = personsRepository.findByTelephone1(telephone)
+            .orElseThrow(() -> new NotFoundException("Personne introuvable avec ce numéro de téléphone"));
+        return toResponse(p);
+    }
+
     private PersonResponse toResponse(Persons p) {
         PersonResponse r = new PersonResponse();
         r.id = p.getId();

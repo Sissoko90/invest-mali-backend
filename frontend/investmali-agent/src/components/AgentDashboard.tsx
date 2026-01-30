@@ -137,7 +137,7 @@ const AgentDashboard: React.FC = () => {
         // Mapper les données réelles
         const mappedApps = assignedApps.map((app: any) => ({
           id: app.id,
-          companyName: app.nom || app.companyName || 'Entreprise Inconnue',
+          companyName: app.nom || app.companyName || 'Entreprise non renseinger',
           legalForm: app.formeJuridique || 'SARL',
           applicantName: 'Demandeur',
           applicantEmail: 'email@example.com',
@@ -264,7 +264,7 @@ const AgentDashboard: React.FC = () => {
         // Convertir les données API en format agent
         const agentApplications: BusinessApplication[] = response.data.applications.map((app: any) => ({
           id: app.id,
-          companyName: app.companyName || app.nom || 'Entreprise Inconnue',
+          companyName: app.companyName || app.nom || 'Entreprise non renseinger',
           legalForm: app.formeJuridique || 'SARL',
           applicantName: 'Demandeur', // À récupérer depuis les membres si disponible
           applicantEmail: 'email@example.com', // À récupérer depuis les membres si disponible

@@ -389,9 +389,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           etapeValidation: decision === 'approuve' ? 'TCOM' : 'ACCUEIL' 
         });
       }
-
-      // Afficher un message de succès
-      alert(`Révision finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM Phase 1.' : 'Entreprise retournée à l\'étape l\'accueil.'}`);
       
     } catch (error) {
       console.error('❌ [RevisionStep] Erreur lors de la finalisation:', error);
@@ -464,12 +461,14 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <span className="bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              🔍 Étape REVISION
+            <span className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
+              <DocumentMagnifyingGlassIcon className="h-5 w-5" />
+              Étape REVISION
             </span>
             {!canEdit && (
-              <span className="bg-gradient-to-r from-gray-500 to-slate-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-                👁️ Lecture seule
+              <span className="bg-gradient-to-r from-gray-500 to-slate-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
+                <EyeSlashIcon className="h-5 w-5" />
+                Lecture seule
               </span>
             )}
           </div>
@@ -483,28 +482,28 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('demandes')}
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
+              className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 ${
                 activeTab === 'demandes'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  ? 'border-sky-600 text-sky-700 shadow-lg'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <BuildingOfficeIcon className="h-5 w-5" />
-                <span>📋 Demandes à Réviser ({demandes.length})</span>
+                <span>Demandes à Réviser ({demandes.length})</span>
               </div>
             </button>
             <button
               onClick={() => setActiveTab('documents')}
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
+              className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 ${
                 activeTab === 'documents'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
+                  ? 'border-sky-600 text-sky-700 shadow-lg'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <DocumentTextIcon className="h-5 w-5" />
-                <span>📄 Documents Révisés</span>
+                <span>Documents Révisés</span>
               </div>
             </button>
           </nav>
@@ -516,40 +515,40 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="space-y-4">
               {isLoading ? (
                 <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
+                  <div className="p-4 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
                     <ClockIcon className="h-8 w-8 text-white mx-auto" />
                   </div>
-                  <p className="text-slate-600 font-medium">Chargement des demandes...</p>
+                  <p className="text-lg text-slate-600 font-medium">Chargement des demandes...</p>
                 </div>
               ) : demandes.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+                  <div className="p-4 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
                     <DocumentCheckIcon className="h-12 w-12 text-white mx-auto" />
                   </div>
-                  <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à réviser</h3>
-                  <p className="text-slate-600 font-medium max-w-md mx-auto">Toutes les demandes ont été traitées ou aucune n'est encore arrivée à l'étape de révision.</p>
+                  <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à réviser</h3>
+                  <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">Toutes les demandes ont été traitées ou aucune n'est encore arrivée à l'étape de révision.</p>
                 </div>
               ) : (
                 demandes.map((demande) => (
-                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
+                        <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg">
                           <BuildingOfficeIcon className="h-6 w-6 text-white" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
-                          <p className="text-sm text-slate-600 font-medium">
+                          <h3 className="text-xl font-black text-slate-800">{demande.nom}</h3>
+                          <p className="text-lg text-slate-600 font-medium">
                             {demande.typeEntreprise} • {demande.secteurActivite}
                           </p>
                           <div className="flex items-center space-x-4 mt-2">
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
-                              <span className="text-xs text-slate-600 font-bold">
+                              <span className="text-sm text-slate-600 font-bold">
                                 ID: {demande.id}
                               </span>
                             </div>
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
-                              <span className="text-xs text-slate-600 font-bold">
+                              <span className="text-sm text-slate-600 font-bold">
                                 Transféré le: {demande.dateTransitionRevision ? new Date(demande.dateTransitionRevision).toLocaleDateString('fr-FR') : 'N/A'}
                               </span>
                             </div>
@@ -557,35 +556,37 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end space-y-3">
-                        <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-lg ${getStatutColor(demande.statutRevision || 'en_cours')}`}>
-                          {demande.statutRevision === 'en_cours' ? '🔍 En cours de révision' : 
-                           demande.statutRevision === 'complete' ? '✅ Révision terminée' : 
-                           demande.statutRevision === 'rejete' ? '❌ Rejeté' : '⏳ En attente'}
+                        <span className={`px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${getStatutColor(demande.statutRevision || 'en_cours')}`}>
+                          {demande.statutRevision === 'en_cours' ? 'En cours de révision' : 
+                           demande.statutRevision === 'complete' ? 'Révision terminée' : 
+                           demande.statutRevision === 'rejete' ? 'Rejeté' : 'En attente'}
                         </span>
                         <button
                           onClick={() => {
                             setSelectedDemande(demande);
                             setShowDetails(true);
                           }}
-                          className="bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-[#412A5C] transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold"
+                          className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold text-lg"
                         >
-                          <EyeIcon className="h-4 w-4" />
-                          <span>👁️ Réviser</span>
+                          <EyeIcon className="h-5 w-5" />
+                          <span>Réviser</span>
                         </button>
                       </div>
                     </div>
                     
                     {/* Affichage du motif de rejet en priorité, sinon note du régisseur */}
                     {demande.motifRejet ? (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-red-50 rounded-xl border border-red-200 shadow-lg">
-                        <p className="text-sm text-red-800 font-medium">
-                          <span className="font-black">⚠️ Motif de rejet:</span> {demande.motifRejet}
+                      <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-red-50 rounded-xl border border-red-200 shadow-lg flex items-start gap-2">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-lg text-red-800 font-medium">
+                          <span className="font-black">Motif de rejet:</span> {demande.motifRejet}
                         </p>
                       </div>
                     ) : demande.noteRegisseur && (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl border border-primary-200 shadow-lg">
-                        <p className="text-sm text-primary-800 font-medium">
-                          <span className="font-black">💬 Note du régisseur:</span> {demande.noteRegisseur}
+                      <div className="mt-4 p-4 bg-gradient-to-r from-sky-50 to-sky-50 rounded-xl border border-sky-200 shadow-lg flex items-start gap-2">
+                        <DocumentTextIcon className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-lg text-sky-800 font-medium">
+                          <span className="font-black">Note du régisseur:</span> {demande.noteRegisseur}
                         </p>
                       </div>
                     )}
@@ -598,14 +599,14 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           {/* Tab Documents */}
           {activeTab === 'documents' && (
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-[#1e5987]/10 to-primary-50/50 rounded-2xl p-6 border border-[#412A5C]/20">
+              <div className="bg-gradient-to-r from-sky-50/50 to-blue-50/50 rounded-2xl p-6 border border-sky-200">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
+                  <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
                     <DocumentTextIcon className="h-6 w-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-800">Entreprises Post-Révision</h3>
-                    <p className="text-slate-600 font-medium">Entreprises ayant dépassé l'étape de révision</p>
+                    <p className="text-lg text-slate-600 font-medium">Entreprises ayant dépassé l'étape de révision</p>
                   </div>
                 </div>
 
@@ -619,13 +620,13 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl flex items-center justify-center shadow-lg">
+                              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
                                 <BuildingOfficeIcon className="h-6 w-6 text-white" />
                               </div>
                             </div>
                             <div className="flex-1">
-                              <h4 className="text-lg font-bold text-slate-800">{entreprise.nom}</h4>
-                              <div className="flex items-center space-x-4 text-sm text-slate-600">
+                              <h4 className="text-xl font-bold text-slate-800">{entreprise.nom}</h4>
+                              <div className="flex items-center space-x-4 text-lg text-slate-600">
                                 <span className="flex items-center space-x-1">
                                   <UserIcon className="h-4 w-4" />
                                   <span>ID: {entreprise.id}</span>
@@ -640,8 +641,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                           
                           <div className="flex items-center space-x-3">
                             {/* Juste un badge simple avec l'étape actuelle */}
-                            <div className="px-3 py-1 bg-gradient-to-r from-primary-50 to-primary-50 rounded-lg border border-primary-200">
-                              <span className="text-sm font-bold text-primary-700">
+                            <div className="px-3 py-1 bg-gradient-to-r from-green-50 to-green-50 rounded-lg border border-green-200">
+                              <span className="text-lg font-bold text-green-700">
                                 Étape: {entreprise.etapeActuelle || 'TERMINÉ'}
                               </span>
                             </div>
@@ -654,8 +655,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   {entreprisesPostRevision.length === 0 && (
                     <div className="text-center py-8">
                       <DocumentMagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium text-gray-700 mb-2">Aucune entreprise trouvée</h4>
-                      <p className="text-gray-500">Aucune entreprise n'a encore dépassé l'étape de révision.</p>
+                      <h4 className="text-xl font-medium text-gray-700 mb-2">Aucune entreprise trouvée</h4>
+                      <p className="text-lg text-gray-500">Aucune entreprise n'a encore dépassé l'étape de révision.</p>
                     </div>
                   )}
                 </div>
@@ -668,7 +669,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       {/* Modal de détails */}
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-8xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-white/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -692,10 +693,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="p-6">
               {/* Section Informations de l'Entreprise */}
               <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                  <span className="text-lg">🏢</span>
+                <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                  <BuildingOfficeIcon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-black text-slate-800">Informations de l'Entreprise</h3>
+                <h3 className="text-xl font-black text-slate-800">Informations de l'Entreprise</h3>
               </div>
               
               <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl mb-8">
@@ -704,19 +705,19 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Nom de l'entreprise</label>
-                      <p className="text-lg font-black text-slate-800">{selectedDemande.nom}</p>
+                      <p className="text-xl font-black text-slate-800">{selectedDemande.nom}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Type d'entreprise</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.typeEntreprise}</p>
+                      <p className="text-lg font-medium text-slate-700">{selectedDemande.typeEntreprise}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Forme juridique</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.formeJuridique}</p>
+                      <p className="text-lg font-medium text-slate-700">{selectedDemande.formeJuridique}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Secteur d'activité</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.secteurActivite}</p>
+                      <p className="text-lg font-medium text-slate-700">{selectedDemande.secteurActivite}</p>
                     </div>
                   </div>
                   
@@ -724,21 +725,22 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Référence</label>
-                      <p className="text-base font-mono font-medium text-slate-700">{selectedDemande.reference}</p>
+                      <p className="text-lg font-mono font-medium text-slate-700">{selectedDemande.reference}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Date de création</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.dateCreation}</p>
+                      <p className="text-lg font-medium text-slate-700">{selectedDemande.dateCreation}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Créé par</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.createur?.nom} {selectedDemande.createur?.prenom}</p>
+                      <p className="text-lg font-medium text-slate-700">{selectedDemande.createur?.nom} {selectedDemande.createur?.prenom}</p>
                       <p className="text-sm text-slate-500">{selectedDemande.createur?.email}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Statut</label>
-                      <span className="inline-block px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800">
-                        🔍 {selectedDemande.statutRevision}
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg text-lg font-bold bg-gradient-to-r from-sky-100 to-sky-200 text-sky-800">
+                        <DocumentMagnifyingGlassIcon className="h-5 w-5" />
+                        {selectedDemande.statutRevision}
                       </span>
                     </div>
                   </div>
@@ -752,14 +754,14 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {selectedDemande.participants.map((participant: any, index: number) => (
                         <div key={index} className="bg-white/60 rounded-xl p-4 border border-white/40">
                           <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-lg">
-                              <span className="text-white text-sm">👤</span>
+                            <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg">
+                              <UserIcon className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-bold text-slate-800">{participant.nom} {participant.prenom}</p>
+                              <p className="text-lg font-bold text-slate-800">{participant.nom} {participant.prenom}</p>
                               <p className="text-sm text-slate-600">{participant.role}</p>
                               {participant.pourcentageParts && selectedDemande.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
-                                <p className="text-xs text-slate-500">{participant.pourcentageParts}% des parts</p>
+                                <p className="text-sm text-slate-500">{participant.pourcentageParts}% des parts</p>
                               )}
                             </div>
                           </div>
@@ -772,36 +774,36 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
               {/* Section Documents */}
               <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                  <span className="text-lg">📄</span>
+                <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                  <DocumentTextIcon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-lg font-black text-slate-800">Documents à Réviser</h3>
+                <h3 className="text-xl font-black text-slate-800">Documents à Réviser</h3>
               </div>
               
               <div className="space-y-4">
                 {selectedDemande.documents && selectedDemande.documents.length > 0 ? (
                   selectedDemande.documents.map((document) => (
-                  <div key={document.id} className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <div key={document.id} className="bg-gradient-to-r from-white/90 via-slate-50/70 to-sky-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
+                        <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
                           <DocumentTextIcon className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h4 className="font-black text-slate-800">{document.nom}</h4>
+                          <h4 className="text-lg font-black text-slate-800">{document.nom}</h4>
                           <p className="text-sm text-slate-600 font-medium">Type: {document.type}</p>
                         </div>
                       </div>
-                      <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-lg ${getStatutColor(document.statut)}`}>
-                        {document.statut === 'en_attente' ? '⏳ En attente' :
-                         document.statut === 'approuve' ? '✅ Approuvé' : '❌ Rejeté'}
+                      <span className={`px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${getStatutColor(document.statut)}`}>
+                        {document.statut === 'en_attente' ? 'En attente' :
+                         document.statut === 'approuve' ? 'Approuvé' : 'Rejeté'}
                       </span>
                     </div>
 
                     {document.commentaire && (
-                      <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl border border-primary-200 shadow-lg">
-                        <p className="text-sm text-primary-800 font-medium">
-                          <span className="font-black">💬 Commentaire:</span> {document.commentaire}
+                      <div className="mb-4 p-4 bg-gradient-to-r from-sky-50 to-sky-50 rounded-xl border border-sky-200 shadow-lg">
+                        <p className="text-lg text-sky-800 font-medium">
+                          <span className="font-black">Commentaire:</span> {document.commentaire}
                         </p>
                       </div>
                     )}
@@ -810,10 +812,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {/* Bouton Visualiser - toujours disponible */}
                       <button
                         onClick={() => handleViewDocument(document, selectedDemande.id)}
-                        className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                        className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                       >
-                        <EyeIcon className="h-4 w-4" />
-                        <span>👁️ Visualiser</span>
+                        <EyeIcon className="h-5 w-5" />
+                        <span>Visualiser</span>
                       </button>
                       
                       {/* Boutons d'action - seulement si éditable et en attente */}
@@ -821,20 +823,20 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <>
                           <button
                             onClick={() => handleRevisionDocument(selectedDemande.id, document.id, 'approuve')}
-                            className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                            className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-xl text-lg hover:from-green-700 hover:to-green-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                           >
-                            <CheckCircleIcon className="h-4 w-4" />
-                            <span>✅ Approuver</span>
+                            <CheckCircleIcon className="h-5 w-5" />
+                            <span>Approuver</span>
                           </button>
                           <button
                             onClick={() => {
                               const commentaire = prompt('Commentaire de rejet (optionnel):');
                               handleRevisionDocument(selectedDemande.id, document.id, 'rejete', commentaire || undefined);
                             }}
-                            className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                            className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-xl text-lg hover:from-red-700 hover:to-red-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                           >
-                            <XCircleIcon className="h-4 w-4" />
-                            <span>❌ Rejeter</span>
+                            <XCircleIcon className="h-5 w-5" />
+                            <span>Rejeter</span>
                           </button>
                         </>
                       )}
@@ -844,15 +846,15 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                 ) : (
                   <div className="text-center py-16">
                     <div className="relative inline-block mb-8">
-                      <div className="p-8 bg-gradient-to-br from-primary-100 to-red-200 rounded-full shadow-2xl animate-pulse">
-                        <DocumentTextIcon className="w-16 h-16 text-primary-600" />
+                      <div className="p-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full shadow-2xl animate-pulse">
+                        <DocumentTextIcon className="w-16 h-16 text-amber-600" />
                       </div>
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-primary-400 to-red-500 rounded-full animate-ping"></div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full animate-ping"></div>
                     </div>
-                    <h3 className="text-2xl font-black bg-gradient-to-r from-primary-600 to-red-600 bg-clip-text text-transparent mb-4">
+                    <h3 className="text-2xl font-black bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent mb-4">
                       Aucun document disponible
                     </h3>
-                    <p className="text-slate-500 text-lg">Les documents de l'entreprise apparaîtront ici une fois chargés</p>
+                    <p className="text-slate-500 text-xl">Les documents de l'entreprise apparaîtront ici une fois chargés</p>
                   </div>
                 )}
               </div>
@@ -860,28 +862,28 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (
                 <div className="mt-8 pt-6 border-t border-white/40">
                   <div className="flex items-center space-x-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                      <span className="text-lg">⚡</span>
+                    <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                      <CheckCircleIcon className="h-6 w-6 text-white" />
                     </div>
-                    <h4 className="font-black text-slate-800">Finaliser la Révision</h4>
+                    <h4 className="text-xl font-black text-slate-800">Finaliser la Révision</h4>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => handleFinaliserRevision(selectedDemande.id, 'approuve')}
-                      className="flex-1 bg-[#1e5987] text-white px-6 py-4 rounded-xl hover:bg-[#2563a3] flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-xl hover:from-green-700 hover:to-green-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <CheckCircleIcon className="h-5 w-5" />
-                      <span>✅ Approuver et Transférer au TCOM</span>
+                      <span>Approuver et Transférer au TCOM</span>
                     </button>
                     {/* Bouton de retour d'étape avec menu déroulant */}
                     <div className="relative flex-1">
                       <button
                         onClick={() => setShowRejectModal(true)}
                         disabled={isLoading}
-                        className="w-full bg-[#1e5987] text-white px-6 py-4 rounded-xl hover:bg-[#2563a3] flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold disabled:opacity-50"
+                        className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-xl hover:from-red-700 hover:to-red-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
                       >
                         <XMarkIcon className="h-5 w-5" />
-                        <span>❌ Rejeter et Retourner à l'ACCUEIL</span>
+                        <span>Rejeter et Retourner à l'ACCUEIL</span>
                       </button>
                       
                     </div>
@@ -899,7 +901,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-800">Motif de rejet</h3>
+                <h3 className="text-xl font-bold text-gray-800">Motif de rejet</h3>
                 <button
                   onClick={() => {
                     setShowRejectModal(false);
@@ -914,7 +916,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             </div>
             
             <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-lg text-gray-600 mb-4">
                 Sélectionnez le motif de retour à l'étape RÉVISION :
               </p>
               
@@ -927,23 +929,23 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       value={reason}
                       checked={selectedRejectReason === reason}
                       onChange={(e) => setSelectedRejectReason(e.target.value)}
-                      className="text-[#1e5987] focus:ring-[#1e5987]"
+                      className="text-sky-600 focus:ring-sky-500"
                     />
-                    <span className="text-sm text-gray-700">{reason}</span>
+                    <span className="text-lg text-gray-700">{reason}</span>
                   </label>
                 ))}
               </div>
               
               {selectedRejectReason === 'Autres' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-lg font-medium text-gray-700 mb-2">
                     Précisez le motif :
                   </label>
                   <textarea
                     value={customRejectReason}
                     onChange={(e) => setCustomRejectReason(e.target.value)}
                     placeholder="Saisissez le motif de rejet..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] resize-none"
+                    className="w-full px-3 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
                     rows={3}
                   />
                 </div>
@@ -956,7 +958,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     setSelectedRejectReason('');
                     setCustomRejectReason('');
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Annuler
                 </button>
@@ -971,7 +973,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     }
                   }}
                   disabled={!selectedRejectReason || (selectedRejectReason === 'Autres' && !customRejectReason.trim())}
-                  className="flex-1 px-4 py-2 bg-[#1e5987] text-white rounded-lg hover:bg-[#2563a3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
                 >
                   Confirmer le rejet
                 </button>

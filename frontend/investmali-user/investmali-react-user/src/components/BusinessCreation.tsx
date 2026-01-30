@@ -1960,7 +1960,7 @@ const PersonalLocationStep: React.FC<{
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Région */}
         <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Région *</label>
+        <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1.5 sm:mb-2">Région *</label>
         <select
           value={personalSelectedRegionId}
           onChange={isReadOnly ? undefined : (e) => {
@@ -2026,7 +2026,7 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Cercle *</label>
+            <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1.5 sm:mb-2">Cercle *</label>
             <select
               value={personalSelectedCercleId}
               onChange={isReadOnly ? undefined : (e) => {
@@ -2093,7 +2093,7 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Commune *</label>
+            <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1.5 sm:mb-2">Commune *</label>
             <select
               value={personalSelectedCommuneId}
               onChange={isReadOnly ? undefined : (e) => {
@@ -2148,7 +2148,7 @@ const PersonalLocationStep: React.FC<{
 
       {/* Quartier */}
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Quartier *</label>
+        <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1.5 sm:mb-2">Quartier *</label>
         <select
           value={personalSelectedQuartierId}
           onChange={isReadOnly ? undefined : (e) => {
@@ -2905,7 +2905,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
             
             <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 sm:gap-4 md:gap-6">
              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Nom *</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Nom *</label>
                 <input
                   type="text"
                   value={data.personalInfo?.lastName || ''}
@@ -2918,7 +2918,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Prénom *</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Prénom *</label>
                 <input
                   type="text"
                   value={data.personalInfo?.firstName || ''}
@@ -2932,8 +2932,8 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               </div>    
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
-                  Civilité
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
+                  Civilité *
                   {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
@@ -2964,7 +2964,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
              
               
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
                   Date de naissance *
                   {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
@@ -2998,8 +2998,8 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
-                  Lieu de naissance
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
+                  Lieu de naissance *
                   {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
@@ -3026,7 +3026,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                 />
               </div>
                <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Email</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Email (optionnel)</label>
                 <input
                   type="email"
                   value={data.personalInfo?.email || ''}
@@ -3040,7 +3040,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               </div>
               
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone *</label>
                 <div className="relative">
                   <div className="flex">
                     <div className="relative country-dropdown">
@@ -3106,7 +3106,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
 
               {/* Téléphone 2 (optionnel) */}
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone 2 (optionnel)</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone 2 (optionnel)</label>
                 <div className="relative">
                   <div className="flex">
                     <div className="relative country-dropdown">
@@ -3173,7 +3173,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               <div className="grid grid-cols-4 sm:grid-cols-2 gap-4">
                 {/* Rue */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Rue</label>
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Rue </label>
                   <input
                     type="text"
                     value={data.personalInfo?.localite || ''}
@@ -3188,7 +3188,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
 
                 {/* Porte */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Porte</label>
+                  <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Porte </label>
                   <input
                     type="text"
                     value={data.personalInfo?.porte || ''}
@@ -3204,7 +3204,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
 
               {/* Adresse libre */}
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Adresse complète (optionnel)</label>
+                <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-1.5">Adresse complète (optionnel)</label>
                 <textarea
                   value={data.personalInfo?.adresseLibre || ''}
                   onChange={(e) => updateData('personalInfo', {
@@ -3277,7 +3277,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               {/* Nouvelles questions */}
               <div className="sm:col-span-2 space-y-4 sm:space-y-6 pt-3 sm:pt-4 border-t border-gray-200">
                 <div>
-                  <p className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Votre adresse est-elle différente de celle de votre entreprise ?</p>
+                  <p className="block text-lg sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Votre adresse est-elle différente de celle de votre entreprise ?</p>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                     <button
                       type="button"
@@ -4610,7 +4610,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
             {/* Nom de l'entreprise */}
             <div className="animate-slide-up" style={{animationDelay: '0.3s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Nom de l'entreprise {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? '(optionnel)' : '*'}
               </label>
               <input
@@ -4636,7 +4636,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Sigle */}
             <div className="animate-slide-up" style={{animationDelay: '0.35s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Sigle (optionnel)</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Sigle (optionnel)</label>
               <input
                 type="text"
                 value={data.companyInfo?.sigle || ''}
@@ -4649,7 +4649,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             {/* Capitale - Masqué pour les entreprises individuelles */}
             {data.companyInfo?.typeEntreprise === 'SOCIETE' && (
               <div className="animate-slide-up" style={{animationDelay: '0.37s'}}>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Capitale *</label>
+                <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Capitale *</label>
                 <input
                   type="text"
                   value={data.companyInfo?.capitale || ''}
@@ -4663,12 +4663,12 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             {/* Type d'entreprise - masqué pour les entreprises individuelles */}
             {data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
               <div className="animate-slide-up" style={{animationDelay: '0.4s'}}>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Type d'entreprise *</label>
+                <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Type d'entreprise *</label>
                 {data.companyInfo?.typeEntreprise ? (
                   // Affichage en lecture seule quand le type est déjà sélectionné
                   <div className="w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl bg-gray-50 text-sm sm:text-base border-gray-300 text-gray-700 font-medium">
                     {data.companyInfo.typeEntreprise === 'SOCIETE' ? 'Société' : 'Entreprise individuelle'}
-                    <span className="text-xs text-gray-500 ml-2"></span>
+                    <span className="text-sm text-gray-500 ml-2"></span>
                   </div>
                 ) : (
                   // Select normal si aucun type n'est sélectionné
@@ -4697,7 +4697,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Forme juridique */}
             <div className="animate-slide-up" style={{animationDelay: '0.45s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Forme juridique *</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Forme juridique *</label>
               <select
                 value={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : (data.companyInfo?.formeJuridique || '')}
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, formeJuridique: e.target.value as FormeJuridique })}
@@ -4726,7 +4726,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Domaine d'activité non réglementé */}
             <div className="animate-slide-up" style={{animationDelay: '0.52s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé</label>
               <select
                 value={data.companyInfo?.domaineActiviteNr || ''}
                 onChange={(e) => {
@@ -4835,7 +4835,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             })()}
                         {/* Activité secondaire */}
                         <div className="animate-slide-up md:col-span-2" style={{animationDelay: '0.38s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Activité secondaire</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Activité secondaire</label>
               <textarea
                 value={data.companyInfo?.activiteSecondaire || ''}
                 onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, activiteSecondaire: e.target.value })}
@@ -4875,7 +4875,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                       Vous avez choisi la même adresse pour l'entreprise, mais votre localisation personnelle n'est pas définie. 
                       La synchronisation ne peut pas fonctionner sans ces informations.
                     </p>
-                    <p className="text-xs text-red-500 mt-2">
+                    <p className="text-sm text-red-500 mt-2">
                       <strong>Action requise :</strong> Retournez à l'étape précédente pour saisir votre localisation personnelle, 
                       ou répondez "Oui" pour saisir une localisation différente pour l'entreprise.
                     </p>
@@ -4920,7 +4920,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Région */}
             <div className="animate-slide-up" style={{animationDelay: '0.6s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Région *
               </label>
               <select
@@ -4973,7 +4973,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               
               return (
                 <div className="animate-slide-up" style={{animationDelay: '0.65s'}}>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                  <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Cercle
                   </label>
               <select
@@ -5019,7 +5019,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Commune - Structure INSTAT moderne */}
             <div className="animate-slide-up" style={{animationDelay: '0.75s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Commune
               </label>
               <select
@@ -5056,7 +5056,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Quartier */}
             <div className="animate-slide-up" style={{animationDelay: '0.8s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Quartier
               </label>
               <select
@@ -5093,7 +5093,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Rue de l'entreprise */}
             <div className="animate-slide-up" style={{animationDelay: '0.85s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Rue</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Rue</label>
               <input
                 type="text"
                 value={data.companyInfo?.rue || ''}
@@ -5109,7 +5109,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Porte de l'entreprise */}
             <div className="animate-slide-up" style={{animationDelay: '0.9s'}}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Porte</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Porte</label>
               <input
                 type="text"
                 value={data.companyInfo?.porte || ''}
@@ -5175,10 +5175,10 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
           {/* Statuts de la société */}
           <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
             <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">📄</span>
+              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">📄</span>
               Statuts de la Société
             </h3>
-            <p className="text-gray-600 mb-4 sm:mb-6 text-xs sm:text-sm">
+            <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-sm">
               Document constitutif définissant l'organisation et le fonctionnement de votre société.
             </p>
           
@@ -5200,10 +5200,10 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                 className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-investmali-accent focus:ring-2"
               />
               <div className="flex-1">
-                <label htmlFor="upload-statutes" className="block text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="upload-statutes" className="block text-sm sm:text-sm font-medium text-gray-700 cursor-pointer">
                   J'ai déjà mes statuts rédigés
                 </label>
-                <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">
+                <p className="text-sm text-gray-500 mt-0.5 sm:mt-1">
                   Téléchargez vos statuts existants au format PDF, DOC ou DOCX
                 </p>
               </div>
@@ -5229,7 +5229,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                 <label htmlFor="draft-statutes" className="block text-sm font-medium text-gray-700 cursor-pointer">
                   Faire rédiger mes statuts par InvestMali
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   Service de rédaction professionnel - <strong className="text-investmali-accent">4 000 FCFA par page</strong>
                 </p>
               </div>
@@ -5263,18 +5263,18 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="text-investmali-accent font-medium text-xs sm:text-sm text-center">{data.documents.statutesName}</span>
-                    <span className="text-xs text-gray-500">(Cliquez pour changer)</span>
+                    <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <span className="text-xs sm:text-sm text-gray-600 text-center">Télécharger vos statuts existants</span>
+                    <span className="text-sm sm:text-sm text-gray-600 text-center">Télécharger vos statuts existants</span>
                   </>
                 )}
               </label>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-sm text-gray-500 mt-2">
                 Formats acceptés : PDF, DOC, DOCX (max 10MB)
               </p>
             </div>
@@ -5296,7 +5296,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                   </p>
                   
                   <div className="mb-4">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                    <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       Nombre de pages estimé pour vos statuts
                     </label>
                     <select
@@ -5328,7 +5328,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                           {(data.documents.statutesPages * 3500).toLocaleString()} FCFA
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-sm text-gray-500 mt-2">
                         Tarif : 3500 FCFA par page • Délai : 2-3 jours ouvrables
                       </p>
                     </div>
@@ -5396,19 +5396,19 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 text-investmali-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-investmali-warning font-medium text-xs sm:text-sm text-center">{data.documents.commerceRegistryName}</span>
-                    <span className="text-xs text-gray-500">(Cliquez pour changer)</span>
+                    <span className="text-investmali-warning font-medium text-sm sm:text-sm text-center">{data.documents.commerceRegistryName}</span>
+                    <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <span className="text-xs sm:text-sm text-gray-600 text-center">Télécharger le registre de commerce</span>
+                    <span className="text-sm sm:text-sm text-gray-600 text-center">Télécharger le registre de commerce</span>
                   </>
                 )}
               </label>
-              <p className="text-xs text-gray-500 mt-1 sm:mt-2">
+              <p className="text-sm text-gray-500 mt-1 sm:mt-2">
                 Formats acceptés : PDF, JPG, PNG (max 5MB)
               </p>
             </div>
@@ -5428,7 +5428,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
         {/* Résumé des documents */}
         <div className="bg-gradient-to-r from-investmali-accent/10 to-investmali-warning/10 p-6 rounded-2xl border border-investmali-accent/20 animate-slide-up" style={{animationDelay: '0.5s'}}>
           <h4 className="text-lg font-semibold text-investmali-neutral-dark mb-3 flex items-center">
-            <span className="bg-investmali-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">✓</span>
+            <span className="bg-investmali-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">✓</span>
             Documents Téléchargés
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -5998,9 +5998,11 @@ const SummaryAndSubmissionStep: React.FC<{
       }
 
       const entrepriseRequest = {
-        nom: data.companyInfo?.nom || (data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
-          ? `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim() 
-          : ''),
+        // Pour les E.I., si le nom n'est pas renseigné, on envoie null (pas prénom+nom)
+        // Pour les sociétés sans nom, on envoie aussi null pour déclencher la validation backend
+        nom: data.companyInfo?.nom && data.companyInfo.nom.trim() !== '' 
+          ? data.companyInfo.nom.trim() 
+          : null,
         sigle: data.companyInfo?.sigle || '',
         adresseDifferentIdentite: data.personalInfo?.hasDifferentAddress || false,
         extraitJudiciaire: data.personalInfo?.hasCriminalRecord || false,
@@ -6393,7 +6395,7 @@ const SummaryAndSubmissionStep: React.FC<{
   return (
     <div className="animate-fade-in">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-investmali-neutral-dark mb-2 animate-slide-up">Récapitulatif et Soumission</h2>
-      <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '0.1s'}}>
+      <p className="text-sm sm:text-sm text-gray-600 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '0.1s'}}>
         Vérifiez les informations de votre entreprise avant de soumettre votre demande de création.
       </p>
 
@@ -6403,24 +6405,24 @@ const SummaryAndSubmissionStep: React.FC<{
           {/* Informations de l'entreprise */}
           <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
             <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">🏢</span>
+              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">🏢</span>
               Informations de l'Entreprise
             </h3>
             <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-600">Nom de l'entreprise :</span>
-                <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.nom}</span>
+                <span className="text-sm sm:text-sm text-gray-600">Nom de l'entreprise :</span>
+                <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.nom}</span>
               </div>
               {data.companyInfo?.sigle && (
                 <div className="flex justify-between">
-                  <span className="text-xs sm:text-sm text-gray-600">Sigle :</span>
-                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.sigle}</span>
+                  <span className="text-sm sm:text-sm text-gray-600">Sigle :</span>
+                  <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.sigle}</span>
                 </div>
               )}
               {data.companyInfo?.capitale && data.companyInfo?.typeEntreprise === 'SOCIETE' && (
                 <div className="flex justify-between">
-                  <span className="text-xs sm:text-sm text-gray-600">Capitale :</span>
-                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.capitale}</span>
+                  <span className="text-sm sm:text-sm text-gray-600">Capitale :</span>
+                  <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.capitale}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -6453,8 +6455,8 @@ const SummaryAndSubmissionStep: React.FC<{
               </div>
               {data.participants && data.participants.length > 0 && data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
                 <div className="flex justify-between">
-                  <span className="text-xs sm:text-sm text-gray-600">Nombre de participants :</span>
-                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.participants.length}</span>
+                  <span className="text-sm sm:text-sm text-gray-600">Nombre de participants :</span>
+                  <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">{data.participants.length}</span>
                 </div>
               )}
             </div>
@@ -7099,7 +7101,6 @@ const BusinessCreation: React.FC = () => {
       if (!personal.civility) return 'La civilité est requise.';
       if (!personal.firstName) return 'Le prénom est requis.';
       if (!personal.lastName) return 'Le nom est requis.';
-      if (!personal.email) return "L'email est requis.";
       if (!personal.phone) return 'Le téléphone est requis.';
       if (!personal.birthDate) return 'La date de naissance est requise.';
       

@@ -14,6 +14,8 @@ export interface PaymentReceiptData {
   dossierNumber: string;
   processedByAgent?: boolean;
   agentName?: string;
+  prenom?: string;
+  nom?: string;
 }
 
 /**
@@ -321,7 +323,9 @@ export const generateUnpaidReceiptData = (
     status: 'pending' as const, // NON PAYÉ = pending
     dossierNumber: referenceEntreprise,
     processedByAgent: true,
-    agentName: agentName
+    agentName: agentName,
+    prenom: entrepriseData?.prenom,
+    nom: entrepriseData?.nomParticipant
   };
 
   

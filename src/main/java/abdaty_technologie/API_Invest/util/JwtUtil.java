@@ -19,7 +19,8 @@ public class JwtUtil {
     @Value("${security.jwt.secret}")
     private String secret;
 
-    private static final long JWT_TOKEN_VALIDITY = 5 * 60 * 60; // 5 heures
+    private static final long JWT_TOKEN_VALIDITY = 24 * 60 * 60; // 24 heures
+    private static final long REFRESH_TOKEN_VALIDITY = 7 * 24 * 60 * 60; // 7 jours
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = java.util.Base64.getDecoder().decode(secret);
@@ -97,5 +98,38 @@ public class JwtUtil {
     @SuppressWarnings("unchecked")
     public List<String> getRolesFromToken(String token) {
         return getClaimFromToken(token, claims -> (List<String>) claims.get("roles"));
+    }
+
+    // Générer un refresh token
+    public String generateRefreshToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "refresh");
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_VALIDITY * 1000))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    // Valider un refresh token
+    public Boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = getAllClaimsFromToken(token);
+            String type = claims.get("type", String.class);
+            return "refresh".equals(type) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Rafraîchir un access token à partir d'un refresh token
+    public String refreshAccessToken(String refreshToken, String role, List<String> allRoles) {
+        if (!validateRefreshToken(refreshToken)) {
+            throw new RuntimeException("Refresh token invalide ou expiré");
+        }
+        String username = getUsernameFromToken(refreshToken);
+        return generateTokenWithRoles(username, role, allRoles);
     }
 }

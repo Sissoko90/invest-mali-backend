@@ -1246,7 +1246,7 @@ const UserProfile: React.FC = () => {
       setDivisionNames(prev => ({ ...prev, [divisionId]: name }));
     } catch (error) {
       console.warn(`Erreur chargement division ${divisionId}:`, error);
-      setDivisionNames(prev => ({ ...prev, [divisionId]: 'Division inconnue' }));
+      setDivisionNames(prev => ({ ...prev, [divisionId]: 'Division non renseinger' }));
     } finally {
       setLoadingDivisions(prev => {
         const newSet = new Set(prev);

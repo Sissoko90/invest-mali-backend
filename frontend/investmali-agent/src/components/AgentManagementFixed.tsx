@@ -400,7 +400,7 @@ const AgentManagementFixed: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-sm">Chargement des agents...</p>
+          <p className="mt-4 text-gray-600 text-lg">Chargement des agents...</p>
         </div>
       </div>
     );
@@ -412,7 +412,7 @@ const AgentManagementFixed: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-xl font-semibold text-slate-800">Gestion des Agents</h1>
-          <p className="text-sm text-slate-500">Gérer les agents et leurs permissions</p>
+          <p className="text-lg text-slate-500">Gérer les agents et leurs permissions</p>
         </div>
         <button
           onClick={() => {
@@ -430,7 +430,7 @@ const AgentManagementFixed: React.FC = () => {
             });
             setShowCreateForm(true);
           }}
-          className="px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors flex items-center space-x-2"
+          className="px-4 py-2 bg-sky-600 text-white text-lg font-medium rounded-lg hover:bg-sky-700 transition-colors flex items-center space-x-2"
         >
           <Plus className="h-4 w-4" />
           <span>Nouvel Agent</span>
@@ -449,7 +449,7 @@ const AgentManagementFixed: React.FC = () => {
           ) : (
             <AlertCircle className="h-5 w-5" />
           )}
-          <span className="text-sm">{notification.message}</span>
+          <span className="text-lg">{notification.message}</span>
         </div>
       )}
 
@@ -461,7 +461,7 @@ const AgentManagementFixed: React.FC = () => {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-800">{agents.length}</p>
-            <p className="text-sm text-slate-500">Total Agents</p>
+            <p className="text-lg text-slate-500">Total Agents</p>
           </div>
         </div>
         
@@ -471,7 +471,7 @@ const AgentManagementFixed: React.FC = () => {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-800">{agents.filter(agent => agent.actif).length}</p>
-            <p className="text-sm text-slate-500">Agents Actifs</p>
+            <p className="text-lg text-slate-500">Agents Actifs</p>
           </div>
         </div>
         
@@ -481,7 +481,7 @@ const AgentManagementFixed: React.FC = () => {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-800">{roles.length}</p>
-            <p className="text-sm text-slate-500">Rôles Disponibles</p>
+            <p className="text-lg text-slate-500">Rôles Disponibles</p>
           </div>
         </div>
       </div>
@@ -489,18 +489,18 @@ const AgentManagementFixed: React.FC = () => {
       {/* Liste des agents - Table simple */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-sm font-semibold text-slate-700">Liste des Agents</h2>
+          <h2 className="text-lg font-semibold text-slate-700">Liste des Agents</h2>
         </div>
     
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Agent</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rôle</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Antenne</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Agent</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Rôle</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Antenne</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Statut</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -508,12 +508,12 @@ const AgentManagementFixed: React.FC = () => {
                 <tr key={agent.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div>
-                      <div className="text-sm font-medium text-slate-800">
+                      <div className="text-lg font-medium text-slate-800">
                         {agent.prenom} {agent.nom}
                       </div>
-                      <div className="text-xs text-slate-500">{agent.email}</div>
+                      <div className="text-sm text-slate-500">{agent.email}</div>
                       {agent.telephone && (
-                        <div className="text-xs text-slate-500">{agent.telephone}</div>
+                        <div className="text-sm text-slate-500">{agent.telephone}</div>
                       )}
                     </div>
                   </td>
@@ -521,12 +521,12 @@ const AgentManagementFixed: React.FC = () => {
                     <div className="flex flex-wrap gap-1">
                       {agent.roles && agent.roles.length > 0 ? (
                         agent.roles.map((role, index) => (
-                          <span key={index} className="inline-flex px-2 py-1 rounded text-xs font-medium bg-sky-100 text-sky-800">
+                          <span key={index} className="inline-flex px-2 py-1 rounded text-sm font-medium bg-sky-100 text-sky-800">
                             {role}
                           </span>
                         ))
                       ) : (
-                        <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-sky-100 text-sky-800">
+                        <span className="inline-flex px-2 py-1 rounded text-sm font-medium bg-sky-100 text-sky-800">
                           {agent.role}
                         </span>
                       )}
@@ -536,19 +536,19 @@ const AgentManagementFixed: React.FC = () => {
                     <div className="flex flex-wrap gap-1">
                       {agent.antennes && agent.antennes.length > 0 ? (
                         agent.antennes.map((antenne, index) => (
-                          <span key={index} className="inline-flex px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          <span key={index} className="inline-flex px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800">
                             {antenne}
                           </span>
                         ))
                       ) : (
-                        <span className="inline-flex px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800">
                           {agent.antenneAgent || 'Non assignée'}
                         </span>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
+                    <span className={`inline-flex px-2 py-1 rounded text-sm font-medium ${
                       agent.actif 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
@@ -560,19 +560,19 @@ const AgentManagementFixed: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditAgent(agent)}
-                        className="px-3 py-1 text-xs font-medium text-sky-600 hover:bg-sky-50 rounded transition-colors"
+                        className="px-3 py-1 text-sm font-medium text-sky-600 hover:bg-sky-50 rounded transition-colors"
                       >
                         Modifier
                       </button>
                       <button
                         onClick={() => handleToggleAgentStatus(agent)}
-                        className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        className="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded transition-colors"
                       >
                         {agent.actif ? 'Désactiver' : 'Activer'}
                       </button>
                       <button
                         onClick={() => handleDeleteAgent(agent)}
-                        className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 rounded transition-colors"
                       >
                         Supprimer
                       </button>
@@ -608,7 +608,7 @@ const AgentManagementFixed: React.FC = () => {
                 {/* Champs du formulaire */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Prénom *
                     </label>
                     <input
@@ -621,7 +621,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Nom *
                     </label>
                     <input
@@ -634,7 +634,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Email *
                     </label>
                     <input
@@ -647,7 +647,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Mot de passe *
                     </label>
                     <input
@@ -660,7 +660,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Rôles * (sélection multiple)
                     </label>
                     <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
@@ -688,14 +688,14 @@ const AgentManagementFixed: React.FC = () => {
                             }}
                             className="rounded border-gray-300 text-primary-600 focus:ring-purple-500"
                           />
-                          <span className="text-sm">{role.label}</span>
+                          <span className="text-lg">{role.label}</span>
                         </label>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1">
                       Sélectionnez un ou plusieurs rôles pour cet agent
                       {(formData.roles || []).length > 0 && (
-                        <span className="ml-2 px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                        <span className="ml-2 px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
                           {(formData.roles || []).length} sélectionné{(formData.roles || []).length > 1 ? 's' : ''}
                         </span>
                       )}
@@ -703,7 +703,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Antennes * (sélection multiple)
                     </label>
                     <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
@@ -731,14 +731,14 @@ const AgentManagementFixed: React.FC = () => {
                             }}
                             className="rounded border-gray-300 text-primary-600 focus:ring-purple-500"
                           />
-                          <span className="text-sm">{antenne.label}</span>
+                          <span className="text-lg">{antenne.label}</span>
                         </label>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1">
                       Sélectionnez une ou plusieurs antennes pour cet agent
                       {(formData.antennes || []).length > 0 && (
-                        <span className="ml-2 px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                        <span className="ml-2 px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
                           {(formData.antennes || []).length} sélectionnée{(formData.antennes || []).length > 1 ? 's' : ''}
                         </span>
                       )}
@@ -746,7 +746,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Téléphone
                     </label>
                     <input
@@ -759,7 +759,7 @@ const AgentManagementFixed: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                       Adresse
                     </label>
                     <input
@@ -776,7 +776,7 @@ const AgentManagementFixed: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
+                    className="px-6 py-2 bg-sky-600 text-white text-lg font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Création...' : 'Créer l\'Agent'}
                   </button>
@@ -808,51 +808,51 @@ const AgentManagementFixed: React.FC = () => {
               <form onSubmit={handleUpdateAgent} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Prénom *</label>
                     <input
                       type="text"
                       value={formData.prenom}
                       onChange={(e) => setFormData({...formData, prenom: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Nom *</label>
                     <input
                       type="text"
                       value={formData.nom}
                       onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Email *</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
                     <input
                       type="password"
                       value={formData.motDePasse}
                       onChange={(e) => setFormData({...formData, motDePasse: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       placeholder="Laisser vide pour ne pas changer"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rôles *</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Rôles *</label>
                     <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
                       {roles.map(role => (
                         <label key={role.value} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
@@ -870,14 +870,14 @@ const AgentManagementFixed: React.FC = () => {
                             }}
                             className="rounded border-gray-300 text-sky-600"
                           />
-                          <span className="text-xs">{role.label}</span>
+                          <span className="text-sm">{role.label}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Antennes *</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Antennes *</label>
                     <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
                       {antennes.map(antenne => (
                         <label key={antenne.value} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
@@ -895,30 +895,30 @@ const AgentManagementFixed: React.FC = () => {
                             }}
                             className="rounded border-gray-300 text-sky-600"
                           />
-                          <span className="text-xs">{antenne.label}</span>
+                          <span className="text-sm">{antenne.label}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Téléphone</label>
                     <input
                       type="tel"
                       value={formData.telephone}
                       onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       placeholder="+223 XX XX XX XX"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                    <label className="block text-lg font-medium text-gray-700 mb-1">Adresse</label>
                     <input
                       type="text"
                       value={formData.adresse}
                       onChange={(e) => setFormData({...formData, adresse: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
                       placeholder="Adresse complète"
                     />
                   </div>
@@ -928,7 +928,7 @@ const AgentManagementFixed: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-6 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
+                    className="px-6 py-2 bg-sky-600 text-white text-lg font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Modification...' : 'Modifier l\'Agent'}
                   </button>

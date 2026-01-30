@@ -1357,8 +1357,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               </svg>
             </div>
             <div className="ml-2 sm:ml-3">
-              <h3 className="text-xs sm:text-sm font-medium text-blue-800">Règles importantes</h3>
-              <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-blue-700">
+              <h3 className="text-sm sm:text-sm font-medium text-blue-800">Règles importantes</h3>
+              <div className="mt-1.5 sm:mt-2 text-sm sm:text-sm text-blue-700">
                 <ul className="list-disc list-inside space-y-1">
                   <li>Un seul gérant autorisé par entreprise</li>
                   <li>Au moins un Dirigeant requis</li>
@@ -1366,7 +1366,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   <li>Le gérant peut aussi être Dirigeant ou associé</li>
                   {isAdministrateurAvailable() && (
                     <li className="text-purple-700 font-medium">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 mr-1">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-purple-100 text-purple-800 mr-1">
                         SA/SAS
                       </span>
                       Rôle Administrateur disponible (sans parts)
@@ -1389,7 +1389,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               </svg>
             </div>
             <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-green-800">{fileUploadSuccess}</p>
+              <p className="text-sm sm:text-sm font-medium text-green-800">{fileUploadSuccess}</p>
             </div>
           </div>
         </div>
@@ -1405,8 +1405,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               </svg>
             </div>
             <div className="ml-2 sm:ml-3">
-              <h3 className="text-xs sm:text-sm font-medium text-red-800">Erreurs à corriger</h3>
-              <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-700">
+              <h3 className="text-sm sm:text-sm font-medium text-red-800">Erreurs à corriger</h3>
+              <div className="mt-1.5 sm:mt-2 text-sm sm:text-sm text-red-700">
                 <ul className="list-disc list-inside space-y-1">
                   {errors.map((error, index) => (
                     <li key={index}>{error}</li>
@@ -1423,8 +1423,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <p className="text-xs sm:text-sm font-medium text-blue-800 mb-1">💡 Comment corriger ces erreurs :</p>
-                      <ul className="text-xs text-blue-700 space-y-1">
+                      <p className="text-sm sm:text-sm font-medium text-blue-800 mb-1">💡 Comment corriger ces erreurs :</p>
+                      <ul className="text-sm text-blue-700 space-y-1">
                         <li>• Cliquez sur le bouton <strong>"Modifier"</strong> (icône crayon) du participant concerné</li>
                         <li>• Remplissez tous les champs obligatoires marqués d'un astérisque (*)</li>
                         <li>• Téléchargez tous les documents requis selon votre rôle</li>
@@ -1456,9 +1456,9 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-xs sm:text-sm font-medium text-green-800">Données automatiques</span>
+                <span className="text-sm sm:text-sm font-medium text-green-800">Données automatiques</span>
               </div>
-              <p className="text-xs sm:text-sm text-green-700">
+              <p className="text-sm sm:text-sm text-green-700">
                 Vos informations personnelles seront automatiquement récupérées depuis votre profil utilisateur 
                 (nom, prénom, téléphone, email, lieu de naissance, nationalité, etc.).
               </p>
@@ -1469,20 +1469,20 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <span className="text-xs sm:text-sm font-medium text-amber-800">Données saisies manuellement</span>
+                <span className="text-sm sm:text-sm font-medium text-amber-800">Données saisies manuellement</span>
               </div>
-              <p className="text-xs sm:text-sm text-amber-700">
+              <p className="text-sm sm:text-sm text-amber-700">
                 Les informations que vous avez saisies dans le formulaire précédent seront utilisées 
                 pour créer ce participant dans l'entreprise.
               </p>
             </div>
           )}
           
-          <p className="text-xs sm:text-sm text-blue-700 mb-3 sm:mb-4">
+          <p className="text-sm sm:text-sm text-blue-700 mb-3 sm:mb-4">
             En tant que créateur de cette entreprise, vous devez d'abord définir votre rôle avant d'ajouter d'autres participants.
           </p>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <label className="text-xs sm:text-sm font-medium text-blue-800">Votre rôle :</label>
+            <label className="text-sm sm:text-sm font-medium text-blue-800">Votre rôle :</label>
             <select
               value={userRole}
               onChange={(e) => setUserRole(e.target.value as EntrepriseRole)}
@@ -1539,19 +1539,19 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   {false && (
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                      <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getRoleColor(participant.role)}`}>
+                      <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-sm font-medium ${getRoleColor(participant.role)}`}>
                         {getRoleLabel(participant.role)}
                       </span>
                       {/* Indicateur du type de personne */}
                       {participant.civilite === 'PERSONNE_MORALE' ? (
-                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex items-center gap-1">
+                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                           </svg>
                           Personne morale
                         </span>
                       ) : (
-                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex items-center gap-1">
+                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
@@ -1561,14 +1561,14 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       
                       {/* Indicateur de source des données */}
                       {participant.personId ? (
-                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 flex items-center gap-1">
+                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           Données automatiques
                         </span>
                       ) : (
-                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 flex items-center gap-1">
+                        <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
@@ -1577,7 +1577,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       )}
                       {/* Documents - uniquement pour les personnes physiques - MASQUÉ */}
                       {false && participant.civilite !== 'PERSONNE_MORALE' && (
-                        <div className="text-xs sm:text-sm text-gray-600">
+                        <div className="text-sm sm:text-sm text-gray-600">
                           <p><strong>Type de pièce:</strong> {participant.typePiece || 'Non spécifié'}</p>
                           <p><strong>Numéro:</strong> {participant.numeroPiece || 'Non spécifié'}</p>
                           <p><strong>Document:</strong> {participant.documentFile?.name || 'Non téléchargé'}</p>
@@ -1602,13 +1602,13 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     
                     {/* Informations du participant */}
                     <div className="bg-white rounded-lg p-2 sm:p-3 mb-2 sm:mb-3 border border-gray-200">
-                      <h5 className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                      <h5 className="text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                         {participant.civilite === 'PERSONNE_MORALE' ? 'Informations de l\'entreprise' : 'Informations personnelles'}
                       </h5>
                       
                       {participant.civilite === 'PERSONNE_MORALE' ? (
                         /* Affichage pour personne morale - uniquement les champs du formulaire */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm sm:text-sm text-gray-600">
                           <div>
                             <span className="font-medium">Dénomination: </span>
                             {participant.denominationEntreprise || participant.nom}
@@ -1636,7 +1636,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         </div>
                       ) : (
                         /* Affichage pour personne physique */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm sm:text-sm text-gray-600">
                           <div>
                             <span className="font-medium">Nom complet: </span>
                             {participant.prenom} {participant.nom}
@@ -1681,7 +1681,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm sm:text-sm text-gray-600">
                       <div>
                         <span className="font-medium">Parts: </span>
                         {participant.pourcentageParts}%
@@ -1743,7 +1743,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <p className="text-sm sm:text-base">Aucun participant ajouté</p>
-            <p className="text-xs sm:text-sm">{showUserRoleForm ? 'Définissez d\'abord votre rôle ci-dessus' : 'Commencez par vous ajouter comme participant'}</p>
+            <p className="text-sm sm:text-sm">{showUserRoleForm ? 'Définissez d\'abord votre rôle ci-dessus' : 'Commencez par vous ajouter comme participant'}</p>
           </div>
         )}
 
@@ -1855,7 +1855,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     Pays où l'entreprise est enregistrée au registre du commerce
                   </p>
                 </div>
@@ -1901,7 +1901,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     Téléchargez le document RCCM de l'entreprise (PDF, JPG, PNG - Max 5MB)
                   </p>
                 </div>
@@ -1932,7 +1932,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       <option value="ADMINISTRATEUR" disabled>Administrateur (non autorisé pour les personnes morales)</option>
                     )}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     Sélectionnez le rôle de cette personne morale dans l'entreprise
                   </p>
                 </div>
@@ -2104,7 +2104,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date de naissance * <span className="text-xs text-gray-500">(18 ans minimum)</span>
+                  Date de naissance * <span className="text-sm text-gray-500">(18 ans minimum)</span>
                 </label>
                 <input
                   type="date"
@@ -2427,7 +2427,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     ✅ {formData.documentFile.name}
                   </div>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   Formats acceptés: PDF, JPG, JPEG, PNG (max 50MB)
                 </p>
               </div>
@@ -2465,7 +2465,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       ✅ {formData.casierJudiciaireFile.name}
                     </div>
                   )}
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xm text-red-600 mt-1">
                     📜 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
@@ -2487,7 +2487,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600"
                     required
                   />
-                  <p className="text-xs text-purple-600 mt-1">
+                  <p className="text-sm text-purple-600 mt-1">
                     💍 Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
@@ -2517,7 +2517,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       ✅ {formData.extraitNaissanceFile.name}
                     </div>
                   )}
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-sm text-blue-600 mt-1">
                     🎂 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
@@ -2543,7 +2543,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                       required={isRequired}
                     />
-                    <p className={`text-xs mt-1 ${
+                    <p className={`text-sm mt-1 ${
                       isRequired 
                         ? 'text-green-600' 
                         : 'text-gray-500'
@@ -2561,7 +2561,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (formData.role === 'PROMOTEUR') && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pièce de nationalité *
+                    Certificat de nationalité *
                   </label>
                   <input
                     type="file"
@@ -2573,7 +2573,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                     required
                   />
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-sm text-green-600 mt-1">
                     🆔 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
@@ -2618,7 +2618,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                             }}
                             existingSignature={formData.signatureDataUrl}
                           />
-                          <p className="text-xs text-blue-600 mt-2">
+                          <p className="text-sm text-blue-600 mt-2">
                             📋 {formData.declarationHonneurFile 
                               ? 'Signature optionnelle car vous avez uploadé une déclaration' 
                               : 'Signature obligatoire pour générer une déclaration sur l\'honneur'}
@@ -2628,7 +2628,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         {/* Champ d'upload pour la déclaration sur l'honneur générée (optionnel) */}
                         <div className="mt-4">
                           <label className="block text-sm font-medium text-blue-900 mb-2">
-                            📄 Uploader la déclaration sur l'honneur (optionnel)
+                            Téléverser la déclaration sur l'honneur (optionnel)
                           </label>
                           <input
                             type="file"
@@ -2649,7 +2649,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                               </p>
                             </div>
                           )}
-                          <p className="text-xs text-blue-600 mt-1">
+                          <p className="text-sm text-blue-600 mt-1">
                             📋 Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                             <br />
                             💡 <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
@@ -2736,7 +2736,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47c559] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#47c559] file:text-white hover:file:bg-[#47c559]/90"
                                 />
                                 {doc.file && (
-                                  <p className="text-xs text-green-600 mt-1">
+                                  <p className="text-sm text-green-600 mt-1">
                                     ✓ {doc.file.name}
                                   </p>
                                 )}
@@ -2912,13 +2912,13 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
               <div className="flex-1">
                 <h5 className="text-sm sm:text-base font-medium text-yellow-800">Répartition automatique des parts</h5>
-                <p className="text-xs sm:text-sm text-yellow-700 mt-0.5 sm:mt-1">
+                <p className="text-sm sm:text-sm text-yellow-700 mt-0.5 sm:mt-1">
                   Répartir équitablement les parts restantes entre tous les participants éligibles
                 </p>
               </div>
               <button
                 onClick={handleAutoDistributeParts}
-                className="px-3 sm:px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors w-full sm:w-auto"
+                className="px-3 sm:px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm sm:text-sm font-medium rounded-lg transition-colors w-full sm:w-auto"
               >
                 Répartir automatiquement
               </button>

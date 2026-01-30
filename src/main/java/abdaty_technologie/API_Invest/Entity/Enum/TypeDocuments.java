@@ -9,7 +9,7 @@ public enum TypeDocuments {
     STATUS_SOCIETE("Status de société"),     
     CASIER_JUDICIAIRE("Casier judiciaire"),
     EXTRAIT_NAISSANCE("Extrait de naissance"),
-    PIECE_NATIONALITE("Pièce de nationalité"),
+    PIECE_NATIONALITE("Certificat de nationalité"),
     NIF("Numéro d'Identification Fiscale"),
     RCCM("Registre de Commerce et du Crédit Mobilier"),
     NINA("Numéro d'Identification National des Entreprises et Associations"),

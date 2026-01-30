@@ -50,6 +50,15 @@ public class PersonSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        // Vérifier si le numéro de téléphone existe déjà
+        String adminPhone = "+22370000000";
+        var existingPersonByPhone = personsRepository.findByTelephone1(adminPhone);
+        
+        if (existingPersonByPhone.isPresent()) {
+            log.info("[PersonSeeder] Une personne avec le téléphone {} existe déjà, pas de création.", adminPhone);
+            return;
+        }
+        
         // Ne pas reseeder si un SUPER_ADMIN existe déjà
         boolean superAdminExists = personsRepository.findByRole(Roles.SUPER_ADMIN).stream().findAny().isPresent();
         if (superAdminExists) {

@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.time.Instant;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,7 +19,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Enum.AntenneAgents;
 
 @Repository
-public interface EntrepriseRepository extends JpaRepository<Entreprise, String> {
+public interface EntrepriseRepository extends JpaRepository<Entreprise, String>, JpaSpecificationExecutor<Entreprise> {
     
     // Recherche par référence
     Optional<Entreprise> findByReference(String reference);
@@ -103,4 +104,10 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String> 
     
     // Méthodes pour les statistiques de création
     long countByCreationBetween(Instant startDate, Instant endDate);
+    
+    // Trouver les entreprises d'un participant par son ID
+    @Query("SELECT e FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId")
+    List<Entreprise> findByParticipantId(@Param("personId") String personId);
 }

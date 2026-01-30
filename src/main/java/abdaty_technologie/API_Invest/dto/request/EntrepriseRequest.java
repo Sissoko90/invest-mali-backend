@@ -18,8 +18,7 @@ import java.util.List;
  * avec la nomenclature CE-YYYY-MM-DD-#####.
  */
 public class EntrepriseRequest {
-    /** Nom légal de l'entreprise (obligatoire) */
-    @NotBlank
+    /** Nom légal de l'entreprise (optionnel pour les entreprises individuelles) */
     public String nom;
     /** Sigle de l'entreprise (optionnel) */
     public String sigle;

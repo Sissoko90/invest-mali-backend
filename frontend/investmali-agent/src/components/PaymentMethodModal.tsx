@@ -1,4 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { 
+  CreditCardIcon, 
+  BanknotesIcon, 
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 import { entreprisesAPI, paiementsAPI } from '../services/api';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { buildApiUrl } from '../config/api.config';
@@ -30,7 +37,7 @@ const PAYMENT_METHODS = {
     id: 'TRESORPAY',
     name: 'TresorPay',
     description: 'Paiement via TresorPay - Orange Money, Moov Money, Sama Money, Wave, Carte bancaire',
-    icon: '💳',
+    icon: CreditCardIcon,
     fees: 'Frais: selon grille TresorPay',
     supported: true
   },
@@ -38,7 +45,7 @@ const PAYMENT_METHODS = {
     id: 'CASH',
     name: 'Espèces',
     description: 'Paiement en espèces dans nos agences',
-    icon: '💵',
+    icon: BanknotesIcon,
     fees: 'Aucun frais supplémentaire',
     supported: true
   }
@@ -268,23 +275,21 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-              <img 
-                src={carteBancaireImg} 
-                alt="Paiement"
-                className="w-8 h-8 object-contain rounded mr-3"
-              />
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                <CreditCardIcon className="h-6 w-6 text-white" />
+              </div>
               Choisir une méthode de paiement
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ×
+              <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Montant à payer: <span className="font-semibold text-mali-emerald">
+          <p className="text-lg text-gray-600 mt-2">
+            Montant à payer: <span className="font-semibold text-sky-700">
               {formatAmount(entreprise.totalAmount || 50000)}
             </span>
           </p>
@@ -298,8 +303,8 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                 key={method.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-all ${
                   selectedMethod === method.id
-                    ? 'border-mali-emerald bg-mali-emerald bg-opacity-5'
-                    : 'border-gray-200 hover:border-mali-emerald hover:bg-gray-50'
+                    ? 'border-sky-600 bg-sky-50'
+                    : 'border-gray-200 hover:border-sky-600 hover:bg-gray-50'
                 } ${!method.supported ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => method.supported && handleMethodSelect(method.id)}
               >
@@ -313,27 +318,27 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                         className="w-10 h-10 object-contain rounded"
                       />
                     ) : (
-                      <div className="text-2xl">{method.icon}</div>
+                      <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                        {React.createElement(method.icon, { className: "h-6 w-6 text-white" })}
+                      </div>
                     )}
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">{method.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{method.name}</h3>
                       {selectedMethod === method.id && (
-                        <div className="w-5 h-5 bg-mali-emerald rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
+                        <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                          <CheckCircleIcon className="w-4 h-4 text-white" />
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{method.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">{method.fees}</p>
+                    <p className="text-lg text-gray-600 mt-1">{method.description}</p>
+                    <p className="text-sm text-gray-500 mt-1">{method.fees}</p>
                     
                     {!method.supported && (
-                      <p className="text-xs text-red-500 mt-1">Bientôt disponible</p>
+                      <p className="text-sm text-red-500 mt-1">Bientôt disponible</p>
                     )}
                   </div>
                 </div>
@@ -342,12 +347,14 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           </div>
 
           {/* Security Notice */}
-          <div className="mt-6 p-4 bg-primary-50 rounded-lg">
+          <div className="mt-6 p-4 bg-sky-50 rounded-lg border border-sky-200">
             <div className="flex items-start space-x-3">
-              <div className="text-primary-500 text-lg">🔒</div>
+              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg shadow-md">
+                <ShieldCheckIcon className="h-5 w-5 text-white" />
+              </div>
               <div>
-                <h4 className="font-medium text-primary-900">Validation agent</h4>
-                <p className="text-sm text-primary-700 mt-1">
+                <h4 className="text-lg font-medium text-sky-900">Validation agent</h4>
+                <p className="text-lg text-sky-700 mt-1">
                   Sélectionnez la méthode de paiement utilisée par le client.
                   Vous serez redirigé vers une page de validation spécialisée.
                 </p>
@@ -361,14 +368,14 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           <div className="flex items-center justify-between">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-lg text-gray-600 hover:text-gray-800 transition-colors font-medium"
             >
               Annuler
             </button>
             <button
               onClick={handleContinueToDetails}
               disabled={!selectedMethod}
-              className="px-6 py-2 bg-mali-emerald text-white rounded-lg hover:bg-mali-emerald-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 text-lg bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
             >
               Continuer
             </button>
