@@ -30,8 +30,13 @@ public class StripeConfig {
      */
     @PostConstruct
     public void init() {
+        if (secretKey == null || secretKey.trim().isEmpty()) {
+            System.out.println("⚠️ Stripe secret key non configurée - Les paiements Stripe ne fonctionneront pas");
+            return;
+        }
         Stripe.apiKey = secretKey;
-        System.out.println("✅ Stripe configuré avec la clé: " + secretKey.substring(0, 12) + "...");
+        String maskedKey = secretKey.length() > 12 ? secretKey.substring(0, 12) + "..." : "***";
+        System.out.println("✅ Stripe configuré avec la clé: " + maskedKey);
     }
     
     /**
@@ -70,3 +75,4 @@ public class StripeConfig {
         return defaultCurrency;
     }
 }
+
