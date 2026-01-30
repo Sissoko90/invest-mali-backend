@@ -172,5 +172,10 @@ public interface IPaiementService {
      * Vérifie si un paiement existe par référence de transaction
      */
     boolean existsByReference(String reference);
+    
+    /**
+     * Récupère tous les paiements par statut
+     */
+    List<PaiementResponse> getPaiementsByStatut(StatutPaiement statut);
 }
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

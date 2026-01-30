@@ -38,31 +38,36 @@ module.exports = function(app) {
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
-  // Proxy seulement en développement
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔧 setupProxy.js: Configuration proxy pour développement');
-    app.use(
-      '/api',
-      createProxyMiddleware({
-        target: 'https://investmali.abdatytch.com',
-        changeOrigin: true,
-        secure: true,
-        onProxyReq: (proxyReq, req, res) => {
-          // Log des requêtes pour le débogage
-          console.log('Proxying request:', req.method, req.url);
-        },
-        onError: (err, req, res) => {
-          console.error('Proxy error:', err);
-          res.status(500).json({ error: 'Erreur de connexion au serveur' });
-        },
-        logLevel: 'debug',
-        pathRewrite: {
-          '^/api': '/api', // Conserve le préfixe /api
-        },
-      })
-    );
-  } else {
-    console.log('🔧 setupProxy.js: Production mode - pas de proxy configuré');
-  }
+  // Configuration dynamique selon l'environnement
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isLocalDev = process.env.REACT_APP_USE_LOCAL_API === 'true' || isDevelopment;
+  
+  // Choisir la target selon l'environnement
+  const target = isLocalDev ? 'http://localhost:8080' : 'https://investmali.abdatytch.com';
+  const secure = !isLocalDev; // false pour localhost, true pour HTTPS
+  
+  console.log(`🔧 setupProxy.js: Configuration proxy - Environnement: ${process.env.NODE_ENV}`);
+  console.log(`🎯 Target: ${target} (Local: ${isLocalDev})`);
+  
+  app.use(
+    '/api',
+    createProxyMiddleware({
+      target: target,
+      changeOrigin: true,
+      secure: secure,
+      onProxyReq: (proxyReq, req, res) => {
+        // Log des requêtes pour le débogage
+        console.log(`Proxying request: ${req.method} ${req.url} → ${target}`);
+      },
+      onError: (err, req, res) => {
+        console.error('Proxy error:', err);
+        res.status(500).json({ error: 'Erreur de connexion au serveur' });
+      },
+      logLevel: 'debug',
+      pathRewrite: {
+        '^/api': '/api', // Conserve le préfixe /api
+      },
+    })
+  );
 };
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

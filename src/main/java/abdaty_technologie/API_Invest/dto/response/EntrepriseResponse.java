@@ -170,6 +170,7 @@ public class EntrepriseResponse {
 =======
 package abdaty_technologie.API_Invest.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -180,6 +181,8 @@ import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Enum.FormeJuridique;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
+import abdaty_technologie.API_Invest.Entity.Enum.StatutPaiement;
+import java.time.LocalDateTime;
 
 /**
  * Réponse API pour l'entité Entreprise.
@@ -227,6 +230,10 @@ public class EntrepriseResponse {
     /** Code et nom de la division (localisation choisie) */
     public String divisionCode;
     public String divisionNom;
+    
+    /** Champs de localisation spécifique de l'entreprise */
+    public String rue;
+    public String porte;
 
     // Hiérarchie localisation
     /** Région */
@@ -253,7 +260,11 @@ public class EntrepriseResponse {
     public List<MembreResponse> membres;
 
     /** Agent assigné pour traiter cette demande */
+    @JsonProperty("assignedTo")
     public UtilisateursResponse assignedTo;
+
+    /** Créateur de l'entreprise */
+    public CreateurResponse createdBy;
 
     /** Dates de création et de modification */
     public Instant creation;
@@ -266,5 +277,77 @@ public class EntrepriseResponse {
 
     /** Montant total de la demande */
     public BigDecimal totalAmount;
+
+    // === INFORMATIONS DE PAIEMENT ===
+    
+    /** Statut du paiement de l'entreprise */
+    public StatutPaiement statutPaiement;
+    
+    /** Date du paiement (si effectué) */
+    public LocalDateTime datePaiement;
+    
+    /** Montant du paiement */
+    public BigDecimal montantPaiement;
+    
+    /** Référence de la transaction de paiement */
+    public String referencePaiement;
+    
+    /** Indique si l'entreprise a payé les frais */
+    public Boolean paiementEffectue;
+    
+    /** Numéro NINA généré par l'API INSTAT Mali */
+    public String numeroNina;
+    
+    /** Numéro RCCM généré par le service RCCM-OHADA (ex: ML-BKO-01-2025-A-00010) */
+    public String numeroRccm;
+    
+    /** Situation matrimoniale du premier membre/gérant */
+    public String situationMatrimoniale;
+    
+    /** Libellé du domaine d'activité (texte affiché) */
+    public String domaineActiviteLabel;
+    
+    /** Indique si le document RCCM a été téléchargé par l'utilisateur */
+    public Boolean rccmTelecharge;
+    
+    /** Indique si le document NINA a été téléchargé par l'utilisateur */
+    public Boolean ninaTelecharge;
+    
+    /** Date de retrait des documents par l'utilisateur */
+    public Instant dateRetrait;
+    
+    // === INFORMATIONS AGRÉMENT ===
+    
+    /** Numéro d'autorisation délivré */
+    public String numeroAutorisation;
+    
+    /** Date de délivrance de l'autorisation */
+    public Instant dateAutorisation;
+    
+    /** Chemin vers le fichier d'agrément signé */
+    public String agrementSignePath;
+    
+    /** Indique si le téléchargement de l'agrément est autorisé pour l'utilisateur */
+    public Boolean telechargementAutorise;
+    
+    /** Régime d'investissement pour les demandes d'agrément d'investissement */
+    public String regimeInvestissement;
+    
+    /** Motif de rejet lors du retour d'une étape précédente */
+    public String motifRejet;
+    
+    // === INFORMATIONS DU DÉPOSANT (pour les sociétés) ===
+    
+    /** Nom du déposant */
+    public String nomDeposant;
+    
+    /** Prénom du déposant */
+    public String prenomDeposant;
+    
+    /** Téléphone du déposant */
+    public String telephoneDeposant;
+    
+    /** Nom du cabinet */
+    public String nomCabinet;
 }
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

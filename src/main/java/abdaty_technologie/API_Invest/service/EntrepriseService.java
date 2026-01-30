@@ -46,6 +46,8 @@ package abdaty_technologie.API_Invest.service;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
+import abdaty_technologie.API_Invest.Entity.Enum.AntenneAgents;
+import java.util.List;
 import abdaty_technologie.API_Invest.dto.request.EntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.request.BanEntrepriseRequest;
 import abdaty_technologie.API_Invest.dto.request.UpdateEntrepriseRequest;
@@ -54,8 +56,12 @@ import org.springframework.data.domain.Pageable;
 
 public interface EntrepriseService {
     Entreprise createEntreprise(EntrepriseRequest request, Utilisateurs createdBy);
+    Entreprise createEntrepriseForAgent(EntrepriseRequest request);
     Page<Entreprise> listEntreprises(Pageable pageable);
     Page<Entreprise> listEntreprises(String divisionCode, Pageable pageable);
+    Page<Entreprise> listEntreprises(String divisionCode, String etapeValidation, Pageable pageable);
+    Page<Entreprise> listEntreprisesByAntenne(Pageable pageable, AntenneAgents antenne);
+    Page<Entreprise> listEntreprisesByAgentAntennes(Pageable pageable, List<AntenneAgents> antennes);
 
     // Bannissement / débannissement
     Entreprise ban(String id, BanEntrepriseRequest request);
@@ -70,5 +76,9 @@ public interface EntrepriseService {
     Entreprise unassignFromAgent(String entrepriseId);
     Page<Entreprise> getAssignedToAgent(String agentId, Pageable pageable);
     Page<Entreprise> getUnassignedForStep(EtapeValidation etape, Pageable pageable);
+    
+    // Méthodes CRUD de base
+    Entreprise findById(String id);
+    Entreprise save(Entreprise entreprise);
 }
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

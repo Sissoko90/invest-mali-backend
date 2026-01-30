@@ -400,8 +400,12 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
       }
 
       // Afficher un message de succès
+<<<<<<< HEAD
       // Notification silencieuse - pas d'alerte pour ne pas interrompre le flux
       console.log(`Étape impôts finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM.' : 'Entreprise retournée à la Révision.'}`);
+=======
+      alert(`Étape impôts finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM.' : 'Entreprise retournée à la Révision.'}`);
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
       
     } catch (error) {
       console.error('❌ [ImpotsStep] Erreur lors de la finalisation:', error);
@@ -411,9 +415,15 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
   const getStatutColor = (statut: string) => {
     switch (statut) {
+<<<<<<< HEAD
       case 'nif_en_attente': return 'bg-sky-50 text-black-800';
       case 'nif_valide': return 'bg-sky-50 text-black-800';
       case 'termine': return 'bg-sky-50 text-black-800';
+=======
+      case 'nif_en_attente': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+      case 'nif_valide': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+      case 'termine': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
     }
   };
@@ -446,9 +456,15 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
   return (
     <div className="space-y-6">
+<<<<<<< HEAD
       <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center mb-6">
           <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
+=======
+      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
+        <div className="flex items-center mb-6">
+          <div className="p-3 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-2xl shadow-lg mr-4">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             <DocumentCheckIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -459,7 +475,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
         {demandes.length === 0 ? (
           <div className="text-center py-12">
+<<<<<<< HEAD
             <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+=======
+            <div className="p-4 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
             <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
@@ -470,18 +490,31 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
         ) : (
           <div className="space-y-4">
             {demandes.map((demande) => (
+<<<<<<< HEAD
               <div key={demande.id} className="bg-sky rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-3">
                       <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+=======
+              <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4 mb-3">
+                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <BuildingOfficeIcon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
                         <span className={`px-3 py-1 text-xs font-bold rounded-xl shadow-lg ${getStatutColor(demande.statutImpots)}`}>
+<<<<<<< HEAD
                           {demande.statutImpots === 'nif_en_attente' ? 'NIF en attente' : 
                            demande.statutImpots === 'nif_valide' ? 'NIF validé' : demande.statutImpots}
+=======
+                          {demande.statutImpots === 'nif_en_attente' ? '⏳ NIF en attente' : 
+                           demande.statutImpots === 'nif_valide' ? '✅ NIF validé' : demande.statutImpots}
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </span>
                       </div>
                     </div>
@@ -502,9 +535,15 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   </div>
                   <div className="flex flex-col items-end space-y-3 ml-6">
                     {!demande.nifUploaded && canEdit && (
+<<<<<<< HEAD
                       <label className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:sky-700 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold">
                         <CloudArrowUpIcon className="h-5 w-5" />
                         <span>{uploadingNif === demande.id ? 'Upload...' : 'Upload NIF'}</span>
+=======
+                      <label className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold">
+                        <CloudArrowUpIcon className="h-5 w-5" />
+                        <span>{uploadingNif === demande.id ? '⏳ Upload...' : '📤 Upload NIF'}</span>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <input
                           type="file"
                           className="hidden"
@@ -524,7 +563,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
+<<<<<<< HEAD
                       className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:sky-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+=======
+                      className="bg-gradient-to-r from-[#412A5C] to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-[#412A5C] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     >
                       <EyeIcon className="h-5 w-5" />
                       <span>👁️ Détails</span>
@@ -541,7 +584,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/50 to-primary-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-8 mx-auto p-8 w-11/12 max-w-6xl">
+<<<<<<< HEAD
             <div className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+=======
+            <div className="bg-gradient-to-br from-white/95 via-slate-50/90 to-primary-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               {/* Header modernisé */}
               <div className="bg-gradient-to-r from-[#412A5C]/90 to-primary-600/90 backdrop-blur-xl p-8 border-b border-white/20">
                 <div className="flex items-center justify-between">
@@ -574,7 +621,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   {/* Informations entreprise modernisées */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 mb-6">
+<<<<<<< HEAD
                       <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+=======
+                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <span className="text-lg">🏢</span>
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Informations de l'entreprise</h4>
@@ -625,7 +676,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                     {/* Membres modernisés */}
                     <div className="mt-8">
                       <div className="flex items-center space-x-3 mb-6">
+<<<<<<< HEAD
                         <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+=======
+                        <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                           <span className="text-lg">👥</span>
                         </div>
                         <h4 className="text-xl font-black text-slate-800">Membres ({selectedDemande.membres?.length || 0})</h4>
@@ -681,8 +736,13 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   {/* Documents modernisés */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 mb-6">
+<<<<<<< HEAD
                       <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         {/* <span className="text-lg">📄</span> */}
+=======
+                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+                        <span className="text-lg">📄</span>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Documents ({selectedDemande.documents.length})</h4>
                     </div>
@@ -699,11 +759,19 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                                 <div className="flex-1">
                                   <h5 className="text-lg font-black text-slate-800">{doc.nom || 'Document sans nom'}</h5>
                                   <div className="flex items-center space-x-2 mt-1">
+<<<<<<< HEAD
                                     <span className="px-3 py-1 bg-sky-50 text-black-800 font-bold rounded-xl text-xs shadow-lg">
                                       {doc.type || 'Type non spécifié'}
                                     </span>
                                     {doc.type === 'NIF' && (
                                       <span className="px-3 py-1 bg-sky-50 text-black-800 font-bold rounded-xl text-xs shadow-lg">
+=======
+                                    <span className="px-3 py-1 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 font-bold rounded-xl text-xs shadow-lg">
+                                      {doc.type || 'Type non spécifié'}
+                                    </span>
+                                    {doc.type === 'NIF' && (
+                                      <span className="px-3 py-1 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 font-bold rounded-xl text-xs shadow-lg">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                         🎯 NIF
                                       </span>
                                     )}
@@ -740,7 +808,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
                 {/* Actions modernisées */}
                 {canEdit && (
+<<<<<<< HEAD
                   <div className="backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
+=======
+                  <div className="bg-gradient-to-r from-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
                         <span className="text-lg">⚡</span>
@@ -798,7 +870,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                     </div>
                     
                     {!selectedDemande.nifUploaded && (
+<<<<<<< HEAD
                       <div className="mt-4 p-4 bg-sky-to-r from-sky-50 to-sky-50 rounded-xl border border-primary-200 shadow-lg">
+=======
+                      <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-amber-50 rounded-xl border border-primary-200 shadow-lg">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <p className="text-primary-800 text-sm font-medium flex items-center space-x-2">
                           <span>⚠️</span>
                           <span><strong>Attention :</strong> Le NIF doit être uploadé avant de pouvoir approuver le dossier.</span>

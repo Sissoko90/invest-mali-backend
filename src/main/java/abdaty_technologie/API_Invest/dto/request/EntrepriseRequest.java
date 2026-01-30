@@ -187,6 +187,21 @@ public class EntrepriseRequest {
     /** Code de la division (localisation la plus précise connue) */
     @NotBlank
     public String divisionCode;
+    
+    /** Nom de la rue où est située l'entreprise (optionnel) */
+    public String rue;
+    
+    /** Numéro de porte/portail de l'entreprise (optionnel) */
+    public String porte;
+
+    /** Adresse libre du représentant/promoteur (optionnel) */
+    public String representativeAdresseLibre;
+    
+    /** Informations du déposant (pour les sociétés) */
+    public String nomDeposant;
+    public String prenomDeposant;
+    public String telephoneDeposant;
+    public String nomCabinet;
 
     /**
      * Participants à l'entreprise (obligatoire): chaque entrée précise le rôle, le pourcentage de parts,

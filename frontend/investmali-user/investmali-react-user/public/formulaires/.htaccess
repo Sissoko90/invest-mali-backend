@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Configuration pour servir les fichiers de formulaires
 # Permettre l'accès aux fichiers .doc et .pdf
 
@@ -28,3 +29,35 @@ Header always set Access-Control-Allow-Headers "Content-Type"
     ExpiresByType application/vnd.openxmlformats-officedocument.wordprocessingml.document "access plus 1 day"
     ExpiresByType application/pdf "access plus 1 day"
 </IfModule>
+=======
+# Configuration pour servir les fichiers de formulaires
+# Permettre l'accès aux fichiers .doc et .pdf
+
+<Files "*.doc">
+    Header set Content-Type "application/msword"
+    Header set Content-Disposition "attachment"
+</Files>
+
+<Files "*.docx">
+    Header set Content-Type "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    Header set Content-Disposition "attachment"
+</Files>
+
+<Files "*.pdf">
+    Header set Content-Type "application/pdf"
+    Header set Content-Disposition "attachment"
+</Files>
+
+# Permettre l'accès depuis tous les domaines (CORS)
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type"
+
+# Cache des fichiers pendant 1 jour
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType application/msword "access plus 1 day"
+    ExpiresByType application/vnd.openxmlformats-officedocument.wordprocessingml.document "access plus 1 day"
+    ExpiresByType application/pdf "access plus 1 day"
+</IfModule>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

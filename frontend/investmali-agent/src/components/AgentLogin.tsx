@@ -54,17 +54,27 @@ const AgentLogin: React.FC = () => {
     setError('');
     
     try {
+<<<<<<< HEAD
       console.log('[AgentLogin] Tentative de connexion pour:', loginData.identifier, 'type:', loginType);
       const result = await login(loginData.identifier, loginData.password, loginType);
       console.log('[AgentLogin] Résultat de connexion:', result);
       
       if (result.success) {
         setLoginData({ identifier: '', password: '' });
+=======
+      console.log('🔐 [AgentLogin] Tentative de connexion pour:', loginData.email);
+      const result = await login(loginData.email, loginData.password);
+      console.log('🔐 [AgentLogin] Résultat de connexion:', result);
+      
+      if (result.success) {
+        setLoginData({ email: '', password: '' });
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         
         // Logique de redirection intelligente basée sur le rôle
         let redirectPath = result.redirectUrl;
         
         if (!redirectPath) {
+<<<<<<< HEAD
           // Utiliser l'agent retourné par login() au lieu du contexte
           const userRole = result.agent?.role;
           if (userRole === 'SUPER_ADMIN') {
@@ -87,6 +97,32 @@ const AgentLogin: React.FC = () => {
       } else {
         console.error('[AgentLogin] Échec de connexion');
         setError('Identifiant ou mot de passe invalide');
+=======
+          // Attendre un court moment pour que le contexte se mette à jour
+          setTimeout(() => {
+            // Si pas de redirectUrl du backend, utiliser la logique par rôle
+            const userRole = agent?.role;
+            if (userRole === 'SUPER_ADMIN') {
+              redirectPath = '/dashboard'; // Super Admin vers dashboard
+            } else {
+              redirectPath = '/dossier'; // Autres agents vers dossier
+            }
+            
+            console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
+            console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
+            console.log('🚀 [AgentLogin] Rôle de l\'agent:', userRole);
+            console.log('🚀 [AgentLogin] Fallback utilisé:', !result.redirectUrl);
+            navigate(redirectPath, { replace: true });
+          }, 100); // Petit délai pour permettre au contexte de se mettre à jour
+        } else {
+          console.log('🚀 [AgentLogin] Redirection vers:', redirectPath);
+          console.log('🚀 [AgentLogin] RedirectUrl du backend:', result.redirectUrl);
+          navigate(redirectPath, { replace: true });
+        }
+      } else {
+        console.error('❌ [AgentLogin] Échec de connexion');
+        setError('E-mail ou mot de passe invalide');
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -201,10 +237,17 @@ const AgentLogin: React.FC = () => {
                   type={loginType === 'email' ? 'email' : 'tel'}
                   autoComplete={loginType === 'email' ? 'email' : 'tel'}
                   required
+<<<<<<< HEAD
                   className="focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
                   placeholder={loginType === 'email' ? 'vous@example.com' : 'XX XX XX XX'}
                   value={loginData.identifier}
                   onChange={(e) => setLoginData({...loginData, identifier: e.target.value})}
+=======
+                  className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="vous@example.com"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   disabled={isLoading}
                 />
               </div>
@@ -259,7 +302,11 @@ const AgentLogin: React.FC = () => {
               </label>
             </div>
 
+<<<<<<< HEAD
             {/* <div className="text-sm">
+=======
+            <div className="text-sm">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
                 Mot de passe oublié ?
               </Link>
@@ -287,11 +334,14 @@ const AgentLogin: React.FC = () => {
         
         <div className="text-center text-sm text-gray-500 space-y-2">
           <p>Vous n'avez pas de compte agent ? <Link to="/request-access" className="font-medium text-primary-600 hover:text-primary-500">Demander un accès</Link></p>
+<<<<<<< HEAD
           <p className="mt-2">
             <Link to="/dashboard" className="font-medium text-sky-600 hover:text-sky-700">
               Accéder au Dashboard
             </Link>
           </p>
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         </div>
       </div>
     </div>

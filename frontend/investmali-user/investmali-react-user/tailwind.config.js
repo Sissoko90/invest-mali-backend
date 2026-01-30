@@ -154,11 +154,74 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // InvestMali Official Brand Colors
-        'investmali-primary': '#261e73',    // Bleu profond - Confiance & Professionnalisme
-        'investmali-secondary': '#c50100',  // Rouge dynamique - Action & Urgence
-        'investmali-accent': '#59af47',     // Vert croissance - Succès & Prospérité
-        // Legacy colors (kept for compatibility)
+        // InvestMali Official Brand Colors - Standardized System
+        'investmali-primary': {
+          50: '#f4f3ff',
+          100: '#ebe8ff', 
+          200: '#d9d4ff',
+          300: '#beb5ff',
+          400: '#9c8aff',
+          500: '#261e73',  // Main primary color
+          600: '#1a1456',
+          700: '#140f42',
+          800: '#0f0a2e',
+          900: '#0a061a',
+          light: '#3d2f8f',
+          dark: '#1a1456',
+          DEFAULT: '#261e73'
+        },
+        'investmali-secondary': {
+          50: '#ffebee',
+          100: '#ffcdd2',
+          200: '#ef9a9a',
+          300: '#e57373',
+          400: '#ef5350',
+          500: '#c50100',  // Main secondary color
+          600: '#8f0000',
+          700: '#d32f2f',
+          800: '#c62828',
+          900: '#b71c1c',
+          light: '#e53935',
+          dark: '#8f0000',
+          DEFAULT: '#c50100'
+        },
+        'investmali-accent': {
+          50: '#f1f8e9',
+          100: '#dcedc8',
+          200: '#c5e1a5',
+          300: '#aed581',
+          400: '#9ccc65',
+          500: '#59af47',  // Main accent color
+          600: '#3e7b2f',
+          700: '#689f38',
+          800: '#558b2f',
+          900: '#33691e',
+          light: '#7bc142',
+          dark: '#3e7b2f',
+          DEFAULT: '#59af47'
+        },
+        // Neutral colors
+        'investmali-neutral': {
+          white: '#ffffff',
+          light: '#f7f7fa',
+          dark: '#23272a',
+          50: '#fafafa',
+          100: '#f5f5f5',
+          200: '#eeeeee',
+          300: '#e0e0e0',
+          400: '#bdbdbd',
+          500: '#9e9e9e',
+          600: '#757575',
+          700: '#616161',
+          800: '#424242',
+          900: '#212121'
+        },
+        // Status colors
+        'investmali-success': '#59af47',
+        'investmali-warning': '#ffb800',
+        'investmali-error': '#c50100',
+        'investmali-info': '#261e73',
+        // Legacy colors (deprecated - use investmali-* instead)
         'mali-emerald': {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -170,8 +233,8 @@ module.exports = {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
-          'dark': '#15803d', // Alias pour mali-emerald-dark
-          DEFAULT: '#176B5C', // Couleur par défaut de l'ancien CDN
+          'dark': '#15803d',
+          DEFAULT: '#176B5C',
         },
         'mali-gold': {
           50: '#fffbeb',
@@ -184,7 +247,7 @@ module.exports = {
           700: '#b45309',
           800: '#92400e',
           900: '#78350f',
-          DEFAULT: '#FFB800', // Couleur par défaut de l'ancien CDN
+          DEFAULT: '#FFB800',
         },
         'mali-indigo': '#4B3F72',
         'mali-dark': '#23272A',

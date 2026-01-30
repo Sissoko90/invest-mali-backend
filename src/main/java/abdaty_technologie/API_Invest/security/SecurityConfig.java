@@ -50,9 +50,13 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 // Endpoints publics (sans authentification)
+<<<<<<< HEAD
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Autoriser toutes les requêtes OPTIONS pour CORS preflight
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/contact/**").permitAll() // Endpoints de contact
+=======
+                .requestMatchers("/api/v1/auth/**").permitAll()
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 .requestMatchers("/api/v1/chat/**").permitAll() // Endpoints de chat
                 .requestMatchers("/api/v1/entreprises").permitAll() // Ancien endpoint public
                 .requestMatchers("/api/v1/agent/entreprises-test/**").permitAll() // Endpoint de test temporaire
@@ -94,6 +98,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         // 🔥 SOLUTION D'URGENCE CORS - Configuration forcée pour production
         List<String> origins = List.of(
             // Nouveau domaine formalisation.ml
@@ -139,6 +146,7 @@ public class SecurityConfig {
         );
         
         config.setAllowedOrigins(origins);
+<<<<<<< HEAD
 =======
         if (allowedOrigins != null && !allowedOrigins.isBlank()) {
             List<String> origins = Arrays.stream(allowedOrigins.split(","))
@@ -153,6 +161,8 @@ public class SecurityConfig {
         }
 
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

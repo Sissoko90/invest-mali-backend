@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../utils/apiUrl';
+<<<<<<< HEAD
 import {
   BuildingOfficeIcon,
   TagIcon,
@@ -16,6 +17,8 @@ import {
   ChevronRightIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
 interface Application {
   id: string;
@@ -37,6 +40,7 @@ interface Application {
   domaineActiviteNr?: string;
   domaine_activite?: string;
   domaine_activite_nr?: string;
+<<<<<<< HEAD
   // Localisation - codes et noms
   divisionCode?: string;
   divisionNom?: string;
@@ -58,6 +62,11 @@ interface Application {
     email?: string;
     telephone?: string;
   }>;
+=======
+  divisionCode?: string;
+  divisionNom?: string;
+  localisation?: string;
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 }
 
 const SimpleApplicationsList: React.FC = () => {
@@ -80,6 +89,7 @@ const SimpleApplicationsList: React.FC = () => {
     navigate(`/entreprise/${entrepriseId}`);
   };
 
+<<<<<<< HEAD
   const getDisplayName = (app: Application): { name: string; isCompany: boolean } => {
     // Si l'entreprise a un nom, c'est une personne morale
     const companyName = app.nom || app.companyName || app.company_name || app.nomEntreprise;
@@ -113,6 +123,10 @@ const SimpleApplicationsList: React.FC = () => {
 
   const getCompanyName = (app: Application): string => {
     return getDisplayName(app).name;
+=======
+  const getCompanyName = (app: Application): string => {
+    return app.nom || app.companyName || app.company_name || app.nomEntreprise || 'Nom non disponible';
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
   };
 
   const getStatus = (app: Application): string => {
@@ -132,6 +146,7 @@ const SimpleApplicationsList: React.FC = () => {
   };
 
   const getLocation = (app: Application): string => {
+<<<<<<< HEAD
     // Priorité aux noms de localité, pas aux codes
     return app.communeNom || app.divisionNom || app.cercleNom || app.regionNom || app.quartierNom || app.localisation || '-';
   };
@@ -167,10 +182,14 @@ const SimpleApplicationsList: React.FC = () => {
     });
     
     return names.join(' ').toLowerCase();
+=======
+    return app.localisation || app.divisionNom || app.divisionCode || '-';
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
   };
 
   const applyFilters = (apps: Application[]) => {
     return apps.filter(app => {
+<<<<<<< HEAD
       const searchableNames = getSearchableNames(app);
       const searchableLocation = getSearchableLocation(app);
       const status = getStatus(app).toLowerCase();
@@ -181,6 +200,15 @@ const SimpleApplicationsList: React.FC = () => {
       return (
         searchableNames.includes(searchTerm) &&
         searchableLocation.includes(locationTerm) &&
+=======
+      const nom = getCompanyName(app).toLowerCase();
+      const localisation = getLocation(app).toLowerCase();
+      const status = getStatus(app).toLowerCase();
+      const reference = (app.reference || '').toLowerCase();
+      return (
+        nom.includes(filters.nom.toLowerCase()) &&
+        localisation.includes(filters.localisation.toLowerCase()) &&
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         status.includes(filters.status.toLowerCase()) &&
         reference.includes(filters.reference.toLowerCase())
       );
@@ -290,6 +318,7 @@ const SimpleApplicationsList: React.FC = () => {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<<<<<<< HEAD
         <div className="flex items-center space-x-4">
           <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
             <BuildingOfficeIcon className="h-8 w-8 text-white" />
@@ -301,11 +330,20 @@ const SimpleApplicationsList: React.FC = () => {
               {totalPages > 1 && ` - Page ${currentPage}/${totalPages}`}
             </p>
           </div>
+=======
+        <div>
+          <h1 className="text-2xl font-black bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] bg-clip-text text-transparent">Liste des Entreprises</h1>
+          <p className="text-sm text-slate-500">
+            {filteredApplications.length} entreprise{filteredApplications.length > 1 ? 's' : ''} trouvée{filteredApplications.length > 1 ? 's' : ''}
+            {totalPages > 1 && ` • Page ${currentPage}/${totalPages}`}
+          </p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         </div>
         
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
+<<<<<<< HEAD
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center space-x-2 ${
               showFilters ? 'bg-sky-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
@@ -319,12 +357,26 @@ const SimpleApplicationsList: React.FC = () => {
           >
             <ArrowPathIcon className="h-4 w-4" />
             <span>Actualiser</span>
+=======
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
+              showFilters ? 'bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Filtres
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white text-sm font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+          >
+            Actualiser
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
           </button>
         </div>
       </div>
 
       {/* Filtres */}
       {showFilters && (
+<<<<<<< HEAD
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
@@ -337,19 +389,31 @@ const SimpleApplicationsList: React.FC = () => {
             >
               <XMarkIcon className="h-4 w-4" />
               <span>Réinitialiser</span>
+=======
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-black bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] bg-clip-text text-transparent">Filtres</h3>
+            <button onClick={resetFilters} className="text-sm text-[#1e5987] hover:text-[#2d6aa0] font-semibold">
+              Réinitialiser
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
+<<<<<<< HEAD
               <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 mb-2">
                 <BuildingOfficeIcon className="h-4 w-4 text-sky-600" />
                 <span>Nom</span>
               </label>
+=======
+              <label className="block text-xs font-bold text-[#1e5987] mb-2">🏢 Nom</label>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <input
                 type="text"
                 value={filters.nom}
                 onChange={(e) => setFilters({...filters, nom: e.target.value})}
                 placeholder="Rechercher..."
+<<<<<<< HEAD
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
               />
             </div>
@@ -358,11 +422,19 @@ const SimpleApplicationsList: React.FC = () => {
                 <TagIcon className="h-4 w-4 text-sky-600" />
                 <span>Référence</span>
               </label>
+=======
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] transition-all duration-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#1e5987] mb-2">🔖 Référence</label>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <input
                 type="text"
                 value={filters.reference}
                 onChange={(e) => setFilters({...filters, reference: e.target.value})}
                 placeholder="CE-2025-..."
+<<<<<<< HEAD
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
               />
             </div>
@@ -371,11 +443,19 @@ const SimpleApplicationsList: React.FC = () => {
                 <MapPinIcon className="h-4 w-4 text-sky-600" />
                 <span>Localisation</span>
               </label>
+=======
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] transition-all duration-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#1e5987] mb-2">📍 Localisation</label>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <input
                 type="text"
                 value={filters.localisation}
                 onChange={(e) => setFilters({...filters, localisation: e.target.value})}
                 placeholder="Bamako..."
+<<<<<<< HEAD
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
               />
             </div>
@@ -388,6 +468,17 @@ const SimpleApplicationsList: React.FC = () => {
                 value={filters.status}
                 onChange={(e) => setFilters({...filters, status: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all"
+=======
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] transition-all duration-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#1e5987] mb-2">📊 Statut</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] transition-all duration-300"
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               >
                 <option value="">Tous</option>
                 <option value="approved">Approuvé</option>
@@ -402,6 +493,7 @@ const SimpleApplicationsList: React.FC = () => {
 
       {/* Liste */}
       {applications.length === 0 ? (
+<<<<<<< HEAD
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
           <div className="p-4 bg-sky-100 rounded-full w-fit mx-auto mb-4">
             <BuildingOfficeIcon className="h-12 w-12 text-sky-600" />
@@ -418,12 +510,24 @@ const SimpleApplicationsList: React.FC = () => {
           <button
             onClick={resetFilters}
             className="px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-lg hover:bg-sky-700 transition-all"
+=======
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-8 text-center">
+          <p className="text-gray-500 text-lg">🏢 Aucune entreprise trouvée</p>
+        </div>
+      ) : filteredApplications.length === 0 ? (
+        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 p-8 text-center">
+          <p className="text-gray-500 mb-4 text-lg">🔍 Aucun résultat pour ces filtres</p>
+          <button
+            onClick={resetFilters}
+            className="px-4 py-2 bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white text-sm font-medium rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
           >
             Réinitialiser les filtres
           </button>
         </div>
       ) : (
         <>
+<<<<<<< HEAD
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -492,6 +596,31 @@ const SimpleApplicationsList: React.FC = () => {
                             </div>
                           </div>
                         </div>
+=======
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-[#1e5987]/10 to-[#2d6aa0]/10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">🏢 Entreprise</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">🔖 Référence</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">🏭 Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">📍 Localisation</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">📊 Statut</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#1e5987] uppercase">📅 Date</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedApplications.map((app) => (
+                    <tr 
+                      key={app.id} 
+                      onClick={() => handleEntrepriseClick(app.id)}
+                      className="hover:bg-gradient-to-r hover:from-[#1e5987]/5 hover:to-[#2d6aa0]/5 cursor-pointer transition-all duration-300"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-medium text-slate-800">{getCompanyName(app)}</div>
+                        <div className="text-xs text-slate-500">{app.formeJuridique || '-'}</div>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm text-slate-600">{app.reference || '-'}</span>
@@ -516,15 +645,24 @@ const SimpleApplicationsList: React.FC = () => {
                         <span className="text-sm text-slate-500">{getSubmittedDate(app)}</span>
                       </td>
                     </tr>
+<<<<<<< HEAD
                     );
                   })}
+=======
+                    
+                  ))}
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </tbody>
               </table>
             </div>
           </div>
           
           {totalPages > 1 && (
+<<<<<<< HEAD
             <div className="flex items-center justify-between bg-white rounded-2xl shadow-lg border border-gray-200 px-6 py-4">
+=======
+            <div className="flex items-center justify-between bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 px-6 py-4">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <p className="text-sm text-gray-600">
                 {startIndex + 1}-{Math.min(endIndex, filteredApplications.length)} sur {filteredApplications.length}
               </p>
@@ -532,6 +670,7 @@ const SimpleApplicationsList: React.FC = () => {
                 <button
                   onClick={goToPreviousPage}
                   disabled={currentPage === 1}
+<<<<<<< HEAD
                   className={`px-3 py-2 text-sm rounded-lg flex items-center space-x-1 ${
                     currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
@@ -549,6 +688,23 @@ const SimpleApplicationsList: React.FC = () => {
                 >
                   <span>Suivant</span>
                   <ChevronRightIcon className="h-4 w-4" />
+=======
+                  className={`px-3 py-1 text-sm rounded-lg ${
+                    currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Précédent
+                </button>
+                <span className="text-sm text-gray-600">Page {currentPage} / {totalPages}</span>
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-2 text-sm rounded-xl font-medium transition-all duration-300 ${
+                    currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white hover:shadow-lg transform hover:scale-105'
+                  }`}
+                >
+                  Suivant
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </button>
               </div>
             </div>

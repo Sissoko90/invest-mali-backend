@@ -208,7 +208,11 @@ const DossierWorkflow: React.FC<DossierWorkflowProps> = ({ dossierId }) => {
       
       default:
         return (
+<<<<<<< HEAD
           <div className="bg-sky-50 border border-primary-200 rounded-lg p-4">
+=======
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-5 w-5 text-primary-400 mr-2" />
               <p className="text-primary-800">Étape non reconnue: {currentStep}</p>

@@ -58,7 +58,11 @@ interface AgentAuthContextType {
   agent: Agent | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+<<<<<<< HEAD
   login: (identifier: string, password: string, loginType?: 'email' | 'telephone') => Promise<LoginResult>;
+=======
+  login: (email: string, password: string) => Promise<{ success: boolean; redirectUrl?: string }>;
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
   logout: () => void;
   updateAgent: (patch: Partial<Agent>) => void;
   // Nouvelles fonctions RBAC
@@ -125,8 +129,13 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
     setIsLoading(false);
   }, []);
 
+<<<<<<< HEAD
   const login = async (identifier: string, password: string, loginType: 'email' | 'telephone' = 'email'): Promise<LoginResult> => {
     console.log('Tentative de connexion avec:', identifier, 'type:', loginType);
+=======
+  const login = async (email: string, password: string): Promise<{ success: boolean; redirectUrl?: string }> => {
+    console.log('Tentative de connexion avec:', email);
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
     setIsLoading(true);
     setAgent(null);
     
@@ -257,9 +266,14 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
       const redirectUrl = payload?.redirectUrl;
       console.log('🎯 [AgentAuth] RedirectUrl reçue du backend:', redirectUrl);
       console.log('🎯 [AgentAuth] Payload complet:', payload);
+<<<<<<< HEAD
       console.log('🎯 [AgentAuth] Agent créé avec rôle:', agent.role);
       
       return { success: true, redirectUrl, agent };
+=======
+      
+      return { success: true, redirectUrl };
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
     } catch (error) {
       console.error('Erreur lors de la connexion agent:', error);
       // En cas d'erreur, s'assurer que l'état est bien nettoyé

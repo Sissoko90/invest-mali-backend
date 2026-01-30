@@ -379,4 +379,8 @@ const PaymentDiagnosticPage: React.FC = () => {
 };
 
 export default PaymentDiagnosticPage;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

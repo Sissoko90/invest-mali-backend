@@ -184,6 +184,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ open, onClose, agent, onSav
 };
 
 export default ProfileModal;
+<<<<<<< HEAD
 
 
 
@@ -208,3 +209,29 @@ export default ProfileModal;
 
 
 
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

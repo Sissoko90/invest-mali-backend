@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package abdaty_technologie.API_Invest.repository;
 
 import java.util.List;
@@ -113,3 +114,120 @@ public interface DivisionsRepository extends JpaRepository<Divisions, String> {
            "ORDER BY d.nom LIMIT :limit", nativeQuery = true)
     List<Divisions> findByNomAndTypeLimited(@Param("nom") String nom, @Param("divisionType") String divisionType, @Param("limit") int limit);
 }
+=======
+package abdaty_technologie.API_Invest.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import abdaty_technologie.API_Invest.Entity.Divisions;
+import abdaty_technologie.API_Invest.Entity.Enum.DivisionType;
+
+@Repository
+public interface DivisionsRepository extends JpaRepository<Divisions, String> {
+    
+    // Recherche par code
+    Optional<Divisions> findByCode(String code);
+    
+    // Recherche par préfixe de code (pour filtrage par antenne)
+    List<Divisions> findByCodeStartingWith(String codePrefix);
+    
+    // Recherche par nom
+    List<Divisions> findByNomContainingIgnoreCase(String nom);
+    
+    // Recherche par nom avec chargement des relations parent
+    @Query("SELECT d FROM Divisions d LEFT JOIN FETCH d.parent WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%'))")
+    List<Divisions> findByNomContainingIgnoreCaseWithParent(@Param("nom") String nom);
+    
+    // Recherche optimisée avec hiérarchie complète (évite N+1)
+    @Query("SELECT DISTINCT d FROM Divisions d " +
+           "LEFT JOIN FETCH d.parent p1 " +
+           "LEFT JOIN FETCH p1.parent p2 " +
+           "LEFT JOIN FETCH p2.parent p3 " +
+           "WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) " +
+           "ORDER BY d.nom")
+    List<Divisions> findByNomWithCompleteHierarchy(@Param("nom") String nom);
+    
+    // Recherche optimisée avec hiérarchie complète ET filtrage par type
+    @Query("SELECT DISTINCT d FROM Divisions d " +
+           "LEFT JOIN FETCH d.parent p1 " +
+           "LEFT JOIN FETCH p1.parent p2 " +
+           "LEFT JOIN FETCH p2.parent p3 " +
+           "WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) " +
+           "AND d.divisionType = :divisionType " +
+           "ORDER BY d.nom")
+    List<Divisions> findByNomAndTypeWithCompleteHierarchy(@Param("nom") String nom, @Param("divisionType") DivisionType divisionType);
+    
+    // Recherche par nom et type de division
+    List<Divisions> findByNomContainingIgnoreCaseAndDivisionType(String nom, DivisionType divisionType);
+    
+    // Recherche par nom et type avec chargement des relations parent
+    @Query("SELECT d FROM Divisions d LEFT JOIN FETCH d.parent WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) AND d.divisionType = :divisionType")
+    List<Divisions> findByNomContainingIgnoreCaseAndDivisionTypeWithParent(@Param("nom") String nom, @Param("divisionType") DivisionType divisionType);
+    
+    // Recherche par type de division
+    List<Divisions> findByDivisionType(DivisionType divisionType);
+    
+    // Recherche des régions (divisions sans parent)
+    List<Divisions> findByParentIsNullAndDivisionType(DivisionType divisionType);
+    
+    // Recherche des enfants d'une division (ex: cercles d'une région)
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :parentId")
+    List<Divisions> findByParentId(@Param("parentId") String parentId);
+    
+    // Recherche des cercles d'une région
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :regionId AND d.divisionType = 'CERCLE'")
+    List<Divisions> findCerclesByRegionId(@Param("regionId") String regionId);
+    
+    // Recherche des arrondissements d'un cercle
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :cercleId AND d.divisionType = 'ARRONDISSEMENT'")
+    List<Divisions> findArrondissementsByCercleId(@Param("cercleId") String cercleId);
+    
+    // Recherche des communes d'un arrondissement
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :arrondissementId AND d.divisionType = 'COMMUNE'")
+    List<Divisions> findCommunesByArrondissementId(@Param("arrondissementId") String arrondissementId);
+    
+    // Recherche des quartiers d'une commune
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :communeId AND d.divisionType = 'QUARTIER'")
+    List<Divisions> findQuartiersByCommuneId(@Param("communeId") String communeId);
+    
+    // Méthodes spécifiques pour Bamako District (structure différente)
+    // Recherche des arrondissements directement depuis une région (pour Bamako District)
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :regionId AND d.divisionType = 'ARRONDISSEMENT'")
+    List<Divisions> findArrondissementsByRegionId(@Param("regionId") String regionId);
+    
+    // Recherche des quartiers directement depuis un arrondissement (pour Bamako District)
+    @Query("SELECT d FROM Divisions d WHERE d.parent.id = :arrondissementId AND d.divisionType = 'QUARTIER'")
+    List<Divisions> findQuartiersByArrondissementId(@Param("arrondissementId") String arrondissementId);
+    
+    // Vérifier l'existence par code
+    boolean existsByCode(String code);
+    
+    // Recherche optimisée par code avec hiérarchie (pour les quartiers par arrondissement)
+    @Query("SELECT DISTINCT d FROM Divisions d " +
+           "LEFT JOIN FETCH d.parent p1 " +
+           "LEFT JOIN FETCH p1.parent p2 " +
+           "WHERE d.code LIKE CONCAT(:codePrefix, '%') " +
+           "AND d.divisionType = 'QUARTIER' " +
+           "ORDER BY d.nom")
+    List<Divisions> findQuartiersByCodePrefixOptimized(@Param("codePrefix") String codePrefix);
+    
+    // Recherche rapide limitée (pour éviter la surcharge)
+    @Query(value = "SELECT * FROM divisions d " +
+           "WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) " +
+           "ORDER BY d.nom LIMIT :limit", nativeQuery = true)
+    List<Divisions> findByNomContainingIgnoreCaseLimited(@Param("nom") String nom, @Param("limit") int limit);
+    
+    // Recherche rapide limitée avec type
+    @Query(value = "SELECT * FROM divisions d " +
+           "WHERE LOWER(d.nom) LIKE LOWER(CONCAT('%', :nom, '%')) " +
+           "AND d.division_type = :divisionType " +
+           "ORDER BY d.nom LIMIT :limit", nativeQuery = true)
+    List<Divisions> findByNomAndTypeLimited(@Param("nom") String nom, @Param("divisionType") String divisionType, @Param("limit") int limit);
+}
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

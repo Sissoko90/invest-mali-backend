@@ -120,6 +120,10 @@ export const useAgentNotifications = (entrepriseId?: string) => {
         url += `?entrepriseId=${entrepriseId}`;
       }
 
+      // NOTIFICATIONS DÉSACTIVÉES TEMPORAIREMENT - Cause des erreurs 500
+      console.log('🔄 Notifications désactivées - éviter les erreurs 500');
+      return; // Sortir early pour éviter les appels
+      
       const response = await fetch(url);
       const data = await response.json();
 
@@ -180,19 +184,19 @@ export const useAgentNotifications = (entrepriseId?: string) => {
     setUnreadCount(0);
   };
 
-  // Polling toutes les 10 secondes
+  // Polling toutes les 10 secondes - DÉSACTIVÉ TEMPORAIREMENT
   useEffect(() => {
     // Demander la permission pour les notifications
     requestNotificationPermission();
 
-    // Vérification initiale
-    checkForNewMessages();
+    // Vérification initiale - DÉSACTIVÉE pour éviter les re-renders
+    // checkForNewMessages();
 
-    // Polling
-    const interval = setInterval(checkForNewMessages, 10000);
+    // Polling - DÉSACTIVÉ pour éviter les re-renders qui ferment les modals
+    // const interval = setInterval(checkForNewMessages, 10000);
 
-    return () => clearInterval(interval);
-  }, [checkForNewMessages]);
+    // return () => clearInterval(interval);
+  }, []); // Suppression de la dépendance checkForNewMessages qui cause des re-renders
 
   return {
     unreadCount,

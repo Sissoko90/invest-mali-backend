@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CORS</title>
+</head>
+<body>
+    <h1>Test CORS - Même domaine</h1>
+    <button onclick="testAPI()">Tester POST /api/v1/entreprises</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('🔍 Test depuis le même domaine (port 8080)...');
+                
+                const entrepriseRequest = {
+                    nom: "Test CORS Entreprise",
+                    capitale: "1000000",
+                    adresseDifferentIdentite: false,
+                    extraitJudiciaire: false,
+                    autorisationGerant: false,
+                    autorisationExercice: false,
+                    importExport: false,
+                    statutSociete: false,
+                    typeEntreprise: "ENTREPRISE_INDIVIDUELLE",
+                    statutCreation: "EN_COURS",
+                    etapeValidation: "REGISSEUR",
+                    formeJuridique: "E_I",
+                    divisionCode: "900101010020",
+                    participants: [
+                        {
+                            personId: "test-person-id",
+                            role: "GERANT",
+                            pourcentageParts: 100,
+                            dateDebut: "2024-01-01",
+                            dateFin: "9999-12-31"
+                        }
+                    ]
+                };
+                
+                console.log('📤 Envoi requête:', entrepriseRequest);
+                
+                // Appel relatif (même domaine/port)
+                const response = await fetch('/api/v1/entreprises', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test-token'
+                    },
+                    body: JSON.stringify(entrepriseRequest)
+                });
+                
+                console.log('📡 Status:', response.status);
+                console.log('📡 Headers:', [...response.headers.entries()]);
+                
+                const responseText = await response.text();
+                console.log('📋 Response:', responseText);
+                
+                resultDiv.innerHTML = `
+                    <h3>Résultat CORS:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${responseText}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Erreur CORS:', error);
+                resultDiv.innerHTML = `<p style="color: red;">Erreur CORS: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

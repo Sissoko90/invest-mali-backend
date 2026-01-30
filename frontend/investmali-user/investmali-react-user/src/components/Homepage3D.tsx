@@ -498,4 +498,8 @@ const Homepage3D: React.FC = () => {
 };
 
 export default Homepage3D;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ﻿import React, { useState, useEffect } from 'react';
 import { API_CONFIG } from '../config/api.config';
 import { 
@@ -259,6 +260,9 @@ export default DocumentViewer;
 
 =======
 import React, { useState, useEffect } from 'react';
+=======
+﻿import React, { useState, useEffect } from 'react';
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 import { API_CONFIG } from '../config/api.config';
 import { 
   XMarkIcon,
@@ -299,7 +303,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setLoading(true);
       setError(null);
       
-      console.log('📄 Chargement du document:', documentId);
       
       const response = await fetch(`${API_CONFIG.BASE_URL}/documents/${documentId}/file`, {
         headers: {
@@ -320,7 +323,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
       const url = URL.createObjectURL(blob);
       setDocumentUrl(url);
       
-      console.log('✅ Document chargé:', { contentType, size: blob.size });
     } catch (error) {
       console.error('❌ Erreur lors du chargement du document:', error);
       setError('Erreur lors du chargement du document');
@@ -494,4 +496,31 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
 };
 
 export default DocumentViewer;
+<<<<<<< HEAD
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

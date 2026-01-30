@@ -324,11 +324,11 @@ import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import divisionService from '../services/divisionService';
 
 interface Division {
-  id: string;
-  nom: string;
-  code: string;
-  divisionType: 'REGION' | 'CERCLE' | 'ARRONDISSEMENT' | 'COMMUNE' | 'QUARTIER';
-  parent?: Division;
+  id: any;
+  nom: any;
+  code: any;
+  divisionType: string;
+  parent?: Division | null;
 }
 
 interface DivisionSearchInputProps {
@@ -365,7 +365,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
   className = ""
 }) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Division[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -378,7 +378,7 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
   // Construire le chemin hiérarchique complet
   const buildHierarchyPath = (division: Division): string => {
     const path: string[] = [];
-    let current: Division | undefined = division;
+    let current: Division | undefined | null = division;
     
     while (current) {
       path.unshift(current.nom);
@@ -390,18 +390,14 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
 
   // Trouver la région racine pour différencier les divisions avec le même nom
   const findRootRegion = (division: Division): string => {
-    let current: Division | undefined = division;
+    let current: Division | undefined | null = division;
     let rootRegion = ''; // Pas de valeur par défaut
-    
-    console.log('🔍 findRootRegion appelée pour:', division.nom, 'Code:', division.code);
     
     // Détection prioritaire pour Bamako par le code (plus fiable)
     if (division.code) {
       const code = division.code;
       // Pattern pour tous les codes de Bamako : 000X où X = 1-9, ou 00X où X = 1-9
       if (/^000[1-9]/.test(code) || /^00[1-9]/.test(code)) {
-        console.log('✅ Détection Bamako par code pattern:', division.code);
-        return 'Bamako District';
       }
     }
     
@@ -444,7 +440,6 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
     
     // Si aucune région trouvée, utiliser "Mali" comme fallback
     const finalRegion = rootRegion || 'Mali';
-    console.log('🎯 Région finale retournée:', finalRegion, 'pour', division.nom);
     return finalRegion;
   };
 

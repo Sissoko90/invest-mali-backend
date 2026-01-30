@@ -772,8 +772,8 @@ const Hero: React.FC = () => {
     },
     {
       id: 3,
-      title: "Conformité garantie",
-      subtitle: "Tous vos documents sont vérifiés par nos experts juridiques. Respect total de la réglementation malienne et validation officielle.",
+      title: "Expert juridique",
+      subtitle: "Assistance juridique et réglementaire L’API Mali assure un accompagnement institutionnel visant la conformité des projets d’investissement avec la réglementation en vigueur au Mali.",
       badge: "100% Conforme",
       cta: "En savoir plus",
       backgroundImage: image3
@@ -1273,10 +1273,10 @@ const Hero: React.FC = () => {
               }}
             >
               {currentSlideData.title.split(' ').map((word, index) => (
-                <span key={index} className={index === 1 ? "text-mali-emerald relative" : index === currentSlideData.title.split(' ').length - 1 ? "text-mali-gold" : ""}>
+                <span key={index} className={index === 1 ? "text-investmali-accent relative" : index === currentSlideData.title.split(' ').length - 1 ? "text-investmali-warning" : ""}>
                   {word}
                   {index === 1 && (
-                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-mali-gold/30" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    <svg className="absolute -bottom-2 left-0 w-full h-3 text-investmali-warning/30" viewBox="0 0 100 10" preserveAspectRatio="none">
                       <path d="M0,8 Q50,0 100,8" stroke="currentColor" strokeWidth="2" fill="none"/>
                     </svg>
                   )}
@@ -1304,7 +1304,7 @@ const Hero: React.FC = () => {
               }}
             >
               <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-mali-emerald to-mali-emerald/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-accent to-investmali-accent/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -1316,7 +1316,7 @@ const Hero: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3 group bg-white/50 backdrop-blur-sm p-4 rounded-xl hover:bg-white/70 transition-all duration-300">
-                <div className="w-12 h-12 bg-gradient-to-r from-mali-gold to-mali-gold/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-gradient-to-r from-investmali-warning to-investmali-warning/80 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -1360,11 +1360,11 @@ const Hero: React.FC = () => {
                 transform: `translateZ(${mousePosition.x * 22}px) rotateY(${mousePosition.x * 7}deg) rotateX(${mousePosition.y * 4}deg) scale(${1 + Math.abs(mousePosition.x + mousePosition.y) * 0.06})`
               }}
             >
-              <Link to="/create-business" className="group relative px-8 py-4 bg-gradient-to-r from-mali-emerald to-mali-emerald/90 text-white rounded-xl font-semibold text-lg hover:from-mali-emerald/90 hover:to-mali-emerald transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden text-center">
+              <Link to="/create-business" className="group relative px-8 py-4 bg-gradient-to-r from-investmali-accent to-investmali-accent/90 text-white rounded-xl font-semibold text-lg hover:from-investmali-accent/90 hover:to-investmali-accent transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden text-center">
                 <span className="relative z-10">{currentSlideData.cta}</span>
                 <div className="absolute top-0 left-0 w-full h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </Link>
-              <button className="group relative px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-mali-emerald rounded-xl font-semibold text-lg hover:bg-mali-emerald hover:text-white transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl">
+              <button className="group relative px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-investmali-accent rounded-xl font-semibold text-lg hover:bg-investmali-accent hover:text-white transform hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl">
                 <span className="relative z-10">Découvrir nos services</span>
               </button>
             </div>
@@ -1380,8 +1380,8 @@ const Hero: React.FC = () => {
                     disabled={isTransitioning}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       index === currentSlide 
-                        ? 'bg-mali-emerald scale-125' 
-                        : 'bg-mali-emerald/30 hover:bg-mali-emerald/60'
+                        ? 'bg-investmali-accent scale-125' 
+                        : 'bg-investmali-accent/30 hover:bg-investmali-accent/60'
                     } ${isTransitioning ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                 ))}
@@ -1392,7 +1392,7 @@ const Hero: React.FC = () => {
                 <button
                   onClick={() => disintegrateToSlide((currentSlide - 1 + slides.length) % slides.length)}
                   disabled={isTransitioning}
-                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-mali-emerald/30 flex items-center justify-center text-mali-emerald hover:bg-mali-emerald hover:text-white transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-investmali-accent/30 flex items-center justify-center text-investmali-accent hover:bg-investmali-accent hover:text-white transition-all duration-300 ${
                     isTransitioning ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -1403,7 +1403,7 @@ const Hero: React.FC = () => {
                 <button
                   onClick={() => disintegrateToSlide((currentSlide + 1) % slides.length)}
                   disabled={isTransitioning}
-                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-mali-emerald/30 flex items-center justify-center text-mali-emerald hover:bg-mali-emerald hover:text-white transition-all duration-300 ${
+                  className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-investmali-accent/30 flex items-center justify-center text-investmali-accent hover:bg-investmali-accent hover:text-white transition-all duration-300 ${
                     isTransitioning ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -1420,7 +1420,7 @@ const Hero: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
               <Homepage3D />
               <div className="text-center mt-4">
-                <p className="text-sm text-mali-dark/70 font-medium">
+                <p className="text-sm text-investmali-neutral-dark/70 font-medium">
                   Expérience 3D interactive - Démarrez votre entreprise
                 </p>
               </div>
@@ -1433,4 +1433,8 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
+<<<<<<< HEAD
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

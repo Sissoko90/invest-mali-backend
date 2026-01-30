@@ -229,18 +229,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Vérifier si l'utilisateur est déjà connecté au chargement
   useEffect(() => {
     const checkAuthStatus = async () => {
-      console.log('🔍 AuthContext: Vérification de l\'authentification au chargement...');
-      
+        
       if (authAPI.isAuthenticated()) {
-        console.log('✅ AuthContext: Token trouvé dans localStorage');
-        try {
+          try {
           // Vérifier la validité du token avec l'API
-          console.log('🔄 AuthContext: Vérification du token avec l\'API...');
-          const response = await authAPI.getProfile();
-          console.log('📡 AuthContext: Réponse API getProfile:', response);
-          
+              const response = await authAPI.getProfile();
+              
           if (response.success && response.data && response.data.user) {
-            console.log('✅ AuthContext: Token valide, utilisateur connecté:', response.data.user);
             const userData = response.data.user;
             const user: User = {
               ...userData,
@@ -250,7 +245,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             };
             setUser(user);
           } else {
-            console.log('❌ AuthContext: Token invalide, déconnexion...');
             // Token invalide, nettoyer le localStorage
             authAPI.logout();
             setUser(null);

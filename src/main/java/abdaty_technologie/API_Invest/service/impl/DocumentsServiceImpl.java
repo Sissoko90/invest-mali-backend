@@ -306,7 +306,6 @@ import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
 import abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
-import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 import abdaty_technologie.API_Invest.exception.BadRequestException;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
 import abdaty_technologie.API_Invest.repository.DocumentsRepository;
@@ -314,6 +313,7 @@ import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
 import abdaty_technologie.API_Invest.service.DocumentsService;
+import abdaty_technologie.API_Invest.service.FileStorageService;
 import abdaty_technologie.API_Invest.constants.Messages;
 
 @Service
@@ -324,6 +324,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     @Autowired private PersonsRepository personsRepository;
     @Autowired private EntrepriseRepository entrepriseRepository;
     @Autowired private EntrepriseMembreRepository entrepriseMembreRepository;
+    @Autowired private FileStorageService fileStorageService;
 
     @Override
     public Documents uploadPiece(String personneId, String entrepriseId, TypePieces typePiece, String numero, java.time.LocalDate dateExpiration, MultipartFile file) {
@@ -409,6 +410,10 @@ public class DocumentsServiceImpl implements DocumentsService {
                 // Appartient au gérant uniquement (alternative au casier judiciaire)
                 ensureIsGerant(person, ent);
             }
+            case RCCM -> {
+                // Document RCCM - pas de validation spécifique de gérant
+                System.out.println("📋 [DocumentsServiceImpl] Upload document RCCM - pas de validation gérant");
+            }
             default -> {}
         }
 
@@ -424,11 +429,14 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     private void ensureIsGerant(Persons person, Entreprise ent) {
-        // Vérifier si c'est le gérant
+        // Vérifier si c'est le gérant ou promoteur
         List<EntrepriseMembre> gerants = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.GERANT);
-        boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        List<EntrepriseMembre> promoteurs = entrepriseMembreRepository.findByEntreprise_IdAndRole(ent.getId(), EntrepriseRole.PROMOTEUR);
         
-        if (!isGerant) {
+        boolean isGerant = gerants.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        boolean isPromoteur = promoteurs.stream().anyMatch(em -> em.getPersonne() != null && em.getPersonne().getId().equals(person.getId()) && isActive(em));
+        
+        if (!isGerant && !isPromoteur) {
             throw new BadRequestException(Messages.DOCUMENT_POUR_GERANT_SEULEMENT);
         }
     }
@@ -492,6 +500,17 @@ public class DocumentsServiceImpl implements DocumentsService {
             throw new BadRequestException("Fichier obligatoire");
         }
 
+        // Valider le type de fichier
+        if (!fileStorageService.isAllowedFileType(file.getContentType())) {
+            throw new BadRequestException("Type de fichier non autorisé: " + file.getContentType() + 
+                ". Types acceptés: PDF, images (JPG, PNG, GIF, etc.), documents Word.");
+        }
+
+        // Valider la taille du fichier
+        if (!fileStorageService.isValidFileSize(file.getSize())) {
+            throw new BadRequestException("Fichier trop volumineux. Taille maximale autorisée: 50MB");
+        }
+
         // Récupérer le document existant
         Documents document = documentsRepository.findById(documentId)
             .orElseThrow(() -> new NotFoundException("Document non trouvé avec l'ID: " + documentId));
@@ -500,6 +519,51 @@ public class DocumentsServiceImpl implements DocumentsService {
         document.setPhotoPiece(toBlob(file));
         
         return documentsRepository.save(document);
+    }
+
+    @Override
+    public void deleteDocument(String documentId) {
+        if (documentId == null || documentId.isBlank()) {
+            throw new BadRequestException("ID du document obligatoire");
+        }
+
+        // Vérifier que le document existe
+        Documents document = documentsRepository.findById(documentId)
+            .orElseThrow(() -> new NotFoundException("Document non trouvé avec l'ID: " + documentId));
+
+        System.out.println("🗑️ [DocumentsServiceImpl] Suppression du document: " + document.getNumero() + " (Type: " + document.getTypeDocument() + ")");
+        
+        // Supprimer le document
+        documentsRepository.delete(document);
+        
+        System.out.println("✅ [DocumentsServiceImpl] Document supprimé avec succès");
+    }
+
+    @Override
+    public Documents uploadAutresDocument(String personneId, String entrepriseId, String nom, String description, MultipartFile file) {
+        if (personneId == null || personneId.isBlank()) throw new BadRequestException(Messages.PERSONNE_ID_OBLIGATOIRE);
+        if (entrepriseId == null || entrepriseId.isBlank()) throw new BadRequestException(Messages.ENTREPRISE_ID_OBLIGATOIRE);
+        if (nom == null || nom.isBlank()) throw new BadRequestException("Le nom du document est obligatoire");
+        if (file == null || file.isEmpty()) throw new BadRequestException(Messages.PHOTO_DOCUMENT_OBLIGATOIRE);
+
+        Persons person = personsRepository.findById(personneId)
+            .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(personneId)));
+        Entreprise ent = entrepriseRepository.findById(entrepriseId)
+            .orElseThrow(() -> new NotFoundException(Messages.ENTREPRISE_INTROUVABLE));
+
+        // Créer le document de type AUTRES
+        Documents d = new Documents();
+        d.setPersonne(person);
+        d.setEntreprise(ent);
+        d.setTypePiece(null);
+        d.setTypeDocument(TypeDocuments.AUTRES);
+        d.setNumero(nom.trim()); // Utiliser le nom comme numéro/identifiant
+        d.setDescription(description != null ? description.trim() : null);
+        d.setPhotoPiece(toBlob(file));
+        
+        System.out.println("📎 [DocumentsServiceImpl] Upload document AUTRES: " + nom + " pour personne: " + personneId);
+        
+        return documentsRepository.save(d);
     }
 }
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

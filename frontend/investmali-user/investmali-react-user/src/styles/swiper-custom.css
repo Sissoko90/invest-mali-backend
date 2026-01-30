@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Styles personnalisés pour le slider d'équipe */
 
 .team-slider {
@@ -83,3 +84,90 @@
 .team-slider .swiper-wrapper {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
+=======
+/* Styles personnalisés pour le slider d'équipe */
+
+.team-slider {
+  padding-bottom: 50px !important;
+  overflow: visible !important;
+}
+
+.team-slider .swiper-slide {
+  height: auto !important;
+  display: flex !important;
+}
+
+.team-slider .swiper-slide > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Pagination personnalisée */
+.team-slider .swiper-pagination {
+  bottom: 10px !important;
+  text-align: center !important;
+}
+
+.team-slider .swiper-pagination-bullet {
+  width: 12px !important;
+  height: 12px !important;
+  background: #e5e7eb !important;
+  opacity: 1 !important;
+  margin: 0 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.team-slider .swiper-pagination-bullet-active {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  transform: scale(1.2) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+.team-slider .swiper-pagination-bullet-active-main {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+}
+
+/* Boutons de navigation */
+.swiper-button-prev-custom,
+.swiper-button-next-custom {
+  transition: all 0.3s ease !important;
+}
+
+.swiper-button-prev-custom:hover,
+.swiper-button-next-custom:hover {
+  transform: translateY(-50%) scale(1.1) !important;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .swiper-button-prev-custom,
+  .swiper-button-next-custom {
+    display: none !important;
+  }
+  
+  .team-slider {
+    padding-bottom: 60px !important;
+  }
+}
+
+/* Animation des cartes */
+.team-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.team-card:hover {
+  transform: translateY(-8px) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Effet de parallaxe léger */
+.swiper-slide-active .team-card {
+  transform: scale(1.02) !important;
+}
+
+/* Smooth scrolling pour les slides */
+.team-slider .swiper-wrapper {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

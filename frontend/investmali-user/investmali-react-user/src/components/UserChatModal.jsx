@@ -641,6 +641,7 @@ export default UserChatModal;
 import React, { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { API_CONFIG } from '../config/api.config';
 
 const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
   const { user: authUser } = useAuth();
@@ -695,10 +696,8 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 
       console.log('🔍 Chargement des conversations pour:', userId, 'entrepriseId:', selectedEntrepriseId);
       
-      let url = `http://localhost:8080/api/v1/chat/conversations/user/${userId}`;
-      if (selectedEntrepriseId) {
-        url += `?entrepriseId=${selectedEntrepriseId}`;
-      }
+      // ✅ NOUVEAU : Utiliser le nouveau endpoint /conversations/user/{userId}
+      let url = `${API_CONFIG.BASE_URL}/conversations/user/${userId}`;
       
       const response = await fetch(url);
       const data = await response.json();
@@ -736,7 +735,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
       console.log('🔍 Chargement des entreprises pour:', userId);
       
       // Utiliser l'API existante pour récupérer les demandes de l'utilisateur
-      const response = await fetch(`http://localhost:8080/api/v1/business/my-applications`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL.replace('/api/v1', '')}/api/v1/business/my-applications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -796,7 +795,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
       // D'abord, essayer de récupérer les conversations existantes de l'utilisateur
       console.log('🔍 Recherche des conversations existantes pour:', userId);
       try {
-        const userConversationsResponse = await fetch(`http://localhost:8080/api/v1/chat/conversations/user/${userId}`);
+        const userConversationsResponse = await fetch(`${API_CONFIG.BASE_URL}/conversations/user/${userId}`);
         const userConversationsData = await userConversationsResponse.json();
         
         // Utiliser l'entreprise sélectionnée ou une valeur par défaut
@@ -1028,7 +1027,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-mali-emerald to-mali-gold text-white p-4 rounded-t-2xl flex items-center justify-between">
+        <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning text-white p-4 rounded-t-2xl flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1132,7 +1131,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
           {isInitializing ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mali-emerald mx-auto mb-2"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-investmali-accent mx-auto mb-2"></div>
                 <p className="text-gray-600">Connexion à l'assistance...</p>
               </div>
             </div>
@@ -1143,7 +1142,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                 <h3 className="text-lg font-semibold text-gray-800">Mes conversations</h3>
                 <button
                   onClick={startNewConversation}
-                  className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-sm"
+                  className="bg-investmali-accent text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-sm"
                 >
                   + Nouvelle conversation
                 </button>
@@ -1154,7 +1153,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                   <p>Aucune conversation pour le moment</p>
                   <button
                     onClick={startNewConversation}
-                    className="mt-4 bg-mali-emerald text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors"
+                    className="mt-4 bg-investmali-accent text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-colors"
                   >
                     Démarrer une conversation
                   </button>
@@ -1202,7 +1201,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                 <p className="text-red-600 mb-4">{error}</p>
                 <button
                   onClick={initializeChat}
-                  className="bg-mali-emerald text-white px-4 py-2 rounded-lg hover:bg-mali-emerald/90 transition-colors"
+                  className="bg-investmali-accent text-white px-4 py-2 rounded-lg hover:bg-investmali-accent/90 transition-colors"
                 >
                   Réessayer
                 </button>
@@ -1218,7 +1217,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                       message.sender === 'user'
-                        ? 'bg-mali-emerald text-white'
+                        ? 'bg-investmali-accent text-white'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
@@ -1257,7 +1256,7 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || isLoading}
-                className="bg-mali-emerald text-white p-2 rounded-full hover:bg-mali-emerald/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-investmali-accent text-white p-2 rounded-full hover:bg-investmali-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -1276,4 +1275,8 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 };
 
 export default UserChatModal;
+<<<<<<< HEAD
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

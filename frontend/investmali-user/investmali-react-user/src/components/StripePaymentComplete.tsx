@@ -237,4 +237,8 @@ const StripePaymentComplete: React.FC<StripePaymentCompleteProps> = ({
 };
 
 export default StripePaymentComplete;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

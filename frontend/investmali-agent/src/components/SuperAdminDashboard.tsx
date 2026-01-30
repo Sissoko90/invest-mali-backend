@@ -887,13 +887,22 @@ const SuperAdminDashboard: React.FC = () => {
           {/* Total Agents */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-gray-500 uppercase">Total Agents</p>
+=======
+              <p className="text-xs font-medium text-gray-500 uppercase">Total Agents</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <div className="p-2 bg-sky-600 rounded-lg">
                 <Users className="w-4 h-4 text-white" />
               </div>
             </div>
+<<<<<<< HEAD
             <p className="text-5xl font-bold text-gray-900 text-center">{formatNumber(stats.totalAgents)}</p>
             <div className="flex items-center gap-3 mt-2 text-sm">
+=======
+            <p className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalAgents)}</p>
+            <div className="flex items-center gap-3 mt-2 text-xs">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <span className="text-green-600 font-medium">{stats.activeAgents} actifs</span>
               <span className="text-red-600 font-medium">{stats.inactiveAgents} inactifs</span>
             </div>
@@ -902,13 +911,22 @@ const SuperAdminDashboard: React.FC = () => {
           {/* Applications totales */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-gray-500 uppercase">Applications</p>
+=======
+              <p className="text-xs font-medium text-gray-500 uppercase">Applications</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <div className="p-2 bg-green-600 rounded-lg">
                 <Building2 className="w-4 h-4 text-white" />
               </div>
             </div>
+<<<<<<< HEAD
             <p className="text-5xl font-bold text-gray-900 text-center">{formatNumber(stats.totalApplications)}</p>
             <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
+=======
+            <p className="text-2xl font-bold text-gray-900">{formatNumber(stats.totalApplications)}</p>
+            <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <TrendingUp className="w-3 h-3" />
               <span className="font-medium">+12% ce mois</span>
             </div>
@@ -917,13 +935,22 @@ const SuperAdminDashboard: React.FC = () => {
           {/* En attente */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-gray-500 uppercase">En attente</p>
+=======
+              <p className="text-xs font-medium text-gray-500 uppercase">En attente</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <div className="p-2 bg-amber-600 rounded-lg">
                 <Clock className="w-4 h-4 text-white" />
               </div>
             </div>
+<<<<<<< HEAD
             <p className="text-5xl font-bold text-gray-900 text-center">{formatNumber(stats.pendingApplications)}</p>
             <div className="flex items-center gap-1 mt-2 text-sm text-amber-600">
+=======
+            <p className="text-2xl font-bold text-gray-900">{formatNumber(stats.pendingApplications)}</p>
+            <div className="flex items-center gap-1 mt-2 text-xs text-amber-600">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <AlertCircle className="w-3 h-3" />
               <span className="font-medium">Nécessite attention</span>
             </div>
@@ -932,17 +959,29 @@ const SuperAdminDashboard: React.FC = () => {
           {/* Taux d'approbation */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
               <p className="font-medium text-gray-500 uppercase">Taux approbation</p>
+=======
+              <p className="text-xs font-medium text-gray-500 uppercase">Taux approbation</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <div className="p-2 bg-green-600 rounded-lg">
                 <CheckCircle className="w-4 h-4 text-white" />
               </div>
             </div>
+<<<<<<< HEAD
             <p className="text-5xl font-bold text-gray-900 text-center">
+=======
+            <p className="text-2xl font-bold text-gray-900">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               {stats.totalApplications > 0 
                 ? Math.round((stats.approvedApplications / stats.totalApplications) * 100)
                 : 0}%
             </p>
+<<<<<<< HEAD
             <p className="text-sm text-gray-500 mt-2">{formatNumber(stats.approvedApplications)} approuvées</p>
+=======
+            <p className="text-xs text-gray-500 mt-2">{formatNumber(stats.approvedApplications)} approuvées</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
           </div>
         </div>
 
@@ -954,7 +993,11 @@ const SuperAdminDashboard: React.FC = () => {
               <div className="p-2 bg-sky-600 rounded-lg">
                 <BarChart3 className="w-4 h-4 text-white" />
               </div>
+<<<<<<< HEAD
               <h3 className="text-lg font-semibold text-gray-800">Agents par Antenne</h3>
+=======
+              <h3 className="text-sm font-semibold text-gray-800">Agents par Antenne</h3>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             </div>
             {Object.keys(stats.agentsByAntenne).length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -972,7 +1015,11 @@ const SuperAdminDashboard: React.FC = () => {
             ) : (
               <div className="h-[220px] flex flex-col items-center justify-center text-gray-400">
                 <Users className="w-8 h-8 mb-2" />
+<<<<<<< HEAD
                 <p className="text-lg">Aucun agent assigné</p>
+=======
+                <p className="text-sm">Aucun agent assigné</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </div>
             )}
           </div>
@@ -983,7 +1030,11 @@ const SuperAdminDashboard: React.FC = () => {
               <div className="p-2 bg-green-600 rounded-lg">
                 <Activity className="w-4 h-4 text-white" />
               </div>
+<<<<<<< HEAD
               <h3 className="text-lg font-semibold text-gray-800">Activité Récente</h3>
+=======
+              <h3 className="text-sm font-semibold text-gray-800">Activité Récente</h3>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             </div>
             <div className="space-y-3 max-h-[220px] overflow-y-auto">
               {recentActivity.slice(0, 5).map((activity) => (
@@ -994,7 +1045,11 @@ const SuperAdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{activity.message}</p>
+<<<<<<< HEAD
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+=======
+                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <Clock className="w-3 h-3" />
                         <span>{formatTimeAgo(activity.timestamp)}</span>
                         {activity.antenne && (
@@ -1027,32 +1082,57 @@ const SuperAdminDashboard: React.FC = () => {
           {/* Cartes résumé */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-sky-700 uppercase">Aujourd'hui</p>
               <p className="text-5xl font-bold text-sky-900 mt-1 text-center">
+=======
+              <p className="text-xs font-medium text-sky-700 uppercase">Aujourd'hui</p>
+              <p className="text-2xl font-bold text-sky-900 mt-1">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 {Object.values(stats.creationsParJour || {}).reduce((a, b) => a + b, 0)}
               </p>
             </div>
             <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-sky-700 uppercase">Ce mois</p>
               <p className="text-5xl font-bold text-sky-900 mt-1 text-center">
+=======
+              <p className="text-xs font-medium text-sky-700 uppercase">Ce mois</p>
+              <p className="text-2xl font-bold text-sky-900 mt-1">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 {Object.values(stats.creationsParMois || {}).reduce((a, b) => a + b, 0)}
               </p>
             </div>
             <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-sky-700 uppercase">Trimestre</p>
               <p className="text-5xl font-bold text-sky-900 mt-1 text-center">
+=======
+              <p className="text-xs font-medium text-sky-700 uppercase">Trimestre</p>
+              <p className="text-2xl font-bold text-sky-900 mt-1">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 {Object.values(stats.creationsParTrimestre || {}).reduce((a, b) => a + b, 0)}
               </p>
             </div>
             <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-green-700 uppercase">Semestre</p>
               <p className="text-5xl font-bold text-green-900 mt-1 text-center">
+=======
+              <p className="text-xs font-medium text-green-700 uppercase">Semestre</p>
+              <p className="text-2xl font-bold text-green-900 mt-1">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 {Object.values(stats.creationsParSemestre || {}).reduce((a, b) => a + b, 0)}
               </p>
             </div>
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+<<<<<<< HEAD
               <p className="text-lg font-medium text-amber-700 uppercase">Cette année</p>
               <p className="text-5xl font-bold text-amber-900 mt-1 text-center">
+=======
+              <p className="text-xs font-medium text-amber-700 uppercase">Cette année</p>
+              <p className="text-2xl font-bold text-amber-900 mt-1">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 {Object.values(stats.creationsParAn || {}).reduce((a, b) => a + b, 0)}
               </p>
             </div>
@@ -1062,7 +1142,11 @@ const SuperAdminDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Histogramme par Antenne */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <MapPin className="w-4 h-4 text-sky-600" />
                 Créations par Antenne
               </h4>
@@ -1088,7 +1172,11 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* Histogramme par Forme Juridique */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <Building2 className="w-4 h-4 text-amber-600" />
                 Créations par Forme Juridique
               </h4>
@@ -1114,7 +1202,11 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* Histogramme par Sexe */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <Users className="w-4 h-4 text-green-600" />
                 Créations par Sexe du Créateur
               </h4>
@@ -1144,7 +1236,11 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* Histogramme par Zone Économique */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <MapPin className="w-4 h-4 text-purple-600" />
                 Créations par Zone Économique
               </h4>
@@ -1173,7 +1269,11 @@ const SuperAdminDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Histogramme par Nationalité */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <Shield className="w-4 h-4 text-indigo-600" />
                 Créations par Nationalité
               </h4>
@@ -1206,7 +1306,11 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* Histogramme par Type de Société */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<<<<<<< HEAD
               <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+=======
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <Building2 className="w-4 h-4 text-teal-600" />
                 Créations par Type de Société
               </h4>
@@ -1254,7 +1358,11 @@ const SuperAdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">Gérer les Agents</p>
+<<<<<<< HEAD
                   <p className="text-sm text-gray-500">Créer, modifier, activer</p>
+=======
+                  <p className="text-xs text-gray-500">Créer, modifier, activer</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </div>
               </div>
             </button>
@@ -1266,7 +1374,11 @@ const SuperAdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">Voir Applications</p>
+<<<<<<< HEAD
                   <p className="text-sm text-gray-500">Demandes d'entreprises</p>
+=======
+                  <p className="text-xs text-gray-500">Demandes d'entreprises</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </div>
               </div>
             </button>
@@ -1278,7 +1390,11 @@ const SuperAdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">Exporter Rapports</p>
+<<<<<<< HEAD
                   <p className="text-sm text-gray-500">Télécharger les données</p>
+=======
+                  <p className="text-xs text-gray-500">Télécharger les données</p>
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </div>
               </div>
             </button>

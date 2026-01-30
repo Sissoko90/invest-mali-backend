@@ -18,6 +18,7 @@ const AnimatedBackground: React.FC = () => {
 };
 
 export default AnimatedBackground;
+<<<<<<< HEAD
 
 
 
@@ -42,3 +43,29 @@ export default AnimatedBackground;
 
 
 
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

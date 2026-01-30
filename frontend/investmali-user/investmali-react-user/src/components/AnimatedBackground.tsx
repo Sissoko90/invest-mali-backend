@@ -114,4 +114,8 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 };
 
 export default AnimatedBackground;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

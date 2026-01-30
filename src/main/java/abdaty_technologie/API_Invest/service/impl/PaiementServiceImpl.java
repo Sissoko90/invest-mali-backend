@@ -53,9 +53,12 @@ public class PaiementServiceImpl implements IPaiementService {
     
     @Autowired
     private InvestmentAgreementRepository investmentAgreementRepository;
+<<<<<<< HEAD
 
     @Autowired
     private UtilisateursRepository utilisateursRepository;
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
     @Override
     public PaiementResponse creerPaiement(PaiementRequest request) {
@@ -307,6 +310,9 @@ public class PaiementServiceImpl implements IPaiementService {
         return paiementRepository.existsByReferenceTransaction(reference);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
     /**
      * Met à jour le statut de l'entreprise après un paiement validé
@@ -345,6 +351,7 @@ public class PaiementServiceImpl implements IPaiementService {
         
         List<PaiementResponse> allPayments = new ArrayList<>();
         
+<<<<<<< HEAD
         try {
             // 1. Récupérer les paiements de l'ancienne table "paiement" (ESPECES, etc.)
             List<Paiement> paiements = paiementRepository.findByStatutWithRelations(statut);
@@ -360,6 +367,17 @@ public class PaiementServiceImpl implements IPaiementService {
             e.printStackTrace();
             // Continuer avec une liste vide pour les anciens paiements
         }
+=======
+        // 1. Récupérer les paiements de l'ancienne table "paiement" (ESPECES, etc.)
+        List<Paiement> paiements = paiementRepository.findByStatutWithRelations(statut);
+        System.out.println("✅ [PaiementService] " + paiements.size() + " paiements trouvés dans table 'paiement' avec statut " + statut);
+        
+        // Convertir les anciens paiements
+        List<PaiementResponse> oldPayments = paiements.stream()
+                .map(this::convertirEnResponse)
+                .collect(Collectors.toList());
+        allPayments.addAll(oldPayments);
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         
         // 2. Récupérer les paiements TresorPay de la nouvelle table "payments" avec statut PAID
         if (statut == StatutPaiement.VALIDE) {
@@ -484,6 +502,9 @@ public class PaiementServiceImpl implements IPaiementService {
         }
     }
 
+<<<<<<< HEAD
 =======
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 }

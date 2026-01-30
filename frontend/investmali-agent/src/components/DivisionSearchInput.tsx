@@ -340,7 +340,11 @@ const DivisionSearchInput: React.FC<DivisionSearchInputProps> = ({
                 onClick={() => handleSelect(division)}
                 className={`
                   px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0
+<<<<<<< HEAD
                   hover:bg-sky-50 transition-colors duration-150
+=======
+                  hover:bg-primary-50 transition-colors duration-150
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   ${index === selectedIndex ? 'bg-primary-50' : ''}
                 `}
               >

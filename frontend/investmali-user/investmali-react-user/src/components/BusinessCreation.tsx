@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation } from 'react-router-dom';
@@ -9233,6 +9234,9 @@ export default BusinessCreation;
 
 =======
 import React, { useState, useEffect, useRef } from 'react';
+=======
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -9244,6 +9248,7 @@ import BusinessCreation3D from './BusinessCreation3D';
 import ParticipantsStep from './ParticipantsStep';
 import DocumentUpload from './DocumentUpload';
 import DivisionSearchInput from './DivisionSearchInput';
+import Header from './Header';
 // Services and enums wired to backend
 import divisionService from '../services/divisionService';
 import personService from '../services/personService';
@@ -9254,7 +9259,7 @@ import { businessAPI, apiUtils, createEntreprise, authAPI } from '../services/ap
 // Nouveaux types pour l'API backend
 export type TypeEntreprise = 'SOCIETE' | 'ENTREPRISE_INDIVIDUELLE';
 export type FormeJuridique = 'SARL' | 'SARL_UNI' | 'SUC_SARL' | 'FIL_SARL' | 'SA' | 'SUC_SA' | 'FIL_SA' | 'SASU' | 'SAS' | 'BR' | 'FIL_SAS' | 'SUC_SAS' | 'SNC' | 'SCS' | 'SCI' | 'SCP' | 'GIE' | 'E_I';
-export type EntrepriseRole = 'GERANT' | 'ASSOCIE';
+export type EntrepriseRole = 'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR';
 export type StatutCreation = 'EN_COURS' | 'VALIDE' | 'REJETE';
 export type EtapeValidation = 'CREATION' | 'VALIDATION_DOCUMENTS' | 'PAIEMENT' | 'FINALISATION';
 export type DomaineActivites = 'ADMINISTRATEURS_ET_AGENTS_IMMOBILIERS' | 'ARCHITECTE' | 'BTP' | 'CARTOGRAPHIE_TOPOGRAPHIE' | 'GEOMETRES_EXPERTS' | 'INGENIEUR_CONSEIL' | 'PRODUCTEUR_DE_SPECTACLES' | 'PROMOTEUR_IMMOBILIER' | 'STATIONS' | 'TRANSPORT' | 'URBANISTE' | 'ETABLISSEMENT_DE_TOURISME' | 'AGENCE_DE_VOYAGE';
@@ -9280,6 +9285,69 @@ export type DomaineActiviteNr =
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Fonction pour formater les dates pour le backend
+const formatDateForBackend = (dateString: string | null | undefined): string | null => {
+  if (!dateString || dateString.trim() === '') {
+    return null;
+  }
+
+  try {
+    // Si la date contient déjà un 'T', extraire seulement la partie date
+    if (dateString.includes('T')) {
+      const formattedDate = dateString.split('T')[0];
+      return formattedDate;
+    }
+
+    // Vérifier si la date est au format YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateRegex.test(dateString)) {
+      return dateString;
+    }
+
+    // Essayer de parser et reformater la date
+    const parsedDate = new Date(dateString);
+    if (isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    // Formater au format YYYY-MM-DD
+    const formattedDate = parsedDate.toISOString().split('T')[0];
+    return formattedDate;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Fonction pour s'assurer qu'une date de naissance rend la personne majeure (>= 18 ans)
+const ensureAdultBirthDate = (birthDate: string | null | undefined): string => {
+  if (!birthDate || birthDate.trim() === '') {
+    // Si pas de date, générer une date qui rend la personne majeure (25 ans par exemple)
+    const today = new Date();
+    const adultDate = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
+    const result = adultDate.toISOString().split('T')[0];
+    return result;
+  }
+  
+  const birth = new Date(birthDate);
+  const today = new Date();
+  const age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  const dayDiff = today.getDate() - birth.getDate();
+  
+  // Calculer l'âge exact
+  const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
+  
+  if (exactAge < 18) {
+    // Si mineur, ajuster la date pour rendre la personne majeure (25 ans)
+    const adultDate = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
+    return adultDate.toISOString().split('T')[0];
+  }
+  
+  // Si déjà majeur, retourner la date formatée
+  const formatted = formatDateForBackend(birthDate);
+  return formatted || birthDate;
+};
+
 // Fonction pour mapper les civilités frontend vers backend
 const mapCivilityToBackend = (frontendCivility: string): string => {
   const mapping: Record<string, string> = {
@@ -9295,36 +9363,42 @@ const mapCivilityToBackend = (frontendCivility: string): string => {
     'Mlle': 'MADEMOISELLE',
     'MLLE': 'MADEMOISELLE',
     'Mademoiselle': 'MADEMOISELLE',
-    'MADEMOISELLE': 'MADEMOISELLE'
+    'MADEMOISELLE': 'MADEMOISELLE',
+    // Ajout pour les personnes morales
+    'PERSONNE_MORALE': 'PERSONNE_MORALE'
   };
   
   const result = mapping[frontendCivility] || 'MONSIEUR';
-  console.log(' Mapping civilité:', frontendCivility, '→', result);
   return result;
 };
 
 // Fonction pour déduire le sexe à partir de la civilité
-const deduceSexeFromCivilite = (civilite: string): string => {
+const deduceSexeFromCivilite = (civilite: string): string | null => {
   const backendCivilite = mapCivilityToBackend(civilite);
   
   let result;
-  if (backendCivilite === 'MADAME' || backendCivilite === 'MADEMOISELLE') {
+  if (backendCivilite === 'PERSONNE_MORALE') {
+    result = null; // Les personnes morales n'ont pas de sexe
+  } else if (backendCivilite === 'MADAME' || backendCivilite === 'MADEMOISELLE') {
     result = 'FEMININ';
   } else {
     result = 'MASCULIN';
   }
   
-  console.log('🔍 Déduction sexe - Input:', civilite, '→ Backend civilité:', backendCivilite, '→ Sexe:', result);
   return result;
 };
 
 // Fonction pour obtenir le sexe cohérent avec la civilité (force la déduction si incohérent)
-const getConsistentSexe = (existingSexe: string | undefined, civilite: string): string => {
+const getConsistentSexe = (existingSexe: string | undefined, civilite: string): string | null => {
   const deducedSexe = deduceSexeFromCivilite(civilite);
+  
+  // Si c'est une personne morale, retourner null
+  if (deducedSexe === null) {
+    return null;
+  }
   
   // Si pas de sexe existant, utiliser la déduction
   if (!existingSexe) {
-    console.log('🔍 Sexe cohérent - Pas de sexe existant, utilisation déduction:', deducedSexe);
     return deducedSexe;
   }
   
@@ -9335,13 +9409,89 @@ const getConsistentSexe = (existingSexe: string | undefined, civilite: string): 
     ((backendCivilite === 'MADAME' || backendCivilite === 'MADEMOISELLE') && existingSexe === 'FEMININ');
   
   if (isConsistent) {
-    console.log('🔍 Sexe cohérent - Cohérent, conservation:', existingSexe);
     return existingSexe;
   } else {
-    console.log('🔍 Sexe cohérent - Incohérent! Civilité:', backendCivilite, 'Sexe existant:', existingSexe, '→ Force déduction:', deducedSexe);
     return deducedSexe;
   }
 };
+
+// Fonction pour valider le format du téléphone malien (E.164)
+const validateMalianPhoneE164 = (phone: string): boolean => {
+  // Format E.164 pour le Mali: +223 suivi de 8 chiffres
+  const e164Regex = /^\+223[0-9]{8}$/;
+  return e164Regex.test(phone);
+};
+
+// Fonction pour formater l'affichage du téléphone
+const formatPhoneDisplay = (phone: string): string => {
+  // Supprimer tous les caractères non numériques sauf le +
+  const cleaned = phone.replace(/[^\d+]/g, '');
+  
+  // Si ça commence par +223, formater en +223 XX XX XX XX
+  if (cleaned.startsWith('+223') && cleaned.length === 12) {
+    const number = cleaned.substring(4); // Enlever +223
+    return `+223 ${number.substring(0, 2)} ${number.substring(2, 4)} ${number.substring(4, 6)} ${number.substring(6, 8)}`;
+  }
+  
+  // Si c'est juste 8 chiffres, ajouter +223 et formater
+  if (cleaned.length === 8 && /^\d{8}$/.test(cleaned)) {
+    return `+223 ${cleaned.substring(0, 2)} ${cleaned.substring(2, 4)} ${cleaned.substring(4, 6)} ${cleaned.substring(6, 8)}`;
+  }
+  
+  return phone;
+};
+
+
+// Liste des pays avec codes téléphoniques et drapeaux
+const countries = [
+  { code: '+223', name: 'Mali', flag: 'https://flagcdn.com/w40/ml.png', iso: 'ML' },
+  { code: '+33', name: 'France', flag: 'https://flagcdn.com/w40/fr.png', iso: 'FR' },
+  { code: '+1', name: 'États-Unis', flag: 'https://flagcdn.com/w40/us.png', iso: 'US' },
+  { code: '+44', name: 'Royaume-Uni', flag: 'https://flagcdn.com/w40/gb.png', iso: 'GB' },
+  { code: '+49', name: 'Allemagne', flag: 'https://flagcdn.com/w40/de.png', iso: 'DE' },
+  { code: '+221', name: 'Sénégal', flag: 'https://flagcdn.com/w40/sn.png', iso: 'SN' },
+  { code: '+225', name: 'Côte d\'Ivoire', flag: 'https://flagcdn.com/w40/ci.png', iso: 'CI' },
+  { code: '+226', name: 'Burkina Faso', flag: 'https://flagcdn.com/w40/bf.png', iso: 'BF' },
+  { code: '+227', name: 'Niger', flag: 'https://flagcdn.com/w40/ne.png', iso: 'NE' },
+  { code: '+228', name: 'Togo', flag: 'https://flagcdn.com/w40/tg.png', iso: 'TG' },
+  { code: '+229', name: 'Bénin', flag: 'https://flagcdn.com/w40/bj.png', iso: 'BJ' },
+  { code: '+230', name: 'Maurice', flag: 'https://flagcdn.com/w40/mu.png', iso: 'MU' },
+  { code: '+212', name: 'Maroc', flag: 'https://flagcdn.com/w40/ma.png', iso: 'MA' },
+  { code: '+213', name: 'Algérie', flag: 'https://flagcdn.com/w40/dz.png', iso: 'DZ' },
+  { code: '+216', name: 'Tunisie', flag: 'https://flagcdn.com/w40/tn.png', iso: 'TN' },
+  { code: '+220', name: 'Gambie', flag: 'https://flagcdn.com/w40/gm.png', iso: 'GM' },
+  { code: '+224', name: 'Guinée', flag: 'https://flagcdn.com/w40/gn.png', iso: 'GN' },
+  { code: '+232', name: 'Sierra Leone', flag: 'https://flagcdn.com/w40/sl.png', iso: 'SL' },
+  { code: '+233', name: 'Ghana', flag: 'https://flagcdn.com/w40/gh.png', iso: 'GH' },
+  { code: '+234', name: 'Nigeria', flag: 'https://flagcdn.com/w40/ng.png', iso: 'NG' },
+  { code: '+237', name: 'Cameroun', flag: 'https://flagcdn.com/w40/cm.png', iso: 'CM' },
+  { code: '+241', name: 'Gabon', flag: 'https://flagcdn.com/w40/ga.png', iso: 'GA' },
+  { code: '+242', name: 'Congo', flag: 'https://flagcdn.com/w40/cg.png', iso: 'CG' },
+  { code: '+243', name: 'RD Congo', flag: 'https://flagcdn.com/w40/cd.png', iso: 'CD' },
+  { code: '+245', name: 'Guinée-Bissau', flag: 'https://flagcdn.com/w40/gw.png', iso: 'GW' },
+  { code: '+248', name: 'Seychelles', flag: 'https://flagcdn.com/w40/sc.png', iso: 'SC' },
+  { code: '+249', name: 'Soudan', flag: 'https://flagcdn.com/w40/sd.png', iso: 'SD' },
+  { code: '+250', name: 'Rwanda', flag: 'https://flagcdn.com/w40/rw.png', iso: 'RW' },
+  { code: '+251', name: 'Éthiopie', flag: 'https://flagcdn.com/w40/et.png', iso: 'ET' },
+  { code: '+252', name: 'Somalie', flag: 'https://flagcdn.com/w40/so.png', iso: 'SO' },
+  { code: '+253', name: 'Djibouti', flag: 'https://flagcdn.com/w40/dj.png', iso: 'DJ' },
+  { code: '+254', name: 'Kenya', flag: 'https://flagcdn.com/w40/ke.png', iso: 'KE' },
+  { code: '+255', name: 'Tanzanie', flag: 'https://flagcdn.com/w40/tz.png', iso: 'TZ' },
+  { code: '+256', name: 'Ouganda', flag: 'https://flagcdn.com/w40/ug.png', iso: 'UG' },
+  { code: '+257', name: 'Burundi', flag: 'https://flagcdn.com/w40/bi.png', iso: 'BI' },
+  { code: '+258', name: 'Mozambique', flag: 'https://flagcdn.com/w40/mz.png', iso: 'MZ' },
+  { code: '+260', name: 'Zambie', flag: 'https://flagcdn.com/w40/zm.png', iso: 'ZM' },
+  { code: '+261', name: 'Madagascar', flag: 'https://flagcdn.com/w40/mg.png', iso: 'MG' },
+  { code: '+262', name: 'Réunion', flag: 'https://flagcdn.com/w40/re.png', iso: 'RE' },
+  { code: '+263', name: 'Zimbabwe', flag: 'https://flagcdn.com/w40/zw.png', iso: 'ZW' },
+  { code: '+264', name: 'Namibie', flag: 'https://flagcdn.com/w40/na.png', iso: 'NA' },
+  { code: '+265', name: 'Malawi', flag: 'https://flagcdn.com/w40/mw.png', iso: 'MW' },
+  { code: '+266', name: 'Lesotho', flag: 'https://flagcdn.com/w40/ls.png', iso: 'LS' },
+  { code: '+267', name: 'Botswana', flag: 'https://flagcdn.com/w40/bw.png', iso: 'BW' },
+  { code: '+268', name: 'Eswatini', flag: 'https://flagcdn.com/w40/sz.png', iso: 'SZ' },
+  { code: '+269', name: 'Comores', flag: 'https://flagcdn.com/w40/km.png', iso: 'KM' },
+  { code: '+27', name: 'Afrique du Sud', flag: 'https://flagcdn.com/w40/za.png', iso: 'ZA' }
+];
 
 // Libellés lisibles pour Civilité et Sexe (valeurs API = names)
 export const CIVILITE_LABELS: Record<string, string> = {
@@ -9964,6 +10114,7 @@ export interface Participant {
   nom: string;
   prenom: string;
   telephone?: string;
+  telephone2?: string;
   email?: string;
   dateNaissance?: string;
   lieuNaissance?: string;
@@ -9982,6 +10133,11 @@ export interface Participant {
   acteMariageFile?: File;
   // Champ spécifique pour l'extrait de naissance des gérants
   extraitNaissanceFile?: File;
+  // Champ spécifique pour le certificat de résidence des gérants
+  certificatResidenceFile?: File;
+  certificatResidenceUrl?: string;
+  // Champ spécifique pour la pièce de nationalité des gérants d'entreprises individuelles
+  pieceNationaliteFile?: File;
   // Champ spécifique pour la déclaration sur l'honneur des gérants
   declarationHonneurFile?: File;
   // Champ pour la signature (déclaration sur l'honneur)
@@ -9991,6 +10147,18 @@ export interface Participant {
   division_id?: string;
   divisionCode?: string;
   localite?: string;
+  porte?: string;
+  // Champs spécifiques aux personnes morales
+  paysEmissionRccm?: string;
+  denominationEntreprise?: string;
+  rccmFile?: File;
+  // Documents supplémentaires pour les entreprises individuelles
+  autresDocuments?: Array<{
+    id: string;
+    name: string;
+    file: File | null;
+    description: string;
+  }>;
 }
 
 // Structure pour la requête de création d'entreprise selon l'API backend
@@ -10022,6 +10190,7 @@ interface PersonalInfo {
   lastName: string;
   email: string;
   phone: string;
+  phone2?: string;
   birthDate: string;
   birthPlace: string;
   nationality: string;
@@ -10035,7 +10204,9 @@ interface PersonalInfo {
   address: string;
   city: string;
   region: string;
-  localite: string; // Champ localité
+  localite: string; // Champ localité (rue)
+  porte: string; // Numéro de porte
+  adresseLibre?: string; // Adresse libre (champ texte libre)
   divisionId: string; // ID de la division administrative
   position: string;
   powers: string[];
@@ -10067,6 +10238,9 @@ interface CompanyInfo {
   cercleId?: string;
   arrondissementId?: string;
   communeId?: string;
+  quartierId?: string;
+  rue?: string;
+  porte?: string;
 }
 
 interface Documents {
@@ -10109,7 +10283,9 @@ export interface BusinessCreationData {
     willImportExport: boolean;
   };
   // Étape 2: Informations de l'entreprise
-  companyInfo: CompanyInfo;
+  companyInfo: CompanyInfo & {
+    typeEntreprise?: 'ENTREPRISE_INDIVIDUELLE' | 'SOCIETE';
+  };
   // Étape 3: Participants/Associés
   participants: Participant[];
   // Étape 4: Documents
@@ -10126,82 +10302,177 @@ const PersonalLocationStep: React.FC<{
   updateData: (field: keyof BusinessCreationData, value: any) => void,
   isReadOnly?: boolean
 }> = ({ data, updateData, isReadOnly = false }) => {
-  // États pour les divisions personnelles
+  // États pour les divisions personnelles (STRUCTURE INSTAT MALI - 4 NIVEAUX)
   const [personalRegions, setPersonalRegions] = useState<any[]>([]);
   const [personalCercles, setPersonalCercles] = useState<any[]>([]);
-  const [personalArrondissements, setPersonalArrondissements] = useState<any[]>([]);
   const [personalCommunes, setPersonalCommunes] = useState<any[]>([]);
   const [personalQuartiers, setPersonalQuartiers] = useState<any[]>([]);
 
-  // États pour les sélections personnelles
+  // États pour les sélections personnelles (STRUCTURE INSTAT MALI - 4 NIVEAUX)
   const [personalSelectedRegionId, setPersonalSelectedRegionId] = useState<string>('');
   const [personalSelectedCercleId, setPersonalSelectedCercleId] = useState<string>('');
-  const [personalSelectedArrondissementId, setPersonalSelectedArrondissementId] = useState<string>('');
   const [personalSelectedCommuneId, setPersonalSelectedCommuneId] = useState<string>('');
   const [personalSelectedQuartierId, setPersonalSelectedQuartierId] = useState<string>('');
 
-  // États pour les codes personnels
+  // Flag pour éviter les conflits entre restauration et useEffect de chargement
+  const [isRestoringPersonalData, setIsRestoringPersonalData] = useState(false);
+
+  // Restaurer les sélections personnelles depuis data.personalInfo.divisionId
+  useEffect(() => {
+    if (data.personalInfo?.divisionId && personalRegions.length > 0 && !isRestoringPersonalData) {
+      console.log('🔍 [PERSONAL SYNC] Restauration des sélections personnelles depuis divisionId:', data.personalInfo.divisionId);
+      setIsRestoringPersonalData(true);
+      
+      const divisionId = data.personalInfo.divisionId;
+      
+      // Analyser la hiérarchie selon la longueur de l'ID
+      if (divisionId.length >= 12) {
+        // Quartier (12 chiffres) - extraire les codes hiérarchiques
+        const regionCode = divisionId.substring(0, 2);
+        const cercleCode = divisionId.substring(0, 4);
+        const communeCode = divisionId.substring(0, 8);
+        const quartierCode = divisionId;
+        
+        console.log('🔍 [PERSONAL SYNC] Hiérarchie détectée:', {
+          regionCode, cercleCode, communeCode, quartierCode
+        });
+        
+        // Trouver la région par code
+        const matchingRegion = personalRegions.find(r => r.code === regionCode);
+        if (matchingRegion) {
+          console.log('🔍 [PERSONAL SYNC] Région trouvée par code:', matchingRegion.nom, 'ID:', matchingRegion.id);
+          
+          // Utiliser setTimeout pour s'assurer que tous les setState sont exécutés
+          setTimeout(() => {
+            setPersonalSelectedRegionId(matchingRegion.id);
+            setPersonalSelectedRegionCode(matchingRegion.code);
+            console.log('🔍 [PERSONAL SYNC] Région mise à jour');
+            
+            setTimeout(() => {
+              setPersonalSelectedCercleId(cercleCode);
+              setPersonalSelectedCercleCode(cercleCode);
+              console.log('🔍 [PERSONAL SYNC] Cercle mis à jour:', cercleCode);
+              
+              setTimeout(() => {
+                setPersonalSelectedCommuneId(communeCode);
+                setPersonalSelectedCommuneCode(communeCode);
+                console.log('🔍 [PERSONAL SYNC] Commune mise à jour:', communeCode);
+                
+                setTimeout(() => {
+                  setPersonalSelectedQuartierId(quartierCode);
+                  setPersonalSelectedQuartierCode(quartierCode);
+                  console.log('🔍 [PERSONAL SYNC] Quartier mis à jour:', quartierCode);
+                  console.log('🔍 [PERSONAL SYNC] Toute la hiérarchie restaurée:', {
+                    regionId: matchingRegion.id,
+                    cercleId: cercleCode,
+                    communeId: communeCode,
+                    quartierId: quartierCode
+                  });
+                  
+                  // Maintenant permettre aux useEffect de charger les données et forcer le chargement des communes
+                  setTimeout(() => {
+                    setIsRestoringPersonalData(false);
+                    console.log('🔍 [PERSONAL SYNC] Flag désactivé après restauration complète - useEffect peuvent maintenant charger les données');
+                    
+                    // Forcer le chargement des communes après restauration
+                    if (cercleCode) {
+                      console.log('🔍 [PERSONAL SYNC] Forçage du chargement des communes pour cercle:', cercleCode);
+                      divisionService.getCommunesByCercle(cercleCode).then((res: any[]) => {
+                        console.log('🔍 [PERSONAL SYNC] Communes forcées chargées:', res?.length || 0);
+                        setPersonalCommunes(res || []);
+                      }).catch(() => {
+                        console.log('🔍 [PERSONAL SYNC] Erreur lors du chargement forcé des communes');
+                      });
+                    }
+                  }, 100);
+                }, 10);
+              }, 10);
+            }, 10);
+          }, 10);
+        }
+      } else if (divisionId.length >= 8) {
+        // Commune (8 chiffres)
+        const regionCode = divisionId.substring(0, 2);
+        const cercleCode = divisionId.substring(0, 4);
+        const matchingRegion = personalRegions.find(r => r.code === regionCode);
+        if (matchingRegion) {
+          console.log('🔍 [PERSONAL SYNC] Région trouvée par code (commune):', matchingRegion.nom);
+          setPersonalSelectedRegionId(matchingRegion.id);
+          setPersonalSelectedRegionCode(matchingRegion.code);
+          setPersonalSelectedCercleId(cercleCode);
+          setPersonalSelectedCommuneId(divisionId);
+        }
+      } else if (divisionId.length >= 4) {
+        // Cercle (4 chiffres)
+        const regionCode = divisionId.substring(0, 2);
+        const matchingRegion = personalRegions.find(r => r.code === regionCode);
+        if (matchingRegion) {
+          console.log('🔍 [PERSONAL SYNC] Région trouvée par code (cercle):', matchingRegion.nom);
+          setPersonalSelectedRegionId(matchingRegion.id);
+          setPersonalSelectedRegionCode(matchingRegion.code);
+          setPersonalSelectedCercleId(divisionId);
+        }
+      } else {
+        // Région (2 chiffres) ou ID direct
+        const matchingRegion = personalRegions.find(r => r.id === divisionId || r.code === divisionId);
+        if (matchingRegion) {
+          console.log('🔍 [PERSONAL SYNC] Région trouvée directement:', matchingRegion.nom);
+          setPersonalSelectedRegionId(matchingRegion.id);
+          setPersonalSelectedRegionCode(matchingRegion.code);
+        }
+      }
+      
+      // Ne pas désactiver automatiquement le flag - il sera désactivé lors d'interactions manuelles
+      console.log('🔍 [PERSONAL SYNC] Restauration terminée - flag maintenu actif pour éviter les réinitialisations');
+    }
+  }, [data.personalInfo?.divisionId, personalRegions.length]);
+
+  // États pour les codes personnels (STRUCTURE INSTAT MALI - 4 NIVEAUX)
   const [personalSelectedRegionCode, setPersonalSelectedRegionCode] = useState<string>('');
   const [personalSelectedCercleCode, setPersonalSelectedCercleCode] = useState<string>('');
-  const [personalSelectedArrondissementCode, setPersonalSelectedArrondissementCode] = useState<string>('');
   const [personalSelectedCommuneCode, setPersonalSelectedCommuneCode] = useState<string>('');
   const [personalSelectedQuartierCode, setPersonalSelectedQuartierCode] = useState<string>('');
+
+  // Debug: Vérifier la valeur actuelle des variables d'état personnelles
+  useEffect(() => {
+    console.log('🔍 [PERSONAL STATE] Variables d\'état actuelles:', {
+      personalSelectedRegionId,
+      personalSelectedCercleId,
+      personalSelectedCommuneId,
+      personalSelectedQuartierId
+    });
+  }, [personalSelectedRegionId, personalSelectedCercleId, personalSelectedCommuneId, personalSelectedQuartierId]);
 
   // Flag supprimé - plus besoin de bloquer les useEffect
   
   // Logique unifiée pour charger les arrondissements de Bamako District
   const loadBamakoArrondissements = async (regionId: string): Promise<any[]> => {
-    console.log('🏙️ [BAMAKO UNIFIED] === CHARGEMENT ARRONDISSEMENTS BAMAKO ===');
-    console.log('🏙️ [BAMAKO UNIFIED] Region ID:', regionId);
-    
     let arrondissements: any[] = [];
     
     // Stratégie 1: Endpoint direct
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1: Endpoint direct');
       arrondissements = await divisionService.getArrondissementsByRegion(regionId);
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1 résultat:', arrondissements?.length || 0);
-      
-      if (arrondissements?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 1 réussie');
-        return arrondissements;
-      }
-    } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 1 échouée:', error);
-    }
+      if (arrondissements?.length > 0) return arrondissements;
+    } catch (error) { /* Fallback */ }
     
     // Stratégie 2: searchBamakoDivisions
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2: searchBamakoDivisions');
       const bamakoDivisions = await divisionService.searchBamakoDivisions();
       arrondissements = bamakoDivisions?.filter((d: any) => d.divisionType === 'ARRONDISSEMENT') || [];
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2 résultat:', arrondissements?.length || 0);
-      
-      if (arrondissements?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 2 réussie');
-        return arrondissements;
-      }
-    } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 2 échouée:', error);
-    }
+      if (arrondissements?.length > 0) return arrondissements;
+    } catch (error) { /* Fallback */ }
     
     // Stratégie 3: getAllArrondissements + filtrage intelligent
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3: Filtrage intelligent');
       const allArrondissements = await divisionService.getAllArrondissements();
-      
-      // Filtres multiples pour Bamako
       const bamakoFilters = [
-        // Filtre par parent Bamako
         (arr: any) => arr.parent?.nom?.toLowerCase().includes('bamako'),
-        // Filtre par nom contenant "arrondissement" et codes Bamako
         (arr: any) => {
           const nom = arr.nom?.toLowerCase() || '';
           const code = arr.code || '';
           return nom.includes('arrondissement') && 
                  ['0001', '0002', '0003', '0004', '0005', '0006', '0007'].some(prefix => code.startsWith(prefix));
         },
-        // Filtre par codes spécifiques Bamako
         (arr: any) => {
           const code = arr.code || '';
           return ['0001', '0002', '0003', '0004', '0005', '0006', '0007'].includes(code);
@@ -10210,25 +10481,16 @@ const PersonalLocationStep: React.FC<{
       
       for (let i = 0; i < bamakoFilters.length; i++) {
         const filtered = allArrondissements?.filter(bamakoFilters[i]) || [];
-        console.log(`🏙️ [BAMAKO UNIFIED] Filtre ${i + 1} résultat:`, filtered?.length || 0);
-        
         if (filtered?.length > 0) {
           arrondissements = filtered;
-          console.log(`🏙️ [BAMAKO UNIFIED] ✅ Stratégie 3 réussie (filtre ${i + 1})`);
           break;
         }
       }
-      
-      if (arrondissements?.length > 0) {
-        return arrondissements;
-      }
-    } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 3 échouée:', error);
-    }
+      if (arrondissements?.length > 0) return arrondissements;
+    } catch (error) { /* Fallback */ }
     
     // Stratégie 4: Données hardcodées en dernier recours
-    console.log('🏙️ [BAMAKO UNIFIED] Stratégie 4: Données hardcodées');
-    arrondissements = [
+    return [
       { id: 'bamako-arr-1', nom: 'Premier Arrondissement', code: '0001', parent: { id: regionId } },
       { id: 'bamako-arr-2', nom: 'Deuxième Arrondissement', code: '0002', parent: { id: regionId } },
       { id: 'bamako-arr-3', nom: 'Troisième Arrondissement', code: '0003', parent: { id: regionId } },
@@ -10236,74 +10498,40 @@ const PersonalLocationStep: React.FC<{
       { id: 'bamako-arr-5', nom: 'Cinquième Arrondissement', code: '0005', parent: { id: regionId } },
       { id: 'bamako-arr-6', nom: 'Sixième Arrondissement', code: '0006', parent: { id: regionId } }
     ];
-    
-    console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 4 appliquée (hardcodé):', arrondissements.length);
-    return arrondissements;
   };
   
   // Logique unifiée pour charger les quartiers de Bamako District
   const loadBamakoQuartiers = async (arrondissementId: string, arrondissementCode?: string): Promise<any[]> => {
-    console.log('🏙️ [BAMAKO UNIFIED] === CHARGEMENT QUARTIERS BAMAKO ===');
-    console.log('🏙️ [BAMAKO UNIFIED] Arrondissement ID:', arrondissementId);
-    console.log('🏙️ [BAMAKO UNIFIED] Arrondissement Code:', arrondissementCode);
-    
     let quartiers: any[] = [];
     
     // Stratégie 1: Endpoint direct par ID
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1: Endpoint direct par ID');
       quartiers = await divisionService.getQuartiersByArrondissement(arrondissementId);
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1 résultat:', quartiers?.length || 0);
-      
-      if (quartiers?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 1 réussie');
-        return quartiers;
-      }
-    } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 1 échouée:', error);
-    }
+      if (quartiers?.length > 0) return quartiers;
+    } catch (error) { /* Fallback */ }
     
     // Stratégie 2: Endpoint par code (si disponible)
     if (arrondissementCode) {
       try {
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2: Endpoint par code');
         quartiers = await divisionService.getQuartiersByArrondissementCode(arrondissementId);
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2 résultat:', quartiers?.length || 0);
-        
-        if (quartiers?.length > 0) {
-          console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 2 réussie');
-          return quartiers;
-        }
-      } catch (error) {
-        console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 2 échouée:', error);
-      }
+        if (quartiers?.length > 0) return quartiers;
+      } catch (error) { /* Fallback */ }
     }
     
     // Stratégie 3: getAllQuartiers + filtrage par code
     if (arrondissementCode) {
       try {
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3: Filtrage par code');
         const allQuartiers = await divisionService.getAllQuartiers();
         const codePrefix = arrondissementCode.substring(0, 4);
-        
         quartiers = allQuartiers?.filter((quartier: any) => {
           const code = quartier.code || '';
           return code.startsWith(codePrefix);
         }) || [];
-        
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3 résultat:', quartiers?.length || 0);
-        
-        if (quartiers?.length > 0) {
-          console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 3 réussie');
-          return quartiers;
-        }
-      } catch (error) {
-        console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 3 échouée:', error);
-      }
+        if (quartiers?.length > 0) return quartiers;
+      } catch (error) { /* Fallback */ }
     }
     
     // Stratégie 4: Données hardcodées par arrondissement
-    console.log('🏙️ [BAMAKO UNIFIED] Stratégie 4: Données hardcodées');
     const hardcodedQuartiers: Record<string, any[]> = {
       '0001': [
         { id: 'bamako-q-001-1', nom: 'Quartier Korofina Nord', code: '000101', parent: { id: arrondissementId } },
@@ -10332,10 +10560,7 @@ const PersonalLocationStep: React.FC<{
     };
     
     const code = arrondissementCode || '0001';
-    quartiers = hardcodedQuartiers[code] || hardcodedQuartiers['0001'];
-    
-    console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 4 appliquée (hardcodé):', quartiers.length);
-    return quartiers;
+    return hardcodedQuartiers[code] || hardcodedQuartiers['0001'];
   };
 
   // Charger les régions au montage
@@ -10350,142 +10575,108 @@ const PersonalLocationStep: React.FC<{
   // Charger cercles quand personalSelectedRegionId change
   useEffect(() => {
     let mounted = true;
-    if (personalSelectedRegionId) {
+    if (personalSelectedRegionId && !isRestoringPersonalData) {
       // Vérifier si c'est Bamako District (structure différente)
       const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
       const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
       
       if (isBamakoDistrict) {
         // Pour Bamako District, utiliser la logique unifiée
-        loadBamakoArrondissements(personalSelectedRegionId).then((arrondissements: any[]) => {
+        // Pour Bamako, adapter à la nouvelle structure INSTAT Mali
+        divisionService.getCerclesByRegion(personalSelectedRegionId).then((cercles: any[]) => {
           if (mounted) {
-            setPersonalCercles([]); // Pas de cercles pour Bamako District
-            setPersonalArrondissements(arrondissements);
-            // Réinitialiser les listes suivantes
-            setPersonalCommunes([]);
-            setPersonalQuartiers([]);
-            setPersonalSelectedCercleId('');
-            setPersonalSelectedArrondissementId('');
-            setPersonalSelectedCommuneId('');
-            setPersonalSelectedQuartierId('');
-            console.log('🏙️ [BAMAKO UNIFIED] Arrondissements chargés dans l\'état:', arrondissements.length);
+            setPersonalCercles(cercles || []);
+            // Réinitialiser les listes suivantes seulement si pas de valeurs restaurées
+            if (!personalSelectedCercleId && !personalSelectedCommuneId && !personalSelectedQuartierId) {
+              setPersonalCommunes([]);
+              setPersonalQuartiers([]);
+              setPersonalSelectedCercleId('');
+              setPersonalSelectedCommuneId('');
+              setPersonalSelectedQuartierId('');
+            } else {
+              console.log('🔍 [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des cercles');
+            }
           }
-        }).catch((error: any) => {
-          console.error('🏙️ [BAMAKO UNIFIED] ❌ Erreur générale:', error);
+        }).catch(() => {
           if (mounted) {
             setPersonalCercles([]);
-            setPersonalArrondissements([]);
             setPersonalCommunes([]);
             setPersonalQuartiers([]);
           }
         });
       } else {
-        // Structure classique : charger les cercles
+        // Structure INSTAT Mali : charger les cercles
         divisionService.getCerclesByRegion(personalSelectedRegionId).then((res: any[]) => {
           if (mounted) {
             setPersonalCercles(res || []);
-            // Réinitialiser les listes suivantes
-            setPersonalArrondissements([]);
-            setPersonalCommunes([]);
-            setPersonalQuartiers([]);
-            setPersonalSelectedCercleId('');
-            setPersonalSelectedArrondissementId('');
-            setPersonalSelectedCommuneId('');
-            setPersonalSelectedQuartierId('');
-            console.log(`[Région classique] ${res?.length || 0} cercles chargés`);
+            // Réinitialiser les listes suivantes seulement si pas de valeurs restaurées
+            if (!personalSelectedCercleId && !personalSelectedCommuneId && !personalSelectedQuartierId) {
+              setPersonalCommunes([]);
+              setPersonalQuartiers([]);
+              setPersonalSelectedCercleId('');
+              setPersonalSelectedCommuneId('');
+              setPersonalSelectedQuartierId('');
+            } else {
+              console.log('🔍 [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des cercles (INSTAT)');
+            }
           }
         }).catch(() => {});
       }
     } else {
-      // Réinitialiser toutes les listes
-      setPersonalCercles([]);
-      setPersonalArrondissements([]);
-      setPersonalCommunes([]);
-      setPersonalQuartiers([]);
-      setPersonalSelectedCercleId('');
-      setPersonalSelectedArrondissementId('');
-      setPersonalSelectedCommuneId('');
-      setPersonalSelectedQuartierId('');
+      // Réinitialiser toutes les listes (STRUCTURE INSTAT - 4 NIVEAUX) seulement si pas en cours de restauration
+      if (!isRestoringPersonalData) {
+        setPersonalCercles([]);
+        setPersonalCommunes([]);
+        setPersonalQuartiers([]);
+        setPersonalSelectedCercleId('');
+        setPersonalSelectedCommuneId('');
+        setPersonalSelectedQuartierId('');
+      }
     }
     return () => { mounted = false; };
-  }, [personalSelectedRegionId, personalRegions]);
+  }, [personalSelectedRegionId, personalRegions, isRestoringPersonalData]);
 
-  // Charger arrondissements quand personalSelectedCercleId change
+  // Charger communes quand personalSelectedCercleId change (NOUVELLE STRUCTURE INSTAT)
   useEffect(() => {
     let mounted = true;
+    if (isRestoringPersonalData) {
+      console.log('🔍 [PERSONAL SYNC] useEffect communes bloqué pendant restauration');
+      return () => { mounted = false; };
+    }
+    
     const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
     const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
 
-    if (isBamakoDistrict) {
-      // Pour Bamako District, ignorer l'effet basé sur les cercles pour ne pas réinitialiser les arrondissements
-      return () => { mounted = false; };
-    }
-
     if (personalSelectedCercleId) {
-      divisionService.getArrondissementsByCercle(personalSelectedCercleId).then((res: any[]) => {
+      // NOUVELLE STRUCTURE INSTAT : Cercle → Commune directement (fonctionne pour Bamako aussi)
+      console.log('🔍 [PERSONAL SYNC] Chargement des communes pour cercle:', personalSelectedCercleId);
+      divisionService.getCommunesByCercle(personalSelectedCercleId).then((res: any[]) => {
         if (mounted) {
-          setPersonalArrondissements(res || []);
-          // Réinitialiser les listes suivantes
-          setPersonalCommunes([]);
-          setPersonalQuartiers([]);
-          setPersonalSelectedArrondissementId('');
-          setPersonalSelectedCommuneId('');
-          setPersonalSelectedQuartierId('');
-          console.log(`[Cercle] ${res?.length || 0} arrondissements chargés`);
+          console.log('🔍 [PERSONAL SYNC] Communes chargées:', res?.length || 0);
+          setPersonalCommunes(res || []);
+          // Réinitialiser seulement les quartiers si pas de valeurs restaurées
+          if (!personalSelectedCommuneId && !personalSelectedQuartierId) {
+            setPersonalQuartiers([]);
+            setPersonalSelectedCommuneId('');
+            setPersonalSelectedQuartierId('');
+          } else {
+            console.log('🔍 [PERSONAL SYNC] Préservation des valeurs restaurées lors du chargement des communes');
+          }
         }
-      }).catch(() => {});
+      }).catch(() => {
+        console.log('🔍 [PERSONAL SYNC] Erreur lors du chargement des communes');
+      });
     } else {
-      setPersonalArrondissements([]);
       setPersonalCommunes([]);
       setPersonalQuartiers([]);
-      setPersonalSelectedArrondissementId('');
-      setPersonalSelectedCommuneId('');
-      setPersonalSelectedQuartierId('');
+      if (!personalSelectedCommuneId && !personalSelectedQuartierId) {
+        setPersonalSelectedCommuneId('');
+        setPersonalSelectedQuartierId('');
+      }
     }
     return () => { mounted = false; };
   }, [personalSelectedCercleId, personalRegions, personalSelectedRegionId]);
 
-  // Charger communes quand personalSelectedArrondissementId change
-  useEffect(() => {
-    let mounted = true;
-    if (personalSelectedArrondissementId) {
-      // Vérifier si c'est Bamako District
-      const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
-      const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-      
-      if (isBamakoDistrict) {
-        // Pour Bamako District, utiliser la logique unifiée
-        const selectedArr = personalArrondissements.find(arr => arr.id === personalSelectedArrondissementId);
-        const arrondissementCode = selectedArr?.code;
-        
-        loadBamakoQuartiers(personalSelectedArrondissementId, arrondissementCode).then((quartiers: any[]) => {
-          if (mounted) {
-            setPersonalCommunes([]); // Pas de communes pour Bamako District
-            setPersonalQuartiers(quartiers);
-            setPersonalSelectedCommuneId('');
-            setPersonalSelectedQuartierId('');
-            console.log('🏙️ [BAMAKO UNIFIED] Quartiers chargés dans l\'état:', quartiers.length);
-          }
-        }).catch((error: any) => {
-          console.error('🏙️ [BAMAKO UNIFIED] ❌ Erreur générale quartiers:', error);
-          if (mounted) {
-            setPersonalCommunes([]);
-            setPersonalQuartiers([]);
-          }
-        });
-      } else {
-        // Structure classique : charger les communes
-        divisionService.getCommunesByArrondissement(personalSelectedArrondissementId).then((res: any[]) => {
-          if (mounted) setPersonalCommunes(res || []);
-        }).catch(() => {});
-      }
-    } else {
-      setPersonalCommunes([]);
-      setPersonalSelectedCommuneId('');
-      setPersonalSelectedQuartierId('');
-    }
-    return () => { mounted = false; };
-  }, [personalSelectedArrondissementId, personalRegions, personalSelectedRegionId, personalArrondissements]);
 
   // Charger quartiers quand personalSelectedCommuneId change
   useEffect(() => {
@@ -10501,199 +10692,23 @@ const PersonalLocationStep: React.FC<{
     return () => { mounted = false; };
   }, [personalSelectedCommuneId]);
 
-  // Fonction pour tester la navigation Bamako District
-  const testBamakoNavigation = async () => {
-    console.log('🧪 === TEST NAVIGATION BAMAKO DISTRICT ===');
-    
-    try {
-      // 1. Charger toutes les régions
-      const regions = await divisionService.getRegions();
-      console.log('📍 Régions chargées:', regions.length);
-      
-      // 2. Trouver Bamako District
-      const bamakoDistrict = regions.find((r: any) => 
-        r.nom?.toLowerCase().includes('bamako') && r.nom?.toLowerCase().includes('district')
-      );
-      
-      if (!bamakoDistrict) {
-        console.error('❌ Bamako District non trouvé');
-        return;
-      }
-      
-      console.log('✅ Bamako District trouvé:', bamakoDistrict.nom, '(ID:', bamakoDistrict.id, ')');
-      
-      // 3. Tester le chargement des arrondissements
-      console.log('🔄 Test chargement arrondissements...');
-      const arrondissements = await divisionService.getArrondissementsByRegion(bamakoDistrict.id);
-      console.log('📍 Arrondissements trouvés:', arrondissements.length);
-      
-      if (arrondissements.length === 0) {
-        console.error('❌ Aucun arrondissement trouvé pour Bamako District');
-        return;
-      }
-      
-      // Afficher les arrondissements
-      arrondissements.forEach((arr: any, index: number) => {
-        console.log(`  [${index + 1}] ${arr.nom} (ID: ${arr.id}, Code: ${arr.code})`);
-      });
-      
-      // 4. Tester le chargement des quartiers pour le premier arrondissement
-      const premierArrondissement = arrondissements[0];
-      console.log('🔄 Test chargement quartiers pour:', premierArrondissement.nom);
-      
-      const quartiers = await divisionService.getQuartiersByArrondissement(premierArrondissement.id);
-      console.log('📍 Quartiers trouvés:', quartiers.length);
-      
-      if (quartiers.length > 0) {
-        console.log('✅ Premiers quartiers:');
-        quartiers.slice(0, 5).forEach((quartier: any, index: number) => {
-          console.log(`  [${index + 1}] ${quartier.nom} (ID: ${quartier.id}, Code: ${quartier.code})`);
-        });
-        if (quartiers.length > 5) {
-          console.log(`  ... et ${quartiers.length - 5} autres quartiers`);
-        }
-      } else {
-        console.warn('⚠️ Aucun quartier trouvé pour cet arrondissement');
-      }
-      
-      console.log('🧪 === TEST TERMINÉ ===');
-      
-    } catch (error) {
-      console.error('❌ Erreur lors du test:', error);
-    }
-  };
-
-  // Fonction de test spécifique pour PersonalInfoStep
-  const testPersonalInfoBamako = async () => {
-    console.log('🧪 === TEST PERSONAL INFO BAMAKO ===');
-    
-    try {
-      // Test avec un quartier de Bamako connu
-      const testQuartier = {
-        id: "test-quartier-id",
-        nom: "Test Quartier Bamako",
-        code: "000101001", // Code Bamako Premier Arrondissement
-        divisionType: "QUARTIER",
-        parent: null
-      };
-      
-      console.log('🧪 Test avec quartier:', testQuartier);
-      
-      // Appeler la fonction de recherche rapide
-      await handleDivisionSearch(testQuartier);
-      
-      console.log('🧪 Test terminé - vérifier les sélecteurs');
-      
-    } catch (error) {
-      console.error('❌ Erreur test PersonalInfo Bamako:', error);
-    }
-  };
-
-  // Fonction de test pour vérifier le chargement des quartiers
-  const testQuartiersLoading = async () => {
-    console.log('🧪 === TEST CHARGEMENT QUARTIERS ===');
-    
-    try {
-      // 1. Trouver Bamako District
-      const regions = await divisionService.getRegions();
-      const bamakoRegion = regions.find((r: any) => 
-        r.nom?.toLowerCase().includes('bamako') && 
-        r.nom?.toLowerCase().includes('district')
-      );
-      
-      if (!bamakoRegion) {
-        console.error('❌ Bamako District non trouvé');
-        return;
-      }
-      
-      console.log('✅ Bamako District trouvé:', bamakoRegion.nom);
-      
-      // 2. Charger les arrondissements
-      const arrondissements = await divisionService.getArrondissementsByRegion(bamakoRegion.id);
-      console.log('📍 Arrondissements trouvés:', arrondissements?.length || 0);
-      
-      if (arrondissements && arrondissements.length > 0) {
-        const premierArrondissement = arrondissements[0];
-        console.log('🔍 Test avec premier arrondissement:', premierArrondissement.nom);
-        
-        // 3. Charger les quartiers pour ce premier arrondissement
-        const quartiers = await divisionService.getQuartiersByArrondissement(premierArrondissement.id);
-        console.log('🏘️ Quartiers trouvés:', quartiers?.length || 0);
-        
-        if (quartiers && quartiers.length > 0) {
-          console.log('✅ Premier quartier:', quartiers[0].nom);
-        } else {
-          console.log('⚠️ Aucun quartier trouvé, test fallback par code...');
-          
-          // Fallback par code
-          const arrondissementCode = premierArrondissement.code || '';
-          if (arrondissementCode && arrondissementCode.length >= 4) {
-            const codePrefix = arrondissementCode.substring(0, 4);
-            const allQuartiers = await divisionService.getAllQuartiers();
-            const quartiersParCode = allQuartiers.filter((quartier: any) => {
-              const code = quartier.code || '';
-              return code.startsWith(codePrefix);
-            });
-            console.log('🏘️ Quartiers par code:', quartiersParCode?.length || 0);
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Erreur test chargement quartiers:', error);
-    }
-  };
-
-  // Exposer les fonctions de test dans window pour pouvoir les appeler depuis la console
-  React.useEffect(() => {
-    (window as any).testBamakoNavigation = testBamakoNavigation;
-    (window as any).testPersonalInfoBamako = testPersonalInfoBamako;
-    (window as any).testQuartiersLoading = testQuartiersLoading;
-    console.log('🧪 Fonctions de test exposées:');
-    console.log('  - window.testBamakoNavigation() (test général)');
-    console.log('  - window.testPersonalInfoBamako() (test PersonalInfo spécifique)');
-    console.log('  - window.testQuartiersLoading() (test chargement quartiers)');
-  }, []);
-
   // Fonction pour gérer la sélection depuis la recherche
   const handleDivisionSearch = async (division: any) => {
-    console.log('🔍 Division sélectionnée via recherche:', division);
-    console.log('🔍 Type de division:', division.divisionType);
-    console.log('🔍 Parent de la division:', division.parent);
-    
     try {
-      // Construire la hiérarchie complète depuis la division sélectionnée
-      console.log('⏳ Début construction hiérarchie...');
       const hierarchy = await buildDivisionHierarchy(division);
-      console.log('🏗️ Hiérarchie construite:', hierarchy);
-      
-      // Vérifier si la hiérarchie est valide
-      if (!hierarchy || Object.keys(hierarchy).length === 0) {
-        console.error('❌ Hiérarchie vide ou invalide');
-        return;
-      }
-      
-      // Appliquer la hiérarchie aux sélecteurs de manière séquentielle
-      console.log('⏳ Début application hiérarchie séquentielle...');
+      if (!hierarchy || Object.keys(hierarchy).length === 0) return;
       await applyDivisionHierarchySequential(hierarchy);
-      console.log('✅ Application hiérarchie terminée');
-      
     } catch (error) {
-      console.error('❌ Erreur lors de la construction de la hiérarchie:', error);
-      console.error('❌ Stack trace:', (error as Error).stack);
     }
   };
 
   // Construire la hiérarchie complète depuis une division
   const buildDivisionHierarchy = async (division: any): Promise<any> => {
-    console.log('🏗️ Construction hiérarchie pour:', division);
     const hierarchy: any = {};
     let current = division;
     
     // Remonter la hiérarchie
     while (current) {
-      console.log('📍 Traitement division:', current.nom, 'Type:', current.divisionType, 'Parent:', current.parent?.nom || 'Aucun');
-      
       switch (current.divisionType) {
         case 'QUARTIER':
           hierarchy.quartier = current;
@@ -10702,7 +10717,7 @@ const PersonalLocationStep: React.FC<{
           hierarchy.commune = current;
           break;
         case 'ARRONDISSEMENT':
-          hierarchy.arrondissement = current;
+          hierarchy.commune = current;
           break;
         case 'CERCLE':
           hierarchy.cercle = current;
@@ -10714,20 +10729,8 @@ const PersonalLocationStep: React.FC<{
       current = current.parent;
     }
     
-    // Détecter si c'est Bamako District
-    const isBamakoDistrict = hierarchy.region?.nom?.toLowerCase().includes('bamako') && 
-                            hierarchy.region?.nom?.toLowerCase().includes('district');
-    
-    if (isBamakoDistrict) {
-      console.log('🏙️ Bamako District détecté - nettoyage hiérarchie');
-      // Pour Bamako, on ne garde que région, arrondissement et quartier
-      // On supprime cercle et commune qui n'existent pas dans cette structure
-      delete hierarchy.cercle;
-      delete hierarchy.commune;
-      console.log('🏙️ Hiérarchie Bamako nettoyée:', hierarchy);
-    }
-    
-    console.log('🏗️ Hiérarchie construite:', hierarchy);
+    // Dans la nouvelle structure INSTAT Mali, Bamako utilise aussi la hiérarchie standard
+    // Région → Cercle → Commune → Quartier
     
     // Détecter si c'est un quartier de Bamako et forcer la reconstruction par code
     const isBamakoQuartier = division.divisionType === 'QUARTIER' && 
@@ -10735,35 +10738,28 @@ const PersonalLocationStep: React.FC<{
                             (['0001', '0002', '0003', '0004', '0005', '0006', '0007'].some(prefix => division.code.startsWith(prefix)));
     
     if (isBamakoQuartier) {
-      console.log('🏙️ Quartier Bamako détecté, reconstruction par code forcée...');
       const reconstructedHierarchy = await reconstructHierarchyByCode(division);
       if (reconstructedHierarchy && Object.keys(reconstructedHierarchy).length > 1) {
-        console.log('✅ Hiérarchie Bamako reconstruite par code:', reconstructedHierarchy);
         return reconstructedHierarchy;
       }
     }
     
     // Si on n'a pas de parent dans les données, essayer de récupérer la hiérarchie via l'API
     if (!division.parent && division.divisionType !== 'REGION') {
-      console.log('⚠️ Pas de parent dans les données, récupération via API...');
       try {
         const fullDivision = await divisionService.getById(division.id);
-        console.log('📡 Division complète récupérée:', fullDivision);
         
         if (fullDivision && fullDivision.parent) {
           // Recommencer avec les données complètes
           return await buildDivisionHierarchy(fullDivision);
         } else {
           // Si toujours pas de parent, essayer de reconstruire par code (spécialement pour Bamako)
-          console.log('🔧 Tentative de reconstruction par code...');
           const reconstructedHierarchy = await reconstructHierarchyByCode(division);
           if (reconstructedHierarchy && Object.keys(reconstructedHierarchy).length > 1) {
-            console.log('✅ Hiérarchie reconstruite par code:', reconstructedHierarchy);
             return reconstructedHierarchy;
           }
         }
       } catch (error) {
-        console.error('❌ Erreur lors de la récupération de la division complète:', error);
       }
     }
     
@@ -10772,25 +10768,21 @@ const PersonalLocationStep: React.FC<{
 
   // Reconstruire la hiérarchie par code (pour les cas où les relations parent sont manquantes)
   const reconstructHierarchyByCode = async (division: any): Promise<any> => {
-    console.log('🔧 Reconstruction par code pour:', division.nom, 'Code:', division.code);
     const hierarchy: any = {};
     
     // Ajouter la division actuelle
     hierarchy[division.divisionType.toLowerCase()] = division;
     
     if (!division.code) {
-      console.log('⚠️ Pas de code disponible pour la reconstruction');
       return hierarchy;
     }
     
     try {
       // Récupérer toutes les régions
       const regions = await divisionService.getRegions();
-      console.log('📋 Régions disponibles:', regions.length);
       
       // Pour Bamako (codes 0001xxxx à 0007xxxx)
       if (division.code.match(/^000[1-7]/) || ['0001', '0002', '0003', '0004', '0005', '0006', '0007'].some(prefix => division.code.startsWith(prefix))) {
-        console.log('🏙️ Code Bamako détecté:', division.code);
         
         const bamakoRegion = regions.find((r: any) => 
           r.nom?.toLowerCase().includes('bamako') && 
@@ -10799,13 +10791,9 @@ const PersonalLocationStep: React.FC<{
         
         if (bamakoRegion) {
           hierarchy.region = bamakoRegion;
-          console.log('✅ Région Bamako trouvée:', bamakoRegion.nom);
           
           if (division.divisionType === 'QUARTIER') {
             const arrondissementCode = division.code.substring(0, 4);
-            console.log('🔍 Recherche arrondissement Bamako avec code:', arrondissementCode);
-            console.log('🔍 Code quartier complet:', division.code);
-            console.log('🔍 Nom quartier:', division.nom);
             
             // Utiliser la logique de fallback pour trouver les arrondissements
             let arrondissements: any[] = [];
@@ -10813,11 +10801,8 @@ const PersonalLocationStep: React.FC<{
             try {
               // Tentative endpoint direct
               arrondissements = await divisionService.getArrondissementsByRegion(bamakoRegion.id);
-              console.log('[Reconstruction] Arrondissements (endpoint direct):', arrondissements?.length || 0);
               
               if (!arrondissements?.length) {
-                console.log('[Reconstruction] Aucun arrondissement via endpoint direct, tentative fallback...');
-                
                 // Fallback: Utiliser la même logique que les sélecteurs manuels
                 const [children, bamakoDivisions, allArrondissements] = await Promise.all([
                   divisionService.getChildrenByRegion(bamakoRegion.id),
@@ -10825,9 +10810,6 @@ const PersonalLocationStep: React.FC<{
                   divisionService.getAllArrondissements()
                 ]);
                 
-                console.log('[Reconstruction] Enfants directs:', children?.length || 0);
-                console.log('[Reconstruction] Divisions Bamako:', bamakoDivisions?.length || 0);
-                console.log('[Reconstruction] Tous arrondissements:', allArrondissements?.length || 0);
                 
                 // Stratégie 1: Divisions Bamako filtrées
                 const bamakoArrondissements = bamakoDivisions.filter((div: any) => 
@@ -10837,7 +10819,6 @@ const PersonalLocationStep: React.FC<{
                 
                 if (bamakoArrondissements.length) {
                   arrondissements = bamakoArrondissements;
-                  console.log('[Reconstruction] Stratégie 1 réussie:', arrondissements.length);
                 } else {
                   // Stratégie 2: Tous les arrondissements filtrés par nom
                   const arrondissementsParNom = allArrondissements.filter((arr: any) => 
@@ -10847,38 +10828,28 @@ const PersonalLocationStep: React.FC<{
                   
                   if (arrondissementsParNom.length) {
                     arrondissements = arrondissementsParNom;
-                    console.log('[Reconstruction] Stratégie 2 réussie:', arrondissements.length);
                   }
                 }
                 
-                console.log('[Reconstruction] Fallback arrondissements trouvés:', arrondissements.length);
               }
             } catch (error) {
-              console.error('[Reconstruction] Erreur chargement arrondissements:', error);
               arrondissements = [];
             }
             
-            console.log('📋 Arrondissements disponibles:', arrondissements?.length || 0);
-            console.log('📋 Codes arrondissements:', arrondissements?.map((a: any) => `${a.nom}: ${a.code}`));
             
             // Chercher l'arrondissement correspondant (essayer plusieurs méthodes)
-            console.log('🔍 Recherche arrondissement avec code:', arrondissementCode);
-            console.log('🔍 Arrondissements disponibles pour correspondance:', arrondissements.map((a: any) => `${a.nom} (${a.code})`));
             
             let arrondissement = arrondissements.find((a: any) => a.code === arrondissementCode);
-            console.log('🔍 Méthode 1 (code exact):', arrondissement ? `✅ ${arrondissement.nom}` : '❌ Aucun');
             
             if (!arrondissement) {
               // Essayer avec startsWith
               arrondissement = arrondissements.find((a: any) => a.code?.startsWith(arrondissementCode));
-              console.log('🔍 Méthode 2 (startsWith):', arrondissement ? `✅ ${arrondissement.nom}` : '❌ Aucun');
             }
             
             if (!arrondissement) {
               // Essayer avec les 3 premiers caractères
               const shortCode = arrondissementCode.substring(0, 3);
               arrondissement = arrondissements.find((a: any) => a.code?.startsWith(shortCode));
-              console.log('🔍 Méthode 3 (3 chars):', arrondissement ? `✅ ${arrondissement.nom}` : '❌ Aucun');
             }
             
             if (!arrondissement) {
@@ -10894,24 +10865,18 @@ const PersonalLocationStep: React.FC<{
               };
               
               const possibleCodes = codeMapping[arrondissementCode] || [arrondissementCode];
-              console.log('🔍 Méthode 4 (mapping):', possibleCodes);
               arrondissement = arrondissements.find((a: any) => possibleCodes.includes(a.code));
-              console.log('🔍 Méthode 4 résultat:', arrondissement ? `✅ ${arrondissement.nom}` : '❌ Aucun');
             }
             
             if (arrondissement) {
               hierarchy.arrondissement = arrondissement;
-              console.log('✅ Arrondissement Bamako trouvé:', arrondissement.nom);
             } else {
-              console.log('❌ Aucun arrondissement trouvé avec le code:', arrondissementCode);
-              console.log('❌ Codes disponibles:', arrondissements?.map((a: any) => a.code));
             }
           }
         }
       } 
       // Pour les autres régions (essayer de deviner par code)
       else {
-        console.log('🌍 Code non-Bamako détecté:', division.code);
         
         // Essayer de trouver la région par recherche dans toutes les divisions
         for (const region of regions) {
@@ -10936,15 +10901,10 @@ const PersonalLocationStep: React.FC<{
                   // Vérifier si notre quartier est dans cette commune
                   const foundQuartier = quartiers.find((q: any) => q.id === division.id);
                   if (foundQuartier) {
-                    console.log('✅ Hiérarchie trouvée par recherche exhaustive!');
                     hierarchy.region = region;
                     hierarchy.cercle = cercle;
                     hierarchy.arrondissement = arrondissement;
                     hierarchy.commune = commune;
-                    console.log('✅ Région:', region.nom);
-                    console.log('✅ Cercle:', cercle.nom);
-                    console.log('✅ Arrondissement:', arrondissement.nom);
-                    console.log('✅ Commune:', commune.nom);
                     return hierarchy;
                   }
                 }
@@ -10956,326 +10916,143 @@ const PersonalLocationStep: React.FC<{
           }
         }
         
-        console.log('⚠️ Impossible de reconstruire la hiérarchie par recherche exhaustive');
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la reconstruction:', error);
     }
     
-    console.log('🔧 Hiérarchie reconstruite:', hierarchy);
     return hierarchy;
   };
 
-  // Appliquer la hiérarchie aux sélecteurs de manière séquentielle (nouvelle approche)
+  // Appliquer la hiérarchie aux sélecteurs de manière séquentielle (structure INSTAT unifiée)
   const applyDivisionHierarchySequential = async (hierarchy: any) => {
-    console.log('🎯 Application séquentielle de la hiérarchie:', hierarchy);
-    
-    // Détecter si c'est Bamako District
-    const isBamakoDistrict = hierarchy.region?.nom?.toLowerCase().includes('bamako') && 
-                            hierarchy.region?.nom?.toLowerCase().includes('district');
-    console.log('🏙️ [SEQUENTIAL] Bamako District détecté:', isBamakoDistrict);
-    
-    if (isBamakoDistrict) {
-      console.log('🏙️ [SEQUENTIAL] === TRAITEMENT SPÉCIAL BAMAKO ===');
-      console.log('🏙️ [SEQUENTIAL] Hiérarchie Bamako:', {
-        region: hierarchy.region?.nom,
-        arrondissement: hierarchy.arrondissement?.nom,
-        quartier: hierarchy.quartier?.nom
-      });
-    }
     
     try {
       // Étape 1: Appliquer la région et attendre que les useEffect se terminent
       if (hierarchy.region) {
-        console.log('📍 Étape 1: Application région:', hierarchy.region.nom);
         setPersonalSelectedRegionId(hierarchy.region.id);
         setPersonalSelectedRegionCode(hierarchy.region.code);
         
         // Attendre que le useEffect région se termine
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('✅ Étape 1 terminée - région appliquée');
       }
       
-      // Étape 2: Appliquer le cercle (seulement si pas Bamako)
-      if (hierarchy.cercle && !isBamakoDistrict) {
-        console.log('📍 Étape 2: Application cercle:', hierarchy.cercle.nom);
+      // Étape 2: Appliquer le cercle (structure INSTAT unifiée)
+      if (hierarchy.cercle) {
         setPersonalSelectedCercleId(hierarchy.cercle.id);
         setPersonalSelectedCercleCode(hierarchy.cercle.code);
         
         // Attendre que le useEffect cercle se termine
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('✅ Étape 2 terminée - cercle appliqué');
       }
       
-      // Étape 3: Appliquer l'arrondissement
-      if (hierarchy.arrondissement) {
-        console.log('📍 Étape 3: Application arrondissement:', hierarchy.arrondissement.nom);
-        setPersonalSelectedArrondissementId(hierarchy.arrondissement.id);
-        setPersonalSelectedArrondissementCode(hierarchy.arrondissement.code);
-        
-        // Attendre plus longtemps pour Bamako car le useEffect arrondissement fait plusieurs appels API
-        const delaiArrondissement = isBamakoDistrict ? 3000 : 1000; // 3s pour Bamako, 1s pour autres
-        console.log(`⏰ Attente ${delaiArrondissement}ms pour chargement ${isBamakoDistrict ? 'quartiers Bamako' : 'communes'}...`);
-        await new Promise(resolve => setTimeout(resolve, delaiArrondissement));
-        console.log('✅ Étape 3 terminée - arrondissement appliqué et listes chargées');
-      }
-      
-      // Étape 4: Appliquer la commune (seulement si pas Bamako)
-      if (hierarchy.commune && !isBamakoDistrict) {
-        console.log('📍 Étape 4: Application commune:', hierarchy.commune.nom);
+      // Étape 3: Appliquer la commune (structure INSTAT unifiée)
+      if (hierarchy.commune) {
         setPersonalSelectedCommuneId(hierarchy.commune.id);
         setPersonalSelectedCommuneCode(hierarchy.commune.code);
         
         // Attendre que le useEffect commune se termine
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('✅ Étape 4 terminée - commune appliquée');
       }
       
-      // Étape 5: Appliquer le quartier
+      // Étape 4: Appliquer le quartier (structure INSTAT unifiée)
       if (hierarchy.quartier) {
-        console.log('📍 Étape 5: Application quartier:', hierarchy.quartier.nom);
-        console.log('🔍 Vérification disponibilité quartiers avant sélection...');
-        
-        // Pour Bamako, vérifier que les quartiers sont bien chargés
-        if (isBamakoDistrict) {
-          try {
-            // Recharger les quartiers pour vérification
-            const arrondissementId = hierarchy.arrondissement?.id;
-            if (arrondissementId) {
-              const quartiersVerif = await divisionService.getQuartiersByArrondissement(arrondissementId);
-              console.log('🔍 Quartiers disponibles pour vérification:', quartiersVerif?.length || 0);
-              
-              if (!quartiersVerif?.length) {
-                console.log('🔍 Tentative fallback pour vérification quartiers...');
-                const arrondissementCode = hierarchy.arrondissement?.code || '';
-                if (arrondissementCode && arrondissementCode.length >= 4) {
-                  const codePrefix = arrondissementCode.substring(0, 4);
-                  const allQuartiers = await divisionService.getAllQuartiers();
-                  const quartiersParCode = allQuartiers.filter((quartier: any) => {
-                    const code = quartier.code || '';
-                    return code.startsWith(codePrefix);
-                  });
-                  console.log('🔍 Quartiers trouvés par code:', quartiersParCode?.length || 0);
-                }
-              }
-              
-              const quartierTrouve = quartiersVerif?.find((q: any) => q.id === hierarchy.quartier.id);
-              console.log('🔍 Quartier recherché trouvé dans la liste:', quartierTrouve ? '✅ OUI' : '❌ NON');
-            }
-          } catch (error) {
-            console.error('🔍 Erreur vérification quartiers:', error);
-          }
-        }
+        // Structure INSTAT unifiée - application directe du quartier
         
         setPersonalSelectedQuartierId(hierarchy.quartier.id);
         setPersonalSelectedQuartierCode(hierarchy.quartier.code);
-        console.log('✅ Étape 5 terminée - quartier appliqué');
       }
       
       // Étape finale: Mettre à jour divisionId dans personalInfo
-      console.log('📍 Étape finale: Mise à jour divisionId dans personalInfo');
       
       // Déterminer le divisionId selon la hiérarchie (même logique que les sélecteurs)
       let finalDivisionId = '';
       
+      // Structure INSTAT Mali unifiée : priorité du plus spécifique au plus général
       if (hierarchy.quartier) {
         finalDivisionId = hierarchy.quartier.id;
-        console.log('🎯 Utilisation quartier comme divisionId:', finalDivisionId);
-      } else if (hierarchy.commune && !isBamakoDistrict) {
+      } else if (hierarchy.commune) {
         finalDivisionId = hierarchy.commune.id;
-        console.log('🎯 Utilisation commune comme divisionId:', finalDivisionId);
-      } else if (hierarchy.arrondissement) {
-        finalDivisionId = hierarchy.arrondissement.id;
-        console.log('🎯 Utilisation arrondissement comme divisionId:', finalDivisionId);
       } else if (hierarchy.cercle) {
         finalDivisionId = hierarchy.cercle.id;
-        console.log('🎯 Utilisation cercle comme divisionId:', finalDivisionId);
       } else if (hierarchy.region) {
         finalDivisionId = hierarchy.region.id;
-        console.log('🎯 Utilisation région comme divisionId:', finalDivisionId);
       }
       
       if (finalDivisionId) {
-        console.log('🔄 Mise à jour personalInfo.divisionId:', finalDivisionId);
         updateData('personalInfo', {
           ...data.personalInfo,
           divisionId: finalDivisionId
         });
-        console.log('✅ personalInfo.divisionId mis à jour avec succès');
       } else {
-        console.log('⚠️ Aucun divisionId trouvé dans la hiérarchie');
       }
       
-      console.log('✅ Application séquentielle terminée avec succès');
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'application séquentielle:', error);
     }
   };
 
   // Appliquer la hiérarchie aux sélecteurs (ancienne méthode - gardée pour référence)
   const applyDivisionHierarchy = async (hierarchy: any) => {
-    console.log('🎯 Application de la hiérarchie:', hierarchy);
-    console.log('🎯 Hiérarchie détaillée:');
-    console.log('  - Région:', hierarchy.region?.nom, '(ID:', hierarchy.region?.id, ')');
-    console.log('  - Cercle:', hierarchy.cercle?.nom, '(ID:', hierarchy.cercle?.id, ')');
-    console.log('  - Arrondissement:', hierarchy.arrondissement?.nom, '(ID:', hierarchy.arrondissement?.id, ')');
-    console.log('  - Commune:', hierarchy.commune?.nom, '(ID:', hierarchy.commune?.id, ')');
-    console.log('  - Quartier:', hierarchy.quartier?.nom, '(ID:', hierarchy.quartier?.id, ')');
     
-    // Détecter si c'est Bamako District
-    const isBamakoDistrict = hierarchy.region?.nom?.toLowerCase().includes('bamako') && 
-                            hierarchy.region?.nom?.toLowerCase().includes('district');
-    console.log('🏙️ Bamako District détecté:', isBamakoDistrict);
+    // Structure INSTAT Mali unifiée pour toutes les régions
     
     try {
       // Région
       if (hierarchy.region) {
-        console.log('📍 Application région:', hierarchy.region.nom);
-        console.log('📍 Mise à jour état région - ID:', hierarchy.region.id, 'Code:', hierarchy.region.code);
         setPersonalSelectedRegionId(hierarchy.region.id);
         setPersonalSelectedRegionCode(hierarchy.region.code);
-        console.log('✅ État région mis à jour');
         
-        // Charger les cercles ou arrondissements selon la structure
-        if (isBamakoDistrict) {
-          console.log('🏙️ Chargement arrondissements pour Bamako District (recherche rapide) - LOGIQUE UNIFIÉE');
-          
-          // Utiliser la nouvelle logique unifiée
-          const arrondissements = await loadBamakoArrondissements(hierarchy.region.id);
-          setPersonalArrondissements(arrondissements || []);
-          console.log(`✅ ${arrondissements?.length || 0} arrondissements chargés pour Bamako (logique unifiée)`);
-          
-          // Attendre que les arrondissements soient bien mis à jour dans le state
-          await new Promise(resolve => setTimeout(resolve, 600));
-          console.log('⏰ Attente terminée - arrondissements devraient être disponibles dans les sélecteurs');
-        } else {
-          console.log('🏗️ Chargement cercles pour région classique');
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
-          setPersonalCercles(cercles || []);
-          console.log(`✅ ${cercles?.length || 0} cercles chargés pour la région`);
-          
-          // Attendre un peu que les cercles soient bien mis à jour dans le state
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // Charger les cercles (structure INSTAT unifiée)
+        const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+        setPersonalCercles(cercles || []);
+        
+        // Attendre que les cercles soient bien mis à jour dans le state
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      // Cercle (seulement si pas Bamako District)
-      if (hierarchy.cercle && !isBamakoDistrict) {
-        console.log('📍 Application cercle:', hierarchy.cercle.nom);
+      // Cercle (structure INSTAT unifiée)
+      if (hierarchy.cercle) {
         setPersonalSelectedCercleId(hierarchy.cercle.id);
         setPersonalSelectedCercleCode(hierarchy.cercle.code);
         
         // Charger les arrondissements
-        console.log('🏗️ Chargement arrondissements pour cercle');
-        const arrondissements = await divisionService.getArrondissementsByCercle(hierarchy.cercle.id);
-        setPersonalArrondissements(arrondissements || []);
-        console.log(`✅ ${arrondissements?.length || 0} arrondissements chargés pour le cercle`);
+        const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
+        setPersonalCommunes(communes || []);
         
-        // Attendre un peu que les arrondissements soient bien mis à jour dans le state
+        // Attendre un peu que les communes soient bien mises à jour dans le state
         await new Promise(resolve => setTimeout(resolve, 100));
-      } else if (isBamakoDistrict) {
-        console.log('⚠️ Bamako District: Pas de cercle, reset des valeurs');
-        setPersonalSelectedCercleId('');
-        setPersonalSelectedCercleCode('');
-        setPersonalCercles([]);
       }
       
       // Arrondissement - ATTENDRE que les arrondissements soient chargés d'abord
       if (hierarchy.arrondissement) {
-        console.log('📍 Application arrondissement:', hierarchy.arrondissement.nom);
-        console.log('📍 Mise à jour état arrondissement - ID:', hierarchy.arrondissement.id, 'Code:', hierarchy.arrondissement.code);
+        setPersonalSelectedCommuneId(hierarchy.arrondissement.id);
+        setPersonalSelectedCommuneCode(hierarchy.arrondissement.code);
         
-        // Attendre plus longtemps que les arrondissements soient bien chargés dans le state
-        console.log('⏰ Attente chargement arrondissements avant sélection...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Vérifier que l'arrondissement est bien dans la liste avant de le sélectionner
-        console.log('🔍 Vérification présence arrondissement dans la liste...');
-        console.log('🔍 Arrondissement recherché - ID:', hierarchy.arrondissement.id, 'Nom:', hierarchy.arrondissement.nom);
-        
-        // Pour Bamako, vérifier dans les arrondissements chargés localement
-        if (isBamakoDistrict) {
-          // Recharger les arrondissements pour vérification
-          try {
-            const arrondissementsVerif = await divisionService.getArrondissementsByRegion(hierarchy.region.id);
-            console.log('🔍 Arrondissements rechargés pour vérification:', arrondissementsVerif?.length || 0);
-            
-            if (!arrondissementsVerif?.length) {
-              const bamakoDivisions = await divisionService.searchBamakoDivisions();
-              const bamakoArrondissements = bamakoDivisions.filter((div: any) => 
-                div.divisionType === 'ARRONDISSEMENT' && 
-                (div.nom?.includes('Arrondissement') || ['0001', '0002', '0003', '0004', '0005', '0006', '0007'].includes(div.code))
-              );
-              console.log('🔍 Arrondissements Bamako via fallback:', bamakoArrondissements?.length || 0);
-              
-              const arrondissementTrouve = bamakoArrondissements.find((a: any) => a.id === hierarchy.arrondissement.id);
-              console.log('🔍 Arrondissement trouvé dans fallback:', arrondissementTrouve ? '✅ OUI' : '❌ NON');
-            }
-          } catch (error) {
-            console.error('🔍 Erreur vérification arrondissements:', error);
-          }
-        }
-        
-        setPersonalSelectedArrondissementId(hierarchy.arrondissement.id);
-        setPersonalSelectedArrondissementCode(hierarchy.arrondissement.code);
-        console.log('✅ État arrondissement mis à jour après attente et vérification');
-        
-        // Charger les communes ou quartiers selon la structure
-        if (isBamakoDistrict) {
-          console.log('🏙️ Chargement quartiers pour Bamako District (recherche rapide) - LOGIQUE UNIFIÉE');
-          
-          // Utiliser la nouvelle logique unifiée
-          const quartiers = await loadBamakoQuartiers(hierarchy.arrondissement.id, hierarchy.arrondissement.code);
-          setPersonalQuartiers(quartiers || []);
-          console.log(`✅ ${quartiers?.length || 0} quartiers chargés pour Bamako (logique unifiée)`);
-          
-          // Attendre un peu que les quartiers soient bien mis à jour dans le state
-          await new Promise(resolve => setTimeout(resolve, 200));
-          console.log('⏰ Attente terminée - quartiers devraient être disponibles');
-        } else {
-          console.log('🏗️ Chargement communes pour arrondissement classique');
-          const communes = await divisionService.getCommunesByArrondissement(hierarchy.arrondissement.id);
-          setPersonalCommunes(communes || []);
-          console.log(`✅ ${communes?.length || 0} communes chargées pour l'arrondissement`);
-        }
+        // Charger les quartiers (structure INSTAT unifiée)
+        const quartiers = await divisionService.getQuartiersByCommune(hierarchy.arrondissement.id);
+        setPersonalQuartiers(quartiers || []);
         
         // Attendre un peu que les données soient bien mises à jour dans le state
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      // Commune (seulement si pas Bamako District)
-      if (hierarchy.commune && !isBamakoDistrict) {
-        console.log('📍 Application commune:', hierarchy.commune.nom);
+      // Commune (structure INSTAT unifiée)
+      if (hierarchy.commune) {
         setPersonalSelectedCommuneId(hierarchy.commune.id);
         setPersonalSelectedCommuneCode(hierarchy.commune.code);
         
         // Charger les quartiers
-        console.log('🏗️ Chargement quartiers pour commune');
         const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
         setPersonalQuartiers(quartiers || []);
-        console.log(`✅ ${quartiers?.length || 0} quartiers chargés pour la commune`);
         
         // Attendre un peu que les quartiers soient bien mis à jour dans le state
         await new Promise(resolve => setTimeout(resolve, 100));
-      } else if (isBamakoDistrict) {
-        console.log('⚠️ Bamako District: Pas de commune, reset des valeurs');
-        setPersonalSelectedCommuneId('');
-        setPersonalSelectedCommuneCode('');
-        setPersonalCommunes([]);
       }
       
       // Quartier
       if (hierarchy.quartier) {
-        console.log('📍 Application quartier:', hierarchy.quartier.nom);
-        console.log('📍 Mise à jour état quartier - ID:', hierarchy.quartier.id, 'Code:', hierarchy.quartier.code);
-        
-        // Attendre que les quartiers soient chargés avant de sélectionner
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         setPersonalSelectedQuartierId(hierarchy.quartier.id);
         setPersonalSelectedQuartierCode(hierarchy.quartier.code);
-        console.log('✅ État quartier mis à jour');
         
         // Mettre à jour les données du formulaire (sans modifier la localité)
         updateData('personalInfo', {
@@ -11283,9 +11060,8 @@ const PersonalLocationStep: React.FC<{
           divisionId: hierarchy.quartier.id
           // localite reste inchangée - l'utilisateur peut la saisir librement
         });
-      } else if (hierarchy.commune && !isBamakoDistrict) {
-        // Si pas de quartier, utiliser la commune (sauf pour Bamako)
-        console.log('📍 Utilisation commune comme division finale');
+      } else if (hierarchy.commune) {
+        // Si pas de quartier, utiliser la commune (structure INSTAT unifiée)
         updateData('personalInfo', {
           ...data.personalInfo,
           divisionId: hierarchy.commune.id
@@ -11293,7 +11069,6 @@ const PersonalLocationStep: React.FC<{
         });
       } else if (hierarchy.arrondissement) {
         // Si pas de commune, utiliser l'arrondissement (cas Bamako)
-        console.log('📍 Utilisation arrondissement comme division finale (Bamako)');
         updateData('personalInfo', {
           ...data.personalInfo,
           divisionId: hierarchy.arrondissement.id
@@ -11301,18 +11076,8 @@ const PersonalLocationStep: React.FC<{
         });
       }
       
-      console.log('✅ Hiérarchie appliquée avec succès');
-      
-      // Debug: Vérifier l'état des variables après application
-      console.log('🔍 État après application:');
-      console.log('- personalSelectedRegionId:', personalSelectedRegionId);
-      console.log('- personalArrondissements.length:', personalArrondissements?.length || 0);
-      console.log('- personalSelectedArrondissementId:', personalSelectedArrondissementId);
-      console.log('- personalQuartiers.length:', personalQuartiers?.length || 0);
-      console.log('- personalSelectedQuartierId:', personalSelectedQuartierId);
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'application de la hiérarchie:', error);
     }
   };
 
@@ -11327,7 +11092,7 @@ const PersonalLocationStep: React.FC<{
           Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative
         </p>
         <DivisionSearchInput
-          placeholder="Rechercher une région, cercle, arrondissement, commune ou quartier..."
+          placeholder="Rechercher une région, cercle, commune ou quartier..."
           onSelect={handleDivisionSearch}
           disabled={isReadOnly}
           className="w-full"
@@ -11335,13 +11100,17 @@ const PersonalLocationStep: React.FC<{
       </div>
 
       {/* Sélecteurs hiérarchiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Région */}
         <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Région</label>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Région</label>
         <select
           value={personalSelectedRegionId}
           onChange={isReadOnly ? undefined : (e) => {
+            // Désactiver le flag de restauration lors d'interaction manuelle
+            setIsRestoringPersonalData(false);
+            console.log('🔍 [PERSONAL SYNC] Flag désactivé par interaction manuelle - région');
+            
             const regionId = e.target.value;
             const region = personalRegions.find(r => r.id === regionId);
             const regionCode = region?.code || '';
@@ -11349,9 +11118,8 @@ const PersonalLocationStep: React.FC<{
             setPersonalSelectedRegionId(regionId);
             setPersonalSelectedRegionCode(regionCode);
             
-            // Reset des niveaux inférieurs
+            // Reset des niveaux inférieurs (STRUCTURE INSTAT - 4 NIVEAUX)
             setPersonalSelectedCercleId(''); setPersonalSelectedCercleCode('');
-            setPersonalSelectedArrondissementId(''); setPersonalSelectedArrondissementCode('');
             setPersonalSelectedCommuneId(''); setPersonalSelectedCommuneCode('');
             setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
             
@@ -11360,7 +11128,7 @@ const PersonalLocationStep: React.FC<{
             updateData('personalInfo', { ...data.personalInfo, divisionId });
           }}
           disabled={isReadOnly}
-          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
+          className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
             isReadOnly 
               ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
               : 'border-gray-300 focus:ring-mali-emerald'
@@ -11384,7 +11152,7 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Cercle</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Cercle</label>
             <select
               value={personalSelectedCercleId}
               onChange={isReadOnly ? undefined : (e) => {
@@ -11395,8 +11163,7 @@ const PersonalLocationStep: React.FC<{
                 setPersonalSelectedCercleId(cercleId);
                 setPersonalSelectedCercleCode(cercleCode);
                 
-                // Reset des niveaux inférieurs
-                setPersonalSelectedArrondissementId(''); setPersonalSelectedArrondissementCode('');
+                // Reset des niveaux inférieurs (STRUCTURE INSTAT - 4 NIVEAUX)
                 setPersonalSelectedCommuneId(''); setPersonalSelectedCommuneCode('');
                 setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
                 
@@ -11404,78 +11171,22 @@ const PersonalLocationStep: React.FC<{
                 const divisionId = cercleId || personalSelectedRegionId || '';
                 updateData('personalInfo', { ...data.personalInfo, divisionId });
               }}
-              disabled={(() => {
-                const disabled = isReadOnly || !personalSelectedRegionId;
-                console.log('[DEBUG] Select cercle - isReadOnly:', isReadOnly, 'personalSelectedRegionId:', personalSelectedRegionId, 'disabled:', disabled);
-                return disabled;
-              })()}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
+              disabled={isReadOnly || !personalSelectedRegionId}
+              className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
                 isReadOnly || !personalSelectedRegionId
                   ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                   : 'border-gray-300 focus:ring-mali-emerald'
               }`}
             >
               <option value="">Sélectionnez un cercle</option>
-              {personalCercles.map((c: any) => {
-                console.log('[DEBUG] Cercle option:', c.id, c.nom);
-                return <option key={c.id} value={c.id}>{c.nom}</option>;
-              })}
+              {personalCercles.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.nom}</option>
+              ))}
             </select>
           </div>
         );
       })()}
 
-      {/* Arrondissement */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Arrondissement</label>
-        <select
-          value={personalSelectedArrondissementId}
-          onChange={isReadOnly ? undefined : (e) => {
-            const arrondissementId = e.target.value;
-            const arrondissement = personalArrondissements.find(a => a.id === arrondissementId);
-            const arrondissementCode = arrondissement?.code || '';
-            
-            setPersonalSelectedArrondissementId(arrondissementId);
-            setPersonalSelectedArrondissementCode(arrondissementCode);
-            
-            // Reset des niveaux inférieurs
-            setPersonalSelectedCommuneId(''); setPersonalSelectedCommuneCode('');
-            setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
-            
-            // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-            // Pour Bamako District : arrondissementId || regionId
-            // Pour les autres : arrondissementId || cercleId || regionId
-            const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
-            const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-            const divisionId = isBamakoDistrict 
-              ? (arrondissementId || personalSelectedRegionId || '')
-              : (arrondissementId || personalSelectedCercleId || personalSelectedRegionId || '');
-            updateData('personalInfo', { ...data.personalInfo, divisionId });
-          }}
-          disabled={(() => {
-            if (isReadOnly) return true;
-            const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
-            const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-            return isBamakoDistrict ? !personalSelectedRegionId : !personalSelectedCercleId;
-          })()}
-          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-            (() => {
-              if (isReadOnly) return 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed';
-              const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
-              const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-              const isDisabled = isBamakoDistrict ? !personalSelectedRegionId : !personalSelectedCercleId;
-              return isDisabled;
-            })()
-              ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-              : 'border-gray-300 focus:ring-mali-emerald'
-          }`}
-        >
-          <option value="">Sélectionnez un arrondissement</option>
-          {personalArrondissements.map((a: any) => (
-            <option key={a.id} value={a.id}>{a.nom}</option>
-          ))}
-        </select>
-      </div>
 
       {/* Commune - Masqué pour Bamako District */}
       {(() => {
@@ -11488,7 +11199,7 @@ const PersonalLocationStep: React.FC<{
         
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Commune</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Commune</label>
             <select
               value={personalSelectedCommuneId}
               onChange={isReadOnly ? undefined : (e) => {
@@ -11503,12 +11214,12 @@ const PersonalLocationStep: React.FC<{
                 setPersonalSelectedQuartierId(''); setPersonalSelectedQuartierCode('');
                 
                 // Mettre à jour le divisionId dans personalInfo (utiliser l'ID, pas le code)
-                const divisionId = communeId || personalSelectedArrondissementId || personalSelectedCercleId || personalSelectedRegionId || '';
+                const divisionId = communeId || personalSelectedCercleId || personalSelectedRegionId || '';
                 updateData('personalInfo', { ...data.personalInfo, divisionId });
               }}
-              disabled={isReadOnly || !personalSelectedArrondissementId}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                isReadOnly || !personalSelectedArrondissementId
+              disabled={isReadOnly || !personalSelectedCercleId}
+              className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
+                isReadOnly || !personalSelectedCercleId
                   ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                   : 'border-gray-300 focus:ring-mali-emerald'
               }`}
@@ -11524,7 +11235,7 @@ const PersonalLocationStep: React.FC<{
 
       {/* Quartier */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Quartier</label>
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Quartier</label>
         <select
           value={personalSelectedQuartierId}
           onChange={isReadOnly ? undefined : (e) => {
@@ -11541,22 +11252,22 @@ const PersonalLocationStep: React.FC<{
             const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
             const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
             const divisionId = isBamakoDistrict 
-              ? (quartierId || personalSelectedArrondissementId || personalSelectedRegionId || '')
-              : (quartierId || personalSelectedCommuneId || personalSelectedArrondissementId || personalSelectedCercleId || personalSelectedRegionId || '');
+              ? (quartierId || personalSelectedCercleId || personalSelectedRegionId || '')
+              : (quartierId || personalSelectedCommuneId || personalSelectedCercleId || personalSelectedRegionId || '');
             updateData('personalInfo', { ...data.personalInfo, divisionId });
           }}
           disabled={(() => {
             if (isReadOnly) return true;
             const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
             const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-            return isBamakoDistrict ? !personalSelectedArrondissementId : !personalSelectedCommuneId;
+            return isBamakoDistrict ? !personalSelectedCercleId : !personalSelectedCommuneId;
           })()}
-          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
+          className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
             (() => {
               if (isReadOnly) return true;
               const selectedRegion = personalRegions.find(r => r.id === personalSelectedRegionId);
               const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-              return isBamakoDistrict ? !personalSelectedArrondissementId : !personalSelectedCommuneId;
+              return isBamakoDistrict ? !personalSelectedCercleId : !personalSelectedCommuneId;
             })()
               ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
               : 'border-gray-300 focus:ring-mali-emerald'
@@ -11569,79 +11280,268 @@ const PersonalLocationStep: React.FC<{
         </select>
       </div>
 
-        {/* Localité */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Localité</label>
-          <input
-            type="text"
-            value={data.personalInfo?.localite || ''}
-            onChange={isReadOnly ? undefined : (e) => updateData('personalInfo', {
-              ...data.personalInfo,
-              localite: e.target.value
-            })}
-            readOnly={isReadOnly}
-            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-              isReadOnly 
-                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
-                : 'border-gray-300 focus:ring-mali-emerald'
-            }`}
-            placeholder="Votre localité précise"
-          />
+       
+      </div>
+    </div>
+  );
+};
+
+// Étape 0 : Identification de l'utilisateur
+const UserIdentificationStep: React.FC<{isForSelf: boolean | null, setIsForSelf: (value: boolean | null) => void, handleResponse: (value: boolean) => void}> = ({ isForSelf, setIsForSelf, handleResponse }) => {
+  return (
+    <div className="animate-fade-in">
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-investmali-neutral-dark mb-2 animate-slide-up">Identification</h2>
+      <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+        Commençons par identifier pour qui vous créez cette entreprise.
+      </p>
+
+      <div className="space-y-4 sm:space-y-6">
+        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100">
+          <h3 className="text-lg sm:text-xl font-semibold text-investmali-neutral-dark mb-3 sm:mb-4">
+            Créez-vous cette entreprise pour vous-même ?
+          </h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            Si vous créez cette entreprise pour vous-même, nous allons pré-remplir le formulaire avec vos informations personnelles.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6">
+            <button
+              onClick={() => handleResponse(true)}
+              className="flex-1 bg-investmali-accent hover:bg-investmali-accent/90 text-white font-medium py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-300 flex items-center justify-center text-sm sm:text-base"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Oui, c'est pour moi
+            </button>
+            <button
+              onClick={() => handleResponse(false)}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-300 flex items-center justify-center text-sm sm:text-base"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Non, c'est pour quelqu'un d'autre
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Étape 1 : Informations Personnelles
-const PersonalInfoStep: React.FC<{
-  data: BusinessCreationData, 
-  updateData: (field: keyof BusinessCreationData, value: any) => void, 
-  onNext: () => void,
-  showForm: boolean,
-  setShowForm: (show: boolean) => void
-}> = ({ data, updateData, onNext, showForm, setShowForm }) => {
-  const [isForSelf, setIsForSelf] = useState<boolean | null>(null);
+// Étape 1 : Informations personnelles
+const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field: keyof BusinessCreationData, value: any) => void, isForSelf: boolean | null, setIsForSelf: (value: boolean | null) => void, showForm: boolean, setShowForm: (value: boolean) => void}> = ({ data, updateData, isForSelf, setIsForSelf, showForm, setShowForm }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // États pour le sélecteur de pays téléphone
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]); // Mali par défaut
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+
+  // Mémoriser les propriétés du champ téléphone pour forcer le re-render
+  const phoneMaxLength = useMemo(() => {
+    const maxLen = (() => {
+      switch (selectedCountry.code) {
+        case '+223': return 11; // 8 chiffres + 3 espaces
+        case '+33': return 14;  // 9 chiffres + 4 espaces
+        case '+1': return 12;   // 10 chiffres + 2 espaces
+        default: return 20;     // Format générique
+      }
+    })();
+    return maxLen;
+  }, [selectedCountry.code]);
+
+  // Synchronisation automatique de TOUTES les données de localisation entre personne et entreprise
+  useEffect(() => {
+    if (data.personalInfo?.hasDifferentAddress === false) {
+      // Si l'adresse est la même, synchroniser automatiquement TOUTES les données de localisation
+      updateData('companyInfo', {
+        ...data.companyInfo,
+        rue: data.personalInfo?.localite || '',
+        porte: data.personalInfo?.porte || '',
+        divisionCode: data.personalInfo?.divisionId || '',
+        regionId: data.personalInfo?.divisionId || '',
+        cercleId: '',
+        arrondissementId: '',
+        communeId: '',
+        quartierId: ''
+      });
+    }
+  }, [data.personalInfo?.hasDifferentAddress, data.personalInfo?.localite, data.personalInfo?.porte, data.personalInfo?.divisionId]);
+
+  // Synchronisation automatique de la forme juridique pour les entreprises individuelles
+  useEffect(() => {
+    if (data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
+      updateData('companyInfo', {
+        ...data.companyInfo,
+        formeJuridique: 'E_I'
+      });
+    }
+  }, [data.companyInfo?.typeEntreprise]);
+
+  const phonePlaceholder = useMemo(() => {
+    const placeholder = (() => {
+      switch (selectedCountry.code) {
+        case '+223': return 'XX XX XX XX';
+        case '+33': return 'XX XX XX XX XX';
+        case '+1': return 'XXX XXX XXXX';
+        default: return 'Numéro de téléphone';
+      }
+    })();
+    return placeholder;
+  }, [selectedCountry.code]);
   
   // États pour tracker si les valeurs ont été récupérées du profil
   const [hasProfileBirthDate, setHasProfileBirthDate] = useState(false);
   const [hasProfileBirthPlace, setHasProfileBirthPlace] = useState(false);
 
+  // Fonction pour détecter le pays à partir du numéro de téléphone
+  const detectCountryFromPhone = (phoneNumber: string) => {
+    if (!phoneNumber) return countries[0]; // Mali par défaut
+    
+    // Nettoyer le numéro (enlever espaces, tirets, etc.)
+    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Chercher le pays correspondant à l'indicatif
+    for (const country of countries) {
+      if (cleanPhone.startsWith(country.code)) {
+        return country;
+      }
+    }
+    
+    return countries[0]; // Mali par défaut si aucun pays trouvé
+  };
+
+  // Fonction pour extraire le numéro local (sans indicatif)
+  const extractLocalNumber = (phoneNumber: string, countryCode: string) => {
+    if (!phoneNumber) return '';
+    
+    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    if (cleanPhone.startsWith(countryCode)) {
+      const localNumber = cleanPhone.substring(countryCode.length);
+      // Formater le numéro local selon le pays
+      if (countryCode === '+223' && localNumber.length === 8) {
+        // Format malien: XX XX XX XX
+        return `${localNumber.substring(0, 2)} ${localNumber.substring(2, 4)} ${localNumber.substring(4, 6)} ${localNumber.substring(6, 8)}`;
+      } else if (countryCode === '+33' && localNumber.length === 9) {
+        // Format français: XX XX XX XX XX
+        return `${localNumber.substring(0, 2)} ${localNumber.substring(2, 4)} ${localNumber.substring(4, 6)} ${localNumber.substring(6, 8)} ${localNumber.substring(8, 9)}`;
+      } else if (countryCode === '+1' && localNumber.length === 10) {
+        // Format américain: XXX XXX XXXX
+        return `${localNumber.substring(0, 3)} ${localNumber.substring(3, 6)} ${localNumber.substring(6, 10)}`;
+      }
+      // Format générique pour autres pays
+      return localNumber;
+    }
+    
+    return phoneNumber;
+  };
+
+  // Fonction pour nettoyer et formater la saisie téléphone selon le pays sélectionné
+  const handlePhoneChange = (value: string, setter: (phone: string) => void) => {
+    // Supprimer tous les caractères non numériques
+    const cleaned = value.replace(/[^\d]/g, '');
+    
+    // Déterminer la longueur maximale et le format selon le pays sélectionné
+    let maxLength = 8; // Mali par défaut
+    let formatted = cleaned;
+    
+    if (selectedCountry.code === '+223') {
+      // Mali: 8 chiffres, format XX XX XX XX
+      maxLength = 8;
+      const limited = cleaned.substring(0, maxLength);
+      formatted = limited;
+      
+      // Appliquer le formatage avec espaces
+      if (limited.length > 2) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2);
+      }
+      if (limited.length > 4) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2, 4) + ' ' + limited.substring(4);
+      }
+      if (limited.length > 6) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2, 4) + ' ' + limited.substring(4, 6) + ' ' + limited.substring(6);
+      }
+    } else if (selectedCountry.code === '+33') {
+      // France: 9 chiffres, format XX XX XX XX XX
+      maxLength = 9;
+      const limited = cleaned.substring(0, maxLength);
+      formatted = limited;
+      
+      // Appliquer le formatage avec espaces
+      if (limited.length > 2) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2);
+      }
+      if (limited.length > 4) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2, 4) + ' ' + limited.substring(4);
+      }
+      if (limited.length > 6) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2, 4) + ' ' + limited.substring(4, 6) + ' ' + limited.substring(6);
+      }
+      if (limited.length > 8) {
+        formatted = limited.substring(0, 2) + ' ' + limited.substring(2, 4) + ' ' + limited.substring(4, 6) + ' ' + limited.substring(6, 8) + ' ' + limited.substring(8);
+      }
+    } else if (selectedCountry.code === '+1') {
+      // États-Unis/Canada: 10 chiffres, format XXX XXX XXXX
+      maxLength = 10;
+      const limited = cleaned.substring(0, maxLength);
+      formatted = limited;
+      
+      // Appliquer le formatage avec espaces
+      if (limited.length > 3) {
+        formatted = limited.substring(0, 3) + ' ' + limited.substring(3);
+      }
+      if (limited.length > 6) {
+        formatted = limited.substring(0, 3) + ' ' + limited.substring(3, 6) + ' ' + limited.substring(6);
+      }
+    } else {
+      // Autres pays: format générique, maximum 15 chiffres
+      maxLength = 15;
+      formatted = cleaned.substring(0, maxLength);
+    }
+    
+    setter(formatted);
+  };
+
+  // Fermer le dropdown des pays quand on clique à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.country-dropdown')) {
+        setShowCountryDropdown(false);
+      }
+    };
+
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCountryDropdown]);
+
   // Récupérer l'utilisateur connecté
   const fetchCurrentUser = async () => {
     try {
-      console.log('🔄 DÉBUT fetchCurrentUser - Récupération lieu de naissance et nationalité');
-      // Réinitialiser la variable globale
-      (window as any).userHasInitialLocationData = false;
       setIsLoading(true);
       setError('');
       
+      // Réinitialiser la variable globale
+      (window as any).userHasInitialLocationData = false;
+      
       // Récupérer l'utilisateur depuis le localStorage
       const currentUser = authAPI.getCurrentUser();
-      console.log('🔍 Utilisateur actuel:', currentUser);
       
       if (currentUser && (currentUser.personne_id || currentUser.personneId)) {
         const personneId = currentUser.personne_id || currentUser.personneId;
-        console.log('🔄 Récupération directe avec personne_id:', personneId);
-        console.log('📋 Données currentUser disponibles:', currentUser);
         
         // Utiliser l'endpoint /api/v1/persons/personne_id pour récupérer les informations
         const personResponse = await authAPI.getPersonById(personneId);
-        console.log('📋 Réponse de l\'API persons:', personResponse);
         
         if (personResponse && personResponse.success) {
           const personData = personResponse.data;
-          
-          // Debug: Afficher les champs lieuNaissance et nationnalite
-          console.log('🔍 DEBUG - Champs récupérés depuis la DB:', {
-            lieuNaissance: personData.lieuNaissance,
-            nationnalite: personData.nationnalite,
-            'nationnalite type': typeof personData.nationnalite,
-            'nationnalite keys': personData.nationnalite ? Object.keys(personData.nationnalite) : 'null',
-            allFields: Object.keys(personData)
-          });
           
           // Vérifier si nous avons des valeurs valides du profil
           const profileBirthDate = personData.dateNaissance ? 
@@ -11654,13 +11554,27 @@ const PersonalInfoStep: React.FC<{
           setHasProfileBirthDate(!!(profileBirthDate && profileBirthDate.trim() !== ''));
           setHasProfileBirthPlace(!!(profileBirthPlace && profileBirthPlace.trim() !== ''));
           
+          // Traiter le numéro de téléphone pour détecter le pays et extraire le numéro local
+          const fullPhoneNumber = personData.telephone1 || personData.telephone || '';
+          const detectedCountry = detectCountryFromPhone(fullPhoneNumber);
+          const localPhoneNumber = extractLocalNumber(fullPhoneNumber, detectedCountry.code);
+          
+          // Traiter le numéro de téléphone 2
+          const fullPhoneNumber2 = personData.telephone2 || '';
+          const localPhoneNumber2 = fullPhoneNumber2 ? extractLocalNumber(fullPhoneNumber2, detectedCountry.code) : '';
+          
+          // Mettre à jour le pays sélectionné
+          setSelectedCountry(detectedCountry);
+          
           // Mettre à jour les données du formulaire avec les informations de la table persons
+          // IMPORTANT: Préserver toutes les données existantes, ne modifier que personalInfo
           updateData('personalInfo', {
             ...data.personalInfo,
             firstName: personData.prenom || '',
             lastName: personData.nom || '',
             email: personData.email || currentUser.email || '',
-            phone: personData.telephone1 || personData.telephone || '',
+            phone: localPhoneNumber, // Utiliser le numéro local sans indicatif
+            phone2: localPhoneNumber2, // Ajouter le téléphone 2
             civility: personData.civilite || 
                      (personData.sexe === 'MASCULIN' ? 'M.' : 
                       personData.sexe === 'FEMININ' ? 'Mme' : 
@@ -11683,61 +11597,42 @@ const PersonalInfoStep: React.FC<{
             ...(personData.numeroPiece && { idNumber: personData.numeroPiece }),
             // Corriger le mapping des données de localisation - toujours inclure même si vide
             localite: personData.localite || '',
+            porte: personData.porte || '',
             divisionId: personData.division_id || '',
+            
+            // Si le champ porte n'existe pas encore et que localite contient des données,
+            // essayer de parser pour extraire rue et porte (format: "Rue 427 Porte 231")
+            ...((() => {
+              if (!personData.porte && personData.localite) {
+                const localiteStr = personData.localite.toString();
+                // Tenter de détecter un pattern "Rue X Porte Y" ou "Rue X"
+                const ruePorteMatch = localiteStr.match(/^(.+?)\s+Porte\s+(.+)$/i);
+                if (ruePorteMatch) {
+                  return {
+                    localite: ruePorteMatch[1].trim(),
+                    porte: ruePorteMatch[2].trim()
+                  };
+                }
+                // Si pas de pattern détecté, garder tout dans localite
+                return { localite: localiteStr };
+              }
+              return {};
+            })()),
             // Définir une variable globale pour indiquer si l'utilisateur a des données de localisation initiales
             ...((() => {
               // Considérer que les données sont complètes seulement si division_id est présent
               // (localite seul n'est pas suffisant car il peut être un nom générique)
               const hasLocationData = (personData.division_id && personData.division_id.trim() !== '');
               (window as any).userHasInitialLocationData = hasLocationData;
-              console.log('[DEBUG] Données initiales de localisation détectées:', hasLocationData);
-              console.log('[DEBUG] Champs de localisation:', {
-                'personData.localite': personData.localite,
-                'personData.localite type': typeof personData.localite,
-                'personData.localite length': personData.localite?.length,
-                'personData.division_id': personData.division_id,
-                'personData.division_id type': typeof personData.division_id,
-                'personData.division_id length': personData.division_id?.length,
-                'hasLocationData': hasLocationData
-              });
               return {};
             })()),
             // Garder city pour compatibilité - toujours inclure même si vide
             city: personData.localite || ''
           });
           
-          console.log('✅ Données utilisateur chargées avec succès');
-          console.log('🔍 Données de localisation récupérées:', {
-            'personData.localite': personData.localite,
-            'personData.division_id': personData.division_id,
-            'personData.divisionCode': personData.divisionCode
-          });
-          console.log('📋 Données finales du formulaire:', {
-            firstName: personData.prenom,
-            lastName: personData.nom,
-            email: personData.email,
-            phone: personData.telephone1,
-            civility: personData.civilite,
-            sexe: personData.sexe,
-            birthDate: personData.dateNaissance,
-            birthPlace: personData.lieuNaissance,
-            localite: personData.localite,
-            divisionId: personData.division_id,
-            currentUserCivilite: currentUser.civilite,
-            // Préserver isForSelf = true car c'est pour l'utilisateur connecté
-            isForSelf: true
-          });
-          
           // Si l'utilisateur a un divisionId, récupérer la hiérarchie administrative
           if (personData.division_id && personData.division_id.trim() !== '') {
-            console.log('🔄 Récupération de la hiérarchie administrative pour divisionId:', personData.division_id);
-            try {
-              // TODO: Implémenter la récupération de la hiérarchie depuis divisionId
-              // Pour l'instant, permettre la modification manuelle
-              console.log('⚠️ Hiérarchie administrative non implémentée - permettre modification manuelle');
-            } catch (error) {
-              console.error('❌ Erreur lors de la récupération de la hiérarchie:', error);
-            }
+            // TODO: Implémenter la récupération de la hiérarchie depuis divisionId
           }
           return personData;
         } else {
@@ -11746,38 +11641,14 @@ const PersonalInfoStep: React.FC<{
       } else {
         throw new Error(`Utilisateur non connecté ou personne_id manquant. Utilisateur: ${JSON.stringify(currentUser)}`);
       }
-    } catch (err) {
-      console.error('❌ Erreur lors de la récupération des informations utilisateur:', err);
-      console.error('❌ Type d\'erreur:', typeof err);
-      console.error('❌ Stack trace:', err instanceof Error ? err.stack : 'Pas de stack trace');
-      const errorMessage = err instanceof Error ? err.message : `Erreur inconnue: ${JSON.stringify(err)}`;
-      setError(`Impossible de charger vos informations: ${errorMessage}. Veuillez les saisir manuellement.`);
+    } catch (err: any) {
+      setError(`Impossible de charger vos informations: ${err.message || err}. Veuillez les saisir manuellement.`);
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResponse = async (response: boolean) => {
-    setIsForSelf(response);
-    
-    // Sauvegarder isForSelf dans businessData.personalInfo pour les étapes suivantes
-    updateData('personalInfo', {
-      ...data.personalInfo,
-      isForSelf: response
-    });
-    
-    // Si l'utilisateur choisit "Oui, c'est pour moi", on récupère ses informations
-    // pour compléter les champs manquants de PersonCreateRequest (PUT)
-    // Sinon, on prépare une création complète (POST)
-    
-    if (response) {
-      // Si l'utilisateur crée pour lui-même, on charge ses infos
-      await fetchCurrentUser();
-    }
-    
-    setShowForm(true);
-  };
 
   // Créer ou mettre à jour les informations personnelles selon le choix utilisateur
   const savePersonalInfo = async (personalData: PersonalInfo) => {
@@ -11791,13 +11662,12 @@ const PersonalInfoStep: React.FC<{
       const deducedSexe = deduceSexeFromCivilite(personalData.civility);
       const finalSexe = personalData.sexe || deducedSexe;
       
-      console.log('🔍 Déduction sexe - Civilité:', personalData.civility, '→ Sexe déduit:', deducedSexe, '→ Sexe final:', finalSexe);
-
       // Préparer les données selon PersonCreateRequest
       const personRequest = {
         nom: personalData.lastName,
         prenom: personalData.firstName,
         telephone1: personalData.phone,
+        telephone2: personalData.phone2,
         email: personalData.email,
         dateNaissance: personalData.birthDate,
         lieuNaissance: personalData.birthPlace,
@@ -11807,17 +11677,22 @@ const PersonalInfoStep: React.FC<{
         civilite: mapCivilityToBackend(personalData.civility),
         division_id: personalData.divisionId || undefined,
         localite: personalData.localite || undefined,
+        porte: personalData.porte || undefined,
+        adresseLibre: personalData.adresseLibre || undefined,
         role: 'USER',
-        entrepriseRole: 'GERANT'
+        entrepriseRole: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
       };
 
-      console.log('💾 Données à sauvegarder:', personRequest);
+      // 🔍 DEBUG: Logs pour tracer le problème de persistance du champ 'porte'
+      console.log('🔍 [DEBUG] Données personnelles reçues:', personalData);
+      console.log('🔍 [DEBUG] Champ localite:', personalData.localite);
+      console.log('🔍 [DEBUG] Champ porte:', personalData.porte);
+      console.log('🔍 [DEBUG] Requête envoyée au backend:', personRequest);
 
       let response;
       
       if (isForSelf && currentUser.personne_id) {
         // PUT - Mise à jour de la personne existante
-        console.log('🔄 Mise à jour personne existante ID:', currentUser.personne_id);
         response = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
           method: 'PUT',
           headers: {
@@ -11828,7 +11703,6 @@ const PersonalInfoStep: React.FC<{
         });
       } else {
         // POST - Création d'une nouvelle personne
-        console.log('➕ Création nouvelle personne');
         response = await fetch('/api/v1/persons', {
           method: 'POST',
           headers: {
@@ -11845,13 +11719,10 @@ const PersonalInfoStep: React.FC<{
       }
       
       const result = await response.json();
-      console.log('✅ Personne sauvegardée:', result);
       
       return result;
-    } catch (err) {
-      console.error('❌ Erreur lors de la sauvegarde des informations personnelles:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      setError(`Impossible de sauvegarder les informations personnelles: ${errorMessage}`);
+    } catch (err: any) {
+      setError(`Impossible de sauvegarder les informations personnelles: ${err.message || err}`);
       return null;
     }
   };
@@ -11867,6 +11738,7 @@ const PersonalInfoStep: React.FC<{
         nom: associateData.lastName,
         prenom: associateData.firstName,
         telephone1: associateData.phone,
+        telephone2: associateData.phone2,
         email: associateData.email,
         dateNaissance: associateData.birthDate,
         lieuNaissance: associateData.birthPlace,
@@ -11876,11 +11748,10 @@ const PersonalInfoStep: React.FC<{
         civilite: mapCivilityToBackend(associateData.civility),
         division_id: associateData.divisionId, // Ajouter le division_id
         localite: associateData.localite, // Ajouter la localité
+        porte: associateData.porte, // Ajouter le numéro de porte
         role: 'USER',
         entrepriseRole: 'ASSOCIE' // Rôle spécifique pour les associés
       };
-
-      console.log('👥 Création associé:', personRequest);
 
       const response = await fetch('/api/v1/persons', {
         method: 'POST',
@@ -11897,13 +11768,10 @@ const PersonalInfoStep: React.FC<{
       }
       
       const result = await response.json();
-      console.log('✅ Associé créé:', result);
       
       return result;
-    } catch (err) {
-      console.error('❌ Erreur lors de la création de l\'associé:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      setError(`Impossible de créer l'associé: ${errorMessage}`);
+    } catch (err: any) {
+      setError(`Impossible de créer l'associé: ${err.message || err}`);
       return null;
     }
   };
@@ -11914,11 +11782,23 @@ const PersonalInfoStep: React.FC<{
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Aucun token trouvé');
 
+      // Formater le numéro de téléphone au format E.164 pour le gérant
+      let formattedManagerPhone = '';
+      if (managerData.phone) {
+        const cleanPhone = managerData.phone.replace(/[\s\-\.]/g, '');
+        if (cleanPhone.startsWith('+')) {
+          formattedManagerPhone = cleanPhone; // Déjà au format E.164
+        } else {
+          formattedManagerPhone = `+223${cleanPhone}`; // Ajouter l'indicatif Mali
+        }
+      }
+
       // Préparer les données selon PersonCreateRequest pour un gérant
       const personRequest = {
         nom: managerData.lastName,
         prenom: managerData.firstName,
-        telephone1: managerData.phone,
+        telephone1: formattedManagerPhone,
+        telephone2: managerData.phone2,
         email: managerData.email,
         dateNaissance: managerData.birthDate,
         lieuNaissance: managerData.birthPlace,
@@ -11928,11 +11808,10 @@ const PersonalInfoStep: React.FC<{
         civilite: mapCivilityToBackend(managerData.civility),
         division_id: managerData.divisionId, // Ajouter le division_id
         localite: managerData.localite, // Ajouter la localité
+        porte: managerData.porte, // Ajouter le numéro de porte
         role: 'USER',
-        entrepriseRole: 'GERANT' // Rôle spécifique pour le gérant
+        entrepriseRole: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT' // Rôle spécifique pour le gérant
       };
-
-      console.log('👔 Création gérant:', personRequest);
 
       const response = await fetch('/api/v1/persons', {
         method: 'POST',
@@ -11949,13 +11828,10 @@ const PersonalInfoStep: React.FC<{
       }
       
       const result = await response.json();
-      console.log('✅ Gérant créé:', result);
       
       return result;
-    } catch (err) {
-      console.error('❌ Erreur lors de la création du gérant:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      setError(`Impossible de créer le gérant: ${errorMessage}`);
+    } catch (err: any) {
+      setError(`Impossible de créer le gérant: ${err.message || err}`);
       return null;
     }
   };
@@ -11972,29 +11848,39 @@ const PersonalInfoStep: React.FC<{
         
         if (!token) throw new Error('Aucun token trouvé');
 
+        // Reconstruire le numéro complet avec l'indicatif pour la sauvegarde (format E.164)
+        let fullPhoneForSave = '';
+        if (data.personalInfo.phone) {
+          const cleanPhone = data.personalInfo.phone.replace(/[\s\-\.]/g, '');
+          if (cleanPhone.startsWith('+')) {
+            fullPhoneForSave = cleanPhone; // Déjà au format E.164
+          } else {
+            fullPhoneForSave = `${selectedCountry.code}${cleanPhone}`;
+          }
+        }
+
         // Préparer les données selon PersonCreateRequest
         const personRequest = {
           nom: data.personalInfo.lastName,
           prenom: data.personalInfo.firstName,
-          telephone1: data.personalInfo.phone,
+          telephone1: fullPhoneForSave, // Sauvegarder le numéro complet avec indicatif
+          telephone2: data.personalInfo.phone2 ? (data.personalInfo.phone2.startsWith('+') ? data.personalInfo.phone2 : '+223' + data.personalInfo.phone2.replace(/\s/g, '')) : '',
           email: data.personalInfo.email,
           dateNaissance: data.personalInfo.birthDate,
           lieuNaissance: data.personalInfo.birthPlace,
           nationnalite: data.personalInfo.nationality,
           sexe: data.personalInfo.sexe,
-          situationMatrimoniale: data.personalInfo.situationMatrimoniale || 'CELIBATAIRE',
+          situationMatrimoniale: data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE',
           civilite: mapCivilityToBackend(data.personalInfo.civility),
           role: 'USER',
-          entrepriseRole: 'GERANT'
+          entrepriseRole: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
         };
 
-        console.log('💾 ÉTAPE 1 - Sauvegarde informations personnelles:', personRequest);
 
         let response;
         
         if (data.personalInfo.isForSelf && currentUser.personne_id) {
           // PUT - Mise à jour de la personne existante
-          console.log('🔄 PUT - Mise à jour personne existante ID:', currentUser.personne_id);
           response = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
             method: 'PUT',
             headers: {
@@ -12005,7 +11891,6 @@ const PersonalInfoStep: React.FC<{
           });
         } else {
           // POST - Création d'une nouvelle personne
-          console.log('➕ POST - Création nouvelle personne');
           response = await fetch('/api/v1/persons', {
             method: 'POST',
             headers: {
@@ -12022,93 +11907,124 @@ const PersonalInfoStep: React.FC<{
         }
         
         const result = await response.json();
-        console.log('✅ ÉTAPE 1 TERMINÉE - Personne sauvegardée:', result);
         
         // Stocker founderId pour les étapes suivantes
         updateData('founderId', result.id || result.data?.id);
         
-      } catch (err) {
-        console.error('❌ Erreur ÉTAPE 1:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        setError(`Impossible de sauvegarder les informations personnelles: ${errorMessage}`);
+      } catch (err: any) {
+        setError(`Impossible de sauvegarder les informations personnelles: ${err.message || err}`);
         return;
       } finally {
         setIsLoading(false);
       }
     }
     
-    onNext();
+    // onNext(); // Removed as this function is not needed in PersonalInfoStep
   };
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-3xl font-bold text-mali-dark mb-2">Informations Personnelles</h2>
-      <p className="text-gray-600 mb-8">
-        Commençons par quelques informations sur vous avant de créer votre entreprise.
+      {/* Questionnaire de sélection du type d'entreprise */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-4 sm:p-6 mb-6">
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="p-3 bg-[#47c559] rounded-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-green-800">Type d'entreprise</h2>
+            <p className="text-green-600 font-medium mt-1">
+              Création d'entreprise individuelle
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4">
+          <button
+            type="button"
+            onClick={() => updateData('companyInfo', { ...data.companyInfo, typeEntreprise: 'ENTREPRISE_INDIVIDUELLE' })}
+            className="p-4 sm:p-6 rounded-xl border-2 transition-all duration-300 text-left border-[#47c559] bg-green-50 shadow-lg"
+          >
+            <div className="flex items-start space-x-4">
+              <div className="p-2 rounded-lg bg-[#47c559] text-white">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-green-800">
+                  Entreprise Individuelle
+                </h3>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-investmali-neutral-dark mb-2">Informations Personnelles</h2>
+      <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
+        Commençons par quelques informations sur vous avant de créer votre {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'entreprise individuelle' : 'société'}.
       </p>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mali-emerald"></div>
-          <span className="ml-3 text-gray-600">Chargement de vos informations...</span>
+        <div className="flex justify-center items-center py-8 sm:py-12">
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-t-2 border-b-2 border-investmali-accent"></div>
+          <span className="ml-2 sm:ml-3 text-sm sm:text-base text-gray-600">Chargement de vos informations...</span>
         </div>
       ) : error ? (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      ) : isForSelf === null ? (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-            <h3 className="text-xl font-semibold text-mali-dark mb-4">
-              Créez-vous cette entreprise pour vous-même ?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Si vous créez cette entreprise pour vous-même, nous allons pré-remplir le formulaire avec vos informations personnelles.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <button
-                onClick={() => handleResponse(true)}
-                className="flex-1 bg-mali-emerald hover:bg-mali-emerald/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Oui, c'est pour moi
-              </button>
-              <button
-                onClick={() => handleResponse(false)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Non, c'est pour quelqu'un d'autre
-              </button>
+            <div className="ml-2 sm:ml-3">
+              <p className="text-xs sm:text-sm text-red-700">{error}</p>
             </div>
           </div>
         </div>
       ) : showForm ? (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-            <h3 className="text-xl font-semibold text-mali-dark mb-4">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100">
+            <h3 className="text-lg sm:text-xl font-semibold text-investmali-neutral-dark mb-3 sm:mb-4">
               {isForSelf ? 'Vos informations personnelles' : 'Informations du représentant'}
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 sm:gap-4 md:gap-6">
+             <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Nom</label>
+                <input
+                  type="text"
+                  value={data.personalInfo?.lastName || ''}
+                  onChange={(e) => updateData('personalInfo', {
+                    ...data.personalInfo,
+                    lastName: e.target.value
+                  })}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  placeholder=""
+                />
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Prénom</label>
+                <input
+                  type="text"
+                  value={data.personalInfo?.firstName || ''}
+                  onChange={(e) => updateData('personalInfo', {
+                    ...data.personalInfo,
+                    firstName: e.target.value
+                  })}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  placeholder=""
+                />
+              </div>    
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
                   Civilité
                   {isForSelf && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
                   )}
@@ -12119,8 +12035,8 @@ const PersonalInfoStep: React.FC<{
                     ...data.personalInfo,
                     civility: e.target.value
                   })}
-                  disabled={isForSelf}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  disabled={!!isForSelf}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf 
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                       : 'border-gray-300 focus:ring-mali-emerald'
@@ -12133,68 +12049,14 @@ const PersonalInfoStep: React.FC<{
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                <input
-                  type="text"
-                  value={data.personalInfo?.firstName || ''}
-                  onChange={(e) => updateData('personalInfo', {
-                    ...data.personalInfo,
-                    firstName: e.target.value
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
-                  placeholder="Votre prénom"
-                />
-              </div>
+              
+             
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <input
-                  type="text"
-                  value={data.personalInfo?.lastName || ''}
-                  onChange={(e) => updateData('personalInfo', {
-                    ...data.personalInfo,
-                    lastName: e.target.value
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
-                  placeholder="Votre nom"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={data.personalInfo?.email || ''}
-                  onChange={(e) => updateData('personalInfo', {
-                    ...data.personalInfo,
-                    email: e.target.value
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
-                  placeholder="votre@email.com"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <input
-                  type="tel"
-                  value={data.personalInfo?.phone || ''}
-                  onChange={(e) => updateData('personalInfo', {
-                    ...data.personalInfo,
-                    phone: e.target.value
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-mali-emerald"
-                  placeholder="Votre numéro de téléphone"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
                   Date de naissance
                   {isForSelf && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
                   )}
@@ -12213,25 +12075,25 @@ const PersonalInfoStep: React.FC<{
                       birthDate: e.target.value
                     });
                   }}
-                  disabled={isForSelf && hasProfileBirthDate}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  disabled={!!isForSelf && hasProfileBirthDate}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf && hasProfileBirthDate
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                       : 'border-gray-300 focus:ring-mali-emerald'
                   }`}
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">L'utilisateur doit avoir au moins 18 ans</p>
+                {/* <p className="text-xs text-gray-500 mt-1">L'utilisateur doit avoir au moins 18 ans</p> */}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5 flex items-center">
                   Lieu de naissance
-                  {isForSelf && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {/* {isForSelf && (
+                    <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
-                  )}
+                  )} */}
                 </label>
                 <input
                   type="text"
@@ -12242,22 +12104,213 @@ const PersonalInfoStep: React.FC<{
                       birthPlace: e.target.value
                     });
                   }}
-                  disabled={isForSelf && hasProfileBirthPlace}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  disabled={!!isForSelf && hasProfileBirthPlace}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base ${
                     isForSelf && hasProfileBirthPlace
                       ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' 
                       : 'border-gray-300 focus:ring-mali-emerald'
                   }`}
-                  placeholder="Votre lieu de naissance"
+                  placeholder=""
                   required
+                />
+              </div>
+               <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={data.personalInfo?.email || ''}
+                  onChange={(e) => updateData('personalInfo', {
+                    ...data.personalInfo,
+                    email: e.target.value
+                  })}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  placeholder=""
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone</label>
+                <div className="relative">
+                  <div className="flex">
+                    <div className="relative country-dropdown">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      >
+                        <img 
+                          alt={`Drapeau ${selectedCountry.iso}`} 
+                          className="w-6 h-4 mr-2 object-cover rounded-sm" 
+                          src={selectedCountry.flag}
+                        />
+                        <span className="text-sm font-medium text-gray-700">{selectedCountry.code}</span>
+                        <svg className="w-4 h-4 ml-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </button>
+                      
+                      {/* Dropdown des pays */}
+                      {showCountryDropdown && (
+                        <div className="absolute top-full left-0 z-50 w-80 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+                          {countries.map((country) => (
+                            <button
+                              key={country.iso}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCountry(country);
+                                setShowCountryDropdown(false);
+                              }}
+                              className="w-full flex items-center px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-left"
+                            >
+                              <img 
+                                alt={`Drapeau ${country.iso}`} 
+                                className="w-6 h-4 mr-3 object-cover rounded-sm" 
+                                src={country.flag}
+                              />
+                              <span className="text-sm font-medium text-gray-700 mr-2">{country.code}</span>
+                              <span className="text-sm text-gray-600">{country.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="tel"
+                      value={data.personalInfo?.phone || ''}
+                      onChange={(e) => handlePhoneChange(e.target.value, (phone) => updateData('personalInfo', {
+                        ...data.personalInfo,
+                        phone: phone
+                      }))}
+                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
+                      placeholder={phonePlaceholder}
+                      maxLength={phoneMaxLength}
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Entrez votre numéro sans le {selectedCountry.code} (ex: {selectedCountry.code === '+223' ? '77 00 00 01' : selectedCountry.code === '+33' ? '06 12 34 56 78' : selectedCountry.code === '+1' ? '555 123 4567' : 'XX XX XX XX'})
+                  </p>
+                </div>
+              </div>
+
+              {/* Téléphone 2 (optionnel) */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Téléphone 2 (optionnel)</label>
+                <div className="relative">
+                  <div className="flex">
+                    <div className="relative country-dropdown">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                        className="flex items-center px-2 py-2 sm:px-3 sm:py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
+                      >
+                        <img 
+                          alt={`Drapeau ${selectedCountry.iso}`} 
+                          className="w-6 h-4 mr-2 object-cover rounded-sm" 
+                          src={selectedCountry.flag}
+                        />
+                        <span className="text-sm font-medium text-gray-700">{selectedCountry.code}</span>
+                        <svg className="w-4 h-4 ml-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </button>
+                      
+                      {/* Dropdown des pays */}
+                      {showCountryDropdown && (
+                        <div className="absolute top-full left-0 z-50 w-80 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+                          {countries.map((country) => (
+                            <button
+                              key={country.iso}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCountry(country);
+                                setShowCountryDropdown(false);
+                              }}
+                              className="w-full flex items-center px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-left"
+                            >
+                              <img 
+                                alt={`Drapeau ${country.iso}`} 
+                                className="w-6 h-4 mr-3 object-cover rounded-sm" 
+                                src={country.flag}
+                              />
+                              <span className="text-sm font-medium text-gray-700 mr-2">{country.code}</span>
+                              <span className="text-sm text-gray-600">{country.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="tel"
+                      value={data.personalInfo?.phone2 || ''}
+                      onChange={(e) => handlePhoneChange(e.target.value, (phone) => updateData('personalInfo', {
+                        ...data.personalInfo,
+                        phone2: phone
+                      }))}
+                      className="flex-1 px-2 py-2 sm:px-3 sm:py-2.5 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-sm sm:text-base"
+                      placeholder={phonePlaceholder}
+                      maxLength={phoneMaxLength}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Numéro de téléphone secondaire (optionnel)
+                  </p>
+                </div>
+              </div>
+
+              {/* Rue et Porte dans un seul div */}
+              <div className="grid grid-cols-4 sm:grid-cols-2 gap-4">
+                {/* Rue */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Rue</label>
+                  <input
+                    type="text"
+                    value={data.personalInfo?.localite || ''}
+                    onChange={(e) => updateData('personalInfo', {
+                      ...data.personalInfo,
+                      localite: e.target.value
+                    })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                    placeholder=""
+                  />
+                </div>
+
+                {/* Porte */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Porte</label>
+                  <input
+                    type="text"
+                    value={data.personalInfo?.porte || ''}
+                    onChange={(e) => updateData('personalInfo', {
+                      ...data.personalInfo,
+                      porte: e.target.value
+                    })}
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                    placeholder=""
+                  />
+                </div>
+              </div>
+
+              {/* Adresse libre */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Adresse complète (optionnel)</label>
+                <textarea
+                  value={data.personalInfo?.adresseLibre || ''}
+                  onChange={(e) => updateData('personalInfo', {
+                    ...data.personalInfo,
+                    adresseLibre: e.target.value
+                  })}
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
+                  placeholder="Saisissez votre adresse complète (ex: Quartier Lafiabougou, Rue 427, Porte 231, près de la pharmacie)"
+                  rows={3}
                 />
               </div>
 
               {/* Message informatif pour les champs récupérés automatiquement */}
               {isForSelf && (
-                <div className="col-span-2">
-                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-700 flex items-center">
+                <div className="sm:col-span-2">
+                  {/* <div className="mb-3 sm:mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs sm:text-sm text-green-700 flex items-center">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -12268,22 +12321,22 @@ const PersonalInfoStep: React.FC<{
                         "Vos informations personnelles ont été pré-remplies. Veuillez saisir votre date et lieu de naissance."
                       }
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               )}
 
               {/* Localisation personnelle avec sélection hiérarchique */}
-              <div className="col-span-2">
-                <h4 className="text-lg font-semibold text-mali-dark mb-4 flex items-center">
-                  <span className="text-xl mr-2">📍</span>
+              <div className="sm:col-span-2">
+                <h4 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+                  <span className="text-lg sm:text-xl mr-1.5 sm:mr-2">📍</span>
                   Votre localisation
-                  {isForSelf && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {/* {isForSelf && (
+                    <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                       Récupéré automatiquement
                     </span>
-                  )}
+                  )} */}
                 </h4>
-                {isForSelf && (
+                {/* {isForSelf && (
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-700 flex items-center">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12295,7 +12348,7 @@ const PersonalInfoStep: React.FC<{
                       }
                     </p>
                   </div>
-                )}
+                )} */}
                 <PersonalLocationStep 
                   data={data}
                   updateData={updateData}
@@ -12304,40 +12357,59 @@ const PersonalInfoStep: React.FC<{
                     if (!isForSelf) return false;
                     
                     // Utiliser une variable globale pour stocker les données initiales
-                    // (sera définie lors du chargement des données utilisateur)
                     const hasInitialLocationData = (window as any).userHasInitialLocationData || false;
-                    
-                    console.log('[DEBUG] isReadOnly - isForSelf:', isForSelf, 'hasInitialLocationData:', hasInitialLocationData);
                     return hasInitialLocationData;
                   })()}
                 />
               </div>
 
               {/* Nouvelles questions */}
-              <div className="col-span-2 space-y-6 pt-4 border-t border-gray-200">
+              <div className="sm:col-span-2 space-y-4 sm:space-y-6 pt-3 sm:pt-4 border-t border-gray-200">
                 <div>
-                  <p className="block text-sm font-medium text-gray-700 mb-2">Votre adresse est-elle différente de celle de votre entreprise ?</p>
-                  <div className="flex space-x-4">
+                  <p className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Votre adresse est-elle différente de celle de votre entreprise ?</p>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                     <button
                       type="button"
-                      onClick={() => updateData('personalInfo', {
-                        ...data.personalInfo,
-                        hasDifferentAddress: true
-                      })}
-                      className={`flex-1 py-2 px-4 rounded-lg border ${data.personalInfo?.hasDifferentAddress === true 
-                        ? 'bg-mali-emerald text-white border-mali-emerald' 
+                      onClick={() => {
+                        updateData('personalInfo', {
+                          ...data.personalInfo,
+                          hasDifferentAddress: true
+                        });
+                        // Vider les champs rue et porte de l'entreprise car l'adresse est différente
+                        updateData('companyInfo', {
+                          ...data.companyInfo,
+                          rue: '',
+                          porte: ''
+                        });
+                      }}
+                      className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border text-sm sm:text-base ${data.personalInfo?.hasDifferentAddress === true 
+                        ? 'bg-investmali-accent text-white border-investmali-accent' 
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                     >
                       Oui
                     </button>
                     <button
                       type="button"
-                      onClick={() => updateData('personalInfo', {
-                        ...data.personalInfo,
-                        hasDifferentAddress: false
-                      })}
-                      className={`flex-1 py-2 px-4 rounded-lg border ${data.personalInfo?.hasDifferentAddress === false 
-                        ? 'bg-mali-emerald text-white border-mali-emerald' 
+                      onClick={() => {
+                        updateData('personalInfo', {
+                          ...data.personalInfo,
+                          hasDifferentAddress: false
+                        });
+                        // Synchroniser TOUTES les données de localisation de l'entreprise avec celles de la personne
+                        updateData('companyInfo', {
+                          ...data.companyInfo,
+                          rue: data.personalInfo?.localite || '',
+                          porte: data.personalInfo?.porte || '',
+                          divisionCode: data.personalInfo?.divisionId || '',
+                          regionId: data.personalInfo?.divisionId || '',
+                          cercleId: '',
+                          arrondissementId: '',
+                          communeId: '',
+                          quartierId: ''
+                        });
+                      }}
+                      className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border text-sm sm:text-base ${data.personalInfo?.hasDifferentAddress === false 
+                        ? 'bg-investmali-accent text-white border-investmali-accent' 
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                     >
                       Non
@@ -12356,7 +12428,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         hasCriminalRecord: true
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.hasCriminalRecord === true ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.hasCriminalRecord === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Oui
                     </button>
@@ -12366,7 +12438,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         hasCriminalRecord: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.hasCriminalRecord === false ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.hasCriminalRecord === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -12383,7 +12455,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         isMarried: true
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === true ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Oui
                     </button>
@@ -12393,7 +12465,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         isMarried: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === false ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -12411,7 +12483,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         allowsMultipleManagers: true
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.allowsMultipleManagers === true ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.allowsMultipleManagers === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Oui
                     </button>
@@ -12421,7 +12493,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         allowsMultipleManagers: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.allowsMultipleManagers === false ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.allowsMultipleManagers === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -12438,7 +12510,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         requiresExerciseAuthorization: true
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.requiresExerciseAuthorization === true ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.requiresExerciseAuthorization === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Oui
                     </button>
@@ -12448,7 +12520,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         requiresExerciseAuthorization: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.requiresExerciseAuthorization === false ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.requiresExerciseAuthorization === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -12465,7 +12537,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         willImportExport: true
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.willImportExport === true ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.willImportExport === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Oui
                     </button>
@@ -12475,7 +12547,7 @@ const PersonalInfoStep: React.FC<{
                         ...data.personalInfo,
                         willImportExport: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.willImportExport === false ? 'bg-mali-emerald text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.willImportExport === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -12484,14 +12556,7 @@ const PersonalInfoStep: React.FC<{
               </div>
             </div>
             
-            <div className="mt-6">
-              <button
-                onClick={onNext}
-                className="w-full bg-mali-emerald hover:bg-mali-emerald/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300"
-              >
-                Continuer
-              </button>
-            </div>
+            {/* Bouton Continuer masqué */}
           </div>
         </div>
       ) : (
@@ -12523,47 +12588,36 @@ const PersonalInfoStep: React.FC<{
 };
 
 // Étape 2 : Informations de l'entreprise
-const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field: keyof BusinessCreationData, value: any) => void}> = ({ data, updateData }) => {
+const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field: keyof BusinessCreationData, value: any) => void}> = ({ data, updateData: updateBusinessData }) => {
   
+
   // Logique unifiée pour charger les arrondissements de Bamako District
   const loadBamakoArrondissements = async (regionId: string): Promise<any[]> => {
-    console.log('🏙️ [BAMAKO UNIFIED] === CHARGEMENT ARRONDISSEMENTS BAMAKO ===');
-    console.log('🏙️ [BAMAKO UNIFIED] Region ID:', regionId);
-    
     let arrondissements: any[] = [];
     
     // Stratégie 1: Endpoint direct
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1: Endpoint direct');
       arrondissements = await divisionService.getArrondissementsByRegion(regionId);
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1 résultat:', arrondissements?.length || 0);
       
       if (arrondissements?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 1 réussie');
         return arrondissements;
       }
     } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 1 échouée:', error);
     }
     
     // Stratégie 2: searchBamakoDivisions
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2: searchBamakoDivisions');
       const bamakoDivisions = await divisionService.searchBamakoDivisions();
       arrondissements = bamakoDivisions?.filter((d: any) => d.divisionType === 'ARRONDISSEMENT') || [];
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2 résultat:', arrondissements?.length || 0);
       
       if (arrondissements?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 2 réussie');
         return arrondissements;
       }
     } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 2 échouée:', error);
     }
     
     // Stratégie 3: getAllArrondissements + filtrage intelligent
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3: Filtrage intelligent');
       const allArrondissements = await divisionService.getAllArrondissements();
       
       // Filtres multiples pour Bamako
@@ -12586,11 +12640,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
       
       for (let i = 0; i < bamakoFilters.length; i++) {
         const filtered = allArrondissements?.filter(bamakoFilters[i]) || [];
-        console.log(`🏙️ [BAMAKO UNIFIED] Filtre ${i + 1} résultat:`, filtered?.length || 0);
         
         if (filtered?.length > 0) {
           arrondissements = filtered;
-          console.log(`🏙️ [BAMAKO UNIFIED] ✅ Stratégie 3 réussie (filtre ${i + 1})`);
           break;
         }
       }
@@ -12599,11 +12651,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         return arrondissements;
       }
     } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 3 échouée:', error);
     }
     
     // Stratégie 4: Données hardcodées en dernier recours
-    console.log('🏙️ [BAMAKO UNIFIED] Stratégie 4: Données hardcodées');
     arrondissements = [
       { id: 'bamako-arr-1', nom: 'Premier Arrondissement', code: '0001', parent: { id: regionId } },
       { id: 'bamako-arr-2', nom: 'Deuxième Arrondissement', code: '0002', parent: { id: regionId } },
@@ -12613,52 +12663,38 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
       { id: 'bamako-arr-6', nom: 'Sixième Arrondissement', code: '0006', parent: { id: regionId } }
     ];
     
-    console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 4 appliquée (hardcodé):', arrondissements.length);
     return arrondissements;
   };
-  
+
   // Logique unifiée pour charger les quartiers de Bamako District
   const loadBamakoQuartiers = async (arrondissementId: string, arrondissementCode?: string): Promise<any[]> => {
-    console.log('🏙️ [BAMAKO UNIFIED] === CHARGEMENT QUARTIERS BAMAKO ===');
-    console.log('🏙️ [BAMAKO UNIFIED] Arrondissement ID:', arrondissementId);
-    console.log('🏙️ [BAMAKO UNIFIED] Arrondissement Code:', arrondissementCode);
-    
     let quartiers: any[] = [];
     
     // Stratégie 1: Endpoint direct par ID
     try {
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1: Endpoint direct par ID');
       quartiers = await divisionService.getQuartiersByArrondissement(arrondissementId);
-      console.log('🏙️ [BAMAKO UNIFIED] Stratégie 1 résultat:', quartiers?.length || 0);
       
       if (quartiers?.length > 0) {
-        console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 1 réussie');
         return quartiers;
       }
     } catch (error) {
-      console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 1 échouée:', error);
     }
     
     // Stratégie 2: Endpoint par code (si disponible)
     if (arrondissementCode) {
       try {
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2: Endpoint par code');
         quartiers = await divisionService.getQuartiersByArrondissementCode(arrondissementId);
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 2 résultat:', quartiers?.length || 0);
         
         if (quartiers?.length > 0) {
-          console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 2 réussie');
           return quartiers;
         }
       } catch (error) {
-        console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 2 échouée:', error);
       }
     }
     
     // Stratégie 3: getAllQuartiers + filtrage par code
     if (arrondissementCode) {
       try {
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3: Filtrage par code');
         const allQuartiers = await divisionService.getAllQuartiers();
         const codePrefix = arrondissementCode.substring(0, 4);
         
@@ -12667,19 +12703,14 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
           return code.startsWith(codePrefix);
         }) || [];
         
-        console.log('🏙️ [BAMAKO UNIFIED] Stratégie 3 résultat:', quartiers?.length || 0);
-        
         if (quartiers?.length > 0) {
-          console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 3 réussie');
           return quartiers;
         }
       } catch (error) {
-        console.log('🏙️ [BAMAKO UNIFIED] ❌ Stratégie 3 échouée:', error);
       }
     }
     
     // Stratégie 4: Données hardcodées par arrondissement
-    console.log('🏙️ [BAMAKO UNIFIED] Stratégie 4: Données hardcodées');
     const hardcodedQuartiers: Record<string, any[]> = {
       '0001': [
         { id: 'bamako-q-001-1', nom: 'Quartier Korofina Nord', code: '000101', parent: { id: arrondissementId } },
@@ -12710,7 +12741,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
     const code = arrondissementCode || '0001';
     quartiers = hardcodedQuartiers[code] || hardcodedQuartiers['0001'];
     
-    console.log('🏙️ [BAMAKO UNIFIED] ✅ Stratégie 4 appliquée (hardcodé):', quartiers.length);
     return quartiers;
   };
 
@@ -12725,6 +12755,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
   const [typeEntrepriseOptions, setTypeEntrepriseOptions] = useState<any[]>([]);
   const [formeJuridiqueOptions, setFormeJuridiqueOptions] = useState<any[]>([]);
   const [domaineActiviteOptions, setDomaineActiviteOptions] = useState<any[]>([]);
+  const [domaineActiviteNrOptions, setDomaineActiviteNrOptions] = useState<any[]>([]);
   
   // Variables d'état pour les IDs sélectionnés (UUIDs pour API)
   const [selectedRegionId, setSelectedRegionId] = useState<string>('');
@@ -12733,22 +12764,43 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
   const [selectedCommuneId, setSelectedCommuneId] = useState<string>('');
   const [selectedQuartierId, setSelectedQuartierId] = useState<string>('');
   
-  // Debug : Log des valeurs sélectionnées au rendu
-  console.log('🔍 [RENDER DEBUG] Valeurs sélectionnées au rendu:', {
-    selectedRegionId,
-    selectedArrondissementId,
-    selectedQuartierId,
-    regionsCount: regions.length,
-    arrondissementsCount: arrondissements.length,
-    quartiersCount: quartiers.length
-  });
-  
   // Variables d'état pour les codes sélectionnés (codes numériques pour divisionCode)
   const [selectedRegionCode, setSelectedRegionCode] = useState<string>('');
   const [selectedCercleCode, setSelectedCercleCode] = useState<string>('');
   const [selectedArrondissementCode, setSelectedArrondissementCode] = useState<string>('');
   const [selectedCommuneCode, setSelectedCommuneCode] = useState<string>('');
   const [selectedQuartierCode, setSelectedQuartierCode] = useState<string>('');
+
+  // useEffect pour restaurer les sélections de localisation depuis data.companyInfo
+  useEffect(() => {
+    console.log('🔍 [LOCATION DEBUG] useEffect de restauration déclenché:', {
+      regionId: data.companyInfo?.regionId,
+      cercleId: data.companyInfo?.cercleId,
+      communeId: data.companyInfo?.communeId,
+      quartierId: data.companyInfo?.quartierId
+    });
+    
+    if (data.companyInfo?.regionId) {
+      console.log('🔍 [LOCATION DEBUG] Restauration regionId:', data.companyInfo.regionId);
+      setSelectedRegionId(data.companyInfo.regionId);
+    }
+    if (data.companyInfo?.cercleId) {
+      console.log('🔍 [LOCATION DEBUG] Restauration cercleId:', data.companyInfo.cercleId);
+      setSelectedCercleId(data.companyInfo.cercleId);
+    }
+    if (data.companyInfo?.arrondissementId) {
+      console.log('🔍 [LOCATION DEBUG] Restauration arrondissementId:', data.companyInfo.arrondissementId);
+      setSelectedArrondissementId(data.companyInfo.arrondissementId);
+    }
+    if (data.companyInfo?.communeId) {
+      console.log('🔍 [LOCATION DEBUG] Restauration communeId:', data.companyInfo.communeId);
+      setSelectedCommuneId(data.companyInfo.communeId);
+    }
+    if (data.companyInfo?.quartierId) {
+      console.log('🔍 [LOCATION DEBUG] Restauration quartierId:', data.companyInfo.quartierId);
+      setSelectedQuartierId(data.companyInfo.quartierId);
+    }
+  }, [data.companyInfo?.regionId, data.companyInfo?.cercleId, data.companyInfo?.arrondissementId, data.companyInfo?.communeId, data.companyInfo?.quartierId]);
 
   // Charger les régions et enums au montage + initialiser depuis les données existantes
   useEffect(() => {
@@ -12763,75 +12815,246 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
     Promise.all([
       enumService.getTypeEntreprise(),
       enumService.getFormeJuridique(), 
-      enumService.getDomaineActivites()
-    ]).then(([typeEntreprise, formeJuridique, domaineActivites]) => {
+      enumService.getDomaineActivites(),
+      enumService.getDomaineActivitesNr()
+    ]).then(([typeEntreprise, formeJuridique, domaineActivites, domaineActivitesNr]) => {
       if (mounted) {
         setTypeEntrepriseOptions(typeEntreprise || []);
         setFormeJuridiqueOptions(formeJuridique || []);
         setDomaineActiviteOptions(domaineActivites || []);
+        setDomaineActiviteNrOptions(domaineActivitesNr || []);
       }
     }).catch(error => {
-      console.error('Erreur lors du chargement des enums:', error);
     });
     
     return () => { mounted = false; };
   }, []);
 
-  // Initialiser les états de sélection depuis les données existantes
-  useEffect(() => {
-    if (data.companyInfo?.divisionCode) {
-      console.log('Initialisation depuis divisionCode existant:', data.companyInfo.divisionCode);
-      // Le divisionCode existe déjà, pas besoin de réinitialiser
+  // Fonction de synchronisation séquentielle (inspirée de DossierCreationForm.tsx)
+  const applyCompanyHierarchySequential = async (hierarchy: any) => {
+    try {
+      // Étape 1: Appliquer la région
+      if (hierarchy.region) {
+        setSelectedRegionId(hierarchy.region.id);
+        
+        // Charger manuellement les cercles depuis la région
+        try {
+          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+          setCercles(cercles || []);
+        } catch (error) {
+        }
+      }
+      
+      // Étape 2: Appliquer le cercle
+      if (hierarchy.cercle) {
+        setSelectedCercleId(hierarchy.cercle.id);
+        
+        // Charger manuellement les communes depuis le cercle
+        try {
+          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
+          setCommunes(communes || []);
+        } catch (error) {
+        }
+      }
+      
+      // Étape 3: Appliquer la commune (structure INSTAT moderne)
+      if (hierarchy.commune) {
+        setSelectedCommuneId(hierarchy.commune.id);
+        
+        // Charger manuellement les quartiers depuis la commune
+        try {
+          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
+          setQuartiers(quartiers || []);
+        } catch (error) {
+        }
+      }
+      
+      // Étape 4: Appliquer le quartier
+      if (hierarchy.quartier) {
+        setSelectedQuartierId(hierarchy.quartier.id);
+      }
+    } catch (error) {
     }
-  }, [data.companyInfo?.divisionCode]);
+  };
 
-  // Synchroniser la localisation de l'entreprise avec celle personnelle si hasDifferentAddress = false
+  // Écouter l'événement de synchronisation immédiate
+  useEffect(() => {
+    const handleDivisionCodeSync = (event: any) => {
+      const { divisionCode } = event.detail;
+      
+      if (divisionCode && data.personalInfo?.hasDifferentAddress === false && regions.length > 0) {
+          triggerSelectorSync(divisionCode);
+      }
+    };
+    
+    window.addEventListener('divisionCodeSynchronized', handleDivisionCodeSync);
+    return () => window.removeEventListener('divisionCodeSynchronized', handleDivisionCodeSync);
+  }, [data.personalInfo?.hasDifferentAddress, regions.length]);
+
+  // Fonction pour déclencher la synchronisation des sélecteurs
+  const triggerSelectorSync = (divisionCode: string) => {
+    
+    // Construire la hiérarchie depuis le divisionCode (comme côté agent)
+    const regionCode = divisionCode.substring(0, 2);
+    const cercleCode = divisionCode.substring(0, 4);
+    const communeCode = divisionCode.substring(0, 8);
+    
+    // Construire l'objet hiérarchie
+    const hierarchy: any = {};
+    
+    // Trouver les éléments dans les listes chargées
+    hierarchy.region = regions.find((r: any) => r.code === regionCode);
+    // Les autres seront trouvés au fur et à mesure du chargement
+    
+    if (hierarchy.region) {
+      // Construire la hiérarchie complète de manière asynchrone
+      divisionService.getCerclesByRegion(hierarchy.region.id).then((cerclesList: any[]) => {
+        hierarchy.cercle = cerclesList?.find((c: any) => c.code === cercleCode);
+        
+        if (hierarchy.cercle) {
+          return divisionService.getCommunesByCercle(hierarchy.cercle.id);
+        }
+        return [];
+      }).then((communesList: any[]) => {
+        hierarchy.commune = communesList?.find((c: any) => c.code === communeCode);
+        
+        if (hierarchy.commune) {
+          return divisionService.getQuartiersByCommune(hierarchy.commune.id);
+        }
+        return [];
+      }).then((quartiersList: any[]) => {
+        hierarchy.quartier = quartiersList?.find((q: any) => q.code === divisionCode);
+        
+        // Maintenant appliquer la hiérarchie complète
+        applyCompanyHierarchySequential(hierarchy);
+      }).catch(error => {
+      });
+    }
+  };
+
+  // Synchronisation avec la logique agent - quand divisionCode change
+  useEffect(() => {
+    if (data.companyInfo?.divisionCode && data.personalInfo?.hasDifferentAddress === false && regions.length > 0) {
+      triggerSelectorSync(data.companyInfo.divisionCode);
+    }
+  }, [data.companyInfo?.divisionCode, data.personalInfo?.hasDifferentAddress, regions.length]);
+
+  // Synchronisation directe des sélecteurs depuis divisionCode (obsolète - remplacé par le useEffect ci-dessus)
+  useEffect(() => {
+    
+    if (data.companyInfo?.divisionCode && data.personalInfo?.hasDifferentAddress === false && regions.length > 0) {
+      
+      const code = data.companyInfo.divisionCode;
+      
+      // Déterminer le type de division depuis le code
+      if (code.length >= 12) {
+        // Code quartier complet (ex: 010101010001 pour Kayes ou 900101010020 pour Bamako)
+        const regionCode = code.substring(0, 2);
+        const cercleCode = code.substring(0, 4);
+        const communeCode = code.substring(0, 8);
+        
+        // Trouver la région correspondante
+        const region = regions.find(r => r.code === regionCode);
+        if (region) {
+          setSelectedRegionId(region.id);
+        }
+        
+        // Trouver le cercle correspondant
+        const cercle = cercles.find(c => c.code === cercleCode);
+        if (cercle) {
+          setSelectedCercleId(cercle.id);
+        }
+        
+        // Trouver la commune correspondante
+        const commune = communes.find(c => c.code === communeCode);
+        if (commune) {
+          setSelectedCommuneId(commune.id);
+        }
+        
+        // Trouver le quartier correspondant
+        const quartier = quartiers.find(q => q.code === code);
+        if (quartier) {
+          setSelectedQuartierId(quartier.id);
+        }
+        
+      } else if (code.length >= 8) {
+        // Code commune (ex: 90010101)
+        setSelectedRegionId('90');
+        setSelectedCercleId('9001');
+        
+        const communeId = communes.find(c => c.code === code)?.id;
+        if (communeId) {
+          setSelectedCommuneId(communeId);
+        }
+        
+      } else if (code.length >= 4) {
+        // Code cercle (ex: 9001)
+        setSelectedRegionId('90');
+        setSelectedCercleId('9001');
+        
+      }
+    }
+  }, [data.companyInfo?.divisionCode, data.personalInfo?.hasDifferentAddress, regions.length, communes.length, quartiers.length]);
+
+  // Synchronisation avec la localisation personnelle (Structure INSTAT moderne)
   useEffect(() => {
     const hasDifferentAddress = data.personalInfo?.hasDifferentAddress;
     
-    console.log('🔄 Vérification synchronisation localisation:', {
-      hasDifferentAddress,
-      personalDivisionId: data.personalInfo?.divisionId,
-      personalLocalite: data.personalInfo?.localite,
-      companyDivisionCode: data.companyInfo?.divisionCode,
-      regionsLoaded: regions.length > 0
-    });
     
-    // Log spécial pour Bamako
-    if (hasDifferentAddress === false && data.personalInfo?.divisionId) {
-      console.log('🏙️ [SYNC DEBUG] Vérification si c\'est Bamako pour synchronisation...');
-      console.log('🏙️ [SYNC DEBUG] Division ID:', data.personalInfo?.divisionId);
-      console.log('🏙️ [SYNC DEBUG] Regions loaded:', regions.length > 0);
+    // Synchronisation directe via analyse du divisionId (Structure INSTAT moderne)
+    if (hasDifferentAddress === false && regions.length > 0 && data.personalInfo?.divisionId) {
+      
+      const personalDivisionId = data.personalInfo.divisionId;
+      
+      // Analyser directement le code pour extraire la hiérarchie
+      if (personalDivisionId && personalDivisionId.length >= 12) {
+        // Code quartier complet (ex: 010101010001)
+        const regionCode = personalDivisionId.substring(0, 2); // 01
+        const cercleCode = personalDivisionId.substring(0, 4); // 0101
+        const communeCode = personalDivisionId.substring(0, 8); // 01010101
+        const quartierCode = personalDivisionId; // 010101010001
+        
+        
+        // Synchroniser le divisionCode directement avec le code personnel
+        updateBusinessData('companyInfo', {
+          ...data.companyInfo,
+          divisionCode: quartierCode
+        });
+        
+        // Déclencher immédiatement la synchronisation des sélecteurs
+        setTimeout(() => {
+          // Simuler un changement de divisionCode pour déclencher les useEffect du CompanyInfoStep
+          const event = new CustomEvent('divisionCodeSynchronized', { 
+            detail: { divisionCode: quartierCode } 
+          });
+          window.dispatchEvent(event);
+        }, 100);
+      }
+      
+      // Synchroniser aussi la localité textuelle
+      if (data.personalInfo?.localite) {
+        updateBusinessData('companyInfo', {
+          ...data.companyInfo,
+          localite: data.personalInfo.localite
+        });
+      }
+      return;
     }
-    
-    // Debug général de synchronisation
-    console.log('🔍 [SYNC DEBUG] État synchronisation:', {
-      hasDifferentAddress,
-      hasPersonalDivisionId: !!data.personalInfo?.divisionId,
-      regionsLoaded: regions.length > 0,
-      willSync: hasDifferentAddress === false && regions.length > 0 && data.personalInfo?.divisionId
-    });
 
     // Si l'adresse n'est PAS différente (même adresse), synchroniser
     // Attendre que les régions soient chargées avant de synchroniser
     if (hasDifferentAddress === false && regions.length > 0) {
-      console.log('✅ Synchronisation activée - Même adresse pour entreprise et personne');
-      
       // Récupérer les données de localisation personnelle
       const personalDivisionId = data.personalInfo?.divisionId;
       const personalLocalite = data.personalInfo?.localite;
       
       if (personalDivisionId) {
-        console.log('🔄 Récupération de la hiérarchie depuis division personnelle:', personalDivisionId);
-        console.log('🏙️ [SYNC DEBUG] === DÉBUT SYNCHRONISATION EFFECTIVE ===');
-        
         // Récupérer la division personnelle pour obtenir son code
         divisionService.getById(personalDivisionId).then((division: any) => {
           if (division) {
-            console.log('✅ Division personnelle récupérée:', division);
             
             // Mettre à jour le divisionCode de l'entreprise
-            updateData('companyInfo', {
+            updateBusinessData('companyInfo', {
               ...data.companyInfo,
               divisionCode: division.code
             });
@@ -12866,32 +13089,18 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             };
             
             const hierarchy = buildHierarchy(division);
-            console.log('🏗️ Hiérarchie construite:', hierarchy);
-            console.log('🔍 [DEBUG] Division complète reçue:', division);
-            console.log('🔍 [DEBUG] Parent de la division:', division.parent);
-            console.log('🔍 [DEBUG] Type de division:', division.divisionType);
             
-            // Détecter si c'est Bamako District une seule fois pour toute la fonction
+            // Détecter si c'est Bamako District
             let isBamakoDistrict = hierarchy.region?.nom?.toLowerCase().includes('bamako') && 
                                   hierarchy.region?.nom?.toLowerCase().includes('district');
             
-            // Fallback : détecter Bamako par le code de division (codes Bamako commencent par 0004)
-            if (!isBamakoDistrict && division.code && division.code.startsWith('0004')) {
-              console.log('🏙️ [SYNC] Détection Bamako par code:', division.code);
+            // Fallback : détecter Bamako par le code de division
+            if (!isBamakoDistrict && division.code && (division.code.startsWith('0004') || division.code.startsWith('00'))) {
               isBamakoDistrict = true;
             }
-            
-            // Fallback : détecter Bamako par le code 00 (Bamako District)
-            if (!isBamakoDistrict && division.code && division.code.startsWith('00')) {
-              console.log('🏙️ [SYNC] Détection Bamako par code 00:', division.code);
-              isBamakoDistrict = true;
-            }
-            
-            console.log('🏙️ [SYNC] Bamako District détecté:', isBamakoDistrict);
             
             // Pré-sélectionner les champs selon la hiérarchie et charger les listes nécessaires
             if (hierarchy.region) {
-              console.log('🔄 Sélection région:', hierarchy.region.nom, hierarchy.region.id);
               setSelectedRegionId(hierarchy.region.id);
               setSelectedRegionCode(hierarchy.region.code);
               
@@ -12899,16 +13108,12 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               if (!isBamakoDistrict && hierarchy.cercle) {
                 divisionService.getCerclesByRegion(hierarchy.region.id).then((cerclesList: any[]) => {
                   setCercles(cerclesList || []);
-                  console.log('📋 Cercles chargés pour synchronisation:', cerclesList?.length || 0);
-                }).catch(console.error);
+                }).catch(() => {});
               } else if (isBamakoDistrict) {
-                // Pour Bamako, traiter comme une région normale mais charger directement les arrondissements
-                console.log('🏙️ [SYNC SIMPLE] Chargement arrondissements Bamako (approche simple)');
+                // Pour Bamako, charger directement les arrondissements
                 divisionService.getArrondissementsByRegion(hierarchy.region.id).then((arrondissements: any[]) => {
-                  console.log('🏙️ [SYNC SIMPLE] Arrondissements reçus:', arrondissements?.length || 0);
                   setArrondissements(arrondissements || []);
-                }).catch((error) => {
-                  console.log('🏙️ [SYNC SIMPLE] Erreur, utilisation fallback');
+                }).catch(() => {
                   // Fallback simple avec données hardcodées
                   const fallbackArrondissements = [
                     { id: 'bamako-arr-1', nom: 'Premier Arrondissement', code: '0001' },
@@ -12919,80 +13124,53 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                     { id: 'bamako-arr-6', nom: 'Sixième Arrondissement', code: '0006' }
                   ];
                   setArrondissements(fallbackArrondissements);
-                  console.log('🏙️ [SYNC SIMPLE] Fallback appliqué:', fallbackArrondissements.length);
                 });
               }
             } else if (isBamakoDistrict) {
               // Cas spécial : Bamako détecté mais pas de région dans la hiérarchie
-              console.log('🏙️ [SYNC SPECIAL] Bamako détecté sans région - Chargement direct');
-              
-              // Trouver la région Bamako District dans la liste des régions
               const bamakoRegion = regions.find((r: any) => 
                 r.nom?.toLowerCase().includes('bamako') && r.nom?.toLowerCase().includes('district')
               );
               
               if (bamakoRegion) {
-                console.log('🏙️ [SYNC SPECIAL] Région Bamako trouvée:', bamakoRegion.nom);
                 setSelectedRegionId(bamakoRegion.id);
                 setSelectedRegionCode(bamakoRegion.code);
                 
                 // Charger les arrondissements Bamako
-                console.log('🏙️ [SYNC SPECIAL] Chargement arrondissements Bamako');
                 divisionService.getArrondissementsByRegion(bamakoRegion.id).then((arrondissements: any[]) => {
-                  console.log('🏙️ [SYNC SPECIAL] Arrondissements reçus:', arrondissements?.length || 0);
                   setArrondissements(arrondissements || []);
                   
-                  // Sélectionner l'arrondissement correspondant au quartier TALIKO
+                  // Sélectionner l'arrondissement correspondant au quartier
                   if (hierarchy.quartier && arrondissements?.length > 0) {
-                    // Extraire le code arrondissement du code quartier (00040010 -> 0004)
                     const quartierCode = division.code || '';
                     const arrondissementCodeFromQuartier = quartierCode.substring(0, 4);
-                    console.log('🏙️ [SYNC SPECIAL] Recherche arrondissement avec code:', arrondissementCodeFromQuartier);
                     
                     const matchingArrondissement = arrondissements.find((arr: any) => 
                       arr.code === arrondissementCodeFromQuartier
                     );
                     
                     if (matchingArrondissement) {
-                      console.log('🏙️ [SYNC SPECIAL] Arrondissement trouvé:', matchingArrondissement.nom);
                       setSelectedArrondissementId(matchingArrondissement.id);
                       setSelectedArrondissementCode(matchingArrondissement.code);
                       
                       // Charger les quartiers pour cet arrondissement
-                      console.log('🏙️ [SYNC SPECIAL] Chargement quartiers pour:', matchingArrondissement.nom);
                       divisionService.getQuartiersByArrondissement(matchingArrondissement.id).then((quartiers: any[]) => {
-                        console.log('🏙️ [SYNC SPECIAL] Quartiers reçus:', quartiers?.length || 0);
                         setQuartiers(quartiers || []);
-                        
-                        // Sélectionner le quartier TALIKO
                         if (hierarchy.quartier) {
-                          console.log('🏙️ [SYNC SPECIAL] Sélection quartier:', hierarchy.quartier.nom);
                           setSelectedQuartierId(hierarchy.quartier.id);
                           setSelectedQuartierCode(hierarchy.quartier.code);
                         }
-                        
-                        // Debug : Vérifier les valeurs après synchronisation
-                        setTimeout(() => {
-                          console.log('🔍 [DEBUG] Valeurs après synchronisation:', {
-                            selectedRegionId: bamakoRegion.id,
-                            selectedArrondissementId: matchingArrondissement.id,
-                            selectedQuartierId: hierarchy.quartier?.id
-                          });
-                        }, 100);
-                      }).catch((error) => {
-                        console.log('🏙️ [SYNC SPECIAL] Erreur quartiers, utilisation fallback');
+                      }).catch(() => {
                         const fallbackQuartiers = [
                           { id: 'bamako-q-1', nom: 'Quartier Korofina', code: '000401' },
                           { id: 'bamako-q-2', nom: 'Quartier Taliko', code: '000402' },
                           { id: 'bamako-q-3', nom: 'Quartier Point G', code: '000403' }
                         ];
                         setQuartiers(fallbackQuartiers);
-                        console.log('🏙️ [SYNC SPECIAL] Fallback quartiers appliqué:', fallbackQuartiers.length);
                       });
                     }
                   }
-                }).catch((error) => {
-                  console.log('🏙️ [SYNC SPECIAL] Erreur, utilisation fallback');
+                }).catch(() => {
                   const fallbackArrondissements = [
                     { id: 'bamako-arr-1', nom: 'Premier Arrondissement', code: '0001' },
                     { id: 'bamako-arr-2', nom: 'Deuxième Arrondissement', code: '0002' },
@@ -13002,12 +13180,10 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                     { id: 'bamako-arr-6', nom: 'Sixième Arrondissement', code: '0006' }
                   ];
                   setArrondissements(fallbackArrondissements);
-                  console.log('🏙️ [SYNC SPECIAL] Fallback appliqué:', fallbackArrondissements.length);
                 });
               }
             }
             if (hierarchy.cercle && !isBamakoDistrict) {
-              console.log('🔄 Sélection cercle:', hierarchy.cercle.nom, hierarchy.cercle.id);
               setSelectedCercleId(hierarchy.cercle.id);
               setSelectedCercleCode(hierarchy.cercle.code);
               
@@ -13015,44 +13191,35 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               if (hierarchy.arrondissement) {
                 divisionService.getArrondissementsByCercle(hierarchy.cercle.id).then((arrondissementsList: any[]) => {
                   setArrondissements(arrondissementsList || []);
-                  console.log('📋 Arrondissements chargés pour synchronisation:', arrondissementsList?.length || 0);
-                }).catch(console.error);
+                }).catch(() => {});
               }
             }
             if (hierarchy.arrondissement) {
-              console.log('🔄 Sélection arrondissement:', hierarchy.arrondissement.nom, hierarchy.arrondissement.id);
               setSelectedArrondissementId(hierarchy.arrondissement.id);
               setSelectedArrondissementCode(hierarchy.arrondissement.code);
               
               if (isBamakoDistrict) {
                 // Pour Bamako, charger directement les quartiers
-                console.log('🏙️ [SYNC SIMPLE] Chargement quartiers Bamako');
                 divisionService.getQuartiersByArrondissement(hierarchy.arrondissement.id).then((quartiers: any[]) => {
-                  console.log('🏙️ [SYNC SIMPLE] Quartiers reçus:', quartiers?.length || 0);
                   setQuartiers(quartiers || []);
-                }).catch((error) => {
-                  console.log('🏙️ [SYNC SIMPLE] Erreur quartiers, utilisation fallback');
-                  // Fallback simple pour les quartiers
+                }).catch(() => {
                   const fallbackQuartiers = [
                     { id: 'bamako-q-1', nom: 'Quartier Korofina', code: '000101' },
                     { id: 'bamako-q-2', nom: 'Quartier Taliko', code: '000102' },
                     { id: 'bamako-q-3', nom: 'Quartier Point G', code: '000103' }
                   ];
                   setQuartiers(fallbackQuartiers);
-                  console.log('🏙️ [SYNC SIMPLE] Fallback quartiers appliqué:', fallbackQuartiers.length);
                 });
               } else {
                 // Structure classique : charger les communes
                 if (hierarchy.commune) {
                   divisionService.getCommunesByArrondissement(hierarchy.arrondissement.id).then((communesList: any[]) => {
                     setCommunes(communesList || []);
-                    console.log('📋 Communes chargées pour synchronisation:', communesList?.length || 0);
-                  }).catch(console.error);
+                  }).catch(() => {});
                 }
               }
             }
             if (hierarchy.commune && !isBamakoDistrict) {
-              console.log('🔄 Sélection commune:', hierarchy.commune.nom, hierarchy.commune.id);
               setSelectedCommuneId(hierarchy.commune.id);
               setSelectedCommuneCode(hierarchy.commune.code);
               
@@ -13060,32 +13227,23 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               if (hierarchy.quartier) {
                 divisionService.getQuartiersByCommune(hierarchy.commune.id).then((quartiersList: any[]) => {
                   setQuartiers(quartiersList || []);
-                  console.log('📋 Quartiers chargés pour synchronisation:', quartiersList?.length || 0);
-                }).catch(console.error);
+                }).catch(() => {});
               }
             }
             if (hierarchy.quartier) {
-              console.log('🔄 Sélection quartier:', hierarchy.quartier.nom, hierarchy.quartier.id);
               setSelectedQuartierId(hierarchy.quartier.id);
               setSelectedQuartierCode(hierarchy.quartier.code);
             }
-            
-            console.log('✅ Champs de localisation entreprise synchronisés avec les données personnelles');
           }
-        }).catch((error: any) => {
-          console.error('❌ Erreur lors de la récupération de la division personnelle:', error);
-        });
-      } else {
-        console.log('ℹ️ Aucune division personnelle à synchroniser');
+        }).catch(() => {});
       }
-    } else if (hasDifferentAddress === true) {
-      console.log('ℹ️ Adresses différentes - Pas de synchronisation automatique');
-    } else if (hasDifferentAddress === false && regions.length === 0) {
-      console.log('⏸️ En attente du chargement des régions pour synchroniser');
-    } else {
-      console.log('⏸️ hasDifferentAddress non défini - En attente de la réponse utilisateur');
     }
-  }, [data.personalInfo?.hasDifferentAddress, data.personalInfo?.divisionId, data.personalInfo?.localite, regions.length]);
+  }, [
+    data.personalInfo?.hasDifferentAddress, 
+    data.personalInfo?.divisionId, 
+    data.personalInfo?.localite, 
+    regions.length
+  ]);
 
   // Charger cercles quand selectedRegionId change
   useEffect(() => {
@@ -13097,17 +13255,11 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
       
       if (isBamakoDistrict) {
         // Pour Bamako District, charger directement les arrondissements
-        console.log('[CompanyInfo Bamako District] Chargement direct des arrondissements');
-        
-        // Utiliser la même stratégie que PersonalLocationStep
         Promise.all([
           divisionService.getArrondissementsByRegion(selectedRegionId),
           divisionService.getAllArrondissements(),
           divisionService.searchBamakoDivisions()
         ]).then(([arrondissementsDirects, allArrondissements, bamakoDivisions]) => {
-          console.log('[CompanyInfo Bamako District] Arrondissements directs:', arrondissementsDirects?.length || 0);
-          console.log('[CompanyInfo Bamako District] Tous les arrondissements:', allArrondissements?.length || 0);
-          
           // Stratégie 1: Arrondissements avec "premier", "deuxième", etc. (typique de Bamako)
           const strategy1 = allArrondissements.filter((arr: any) => {
             const nom = arr.nom?.toLowerCase() || '';
@@ -13128,46 +13280,31 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             arr.parent?.nom?.toLowerCase().includes('bamako')
           );
           
-          console.log('[CompanyInfo Bamako District] Stratégie 1 (Premier, Deuxième...):', strategy1.length, 'arrondissements');
-          console.log('[CompanyInfo Bamako District] Stratégie 2 (Parent dans bamakoDivisions):', strategy2.length, 'arrondissements');
-          console.log('[CompanyInfo Bamako District] Stratégie 3 (Parent contient bamako):', strategy3.length, 'arrondissements');
-          
           // Utiliser la stratégie qui donne le plus de résultats
           let bamakoArrondissements = strategy1;
           if (strategy2.length > bamakoArrondissements.length) bamakoArrondissements = strategy2;
           if (strategy3.length > bamakoArrondissements.length) bamakoArrondissements = strategy3;
           
-          // Vérification: Bamako devrait avoir 7 arrondissements
-          if (bamakoArrondissements.length !== 7) {
-            console.warn(`[CompanyInfo Bamako District] ATTENTION: ${bamakoArrondissements.length} arrondissements trouvés au lieu de 7 attendus`);
-          } else {
-            console.log('[CompanyInfo Bamako District] ✅ Tous les 7 arrondissements de Bamako sont présents');
-          }
-          
           if (mounted) {
             setCercles([]); // Pas de cercles pour Bamako
             setArrondissements(bamakoArrondissements || []);
-            console.log('[CompanyInfo Bamako District] Arrondissements chargés:', bamakoArrondissements?.length || 0);
             
-            // NOUVEAU: Sélection automatique de l'arrondissement si synchronisation active
+            // Sélection automatique de l'arrondissement si synchronisation active
             if (data.personalInfo?.hasDifferentAddress === false && data.companyInfo?.divisionCode) {
               const quartierCode = data.companyInfo.divisionCode;
               const arrondissementCodeFromQuartier = quartierCode.substring(0, 4);
-              console.log('[CompanyInfo Bamako District] Auto-sélection arrondissement avec code:', arrondissementCodeFromQuartier);
               
               const matchingArrondissement = bamakoArrondissements.find((arr: any) => 
                 arr.code === arrondissementCodeFromQuartier
               );
               
               if (matchingArrondissement) {
-                console.log('[CompanyInfo Bamako District] Arrondissement auto-sélectionné:', matchingArrondissement.nom);
                 setSelectedArrondissementId(matchingArrondissement.id);
                 setSelectedArrondissementCode(matchingArrondissement.code);
               }
             }
           }
         }).catch((error: any) => {
-          console.error('[CompanyInfo Bamako District] Erreur chargement arrondissements:', error);
         });
       } else {
         // Structure classique : charger les cercles
@@ -13212,29 +13349,22 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
       
       if (isBamakoDistrict) {
         // Pour Bamako District, charger directement les quartiers depuis l'arrondissement
-        console.log('[CompanyInfo Bamako District] Chargement direct des quartiers depuis arrondissement');
-        console.log('[CompanyInfo Bamako District] Arrondissement ID:', selectedArrondissementId);
         
         // Pour Bamako District, essayer d'abord la relation directe, puis la solution par code
-        console.log('[CompanyInfo Bamako District] Tentative 1: Relation directe arrondissement->quartiers');
         divisionService.getQuartiersByArrondissement(selectedArrondissementId).then((quartiers: any[]) => {
-          console.log('[CompanyInfo Bamako District] Quartiers par relation directe:', quartiers?.length || 0);
           
           if (quartiers && quartiers.length > 0) {
             // Relation directe fonctionne
             if (mounted) {
               setCommunes([]);
               setQuartiers(quartiers);
-              console.log('[CompanyInfo Bamako District] Quartiers chargés par relation directe:', quartiers.length);
               
               // NOUVEAU: Sélection automatique du quartier si synchronisation active
               if (data.personalInfo?.hasDifferentAddress === false && data.companyInfo?.divisionCode) {
                 const quartierCode = data.companyInfo.divisionCode;
-                console.log('[CompanyInfo Bamako District] Auto-sélection quartier avec code:', quartierCode);
                 
                 const matchingQuartier = quartiers.find((q: any) => q.code === quartierCode);
                 if (matchingQuartier) {
-                  console.log('[CompanyInfo Bamako District] Quartier auto-sélectionné:', matchingQuartier.nom);
                   setSelectedQuartierId(matchingQuartier.id);
                   setSelectedQuartierCode(matchingQuartier.code);
                 }
@@ -13242,39 +13372,32 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             }
           } else {
             // Relation directe ne fonctionne pas, essayer par code
-            console.log('[CompanyInfo Bamako District] Tentative 2: Recherche par code d\'arrondissement');
             return divisionService.getQuartiersByArrondissementCode(selectedArrondissementId);
           }
         }).then((quartiersParCode: any[]) => {
           if (quartiersParCode && quartiersParCode.length > 0) {
-            console.log('[CompanyInfo Bamako District] Quartiers par code:', quartiersParCode.length);
             if (mounted) {
               setCommunes([]);
               setQuartiers(quartiersParCode);
-              console.log('[CompanyInfo Bamako District] Quartiers chargés par code:', quartiersParCode.length);
               
               // NOUVEAU: Sélection automatique du quartier si synchronisation active
               if (data.personalInfo?.hasDifferentAddress === false && data.companyInfo?.divisionCode) {
                 const quartierCode = data.companyInfo.divisionCode;
-                console.log('[CompanyInfo Bamako District] Auto-sélection quartier avec code:', quartierCode);
                 
                 const matchingQuartier = quartiersParCode.find((q: any) => q.code === quartierCode);
                 if (matchingQuartier) {
-                  console.log('[CompanyInfo Bamako District] Quartier auto-sélectionné (par code):', matchingQuartier.nom);
                   setSelectedQuartierId(matchingQuartier.id);
                   setSelectedQuartierCode(matchingQuartier.code);
                 }
               }
             }
           } else {
-            console.log('[CompanyInfo Bamako District] Aucun quartier trouvé avec les deux méthodes');
             if (mounted) {
               setCommunes([]);
               setQuartiers([]);
             }
           }
         }).catch((error: any) => {
-          console.error('[CompanyInfo Bamako District] Erreur chargement quartiers:', error);
         });
       } else {
         // Structure classique : charger les communes
@@ -13307,30 +13430,25 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
   // Fonction pour gérer la sélection depuis la recherche (CompanyInfo)
   const handleCompanyDivisionSearch = async (division: any) => {
-    console.log('🔍 Division sélectionnée via recherche (CompanyInfo):', division);
     
     try {
       // Construire la hiérarchie complète depuis la division sélectionnée
       const hierarchy = await buildCompanyDivisionHierarchy(division);
-      console.log('🏗️ Hiérarchie construite (CompanyInfo):', hierarchy);
       
       // Appliquer la hiérarchie aux sélecteurs
       await applyCompanyDivisionHierarchy(hierarchy);
       
     } catch (error) {
-      console.error('❌ Erreur lors de la construction de la hiérarchie (CompanyInfo):', error);
     }
   };
 
   // Construire la hiérarchie complète depuis une division (CompanyInfo)
   const buildCompanyDivisionHierarchy = async (division: any): Promise<any> => {
-    console.log('🏗️ Construction hiérarchie CompanyInfo pour:', division);
     const hierarchy: any = {};
     let current = division;
     
     // Remonter la hiérarchie
     while (current) {
-      console.log('📍 Traitement division CompanyInfo:', current.nom, 'Type:', current.divisionType, 'Parent:', current.parent?.nom || 'Aucun');
       
       switch (current.divisionType) {
         case 'QUARTIER':
@@ -13352,35 +13470,28 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
       current = current.parent;
     }
     
-    console.log('🏗️ Hiérarchie CompanyInfo construite:', hierarchy);
-    
     // Détecter si c'est un quartier de Bamako et forcer la reconstruction par code
     const isBamakoQuartier = division.divisionType === 'QUARTIER' && 
                             division.code && 
                             (['0001', '0002', '0003', '0004', '0005', '0006', '0007'].some(prefix => division.code.startsWith(prefix)));
     
     if (isBamakoQuartier) {
-      console.log('🏙️ CompanyInfo: Quartier Bamako détecté, reconstruction par code forcée...');
       const reconstructedHierarchy = await reconstructCompanyHierarchyByCode(division);
       if (reconstructedHierarchy && Object.keys(reconstructedHierarchy).length > 1) {
-        console.log('✅ CompanyInfo: Hiérarchie Bamako reconstruite par code:', reconstructedHierarchy);
         return reconstructedHierarchy;
       }
     }
     
     // Si on n'a pas de parent dans les données, essayer de récupérer la hiérarchie via l'API
     if (!division.parent && division.divisionType !== 'REGION') {
-      console.log('⚠️ CompanyInfo: Pas de parent dans les données, récupération via API...');
       try {
         const fullDivision = await divisionService.getById(division.id);
-        console.log('📡 CompanyInfo: Division complète récupérée:', fullDivision);
         
         if (fullDivision && fullDivision.parent) {
           // Recommencer avec les données complètes
           return await buildCompanyDivisionHierarchy(fullDivision);
         }
       } catch (error) {
-        console.error('❌ CompanyInfo: Erreur lors de la récupération de la division complète:', error);
       }
     }
     
@@ -13389,25 +13500,21 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
   // Reconstruire la hiérarchie par code pour CompanyInfo (pour les cas où les relations parent sont manquantes)
   const reconstructCompanyHierarchyByCode = async (division: any): Promise<any> => {
-    console.log('🔧 CompanyInfo: Reconstruction par code pour:', division.nom, 'Code:', division.code);
     const hierarchy: any = {};
     
     // Ajouter la division actuelle
     hierarchy[division.divisionType.toLowerCase()] = division;
     
     if (!division.code) {
-      console.log('⚠️ CompanyInfo: Pas de code disponible pour la reconstruction');
       return hierarchy;
     }
     
     try {
       // Récupérer toutes les régions
       const regions = await divisionService.getRegions();
-      console.log('📋 CompanyInfo: Régions disponibles:', regions.length);
       
       // Pour Bamako (codes 0001xxxx à 0007xxxx)
       if (division.code.match(/^000[1-7]/) || ['0001', '0002', '0003', '0004', '0005', '0006', '0007'].some(prefix => division.code.startsWith(prefix))) {
-        console.log('🏙️ CompanyInfo: Code Bamako détecté:', division.code);
         
         const bamakoRegion = regions.find((r: any) => 
           r.nom?.toLowerCase().includes('bamako') && 
@@ -13416,11 +13523,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         
         if (bamakoRegion) {
           hierarchy.region = bamakoRegion;
-          console.log('✅ CompanyInfo: Région Bamako trouvée:', bamakoRegion.nom);
           
           if (division.divisionType === 'QUARTIER') {
             const arrondissementCode = division.code.substring(0, 4);
-            console.log('🔍 CompanyInfo: Recherche arrondissement Bamako avec code:', arrondissementCode);
             
             // Utiliser la même logique de fallback que PersonalInfoStep
             const [children, bamakoDivisions, allArrondissements] = await Promise.all([
@@ -13429,8 +13534,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               divisionService.getAllArrondissements()
             ]);
             
-            console.log('[CompanyInfo Reconstruction] Divisions Bamako:', bamakoDivisions?.length || 0);
-            console.log('[CompanyInfo Reconstruction] Tous arrondissements:', allArrondissements?.length || 0);
             
             // Stratégie 1: Divisions Bamako filtrées
             const bamakoArrondissements = bamakoDivisions.filter((div: any) => 
@@ -13441,7 +13544,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             let arrondissements = [];
             if (bamakoArrondissements.length) {
               arrondissements = bamakoArrondissements;
-              console.log('[CompanyInfo Reconstruction] Stratégie 1 réussie:', arrondissements.length);
             } else {
               // Stratégie 2: Tous les arrondissements filtrés par nom
               const arrondissementsParNom = allArrondissements.filter((arr: any) => 
@@ -13451,7 +13553,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               
               if (arrondissementsParNom.length) {
                 arrondissements = arrondissementsParNom;
-                console.log('[CompanyInfo Reconstruction] Stratégie 2 réussie:', arrondissements.length);
               }
             }
             
@@ -13460,40 +13561,32 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             
             if (arrondissement) {
               hierarchy.arrondissement = arrondissement;
-              console.log('✅ CompanyInfo: Arrondissement Bamako trouvé:', arrondissement.nom);
             } else {
-              console.log('❌ CompanyInfo: Aucun arrondissement trouvé avec le code:', arrondissementCode);
             }
           }
         }
       }
     } catch (error) {
-      console.error('❌ CompanyInfo: Erreur lors de la reconstruction:', error);
     }
     
-    console.log('🔧 CompanyInfo: Hiérarchie reconstruite:', hierarchy);
     return hierarchy;
   };
 
   // Appliquer la hiérarchie aux sélecteurs (CompanyInfo)
   const applyCompanyDivisionHierarchy = async (hierarchy: any) => {
-    console.log('🎯 Application de la hiérarchie CompanyInfo:', hierarchy);
     
     // Détecter si c'est Bamako District
     const isBamakoDistrict = hierarchy.region?.nom?.toLowerCase().includes('bamako') && 
                             hierarchy.region?.nom?.toLowerCase().includes('district');
-    console.log('🏙️ CompanyInfo: Bamako District détecté:', isBamakoDistrict);
     
     try {
       // Région
       if (hierarchy.region) {
-        console.log('📍 CompanyInfo: Application région:', hierarchy.region.nom);
         setSelectedRegionId(hierarchy.region.id);
         setSelectedRegionCode(hierarchy.region.code);
         
         // Charger les cercles ou arrondissements selon la structure
         if (isBamakoDistrict) {
-          console.log('🏙️ CompanyInfo: Chargement arrondissements pour Bamako District');
           
           // Utiliser la même logique de fallback que PersonalInfoStep
           const [arrondissementsDirects, allArrondissements, bamakoDivisions] = await Promise.all([
@@ -13502,9 +13595,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             divisionService.searchBamakoDivisions()
           ]);
           
-          console.log('[CompanyInfo] Arrondissements directs:', arrondissementsDirects?.length || 0);
-          console.log('[CompanyInfo] Tous arrondissements:', allArrondissements?.length || 0);
-          console.log('[CompanyInfo] Divisions Bamako:', bamakoDivisions?.length || 0);
           
           // Stratégie 1: Divisions Bamako filtrées
           const bamakoArrondissements = bamakoDivisions.filter((div: any) => 
@@ -13515,7 +13605,6 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
           let finalArrondissements = [];
           if (bamakoArrondissements.length) {
             finalArrondissements = bamakoArrondissements;
-            console.log('[CompanyInfo] Stratégie 1 réussie:', finalArrondissements.length);
           } else {
             // Stratégie 2: Tous les arrondissements filtrés par nom
             const arrondissementsParNom = allArrondissements.filter((arr: any) => 
@@ -13525,47 +13614,38 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             
             if (arrondissementsParNom.length) {
               finalArrondissements = arrondissementsParNom;
-              console.log('[CompanyInfo] Stratégie 2 réussie:', finalArrondissements.length);
             }
           }
           
           setArrondissements(finalArrondissements || []);
-          console.log(`✅ CompanyInfo: ${finalArrondissements?.length || 0} arrondissements chargés pour Bamako`);
         } else {
-          console.log('🏗️ CompanyInfo: Chargement cercles pour région classique');
           const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
           setCercles(cercles || []);
-          console.log(`✅ CompanyInfo: ${cercles?.length || 0} cercles chargés pour la région`);
         }
       }
     
     // Cercle (seulement si pas Bamako District)
     if (hierarchy.cercle && !isBamakoDistrict) {
-      console.log('📍 CompanyInfo: Application cercle:', hierarchy.cercle.nom);
       setSelectedCercleId(hierarchy.cercle.id);
       setSelectedCercleCode(hierarchy.cercle.code);
     } else if (isBamakoDistrict) {
-      console.log('⚠️ CompanyInfo: Bamako District: Pas de cercle, reset des valeurs');
       setSelectedCercleId('');
       setSelectedCercleCode('');
     }
     
       // Arrondissement
       if (hierarchy.arrondissement) {
-        console.log('📍 CompanyInfo: Application arrondissement:', hierarchy.arrondissement.nom);
         setSelectedArrondissementId(hierarchy.arrondissement.id);
         setSelectedArrondissementCode(hierarchy.arrondissement.code);
         
         // Charger les communes ou quartiers selon la structure
         if (isBamakoDistrict) {
-          console.log('🏙️ CompanyInfo: Chargement quartiers pour Bamako District');
           
           // Utiliser la logique de fallback par code pour les quartiers
           const arrondissementCode = hierarchy.arrondissement.code || '';
           
           if (arrondissementCode && arrondissementCode.length >= 4) {
             const codePrefix = arrondissementCode.substring(0, 4);
-            console.log('[CompanyInfo] Recherche quartiers avec préfixe:', codePrefix);
             
             const allQuartiers = await divisionService.getAllQuartiers();
             const quartiersCorrespondants = allQuartiers.filter((quartier: any) => {
@@ -13574,145 +13654,162 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             });
             
             setQuartiers(quartiersCorrespondants || []);
-            console.log(`✅ CompanyInfo: ${quartiersCorrespondants?.length || 0} quartiers chargés pour Bamako`);
           }
         } else {
-          console.log('🏗️ CompanyInfo: Chargement communes pour arrondissement classique');
           const communes = await divisionService.getCommunesByArrondissement(hierarchy.arrondissement.id);
           setCommunes(communes || []);
-          console.log(`✅ CompanyInfo: ${communes?.length || 0} communes chargées pour l'arrondissement`);
         }
       }
     
     // Commune (seulement si pas Bamako District)
     if (hierarchy.commune && !isBamakoDistrict) {
-      console.log('📍 CompanyInfo: Application commune:', hierarchy.commune.nom);
       setSelectedCommuneId(hierarchy.commune.id);
       setSelectedCommuneCode(hierarchy.commune.code);
     } else if (isBamakoDistrict) {
-      console.log('⚠️ CompanyInfo: Bamako District: Pas de commune, reset des valeurs');
       setSelectedCommuneId('');
       setSelectedCommuneCode('');
     }
     
     // Quartier et mise à jour des données
     if (hierarchy.quartier) {
-      console.log('📍 CompanyInfo: Application quartier:', hierarchy.quartier.nom);
       setSelectedQuartierId(hierarchy.quartier.id);
       setSelectedQuartierCode(hierarchy.quartier.code);
       
       // Mettre à jour les données du formulaire avec le quartier
-      updateData('companyInfo', {
+      updateBusinessData('companyInfo', {
         ...data.companyInfo,
         divisionCode: hierarchy.quartier.code
       });
     } else if (hierarchy.commune && !isBamakoDistrict) {
       // Si pas de quartier, utiliser la commune (sauf pour Bamako)
-      console.log('📍 CompanyInfo: Utilisation commune comme division finale');
-      updateData('companyInfo', {
+      updateBusinessData('companyInfo', {
         ...data.companyInfo,
         divisionCode: hierarchy.commune.code
       });
     } else if (hierarchy.arrondissement) {
       // Si pas de commune, utiliser l'arrondissement (cas Bamako)
-      console.log('📍 CompanyInfo: Utilisation arrondissement comme division finale (Bamako)');
-      updateData('companyInfo', {
+      updateBusinessData('companyInfo', {
         ...data.companyInfo,
         divisionCode: hierarchy.arrondissement.code
       });
     }
     
-    console.log('✅ CompanyInfo: Hiérarchie appliquée avec succès');
     
     } catch (error) {
-      console.error('❌ CompanyInfo: Erreur lors de l\'application de la hiérarchie:', error);
     }
   };
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-3xl font-bold text-mali-dark mb-2 animate-slide-up">Informations de l'Entreprise</h2>
-      <p className="text-gray-600 mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-investmali-neutral-dark mb-2 animate-slide-up">Informations de l'Entreprise</h2>
+      <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
         Renseignez les informations de base de votre entreprise.
       </p>
 
       <div className="space-y-8">
         {/* Informations de base */}
-        <div className="bg-gradient-to-br from-mali-emerald/5 to-mali-emerald/10 rounded-xl p-6 border border-mali-emerald/20 shadow-sm animate-slide-up" style={{animationDelay: '0.2s'}}>
-          <h3 className="text-xl font-semibold text-mali-dark mb-6 flex items-center">
-            <span className="text-2xl mr-2 animate-bounce">🏢</span>
+        <div className="bg-gradient-to-br from-investmali-accent/5 to-investmali-accent/10 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-investmali-accent/20 shadow-sm animate-slide-up" style={{animationDelay: '0.2s'}}>
+          <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 lg:mb-6 flex items-center">
+            <span className="text-lg sm:text-xl mr-2 animate-bounce">🏢</span>
             Informations de base
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
             {/* Nom de l'entreprise */}
             <div className="animate-slide-up" style={{animationDelay: '0.3s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nom de l'entreprise *</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                Nom de l'entreprise {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? '(optionnel)' : '*'}
+              </label>
               <input
                 type="text"
                 value={data.companyInfo?.nom || ''}
-                onChange={(e) => updateData('companyInfo', { ...data.companyInfo, nom: e.target.value })}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${showValidation && !data.companyInfo?.nom ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
-                placeholder="Ex: Mali Invest SARL"
+                onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, nom: e.target.value })}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${
+                  showValidation && !data.companyInfo?.nom && data.companyInfo?.typeEntreprise === 'SOCIETE' 
+                    ? 'border-red-400 focus:ring-red-400' 
+                    : 'border-gray-300 focus:ring-mali-emerald'
+                }`}
+                placeholder={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+                  ? `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim() || 'Nom automatique du gérant'
+                  : ''
+                }
               />
+              {/* {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Si vide, le nom du gérant sera utilisé automatiquement
+                </p>
+              )} */}
             </div>
 
             {/* Sigle */}
             <div className="animate-slide-up" style={{animationDelay: '0.35s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sigle (optionnel)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Sigle (optionnel)</label>
               <input
                 type="text"
                 value={data.companyInfo?.sigle || ''}
-                onChange={(e) => updateData('companyInfo', { ...data.companyInfo, sigle: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500"
-                placeholder="Ex: MI-SARL"
+                onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, sigle: e.target.value })}
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 text-sm sm:text-base"
+                placeholder=""
               />
             </div>
 
-            {/* Capitale */}
-            <div className="animate-slide-up" style={{animationDelay: '0.37s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Capitale *</label>
-              <input
-                type="text"
-                value={data.companyInfo?.capitale || ''}
-                onChange={(e) => updateData('companyInfo', { ...data.companyInfo, capitale: e.target.value })}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${showValidation && !data.companyInfo?.capitale ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
-                placeholder="Ex: 1 000 000 FCFA"
-              />
-            </div>
+            {/* Capitale - Masqué pour les entreprises individuelles */}
+            {data.companyInfo?.typeEntreprise === 'SOCIETE' && (
+              <div className="animate-slide-up" style={{animationDelay: '0.37s'}}>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Capitale *</label>
+                <input
+                  type="text"
+                  value={data.companyInfo?.capitale || ''}
+                  onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, capitale: e.target.value })}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.capitale ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
+                  placeholder="Ex: 1 000 000 "
+                />
+              </div>
+            )}
 
 
 
-            {/* Type d'entreprise */}
-            <div className="animate-slide-up" style={{animationDelay: '0.4s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type d'entreprise *</label>
-              <select
-                value={data.companyInfo?.typeEntreprise || ''}
-                onChange={(e) => {
-                  const newTypeEntreprise = e.target.value as TypeEntreprise;
-                  // Auto-sélectionner E_I si Entreprise Individuelle
-                  const newFormeJuridique = newTypeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : data.companyInfo?.formeJuridique;
-                  updateData('companyInfo', { 
-                    ...data.companyInfo, 
-                    typeEntreprise: newTypeEntreprise,
-                    formeJuridique: newFormeJuridique
-                  });
-                }}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${showValidation && !data.companyInfo?.typeEntreprise ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
-              >
-                <option value="">Sélectionnez</option>
-                {typeEntrepriseOptions.map((option: any) => (
-                  <option key={option.key} value={option.key}>{option.value}</option>
-                ))}
-              </select>
-            </div>
+            {/* Type d'entreprise - masqué pour les entreprises individuelles */}
+            {data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
+              <div className="animate-slide-up" style={{animationDelay: '0.4s'}}>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Type d'entreprise *</label>
+                {data.companyInfo?.typeEntreprise ? (
+                  // Affichage en lecture seule quand le type est déjà sélectionné
+                  <div className="w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl bg-gray-50 text-sm sm:text-base border-gray-300 text-gray-700 font-medium">
+                    {data.companyInfo.typeEntreprise === 'SOCIETE' ? 'Société' : 'Entreprise individuelle'}
+                    <span className="text-xs text-gray-500 ml-2"></span>
+                  </div>
+              ) : (
+                // Select normal si aucun type n'est sélectionné
+                <select
+                  value={data.companyInfo?.typeEntreprise || ''}
+                  onChange={(e) => {
+                    const newTypeEntreprise = e.target.value as TypeEntreprise;
+                    // Auto-sélectionner E_I si Entreprise Individuelle
+                    const newFormeJuridique = newTypeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : data.companyInfo?.formeJuridique;
+                    updateBusinessData('companyInfo', { 
+                      ...data.companyInfo, 
+                      typeEntreprise: newTypeEntreprise,
+                      formeJuridique: newFormeJuridique
+                    });
+                  }}
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.typeEntreprise ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
+                >
+                  <option value="">Sélectionnez</option>
+                  {typeEntrepriseOptions.map((option: any) => (
+                    <option key={option.key} value={option.key}>{option.value}</option>
+                  ))}
+                </select>
+              )}
+              </div>
+            )}
 
             {/* Forme juridique */}
             <div className="animate-slide-up" style={{animationDelay: '0.45s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Forme juridique *</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Forme juridique *</label>
               <select
-                value={data.companyInfo?.formeJuridique || ''}
-                onChange={(e) => updateData('companyInfo', { ...data.companyInfo, formeJuridique: e.target.value as FormeJuridique })}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${showValidation && !data.companyInfo?.formeJuridique ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
+                value={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'E_I' : (data.companyInfo?.formeJuridique || '')}
+                onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, formeJuridique: e.target.value as FormeJuridique })}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base ${showValidation && !data.companyInfo?.formeJuridique ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-mali-emerald'}`}
                 disabled={data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE'}
               >
                 <option value="">Sélectionnez</option>
@@ -13730,13 +13827,13 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   ))
                 }
               </select>
-              {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
-                <p className="text-sm text-gray-500 mt-1">Forme juridique automatiquement sélectionnée pour une entreprise individuelle</p>
-              )}
+              {/* {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Forme juridique automatiquement sélectionnée pour une entreprise individuelle</p>
+              )} */}
             </div>
                 {/* Domaine d'activité non réglementé */}
             <div className="animate-slide-up" style={{animationDelay: '0.52s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Domaine d'activité non réglementé</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé</label>
               <select
                 value={data.companyInfo?.domaineActiviteNr || ''}
                 onChange={(e) => {
@@ -13751,19 +13848,18 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   // Si ce domaine non réglementé a une correspondance réglementée, sélectionner automatiquement
                   if (selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0) {
                     updatedCompanyInfo.domaineActivite = DOMAINE_MAPPING[selectedNr][0];
-                    console.log('🔄 Sélection automatique du domaine réglementé:', DOMAINE_MAPPING[selectedNr][0]);
                   }
                   
-                  updateData('companyInfo', updatedCompanyInfo);
+                  updateBusinessData('companyInfo', updatedCompanyInfo);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 text-sm sm:text-base"
               >
                 <option value="">Sélectionnez (optionnel)</option>
-                {Object.entries(DOMAINE_ACTIVITE_NR_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
+                {domaineActiviteNrOptions.map((option) => (
+                  <option key={option.key} value={option.key}>{option.value}</option>
                 ))}
               </select>
-              <p className="text-sm text-gray-500 mt-1">Sélectionnez votre domaine d'activité non réglementé (optionnel)</p>
+              {/* <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Sélectionnez votre domaine d'activité non réglementé (optionnel)</p> */}
             </div>
             {/* Domaine d'activité réglementé */}
             {(() => {
@@ -13778,7 +13874,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               
               return (
                 <div className="animate-slide-up" style={{animationDelay: '0.5s'}}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Domaine d'activité réglementé *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité réglementé *</label>
                   {(() => {
                     const isDisabled = Boolean(hasCorrespondence);
                 
@@ -13796,10 +13892,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                         // Si ce domaine réglementé a une correspondance, sélectionner automatiquement le domaine non réglementé
                         if (selectedActivite && DOMAINE_MAPPING_INVERSE[selectedActivite]) {
                           updatedCompanyInfo.domaineActiviteNr = DOMAINE_MAPPING_INVERSE[selectedActivite];
-                          console.log('🔄 Auto-mapping domaine réglementé:', selectedActivite, '→', DOMAINE_MAPPING_INVERSE[selectedActivite]);
                         }
                         
-                        updateData('companyInfo', updatedCompanyInfo);
+                        updateBusinessData('companyInfo', updatedCompanyInfo);
                       }}
                       disabled={isDisabled}
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
@@ -13846,15 +13941,15 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             })()}
                         {/* Activité secondaire */}
                         <div className="animate-slide-up md:col-span-2" style={{animationDelay: '0.38s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Activité secondaire</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Activité secondaire</label>
               <textarea
                 value={data.companyInfo?.activiteSecondaire || ''}
-                onChange={(e) => updateData('companyInfo', { ...data.companyInfo, activiteSecondaire: e.target.value })}
+                onChange={(e) => updateBusinessData('companyInfo', { ...data.companyInfo, activiteSecondaire: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500"
-                placeholder="Décrivez brièvement l'activité secondaire de l'entreprise"
+                placeholder=""
                 rows={3}
               />
-              <p className="text-sm text-gray-500 mt-1">Optionnel. Sera enregistré dans votre dossier.</p>
+              {/* <p className="text-sm text-gray-500 mt-1">Optionnel. Sera enregistré dans votre dossier.</p> */}
             </div>
 
           
@@ -13862,10 +13957,10 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         </div>
 
         {/* Localisation */}
-        <div className="bg-gradient-to-br from-mali-gold/5 to-mali-gold/10 rounded-xl p-6 border border-mali-gold/20 shadow-sm animate-slide-up" style={{animationDelay: '0.55s'}}>
-          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-            <span className="text-2xl mr-2 animate-bounce">📍</span>
-            Localisation
+        <div className="bg-gradient-to-br from-investmali-warning/5 to-investmali-warning/10 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-investmali-warning/20 shadow-sm animate-slide-up" style={{animationDelay: '0.55s'}}>
+          <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 lg:mb-6 flex items-center">
+            <span className="text-lg sm:text-xl mr-2 animate-bounce">📍</span>
+            Localisation de l'entreprise
           </h3>
 
           {/* Message informatif sur la synchronisation */}
@@ -13874,22 +13969,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               const personalHasLocation = data.personalInfo?.divisionId || data.personalInfo?.localite;
               
               if (personalHasLocation) {
-                return (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-center mb-2">
-                      <span className="text-blue-600 mr-2">ℹ️</span>
-                      <h4 className="text-lg font-semibold text-blue-800">Localisation synchronisée</h4>
-                    </div>
-                    <p className="text-sm text-blue-600">
-                      Vous avez indiqué que l'adresse de votre entreprise est la même que votre adresse personnelle. 
-                      Les champs de localisation ont été automatiquement remplis avec vos informations personnelles et sont en lecture seule.
-                    </p>
-                    <p className="text-xs text-blue-500 mt-2">
-                      Pour modifier la localisation de l'entreprise, retournez à l'étape précédente et répondez "Oui" à la question 
-                      "Votre adresse est-elle différente de celle de votre entreprise ?"
-                    </p>
-                  </div>
-                );
+                return null;
               } else {
                 return (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
@@ -13934,7 +14014,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative de l'entreprise
               </p>
               <DivisionSearchInput
-                placeholder="Rechercher une région, cercle, arrondissement, commune ou quartier..."
+                placeholder="Rechercher une région, cercle, commune ou quartier..."
                 onSelect={handleCompanyDivisionSearch}
                 className="w-full"
               />
@@ -13942,21 +14022,17 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
           )}
 
           {/* Sélecteurs hiérarchiques */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
 
             {/* Région */}
             <div className="animate-slide-up" style={{animationDelay: '0.6s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Région *
-                {data.personalInfo?.hasDifferentAddress === false && (
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    Récupéré depuis vos informations personnelles
-                  </span>
-                )}
               </label>
               <select
-                value={selectedRegionId || ''}
+                value={selectedRegionId}
                 onChange={(e) => {
+                  console.log('🚀 [DEBUG] Handler région appelé!', e.target.value);
                   const selectedOption = e.target.selectedOptions[0];
                   const regionId = selectedOption.value;
                   const regionCode = selectedOption.getAttribute('data-code') || '';
@@ -13972,17 +14048,18 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   
                   // Mettre à jour le divisionCode dans companyInfo
                   const divisionCode = regionCode || '';
-                  console.log('Mise à jour divisionCode (région):', divisionCode);
-                  updateData('companyInfo', { ...data.companyInfo, divisionCode });
+                  updateBusinessData('companyInfo', { 
+                    ...data.companyInfo, 
+                    divisionCode,
+                    regionId: regionId,
+                    cercleId: '',
+                    arrondissementId: '',
+                    communeId: '',
+                    quartierId: ''
+                  });
                 }}
-                disabled={data.personalInfo?.hasDifferentAddress === false}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                  data.personalInfo?.hasDifferentAddress === false 
-                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed' 
-                    : showValidation && !selectedRegionId 
-                      ? 'border-red-400 focus:ring-red-400' 
-                      : 'border-gray-300 focus:ring-mali-emerald'
-                }`}
+                disabled={false}
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald"
               >
                 <option value="">Sélectionnez une région</option>
                 {regions.map((r: any) => (
@@ -14002,13 +14079,8 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               
               return (
                 <div className="animate-slide-up" style={{animationDelay: '0.65s'}}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Cercle
-                    {data.personalInfo?.hasDifferentAddress === false && (
-                      <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        Récupéré depuis vos informations personnelles
-                      </span>
-                    )}
                   </label>
               <select
                 value={selectedCercleId || ''}
@@ -14025,16 +14097,20 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   setSelectedCommuneId(''); setSelectedCommuneCode('');
                   setSelectedQuartierId(''); setSelectedQuartierCode('');
                   
-                  // Mettre à jour le divisionCode dans companyInfo
+                  // Mettre à jour le divisionCode et cercleId dans companyInfo
                   const divisionCode = cercleCode || selectedRegionCode || '';
-                  updateData('companyInfo', { ...data.companyInfo, divisionCode });
+                  updateBusinessData('companyInfo', { 
+                    ...data.companyInfo, 
+                    divisionCode,
+                    regionId: selectedRegionId,
+                    cercleId: '',
+                    arrondissementId: '',
+                    communeId: '',
+                    quartierId: ''
+                  });
                 }}
-                disabled={!selectedRegionId || data.personalInfo?.hasDifferentAddress === false}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                  data.personalInfo?.hasDifferentAddress === false 
-                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-300' 
-                    : 'border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100'
-                }`}
+                disabled={!selectedRegionId}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez un cercle</option>
                 {cercles.map((c: any) => (
@@ -14045,72 +14121,13 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               );
             })()}
 
-            {/* Arrondissement */}
-            <div className="animate-slide-up" style={{animationDelay: '0.7s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Arrondissement
-                {data.personalInfo?.hasDifferentAddress === false && (
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    Récupéré depuis vos informations personnelles
-                  </span>
-                )}
-              </label>
-              <select
-                value={selectedArrondissementId || ''}
-                onChange={(e) => {
-                  const selectedOption = e.target.selectedOptions[0];
-                  const arrondissementId = selectedOption.value;
-                  const arrondissementCode = selectedOption.getAttribute('data-code') || '';
-                  
-                  setSelectedArrondissementId(arrondissementId);
-                  setSelectedArrondissementCode(arrondissementCode);
-                  
-                  // Reset des niveaux inférieurs
-                  setSelectedCommuneId(''); setSelectedCommuneCode('');
-                  setSelectedQuartierId(''); setSelectedQuartierCode('');
-                  
-                  // Mettre à jour le divisionCode dans companyInfo
-                  const divisionCode = arrondissementCode || selectedCercleCode || selectedRegionCode || '';
-                  updateData('companyInfo', { ...data.companyInfo, divisionCode });
-                }}
-                disabled={(() => {
-                  const selectedRegion = regions.find(r => r.id === selectedRegionId);
-                  const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-                  const normalDisabled = isBamakoDistrict ? !selectedRegionId : !selectedCercleId;
-                  return normalDisabled || data.personalInfo?.hasDifferentAddress === false;
-                })()}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                  data.personalInfo?.hasDifferentAddress === false 
-                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-300' 
-                    : 'border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100'
-                }`}
-              >
-                <option value="">Sélectionnez un arrondissement</option>
-                {arrondissements.map((a: any) => (
-                  <option key={a.id} value={a.id} data-code={a.code}>{a.nom}</option>
-                ))}
-              </select>
-            </div>
+            {/* Section Arrondissement supprimée - Structure INSTAT moderne */}
 
-            {/* Commune - Masqué pour Bamako District */}
-            {(() => {
-              const selectedRegion = regions.find(r => r.id === selectedRegionId);
-              const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-              
-              if (isBamakoDistrict) {
-                return null; // Masquer le champ Commune pour Bamako District
-              }
-              
-              return (
-                <div className="animate-slide-up" style={{animationDelay: '0.75s'}}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Commune
-                    {data.personalInfo?.hasDifferentAddress === false && (
-                      <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        Récupéré depuis vos informations personnelles
-                      </span>
-                    )}
-                  </label>
+            {/* Commune - Structure INSTAT moderne */}
+            <div className="animate-slide-up" style={{animationDelay: '0.75s'}}>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                Commune
+              </label>
               <select
                 value={selectedCommuneId || ''}
                 onChange={(e) => {
@@ -14124,35 +14141,29 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   // Reset des niveaux inférieurs
                   setSelectedQuartierId(''); setSelectedQuartierCode('');
                   
-                  // Mettre à jour le divisionCode dans companyInfo
-                  const divisionCode = communeCode || selectedArrondissementCode || selectedCercleCode || selectedRegionCode || '';
-                  updateData('companyInfo', { ...data.companyInfo, divisionCode });
+                  // Mettre à jour le divisionCode et communeId dans companyInfo
+                  const divisionCode = communeCode || selectedCercleCode || selectedRegionCode || '';
+                  updateBusinessData('companyInfo', { 
+                    ...data.companyInfo, 
+                    divisionCode,
+                    communeId,
+                    quartierId: ''
+                  });
                 }}
-                disabled={!selectedArrondissementId || data.personalInfo?.hasDifferentAddress === false}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                  data.personalInfo?.hasDifferentAddress === false 
-                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-300' 
-                    : 'border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100'
-                }`}
+                disabled={!selectedCercleId}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez une commune</option>
                 {communes.map((c: any) => (
                   <option key={c.id} value={c.id} data-code={c.code}>{c.nom}</option>
                 ))}
-                  </select>
-                </div>
-              );
-            })()}
+              </select>
+            </div>
 
             {/* Quartier */}
             <div className="animate-slide-up" style={{animationDelay: '0.8s'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Quartier
-                {data.personalInfo?.hasDifferentAddress === false && (
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    Récupéré depuis vos informations personnelles
-                  </span>
-                )}
               </label>
               <select
                 value={selectedQuartierId || ''}
@@ -14164,27 +14175,58 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   setSelectedQuartierId(quartierId);
                   setSelectedQuartierCode(quartierCode);
                   
-                  // Mettre à jour le divisionCode dans companyInfo
+                  // Mettre à jour le divisionCode et quartierId dans companyInfo
                   const divisionCode = quartierCode || selectedCommuneCode || selectedArrondissementCode || selectedCercleCode || selectedRegionCode || '';
-                  updateData('companyInfo', { ...data.companyInfo, divisionCode });
+                  updateBusinessData('companyInfo', { 
+                    ...data.companyInfo, 
+                    divisionCode,
+                    quartierId
+                  });
                 }}
                 disabled={(() => {
                   const selectedRegion = regions.find(r => r.id === selectedRegionId);
                   const isBamakoDistrict = selectedRegion?.nom?.toLowerCase().includes('bamako') && selectedRegion?.nom?.toLowerCase().includes('district');
-                  const normalDisabled = isBamakoDistrict ? !selectedArrondissementId : !selectedCommuneId;
-                  return normalDisabled || data.personalInfo?.hasDifferentAddress === false;
+                  return isBamakoDistrict ? !selectedArrondissementId : !selectedCommuneId;
                 })()}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 ${
-                  data.personalInfo?.hasDifferentAddress === false 
-                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-300' 
-                    : 'border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100'
-                }`}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-2 focus:border-transparent transition-all duration-500 text-sm sm:text-base border-gray-300 focus:ring-mali-emerald disabled:bg-gray-100`}
               >
                 <option value="">Sélectionnez un quartier</option>
                 {quartiers.map((q: any) => (
                   <option key={q.id} value={q.id} data-code={q.code}>{q.nom}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Rue de l'entreprise */}
+            <div className="animate-slide-up" style={{animationDelay: '0.85s'}}>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Rue</label>
+              <input
+                type="text"
+                value={data.companyInfo?.rue || ''}
+                onChange={(e) => updateBusinessData('companyInfo', {
+                  ...data.companyInfo,
+                  rue: e.target.value
+                })}
+                disabled={false}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-mali-emerald`}
+                placeholder="Nom de la rue"
+              />
+            </div>
+
+            {/* Porte de l'entreprise */}
+            <div className="animate-slide-up" style={{animationDelay: '0.9s'}}>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Porte</label>
+              <input
+                type="text"
+                value={data.companyInfo?.porte || ''}
+                onChange={(e) => updateBusinessData('companyInfo', {
+                  ...data.companyInfo,
+                  porte: e.target.value
+                })}
+                disabled={false}
+                className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 border rounded-lg focus:ring-2 focus:border-transparent text-sm sm:text-base border-gray-300 focus:ring-mali-emerald`}
+                placeholder="Numéro de porte"
+              />
             </div>
           </div>
         </div>
@@ -14226,25 +14268,29 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-3xl font-bold text-mali-dark mb-2 animate-slide-up">Documents Officiels</h2>
-      <p className="text-gray-600 mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
-        Téléchargez les documents requis pour l'immatriculation de votre entreprise au Mali.
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-investmali-neutral-dark mb-2 animate-slide-up">Documents Officiels</h2>
+      <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+        {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+          ? 'Seul le certificat de résidence est requis pour les entreprises individuelles.'
+          : 'Téléchargez les documents requis pour l\'immatriculation de votre entreprise au Mali.'
+        }
       </p>
 
-      <div className="space-y-8">
-        {/* Statuts de la société */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
-          <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-            <span className="bg-mali-emerald text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">📄</span>
-            Statuts de la Société
-          </h3>
-          <p className="text-gray-600 mb-6 text-sm">
-            Document constitutif définissant l'organisation et le fonctionnement de votre société.
-          </p>
+      {data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
+        <div className="space-y-6 sm:space-y-8">
+          {/* Statuts de la société */}
+          <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
+            <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">📄</span>
+              Statuts de la Société
+            </h3>
+            <p className="text-gray-600 mb-4 sm:mb-6 text-xs sm:text-sm">
+              Document constitutif définissant l'organisation et le fonctionnement de votre société.
+            </p>
           
           {/* Options pour les statuts */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-start space-x-3">
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+            <div className="flex items-start space-x-2 sm:space-x-3">
               <input
                 type="radio"
                 id="upload-statutes"
@@ -14257,13 +14303,13 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     statutesPages: undefined
                   });
                 }}
-                className="mt-1 w-4 h-4 text-mali-emerald bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
+                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
               />
               <div className="flex-1">
-                <label htmlFor="upload-statutes" className="block text-sm font-medium text-gray-700 cursor-pointer">
+                <label htmlFor="upload-statutes" className="block text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">
                   J'ai déjà mes statuts rédigés
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">
                   Téléchargez vos statuts existants au format PDF, DOC ou DOCX
                 </p>
               </div>
@@ -14283,14 +14329,14 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     statutesName: ''
                   });
                 }}
-                className="mt-1 w-4 h-4 text-mali-emerald bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
+                className="mt-1 w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 focus:ring-mali-emerald focus:ring-2"
               />
               <div className="flex-1">
                 <label htmlFor="draft-statutes" className="block text-sm font-medium text-gray-700 cursor-pointer">
                   Faire rédiger mes statuts par InvestMali
                 </label>
                 <p className="text-xs text-gray-500 mt-1">
-                  Service de rédaction professionnel - <strong className="text-mali-emerald">4 000 FCFA par page</strong>
+                  Service de rédaction professionnel - <strong className="text-investmali-accent">4 000 FCFA par page</strong>
                 </p>
               </div>
             </div>
@@ -14315,22 +14361,22 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
               />
               <label
                 htmlFor="statutes-upload"
-                className="w-full px-6 py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-mali-emerald transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex items-center justify-center space-x-3 bg-gray-50 hover:bg-mali-emerald/5"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-lg sm:rounded-xl hover:border-investmali-accent transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 bg-gray-50 hover:bg-investmali-accent/5"
               >
                 {data.documents?.statutesName ? (
                   <>
-                    <svg className="w-6 h-6 text-mali-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-investmali-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-mali-emerald font-medium">{data.documents.statutesName}</span>
-                    <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
+                    <span className="text-investmali-accent font-medium text-xs sm:text-sm text-center">{data.documents.statutesName}</span>
+                    <span className="text-xs text-gray-500">(Cliquez pour changer)</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <span className="text-gray-600">Télécharger vos statuts existants</span>
+                    <span className="text-xs sm:text-sm text-gray-600 text-center">Télécharger vos statuts existants</span>
                   </>
                 )}
               </label>
@@ -14342,21 +14388,21 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
 
           {/* Service de rédaction */}
           {data.documents?.needsStatutesDrafting && (
-            <div className="bg-gradient-to-r from-mali-emerald/10 to-mali-gold/10 p-6 rounded-xl border border-mali-emerald/20 animate-slide-up">
+            <div className="bg-gradient-to-r from-investmali-accent/10 to-investmali-warning/10 p-6 rounded-xl border border-investmali-accent/20 animate-slide-up">
               <div className="flex items-start space-x-4">
-                <div className="bg-mali-emerald text-white rounded-full p-2 flex-shrink-0">
+                <div className="bg-investmali-accent text-white rounded-full p-2 flex-shrink-0">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-mali-dark mb-2">Service de Rédaction InvestMali</h4>
+                  <h4 className="text-lg font-semibold text-investmali-neutral-dark mb-2">Service de Rédaction InvestMali</h4>
                   <p className="text-gray-600 text-sm mb-4">
                     Nos experts juridiques rédigeront vos statuts selon la législation malienne en vigueur.
                   </p>
                   
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                       Nombre de pages estimé pour vos statuts
                     </label>
                     <select
@@ -14381,10 +14427,10 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                   </div>
                   
                   {data.documents?.statutesPages && (
-                    <div className="bg-white p-4 rounded-lg border border-mali-emerald/30 animate-fade-in">
+                    <div className="bg-white p-4 rounded-lg border border-investmali-accent/30 animate-fade-in">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700">Coût estimé :</span>
-                        <span className="text-xl font-bold text-mali-emerald">
+                        <span className="text-xl font-bold text-investmali-accent">
                           {(data.documents.statutesPages * 3500).toLocaleString()} FCFA
                         </span>
                       </div>
@@ -14407,8 +14453,8 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
 
         {/* Registre de commerce */}
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.3s'}}>
-          <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-            <span className="bg-mali-gold text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🏪</span>
+          <h3 className="text-xl font-semibold text-investmali-neutral-dark mb-4 flex items-center">
+            <span className="bg-investmali-warning text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🏪</span>
             Registre de Commerce
           </h3>
           
@@ -14425,7 +14471,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
                     commerceRegistryName: e.target.checked ? data.documents?.commerceRegistryName : ''
                   });
                 }}
-                className="w-4 h-4 text-mali-emerald bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
+                className="w-4 h-4 text-investmali-accent bg-gray-100 border-gray-300 rounded focus:ring-mali-emerald focus:ring-2"
               />
               <span className="text-gray-700">J'ai déjà un registre de commerce</span>
             </label>
@@ -14449,26 +14495,26 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
               />
               <label
                 htmlFor="commerce-registry-upload"
-                className="w-full px-6 py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-mali-gold transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex items-center justify-center space-x-3 bg-gray-50 hover:bg-mali-gold/5"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-lg sm:rounded-xl hover:border-investmali-warning transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 bg-gray-50 hover:bg-investmali-warning/5"
               >
                 {data.documents?.commerceRegistryName ? (
                   <>
-                    <svg className="w-6 h-6 text-mali-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-investmali-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-mali-gold font-medium">{data.documents.commerceRegistryName}</span>
-                    <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
+                    <span className="text-investmali-warning font-medium text-xs sm:text-sm text-center">{data.documents.commerceRegistryName}</span>
+                    <span className="text-xs text-gray-500">(Cliquez pour changer)</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <span className="text-gray-600">Télécharger le registre de commerce</span>
+                    <span className="text-xs sm:text-sm text-gray-600 text-center">Télécharger le registre de commerce</span>
                   </>
                 )}
               </label>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 mt-1 sm:mt-2">
                 Formats acceptés : PDF, JPG, PNG (max 5MB)
               </p>
             </div>
@@ -14484,62 +14530,11 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
           )}
         </div>
 
-        {/* Certificat de résidence */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.4s'}}>
-          <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-            <span className="bg-mali-purple text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🏠</span>
-            Certificat de Résidence
-          </h3>
-          <p className="text-gray-600 mb-4 text-sm">
-            Certificat de résidence du gérant ou représentant légal de l'entreprise.
-          </p>
-          
-          <div className="relative">
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                updateData('documents', {
-                  ...data.documents,
-                  residenceCertificate: file,
-                  residenceCertificateName: file?.name || ''
-                });
-              }}
-              className="hidden"
-              id="residence-certificate-upload"
-            />
-            <label
-              htmlFor="residence-certificate-upload"
-              className="w-full px-6 py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-mali-purple transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex items-center justify-center space-x-3 bg-gray-50 hover:bg-mali-purple/5"
-            >
-              {data.documents?.residenceCertificateName ? (
-                <>
-                  <svg className="w-6 h-6 text-mali-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-mali-purple font-medium">{data.documents.residenceCertificateName}</span>
-                  <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <span className="text-gray-600">Télécharger le certificat de résidence</span>
-                </>
-              )}
-            </label>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Formats acceptés : PDF, JPG, PNG (max 5MB) - Document obligatoire
-          </p>
-        </div>
 
         {/* Résumé des documents */}
-        <div className="bg-gradient-to-r from-mali-emerald/10 to-mali-gold/10 p-6 rounded-2xl border border-mali-emerald/20 animate-slide-up" style={{animationDelay: '0.5s'}}>
-          <h4 className="text-lg font-semibold text-mali-dark mb-3 flex items-center">
-            <span className="bg-mali-emerald text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">✓</span>
+        <div className="bg-gradient-to-r from-investmali-accent/10 to-investmali-warning/10 p-6 rounded-2xl border border-investmali-accent/20 animate-slide-up" style={{animationDelay: '0.5s'}}>
+          <h4 className="text-lg font-semibold text-investmali-neutral-dark mb-3 flex items-center">
+            <span className="bg-investmali-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">✓</span>
             Documents Téléchargés
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -14603,8 +14598,26 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
 
           {/* Soumission déplacée vers SummaryAndSubmissionStep */}
         </div>
+        </div>
+      )}
 
-      </div>
+
+      {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-xl">
+              <span className="text-2xl">ℹ️</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-blue-800">Entreprise Individuelle</h3>
+              <p className="text-blue-600 font-medium">
+                Le certificat de résidence est requis dans l'étape "Dirigeant de l'Entreprise" pour la création d'une entreprise individuelle.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -14731,23 +14744,110 @@ const SummaryAndSubmissionStep: React.FC<{
     setSubmitSuccess(null);
 
     try {
+      // ÉTAPE 1: Sauvegarder les informations personnelles (incluant le champ 'porte')
+      console.log('🔍 [SUBMIT] Sauvegarde des informations personnelles avec porte:', data.personalInfo?.porte);
+      if (data.personalInfo) {
+        try {
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          const token = localStorage.getItem('token');
+          
+          if (token && currentUser.personne_id && data.personalInfo.isForSelf) {
+            // Convertir le téléphone au format E.164 requis
+            let formattedPhone = '';
+            if (data.personalInfo.phone) {
+              const cleanPhone = data.personalInfo.phone.replace(/[\s\-\.]/g, '');
+              if (cleanPhone.startsWith('+')) {
+                formattedPhone = cleanPhone; // Déjà au format E.164
+              } else if (cleanPhone.startsWith('223')) {
+                formattedPhone = '+' + cleanPhone; // Ajouter le +
+              } else {
+                formattedPhone = '+223' + cleanPhone; // Ajouter +223
+              }
+            }
+
+            // Formatage du téléphone 2 au format E.164
+            let formattedPhone2 = '';
+            if (data.personalInfo.phone2) {
+              const cleanPhone2 = data.personalInfo.phone2.replace(/\s/g, '');
+              if (cleanPhone2.startsWith('+')) {
+                formattedPhone2 = cleanPhone2; // Déjà au format international
+              } else if (cleanPhone2.startsWith('223')) {
+                formattedPhone2 = '+' + cleanPhone2; // Ajouter le +
+              } else {
+                formattedPhone2 = '+223' + cleanPhone2; // Ajouter +223
+              }
+            }
+
+            // Mise à jour des informations personnelles existantes
+            const personUpdateRequest = {
+              nom: data.personalInfo.lastName,
+              prenom: data.personalInfo.firstName,
+              telephone1: formattedPhone,
+              telephone2: formattedPhone2,
+              email: data.personalInfo.email,
+              // Convertir la date en format LocalDate si nécessaire
+              dateNaissance: data.personalInfo.birthDate ? new Date(data.personalInfo.birthDate).toISOString().split('T')[0] : null,
+              lieuNaissance: data.personalInfo.birthPlace,
+              // Mapper la nationalité vers l'enum backend avec valeur par défaut
+              nationnalite: data.personalInfo.nationality || 'MALIENNE',
+              sexe: data.personalInfo.sexe === 'MASCULIN' ? 'MASCULIN' : data.personalInfo.sexe,
+              situationMatrimoniale: data.personalInfo.situationMatrimoniale || 'CELIBATAIRE',
+              civilite: data.personalInfo.civility === 'MONSIEUR' ? 'MONSIEUR' : data.personalInfo.civility,
+              division_id: data.personalInfo.divisionId,
+              localite: data.personalInfo.localite,
+              porte: data.personalInfo.porte
+            };
+            
+            console.log('🔍 [SUBMIT] Requête de mise à jour:', personUpdateRequest);
+            console.log('🔍 [DEBUG] Valeurs autorisation avant envoi:', {
+              requiresExerciseAuthorization: data.personalInfo?.requiresExerciseAuthorization,
+              willImportExport: data.personalInfo?.willImportExport
+            });
+            
+            const response = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(personUpdateRequest)
+            });
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('🔍 [SUBMIT] Réponse d\'erreur du backend:', errorText);
+              throw new Error(`Erreur ${response.status}: ${response.statusText} - ${errorText}`);
+            }
+            
+            console.log('✅ [SUBMIT] Informations personnelles sauvegardées avec succès');
+          }
+        } catch (error) {
+          console.error('❌ [SUBMIT] Erreur lors de la sauvegarde des informations personnelles:', error);
+          setSubmitError('Erreur lors de la sauvegarde des informations personnelles');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // Variables communes pour toute la fonction
       const isEntrepriseIndividuelle = data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-      const gerant = (data.participants || []).find(p => p.role === 'GERANT');
+      const gerant = (data.participants || []).find(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
       const gerantId = gerant?.personId || null;
-      // Plus de rôle DIRIGEANT - utiliser seulement GERANT
+      // Plus de rôle DIRIGEANT - utiliser GERANT ou PROMOTEUR selon le type d'entreprise
       
       // Validation avant soumission: chaque participant doit avoir un document d'identité
       const missingDocs: string[] = [];
       
       (data.participants || []).forEach((p, idx) => {
         const label = p.prenom && p.nom ? `${p.prenom} ${p.nom}` : `Participant ${idx + 1}`;
-        if (!p.documentFile) {
+        
+        // Exclure la validation de document d'identité pour les personnes morales
+        if (p.civilite !== 'PERSONNE_MORALE' && !p.documentFile) {
           missingDocs.push(`${label}: document d'identité manquant`);
         }
         
-        // Documents requis pour GERANT
-        const requiresManagerDocuments = p.role === 'GERANT';
+        // Documents requis pour GERANT/PROMOTEUR - uniquement pour les personnes physiques
+        const requiresManagerDocuments = (p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.civilite !== 'PERSONNE_MORALE';
         
         if (requiresManagerDocuments && data.personalInfo?.hasCriminalRecord && !p.casierJudiciaireFile) {
           missingDocs.push(`${label}: casier judiciaire manquant`);
@@ -14769,9 +14869,14 @@ const SummaryAndSubmissionStep: React.FC<{
       }
 
       // VALIDATION PRÉALABLE: Vérifier l'unicité des pièces d'identité
-      console.log('🔍 Vérification de l\'unicité des pièces d\'identité...');
       const piecesToCheck = (data.participants || [])
-        .filter(p => p.numeroPiece && p.typePiece)
+        .filter(p => {
+          // Exempter les personnes morales de la validation des pièces d'identité
+          if (p.civilite === 'PERSONNE_MORALE') {
+            return false;
+          }
+          return p.numeroPiece && p.typePiece;
+        })
         .map(p => ({
           numeroPiece: p.numeroPiece!.trim(),
           typePiece: p.typePiece!
@@ -14811,13 +14916,78 @@ const SummaryAndSubmissionStep: React.FC<{
               }
             }
           } else {
-            console.warn('⚠️ Endpoint de validation non disponible, on continue sans validation préalable');
           }
         } catch (e) {
-          console.warn('⚠️ Erreur lors de la validation préalable:', e);
         }
 
-        console.log('✅ Validation préalable terminée');
+      }
+
+      // WORKFLOW ÉTAPE 3.5: Traiter les associés existants (mise à jour des données manquantes)
+      if (!isEntrepriseIndividuelle) {
+        // Traitement des associés existants (mise à jour des données manquantes)
+        const associates = data.participants?.filter(p => p.role === 'ASSOCIE') || [];
+
+        for (const associate of associates) {
+          
+          // Si l'associé a déjà un personId, vérifier s'il a besoin d'une mise à jour
+          if (associate.personId) {
+            
+            const currentUser = authAPI.getCurrentUser();
+            const isCurrentUser = currentUser && (currentUser.personne_id === associate.personId || currentUser.personneId === associate.personId);
+            
+            if (isCurrentUser) {
+              
+              // Vérifier si l'utilisateur a besoin d'une mise à jour (données manquantes)
+              const needsUpdate = !currentUser.dateNaissance || 
+                                 !currentUser.lieuNaissance || 
+                                 !currentUser.nationnalite ||
+                                 !currentUser.sexe ||
+                                 !currentUser.situationMatrimoniale;
+              
+              if (needsUpdate) {
+                
+                // Mettre à jour avec les données du formulaire
+                const updateRequest = {
+                  nom: associate.nom || currentUser.nom,
+                  prenom: associate.prenom || currentUser.prenom,
+                  telephone1: associate.telephone || currentUser.telephone1,
+                  email: associate.email || currentUser.email,
+                  dateNaissance: ensureAdultBirthDate(associate.dateNaissance) || ensureAdultBirthDate(currentUser.dateNaissance),
+                  lieuNaissance: associate.lieuNaissance || currentUser.lieuNaissance,
+                  nationnalite: associate.nationnalite || currentUser.nationnalite || 'MALIENNE',
+                  sexe: associate.sexe || currentUser.sexe,
+                  situationMatrimoniale: associate.situationMatrimoniale || currentUser.situationMatrimoniale || 'CELIBATAIRE',
+                  civilite: mapCivilityToBackend(associate.civilite || 'MONSIEUR') || currentUser.civilite,
+                  division_id: associate.divisionId || associate.division_id || currentUser.division_id,
+                  divisionCode: associate.divisionCode || currentUser.divisionCode,
+                  localite: associate.localite || currentUser.localite,
+                  porte: (associate as any).porte || (currentUser as any).porte
+                };
+                
+                
+                const token = localStorage.getItem('token');
+                const updateResponse = await fetch(`/api/v1/persons/${associate.personId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify(updateRequest)
+                });
+                
+                if (updateResponse.ok) {
+                  const updatedUser = await updateResponse.json();
+                } else {
+                  throw new Error('Impossible de mettre à jour les données de l\'associé');
+                }
+              } else {
+              }
+            } else {
+            }
+          }
+        }
+        
+      } else {
       }
 
       // WORKFLOW ÉTAPE 4: Créer tous les participants qui n'ont pas encore d'ID
@@ -14827,12 +14997,16 @@ const SummaryAndSubmissionStep: React.FC<{
         const token = localStorage.getItem('token');
         if (!token) throw new Error('Aucun token trouvé');
 
-        console.log(`👤 ÉTAPE 4 - Création participant ${participant.role}`);
+
+        // Valider et corriger le format du téléphone
+        const participantPhone = participant.telephone || '';
+        const validPhone = participantPhone.startsWith('+') ? participantPhone : 
+          (participantPhone ? `+223${participantPhone.replace(/\s/g, '')}` : '');
 
         const personRequest = {
           nom: participant.nom,
           prenom: participant.prenom,
-          telephone1: participant.telephone || '',
+          telephone1: validPhone,
           email: participant.email || '',
           dateNaissance: participant.dateNaissance || '',
           lieuNaissance: participant.lieuNaissance || '',
@@ -14844,7 +15018,6 @@ const SummaryAndSubmissionStep: React.FC<{
           entrepriseRole: participant.role || 'ASSOCIE'
         };
 
-        console.log(`👤 ÉTAPE 4 - Création participant ${participant.role}:`, personRequest);
 
         const response = await fetch('/api/v1/persons', {
           method: 'POST',
@@ -14861,13 +15034,11 @@ const SummaryAndSubmissionStep: React.FC<{
         }
         
         const result = await response.json();
-        console.log(`✅ Participant ${participant.role} créé:`, result);
         
         // Mettre à jour l'ID du participant
         participant.personId = result.id || result.data?.id;
       }
 
-      console.log('✅ ÉTAPE 4 TERMINÉE - Tous les participants traités');
 
       // WORKFLOW ÉTAPE 5: Soumission finale - POST /api/v1/entreprises/with-documents
       const token = localStorage.getItem('token');
@@ -14876,43 +15047,67 @@ const SummaryAndSubmissionStep: React.FC<{
       // Assembler tous les participants avec leurs IDs
       const allParticipants = data.participants?.map(p => {
         // Valider et nettoyer le rôle
-        const validRoles = ['GERANT', 'ASSOCIE'];
+        const validRoles = ['GERANT', 'PROMOTEUR', 'ASSOCIE', 'ADMINISTRATEUR'];
         const cleanRole = p.role?.toString().trim().toUpperCase();
         
         if (!validRoles.includes(cleanRole)) {
           throw new Error(`Rôle invalide pour participant ${p.nom} ${p.prenom}: ${p.role}`);
         }
         
-        return {
+        const result: any = {
           personId: p.personId || '',
           role: cleanRole,
           pourcentageParts: p.pourcentageParts || 0,
           dateDebut: p.dateDebut || new Date().toISOString().split('T')[0],
           dateFin: p.dateFin || '9999-12-31'
         };
+        
+        // 🔧 AJOUT DES CHAMPS PERSONNELS POUR MISE À JOUR BACKEND
+        if (p.dateNaissance && p.dateNaissance !== '') {
+          result.dateNaissance = new Date(p.dateNaissance);
+        }
+        
+        if (p.lieuNaissance && p.lieuNaissance !== '') {
+          result.lieuNaissance = p.lieuNaissance;
+        }
+        
+        return result;
       }) || [];
 
       // Ajouter le fondateur s'il n'est pas déjà dans les participants
       if (data.founderId) {
         const founderExists = allParticipants.some(p => p.personId === data.founderId);
         if (!founderExists) {
-          allParticipants.push({
+          const founderParticipant: any = {
             personId: data.founderId,
             role: 'DIRIGEANT',
             pourcentageParts: 100 - allParticipants.reduce((sum, p) => sum + p.pourcentageParts, 0),
             dateDebut: new Date().toISOString().split('T')[0],
             dateFin: '9999-12-31'
-          });
+          };
+          
+          // 🔧 AJOUT DES CHAMPS PERSONNELS DU FONDATEUR (utilisateur connecté)
+          if (data.personalInfo?.birthDate && data.personalInfo.birthDate !== '') {
+            founderParticipant.dateNaissance = new Date(data.personalInfo.birthDate);
+          }
+          
+          if (data.personalInfo?.birthPlace && data.personalInfo.birthPlace !== '') {
+            founderParticipant.lieuNaissance = data.personalInfo.birthPlace;
+          }
+          
+          allParticipants.push(founderParticipant);
         }
       }
 
       const entrepriseRequest = {
-        nom: data.companyInfo?.nom || '',
+        nom: data.companyInfo?.nom || (data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+          ? `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim() 
+          : ''),
         sigle: data.companyInfo?.sigle || '',
         adresseDifferentIdentite: data.personalInfo?.hasDifferentAddress || false,
         extraitJudiciaire: data.personalInfo?.hasCriminalRecord || false,
         autorisationGerant: data.personalInfo?.allowsMultipleManagers || false,
-        autorisationExercice: requiresExerciseAuthorization(),
+        autorisationExercice: data.personalInfo?.requiresExerciseAuthorization || false,
         importExport: data.personalInfo?.willImportExport || false,
         statutSociete: true,
         typeEntreprise: data.companyInfo?.typeEntreprise || 'SOCIETE',
@@ -14920,44 +15115,81 @@ const SummaryAndSubmissionStep: React.FC<{
         etapeValidation: 'ACCUEIL',
         formeJuridique: data.companyInfo?.formeJuridique || 'SARL',
         domaineActivite: data.companyInfo?.domaineActivite, // Pas de valeur par défaut
-        domaineActiviteNr: data.companyInfo?.domaineActiviteNr || 'COMMERCE_ET_DISTRIBUTION', // Domaine non réglementé par défaut
-        capitale: data.companyInfo?.capitale || '',
+        domaineActiviteNr: (() => {
+          const value = data.companyInfo?.domaineActiviteNr;
+          
+          // SOLUTION ROBUSTE: Limiter à 500 caractères maximum (nouvelle limite DB)
+          if (!value) {
+            return null;
+          }
+          
+          const stringValue = String(value);
+                    
+          if (stringValue.length > 500) {
+            const truncated = stringValue.substring(0, 500);
+            return truncated;
+          }
+          
+                    return stringValue;
+        })(),
+        capitale: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+          ? '0' // Capital à 0 pour les entreprises individuelles
+          : (data.companyInfo?.capitale || ''),
         activiteSecondaire: data.companyInfo?.activiteSecondaire || '',
-        divisionCode: data.companyInfo?.divisionCode || selectedQuartierCode || selectedCommuneCode || selectedArrondissementCode || selectedCercleCode || selectedRegionCode || '',
+        divisionCode: (() => {
+          // Forcer la synchronisation si divisionCode est vide mais qu'on a des données personnelles
+          let finalDivisionCode = data.companyInfo?.divisionCode;
+          
+          if (!finalDivisionCode && data.personalInfo?.hasDifferentAddress === false && data.personalInfo?.divisionId) {
+            finalDivisionCode = data.personalInfo.divisionId;
+            
+            // Mettre à jour immédiatement data.companyInfo
+            updateData('companyInfo', {
+              ...data.companyInfo,
+              divisionCode: finalDivisionCode
+            });
+          }
+          
+          return finalDivisionCode || selectedQuartierCode || selectedCommuneCode || selectedArrondissementCode || selectedCercleCode || selectedRegionCode || '';
+        })(),
+        rue: data.companyInfo?.rue || null,
+        porte: data.companyInfo?.porte || null,
+        representativeAdresseLibre: data.personalInfo?.adresseLibre || null,
+        totalAmount: costs.total, // Ajouter le montant calculé pour la sauvegarde
         participants: allParticipants
       };
 
-      // Remplacer l'envoi with-documents par: création JSON puis uploads ciblés
-      console.log('🏢 ÉTAPE 5 - POST /api/v1/entreprises (JSON), puis /documents/*');
-
-      const entRes = await fetch('/api/v1/entreprises', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(entrepriseRequest)
+      console.log('🔍 [DEBUG] Objet entrepriseRequest avant envoi:', {
+        autorisationExercice: entrepriseRequest.autorisationExercice,
+        importExport: entrepriseRequest.importExport,
+        totalAmount: entrepriseRequest.totalAmount
       });
 
-      if (!entRes.ok) {
-        const errorData = await entRes.json();
-        throw new Error(errorData.message || 'Erreur lors de la création de l\'entreprise');
-      }
-      const created = await entRes.json();
-      const entrepriseId = created.id || created.data?.id;
-      const entrepriseReference = created.reference || created.data?.reference || 'N/A';
-
-      if (!entrepriseId) throw new Error('Identifiant entreprise introuvable');
-
+      // ÉTAPE 5.1: Créer l'entreprise d'abord pour obtenir l'ID
+      const response = await createEntreprise(entrepriseRequest);
+      const entrepriseId = response.id;
+      const entrepriseReference = response.reference || `ENT-${Date.now()}`;
+      
       // Helpers locaux
       const safeJson = async (res: Response) => { try { return await res.json(); } catch { return null; } };
 
       const uploadPieceForParticipant = async (personId: string, typePiece: string, numeroPiece: string, file: File) => {
+        // Générer un numéro unique si le numéro fourni est vide, générique ou potentiellement en conflit
+        let finalNumeroPiece = numeroPiece;
+        if (!numeroPiece || numeroPiece.length < 6 || numeroPiece.includes('123456')) {
+          // Générer un numéro plus unique avec UUID partiel et timestamp
+          const timestamp = Date.now().toString();
+          const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+          const uuid = crypto.randomUUID().replace(/-/g, '').substring(0, 8);
+          finalNumeroPiece = `${typePiece}${timestamp.slice(-8)}${random}${uuid}`.substring(0, 20);
+        }
+        
+        
         const fd = new FormData();
         fd.append('personneId', personId);
         fd.append('entrepriseId', entrepriseId);
         fd.append('typePiece', typePiece);
-        fd.append('numero', numeroPiece);
+        fd.append('numero', finalNumeroPiece);
         const exp = new Date(); exp.setFullYear(exp.getFullYear() + 5);
         fd.append('dateExpiration', exp.toISOString().split('T')[0]);
         fd.append('file', file);
@@ -14966,14 +15198,92 @@ const SummaryAndSubmissionStep: React.FC<{
       };
 
       const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
+        console.log(`🔄 [UPLOAD DEBUG] Tentative upload document:`, {
+          personId,
+          entrepriseId,
+          typeDocument,
+          numero,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        });
+        
         const fd = new FormData();
         fd.append('personneId', personId);
         fd.append('entrepriseId', entrepriseId);
         fd.append('typeDocument', typeDocument);
         if (numero) fd.append('numero', numero);
         fd.append('file', file);
+        
         const res = await fetch('/api/v1/documents/document', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
-        if (!res.ok) { const err = await safeJson(res); throw new Error(err?.message || `Upload ${typeDocument} échoué`); }
+        
+        if (!res.ok) { 
+          const errorText = await res.text();
+          console.error(`❌ [UPLOAD ERROR] ${typeDocument}:`, {
+            status: res.status,
+            statusText: res.statusText,
+            errorText
+          });
+          
+          let errorMessage;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson?.message || errorText;
+          } catch {
+            errorMessage = errorText;
+          }
+          
+          throw new Error(errorMessage || `Upload ${typeDocument} échoué`);
+        } else {
+          console.log(`✅ [UPLOAD SUCCESS] ${typeDocument} uploadé avec succès`);
+        }
+      };
+
+      // Fonction pour uploader les documents supplémentaires de type AUTRES
+      const uploadAutresDocumentFor = async (personId: string, nom: string, description: string, file: File) => {
+        console.log(`🔄 [UPLOAD DEBUG] Tentative upload document AUTRES:`, {
+          personId,
+          entrepriseId,
+          nom,
+          description,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        });
+        
+        const fd = new FormData();
+        fd.append('personneId', personId);
+        fd.append('entrepriseId', entrepriseId);
+        fd.append('nom', nom);
+        if (description) fd.append('description', description);
+        fd.append('file', file);
+        
+        const res = await fetch('/api/v1/documents/autres', { 
+          method: 'POST', 
+          headers: { 'Authorization': `Bearer ${token}` }, 
+          body: fd 
+        });
+        
+        if (!res.ok) { 
+          const errorText = await res.text();
+          console.error(`❌ [UPLOAD ERROR] AUTRES document "${nom}":`, {
+            status: res.status,
+            statusText: res.statusText,
+            errorText
+          });
+          
+          let errorMessage;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson?.message || errorText;
+          } catch {
+            errorMessage = errorText;
+          }
+          
+          throw new Error(errorMessage || `Upload document AUTRES "${nom}" échoué`);
+        } else {
+          console.log(`✅ [UPLOAD SUCCESS] Document AUTRES "${nom}" uploadé avec succès`);
+        }
       };
 
       // Upload pièces identités
@@ -14981,12 +15291,23 @@ const SummaryAndSubmissionStep: React.FC<{
         const list = data.participants || [];
         for (let idx = 0; idx < list.length; idx++) {
           const participant = list[idx];
-          if (participant.personId && participant.documentFile && participant.typePiece && participant.numeroPiece) {
+          
+          // Debug détaillé pour chaque participant
+          
+          if (participant.civilite === 'PERSONNE_MORALE') {
+            // Upload du document RCCM pour les personnes morales
+            if (participant.rccmFile && participant.personId) {
+              try {
+                await uploadDocumentFor(participant.personId, 'RCCM', participant.rccmFile, `RCCM-${participant.denominationEntreprise}-${entrepriseReference}`);
+              } catch (e) {
+                throw new Error(`Erreur upload RCCM ${participant.denominationEntreprise}: ${e}`);
+              }
+            } else {
+            }
+          } else if (participant.personId && participant.documentFile && participant.typePiece && participant.numeroPiece) {
             try {
-              console.log(`📎 [${idx}] Upload pièce ${participant.typePiece}`);
               await uploadPieceForParticipant(participant.personId, participant.typePiece, participant.numeroPiece, participant.documentFile);
             } catch (e) { 
-              console.error('❌ Upload pièce échoué:', e);
               const errorMessage = e instanceof Error ? e.message : String(e);
               
               // Améliorer le message d'erreur avec les détails de la pièce
@@ -15000,6 +15321,7 @@ const SummaryAndSubmissionStep: React.FC<{
               setSubmitting(false);
               return;
             }
+          } else {
           }
         }
       }
@@ -15007,43 +15329,130 @@ const SummaryAndSubmissionStep: React.FC<{
       // Documents spécifiques: Gérant (pour toutes les entreprises)
       // Plus de distinction gerant/gérant - utiliser seulement le gérant
       
-      // Pour société, uploader les documents du gérant
-      if (!isEntrepriseIndividuelle && gerantId) {
-        console.log('📎 Upload documents gérant (société)');
+      // Upload documents personnels du gérant (pour tous types d'entreprise)
+      if (gerantId) {
+        const businessType = isEntrepriseIndividuelle ? 'entreprise individuelle' : 'société';
+        
         if (gerant?.casierJudiciaireFile && data.personalInfo?.hasCriminalRecord) {
-          try { await uploadDocumentFor(gerantId, 'CASIER_JUDICIAIRE', gerant.casierJudiciaireFile, `CJ-${entrepriseReference}`); } catch (e) { console.error(e); }
+          try { 
+            await uploadDocumentFor(gerantId, 'CASIER_JUDICIAIRE', gerant.casierJudiciaireFile, `CJ-${entrepriseReference}`); 
+          } catch (e) { }
         }
         if (gerant?.acteMariageFile && data.personalInfo?.isMarried) {
-          try { await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`); } catch (e) { console.error(e); }
+          
+          // Vérifier le statut matrimonial dans le backend avant upload
+          try {
+            const personResponse = await fetch(`/api/v1/persons/${gerantId}`, {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (personResponse.ok) {
+              const personData = await personResponse.json();
+              
+              if (personData.situationMatrimoniale !== 'MARIE') {
+                
+                // Corriger le statut matrimonial immédiatement
+                try {
+                  // Préparer les données en corrigeant le format de date
+                  const correctedPersonData = {
+                    ...personData,
+                    situationMatrimoniale: 'MARIE'
+                  };
+                  
+                  // Corriger le format de dateNaissance si nécessaire
+                  if (correctedPersonData.dateNaissance && typeof correctedPersonData.dateNaissance === 'string') {
+                    // Convertir de ISO datetime vers date simple (YYYY-MM-DD)
+                    correctedPersonData.dateNaissance = correctedPersonData.dateNaissance.split('T')[0];
+                  }
+                  
+                  
+                  const updateResponse = await fetch(`/api/v1/persons/${gerantId}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(correctedPersonData)
+                  });
+                  if (updateResponse.ok) {
+                  } else {
+                    const errorText = await updateResponse.text();
+                  }
+                } catch (e) {
+                }
+              }
+            }
+          } catch (e) {
+          }
+          
+          try { 
+            await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`); 
+          } catch (e) { }
         }
         if (!data.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
           try { 
-            await uploadDocumentFor(gerantId, 'DECLARATION_HONNEUR', gerant.declarationHonneurFile, `DH-${entrepriseReference}`); 
-            console.log('✅ Déclaration sur l\'honneur uploadée');
-          } catch (e) { console.error('❌ Upload déclaration honneur échoué:', e); }
+            await uploadDocumentFor(gerantId, 'DECLARATION_HONNEUR', gerant.declarationHonneurFile, `DH-${entrepriseReference}`);
+          } catch (e) { }
         }
         if (gerant?.extraitNaissanceFile) {
-          try { await uploadDocumentFor(gerantId, 'EXTRAIT_NAISSANCE', gerant.extraitNaissanceFile, `EN-${entrepriseReference}`); } catch (e) { console.error(e); }
+          try { 
+            await uploadDocumentFor(gerantId, 'EXTRAIT_NAISSANCE', gerant.extraitNaissanceFile, `EN-${entrepriseReference}`); 
+          } catch (e) { }
+        }
+        
+        // Certificat de résidence (requis pour tous les gérants)
+        if (gerant?.certificatResidenceFile) {
+          try { 
+            await uploadDocumentFor(gerantId, 'CERTIFICAT_RESIDENCE', gerant.certificatResidenceFile, `CR-${entrepriseReference}`); 
+          } catch (e) { }
+        }
+        
+        // Pièce de nationalité (requis pour entreprises individuelles)
+        if (isEntrepriseIndividuelle && gerant?.pieceNationaliteFile) {
+          try { 
+            await uploadDocumentFor(gerantId, 'PIECE_NATIONALITE', gerant.pieceNationaliteFile, `PN-${entrepriseReference}`); 
+          } catch (e) { }
+        }
+
+        // Documents supplémentaires de type AUTRES (pour entreprises individuelles)
+        if (isEntrepriseIndividuelle && gerant?.autresDocuments && gerant.autresDocuments.length > 0) {
+          console.log(`📎 [UPLOAD DEBUG] Upload de ${gerant.autresDocuments.length} documents supplémentaires AUTRES`);
+          
+          for (const autreDoc of gerant.autresDocuments) {
+            if (autreDoc.file && autreDoc.name) {
+              try {
+                await uploadAutresDocumentFor(
+                  gerantId,
+                  autreDoc.name,
+                  autreDoc.description || '',
+                  autreDoc.file
+                );
+              } catch (e) {
+                console.error(`❌ Erreur upload document AUTRES "${autreDoc.name}":`, e);
+                // Ne pas bloquer le processus pour les erreurs de documents supplémentaires
+              }
+            }
+          }
         }
       }
 
-      // Entreprise: statuts / registre / certificat résidence
-      // Utiliser gerantId pour tous les documents
-      const docPersonId = gerantId || null;
-      const residencePersonId = gerantId;
+      // Entreprise: statuts / registre (sociétés seulement)
+      // IMPORTANT: Pour les entreprises individuelles, ne pas uploader Documents, Statuts, Registre de commerce
       
-      if (data.documents?.statutes && docPersonId) {
-        try { await uploadDocumentFor(docPersonId, 'STATUS_SOCIETE', data.documents.statutes, `STATUTS-${entrepriseReference}`); } catch (e) { console.error(e); }
-      }
-      if (data.documents?.commerceRegistry && docPersonId) {
-        try { await uploadDocumentFor(docPersonId, 'REGISTRE_COMMERCE', data.documents.commerceRegistry, `RC-${entrepriseReference}`); } catch (e) { console.error(e); }
-      }
-      if (data.documents?.residenceCertificate && residencePersonId) {
-        try { await uploadDocumentFor(residencePersonId, 'CERTIFICAT_RESIDENCE', data.documents.residenceCertificate, `CR-${entrepriseReference}`); } catch (e) { console.error(e); }
+      if (!isEntrepriseIndividuelle) {
+        const docPersonId = gerantId || null;
+        
+        if (data.documents?.statutes && docPersonId) {
+          try { await uploadDocumentFor(docPersonId, 'STATUS_SOCIETE', data.documents.statutes, `STATUTS-${entrepriseReference}`); } catch (e) { }
+        }
+        if (data.documents?.commerceRegistry && docPersonId) {
+          try { await uploadDocumentFor(docPersonId, 'REGISTRE_COMMERCE', data.documents.commerceRegistry, `RC-${entrepriseReference}`); } catch (e) { }
+        }
       }
 
+      // Note: Documents personnels du gérant (certificat de résidence, etc.) sont maintenant traités dans la section gérant ci-dessus
+
       // Message de succès avec notification d'autorisation si nécessaire
-      let successMessage = '🎉 Entreprise créée et documents téléchargés ! Référence: ' + entrepriseReference;
+      let successMessage = 'Demande soumise et documents envoyés ! Référence: ' + entrepriseReference;
       
       if (requiresExerciseAuthorization()) {
         const selectedNr = data.companyInfo?.domaineActiviteNr;
@@ -15058,7 +15467,6 @@ const SummaryAndSubmissionStep: React.FC<{
       setSubmitSuccess(successMessage);
       
     } catch (error: any) {
-      console.error('❌ Erreur lors de la création de l\'entreprise:', error);
       setSubmitError(error?.message || 'Erreur lors de la création de l\'entreprise');
     } finally {
       setSubmitting(false);
@@ -15076,69 +15484,75 @@ const SummaryAndSubmissionStep: React.FC<{
   const costs = apiUtils.calculateCosts({
     businessType: data.companyInfo?.typeEntreprise === 'SOCIETE' ? 'Société' : 'Individuelle',
     partners: data.participants || [],
+    requiresExerciseAuthorization: data.personalInfo?.requiresExerciseAuthorization,
+    willImportExport: data.personalInfo?.willImportExport,
   });
 
   return (
     <div className="animate-fade-in">
-      <h2 className="text-3xl font-bold text-mali-dark mb-2 animate-slide-up">Récapitulatif et Soumission</h2>
-      <p className="text-gray-600 mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
+      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-investmali-neutral-dark mb-2 animate-slide-up">Récapitulatif et Soumission</h2>
+      <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '0.1s'}}>
         Vérifiez les informations de votre entreprise avant de soumettre votre demande de création.
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {/* Récapitulatif */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Informations de l'entreprise */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
-            <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-              <span className="bg-mali-emerald text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">🏢</span>
+          <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
+            <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">🏢</span>
               Informations de l'Entreprise
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Nom de l'entreprise :</span>
-                <span className="font-medium text-mali-dark">{data.companyInfo?.nom}</span>
+                <span className="text-xs sm:text-sm text-gray-600">Nom de l'entreprise :</span>
+                <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.nom}</span>
               </div>
               {data.companyInfo?.sigle && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Sigle :</span>
-                  <span className="font-medium text-mali-dark">{data.companyInfo?.sigle}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Sigle :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.sigle}</span>
                 </div>
               )}
-              {data.companyInfo?.capitale && (
+              {data.companyInfo?.capitale && data.companyInfo?.typeEntreprise === 'SOCIETE' && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Capitale :</span>
-                  <span className="font-medium text-mali-dark">{data.companyInfo?.capitale}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Capitale :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.capitale}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Type d'entreprise :</span>
-                <span className="font-medium text-mali-dark">
+                <span className="font-medium text-investmali-neutral-dark">
                   {data.companyInfo?.typeEntreprise === 'SOCIETE' ? 'Société' : 'Entreprise Individuelle'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Forme juridique :</span>
-                <span className="font-medium text-mali-dark">{data.companyInfo?.formeJuridique}</span>
+                <span className="font-medium text-investmali-neutral-dark">{data.companyInfo?.formeJuridique}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Domaine d'activité :</span>
-                <span className="font-medium text-mali-dark">{data.companyInfo?.domaineActivite}</span>
-              </div>
+              {data.companyInfo?.domaineActivite && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Domaine d'activité réglementé :</span>
+                  <span className="font-medium text-investmali-neutral-dark">{data.companyInfo.domaineActivite}</span>
+                </div>
+              )}
               {data.companyInfo?.domaineActiviteNr && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Domaine d'activité secondaire :</span>
-                  <span className="font-medium text-mali-dark">{DOMAINE_ACTIVITE_NR_LABELS[data.companyInfo.domaineActiviteNr]}</span>
+                  <span className="text-gray-600">Domaine d'activité :</span>
+                  <span className="font-medium text-investmali-neutral-dark">
+                    {DOMAINE_ACTIVITE_NR_LABELS[data.companyInfo.domaineActiviteNr] || data.companyInfo.domaineActiviteNr}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Localisation entreprise :</span>
-                <span className="font-medium text-mali-dark">{companyLocationName || data.companyInfo?.divisionCode || 'Non spécifiée'}</span>
+                <span className="font-medium text-investmali-neutral-dark">{companyLocationName || data.companyInfo?.divisionCode || 'Non spécifiée'}</span>
               </div>
-              {data.participants && data.participants.length > 0 && (
+              {data.participants && data.participants.length > 0 && data.companyInfo?.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Nombre de participants :</span>
-                  <span className="font-medium text-mali-dark">{data.participants.length}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Nombre de participants :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.participants.length}</span>
                 </div>
               )}
             </div>
@@ -15146,200 +15560,123 @@ const SummaryAndSubmissionStep: React.FC<{
 
           {/* Informations personnelles */}
           {data.personalInfo && (
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.3s'}}>
-              <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-                <span className="bg-mali-gold text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">👤</span>
+            <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.3s'}}>
+              <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+                <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">👤</span>
                 Informations Personnelles
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Nom complet :</span>
-                  <span className="font-medium text-mali-dark">
+                  <span className="text-xs sm:text-sm text-gray-600">Nom complet :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">
                     {CIVILITE_LABELS[data.personalInfo.civility || ''] || data.personalInfo.civility} {data.personalInfo.firstName} {data.personalInfo.lastName}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Fonction :</span>
-                  <span className="font-medium text-mali-dark">{data.personalInfo.position}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Fonction :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.position}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Contact :</span>
-                  <span className="font-medium text-mali-dark">{data.personalInfo.phone}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Contact :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.phone}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Localisation personnelle :</span>
-                  <span className="font-medium text-mali-dark">{personalLocationName || data.personalInfo.divisionId || 'Non spécifiée'}</span>
+                  <span className="text-xs sm:text-sm text-gray-600">Localisation personnelle :</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{personalLocationName || data.personalInfo.divisionId || 'Non spécifiée'}</span>
                 </div>
-                {data.personalInfo.localite && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Localité :</span>
-                    <span className="font-medium text-mali-dark">{data.personalInfo.localite}</span>
-                  </div>
+                {(data.personalInfo.localite || data.personalInfo.porte) && (
+                  <>
+                    {data.personalInfo.localite && (
+                      <div className="flex justify-between">
+                        <span className="text-xs sm:text-sm text-gray-600">Rue :</span>
+                        <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.localite}</span>
+                      </div>
+                    )}
+                    {data.personalInfo.porte && (
+                      <div className="flex justify-between">
+                        <span className="text-xs sm:text-sm text-gray-600">Porte :</span>
+                        <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.porte}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           )}
 
 
-          {/* Participants */}
-          {data.participants && data.participants.length > 0 && (
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.45s'}}>
-              <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-                <span className="bg-mali-blue text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">👥</span>
-                Participants ({data.participants.length})
-              </h3>
-              <div className="space-y-4">
-                {data.participants.map((participant, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="font-medium text-mali-dark">
-                          {participant.prenom} {participant.nom}
-                        </h4>
-                        <p className="text-sm text-gray-600">{participant.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          participant.role === 'GERANT' ? 'bg-green-100 text-green-800' :
-                          participant.role === 'ASSOCIE' ? 'bg-blue-100 text-blue-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}>
-                          {participant.role}
-                        </span>
-                        <p className="text-sm text-gray-600 mt-1">{participant.pourcentageParts}% des parts</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Téléphone :</span>
-                        <span className="ml-2 text-mali-dark">{participant.telephone || 'Non spécifié'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Date de début :</span>
-                        <span className="ml-2 text-mali-dark">{participant.dateDebut}</span>
-                      </div>
-                      {participant.typePiece && (
-                        <div>
-                          <span className="text-gray-600">Pièce d'identité :</span>
-                          <span className="ml-2 text-mali-dark">{participant.typePiece} - {participant.numeroPiece}</span>
-                        </div>
-                      )}
-                      {participant.documentFile && (
-                        <div>
-                          <span className="text-gray-600">Document :</span>
-                          <span className="ml-2 text-green-600">✓ Téléchargé</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Documents */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.5s'}}>
-            <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-              <span className="bg-mali-emerald text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">📄</span>
-              Documents
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Statuts :</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  data.documents?.statutesName || data.documents?.needsStatutesDrafting
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {data.documents?.needsStatutesDrafting ? 'Rédaction InvestMali' : 
-                   data.documents?.statutesName ? 'Téléchargé' : 'En attente'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Registre de commerce :</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  data.documents?.commerceRegistryName || !data.documents?.hasCommerceRegistry
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {!data.documents?.hasCommerceRegistry ? 'Non requis' :
-                   data.documents?.commerceRegistryName ? 'Téléchargé' : 'En attente'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Certificat de résidence :</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  data.documents?.residenceCertificateName
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {data.documents?.residenceCertificateName ? 'Téléchargé' : 'En attente'}
-                </span>
-              </div>
-            </div>
-          </div>
 
         </div>
 
         {/* Prochaines étapes */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.6s'}}>
-            <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-              <span className="bg-mali-gold text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">⏳</span>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.6s'}}>
+            <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+              <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">⏳</span>
               Prochaines Étapes
             </h3>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-mali-emerald text-white rounded-full flex items-center justify-center text-xs font-bold mt-1">1</div>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-investmali-accent text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1">1</div>
                 <div>
-                  <p className="font-medium text-mali-dark">Validation par un agent</p>
-                  <p className="text-sm text-gray-600">Votre dossier sera examiné par nos agents dans les 48h</p>
+                  <p className="text-sm sm:text-base font-medium text-investmali-neutral-dark">Validation par un agent</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Votre dossier sera examiné par nos agents dans les 48h</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-gray-300 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1">2</div>
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-300 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1">2</div>
                 <div>
-                  <p className="font-medium text-gray-700">Paiement des frais</p>
-                  <p className="text-sm text-gray-600">Après validation, vous recevrez un lien de paiement</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-700">Paiement des frais</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Après validation, vous recevrez un lien de paiement</p>
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm font-semibold text-green-800">
+                      Montant à payer : {costs.total.toLocaleString()} F CFA
+                    </p>
+                    {costs.total === 180 && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Montant majoré (autorisation d'exercice ou import/export)
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-gray-300 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1">3</div>
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-300 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1">3</div>
                 <div>
-                  <p className="font-medium text-gray-700">Téléchargement des documents</p>
-                  <p className="text-sm text-gray-600">Récupérez vos documents officiels après paiement</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-700">Téléchargement des documents</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Récupérez vos documents officiels après paiement</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Informations importantes */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200 animate-slide-up" style={{animationDelay: '0.7s'}}>
-            <h3 className="text-xl font-semibold text-mali-dark mb-4 flex items-center">
-              <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">ℹ️</span>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-blue-200 animate-slide-up" style={{animationDelay: '0.7s'}}>
+            <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">ℹ️</span>
               Informations Importantes
             </h3>
             
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1 flex-shrink-0">!</div>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1 flex-shrink-0">!</div>
                 <div>
-                  <p className="font-medium text-gray-800">Aucun paiement requis maintenant</p>
-                  <p className="text-sm text-gray-600">Le paiement sera demandé uniquement après validation de votre dossier par nos agents.</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-800">Aucun paiement requis maintenant</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Le paiement sera demandé uniquement après validation de votre dossier par nos agents.</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1 flex-shrink-0">✓</div>
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1 flex-shrink-0">✓</div>
                 <div>
-                  <p className="font-medium text-gray-800">Validation gratuite</p>
-                  <p className="text-sm text-gray-600">L'examen de votre dossier par nos experts est entièrement gratuit.</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-800">Validation gratuite</p>
+                  <p className="text-xs sm:text-sm text-gray-600">L'examen de votre dossier par nos experts est entièrement gratuit.</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1 flex-shrink-0">⏱</div>
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1 flex-shrink-0">⏱</div>
                 <div>
-                  <p className="font-medium text-gray-800">Délai de traitement</p>
-                  <p className="text-sm text-gray-600">Votre demande sera traitée dans un délai maximum de 48 heures ouvrables.</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-800">Délai de traitement</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Votre demande sera traitée dans un délai maximum de 48 heures ouvrables.</p>
                 </div>
               </div>
             </div>
@@ -15347,41 +15684,41 @@ const SummaryAndSubmissionStep: React.FC<{
 
           {/* Messages d'état */}
           {submitError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-3 sm:mb-4 text-xs sm:text-sm">
               {submitError}
             </div>
           )}
           {submitSuccess && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-3 sm:mb-4 text-xs sm:text-sm">
               {submitSuccess}
             </div>
           )}
 
           {/* Bouton de soumission */}
-          <div className="bg-gradient-to-r from-mali-emerald to-mali-gold p-6 rounded-2xl shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
+          <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
             <button
               onClick={() => handleSubmitEntreprise()}
               disabled={submitting || submitSuccess !== null}
-              className="w-full bg-white text-mali-dark font-bold py-4 px-6 rounded-xl hover:bg-mali-blue/10 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-white text-investmali-neutral-dark font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-mali-blue/10 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl flex items-center justify-center space-x-2 sm:space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-mali-dark"></div>
-                  <span>Soumission en cours...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-mali-dark"></div>
+                  <span className="text-sm sm:text-base">Soumission en cours...</span>
                 </>
               ) : submitSuccess ? (
                 <>
-                  <span className="text-2xl">✅</span>
-                  <span>Demande Soumise avec Succès</span>
+                  <span className="text-lg sm:text-2xl">✅</span>
+                  <span className="text-sm sm:text-base">Demande Soumise avec Succès</span>
                 </>
               ) : (
                 <>
-                  <span className="text-2xl">📤</span>
-                  <span>Soumettre ma Demande</span>
+                  <span className="text-lg sm:text-2xl">📤</span>
+                  <span className="text-sm sm:text-base">Soumettre ma Demande</span>
                 </>
               )}
             </button>
-            <p className="text-white text-sm text-center mt-3 opacity-90">
+            <p className="text-white text-xs sm:text-sm text-center mt-2 sm:mt-3 opacity-90">
               {submitSuccess ? (
                 "Votre demande a été enregistrée • Suivi disponible dans votre profil"
               ) : (
@@ -15395,43 +15732,77 @@ const SummaryAndSubmissionStep: React.FC<{
   );
 };
 
-// Fonction pour récupérer le nom de la division depuis son code/ID
+// Fonction pour récupérer le nom de la division depuis l'API INSTAT directement
 const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
   try {
-    console.log('🌐 Appel API pour division:', divisionCodeOrId);
     
-    // Détecter si c'est un UUID ou un code
+    // Détecter si c'est un UUID (retourner tel quel car pas supporté par INSTAT)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(divisionCodeOrId);
-    const endpoint = isUUID 
-      ? `http://localhost:8080/api/v1/divisions/${divisionCodeOrId}` 
-      : `http://localhost:8080/api/v1/divisions/code/${divisionCodeOrId}`;
+    if (isUUID) {
+      return divisionCodeOrId;
+    }
     
-    console.log('🎯 Endpoint choisi:', endpoint, '(UUID:', isUUID, ')');
+    // Pour les codes de division, utiliser l'API INSTAT selon la longueur
+    const codeLength = divisionCodeOrId.length;
     
-    const response = await fetch(endpoint);
-    console.log('📡 Réponse API status:', response.status);
-    
-    if (response.ok) {
-      const division = await response.json();
-      console.log('📋 Données division reçues:', division);
-      return division.nom || divisionCodeOrId;
+    if (codeLength === 2) {
+      // Région (ex: "90" pour Bamako)
+      return `Région ${divisionCodeOrId}`;
+    } else if (codeLength === 4) {
+      // Cercle (ex: "9001" pour Bamako)
+      return `Cercle ${divisionCodeOrId}`;
+    } else if (codeLength === 8) {
+      // Commune (ex: "90010701" pour Commune 7)
+      return `Commune ${divisionCodeOrId}`;
+    } else if (codeLength === 12) {
+      // Quartier - Extraire le code commune parent
+      const communeCode = divisionCodeOrId.substring(0, 8);
+      
+      const endpoint = `https://apimali.test.instat.ml/api/get/vfq/${communeCode}`;
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'accept': '*/*',
+          'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
+          'X-CSRF-TOKEN': ''
+        }
+      });
+      
+      if (response.ok) {
+        const quartiers = await response.json();
+        
+        // Chercher le quartier avec le bon code
+        const quartier = quartiers?.find((q: any) => q.code === divisionCodeOrId);
+        if (quartier) {
+          return quartier.nom;
+        } else {
+          console.log(`Quartier non trouvé pour le code: ${divisionCodeOrId}`);
+          return `Localisation ${divisionCodeOrId}`;
+        }
+      } else {
+        console.log(`Erreur API INSTAT pour le code: ${divisionCodeOrId}`);
+        return `Localisation ${divisionCodeOrId}`;
+      }
     } else {
-      console.warn('⚠️ API division échec, status:', response.status);
+      console.log(`Code de division non supporté: ${divisionCodeOrId}`);
+      return `Localisation ${divisionCodeOrId}`;
     }
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération du nom de division:', error);
+    console.log(`Erreur lors de la récupération du nom de division:`, error);
+    return `Localisation ${divisionCodeOrId}`;
   }
-  return divisionCodeOrId; // Retourner le code/ID si échec
 };
 
 const BusinessCreation: React.FC = () => {
   const location = useLocation();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [showForm, setShowForm] = useState(false);
+  const [isForSelf, setIsForSelf] = useState<boolean | null>(null);
   
   // États pour les noms des divisions
   const [personalLocationName, setPersonalLocationName] = useState<string>('');
   const [companyLocationName, setCompanyLocationName] = useState<string>('');
+  
   const [businessData, setBusinessData] = useState<BusinessCreationData>({
     personalInfo: {
       civility: '',
@@ -15439,6 +15810,7 @@ const BusinessCreation: React.FC = () => {
       lastName: '',
       email: '',
       phone: '',
+      phone2: '',
       birthDate: '',
       birthPlace: '',
       nationality: '',
@@ -15453,6 +15825,7 @@ const BusinessCreation: React.FC = () => {
       city: '',
       region: '',
       localite: '',
+      porte: '',
       divisionId: '',
       position: '',
       powers: [],
@@ -15472,10 +15845,10 @@ const BusinessCreation: React.FC = () => {
       sigle: '',
       capitale: '',
       activiteSecondaire: '',
-      typeEntreprise: 'SOCIETE' as TypeEntreprise,
-      formeJuridique: 'SARL' as FormeJuridique,
+      typeEntreprise: 'ENTREPRISE_INDIVIDUELLE' as TypeEntreprise,
+      formeJuridique: 'E_I' as FormeJuridique,
       domaineActivite: undefined, // Pas de valeur par défaut - sera défini seulement si nécessaire
-      domaineActiviteNr: 'COMMERCE_ET_DISTRIBUTION' as DomaineActiviteNr, // Domaine non réglementé par défaut
+      domaineActiviteNr: 'ELEVAGE' as DomaineActiviteNr, // Domaine non réglementé par défaut
       divisionCode: '',
       adresseDifferentIdentite: false,
       extraitJudiciaire: false,
@@ -15531,6 +15904,7 @@ const BusinessCreation: React.FC = () => {
   const [selectedArrondissementId, setSelectedArrondissementId] = useState<string | ''>('');
   const [selectedCommuneId, setSelectedCommuneId] = useState<string | ''>('');
 
+
   // Refs pour les animations GSAP
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -15556,7 +15930,6 @@ const BusinessCreation: React.FC = () => {
   // Détecter le retour depuis la déclaration sur l'honneur
   useEffect(() => {
     if (location.state?.returnFromDeclaration && location.state?.targetStep) {
-      console.log('🔄 Retour depuis déclaration sur l\'honneur, redirection vers étape', location.state.targetStep);
       setCurrentStep(location.state.targetStep);
       
       // Nettoyer le state pour éviter de réappliquer
@@ -15647,7 +16020,6 @@ const BusinessCreation: React.FC = () => {
           const values = await enumService.getSocieteJuridictions();
           setSocieteJuridictions(Array.isArray(values) ? values : []);
         } catch (e) {
-          console.error('Failed to load SocieteJuridiction', e);
           setSocieteJuridictions([]);
         }
       } else {
@@ -15664,7 +16036,6 @@ const BusinessCreation: React.FC = () => {
         const regionList = await divisionService.getRegions();
         setRegions(regionList || []);
       } catch (e) {
-        console.error('Failed to load regions', e);
       }
     })();
   }, []);
@@ -15682,7 +16053,7 @@ const BusinessCreation: React.FC = () => {
         setCercles(list || []);
         setArrondissements([]); setCommunes([]);
         setSelectedCercleId(''); setSelectedArrondissementId(''); setSelectedCommuneId('');
-      } catch (e) { console.error('Failed to load cercles', e); }
+      } catch (e) { }
     })();
   }, [selectedRegionId]);
 
@@ -15699,7 +16070,7 @@ const BusinessCreation: React.FC = () => {
         setArrondissements(list || []);
         setCommunes([]);
         setSelectedArrondissementId(''); setSelectedCommuneId('');
-      } catch (e) { console.error('Failed to load arrondissements', e); }
+      } catch (e) { }
     })();
   }, [selectedCercleId]);
 
@@ -15715,7 +16086,7 @@ const BusinessCreation: React.FC = () => {
         const list = await divisionService.getCommunesByArrondissement(selectedArrondissementId);
         setCommunes(list || []);
         setSelectedCommuneId('');
-      } catch (e) { console.error('Failed to load communes', e); }
+      } catch (e) { }
     })();
   }, [selectedArrondissementId]);
 
@@ -15723,20 +16094,12 @@ const BusinessCreation: React.FC = () => {
   useEffect(() => {
     const fetchDivisionNames = async () => {
       // Debug: Afficher les données de localisation
-      console.log('🔍 DEBUG - Données de localisation dans useEffect:', {
-        'personalInfo.divisionId': businessData.personalInfo?.divisionId,
-        'personalInfo.localite': businessData.personalInfo?.localite,
-        'companyInfo.divisionCode': businessData.companyInfo?.divisionCode
-      });
       
       // Récupérer le nom de la localisation personnelle
       if (businessData.personalInfo?.divisionId) {
-        console.log('🔍 Récupération nom division personnelle pour ID:', businessData.personalInfo.divisionId);
         const personalName = await getDivisionName(businessData.personalInfo.divisionId);
-        console.log('✅ Nom division personnelle récupéré:', personalName);
         setPersonalLocationName(personalName);
       } else {
-        console.log('⚠️ Pas de divisionId personnel - Vérification localite:', businessData.personalInfo?.localite);
         if (businessData.personalInfo?.localite) {
           setPersonalLocationName(businessData.personalInfo.localite);
         } else {
@@ -15746,9 +16109,7 @@ const BusinessCreation: React.FC = () => {
       
       // Récupérer le nom de la localisation de l'entreprise
       if (businessData.companyInfo?.divisionCode) {
-        console.log('🔍 Récupération nom division entreprise pour code:', businessData.companyInfo.divisionCode);
         const companyName = await getDivisionName(businessData.companyInfo.divisionCode);
-        console.log('✅ Nom division entreprise récupéré:', companyName);
         setCompanyLocationName(companyName);
       }
     };
@@ -15770,6 +16131,12 @@ const BusinessCreation: React.FC = () => {
   const validateStep = (): string | null => {
     // Étape 4 est facultative -> pas de validation bloquante
     if (currentStep === 4) return null;
+
+    // Étape 0: Identification utilisateur
+    if (currentStep === 0) {
+      if (isForSelf === null) return 'Veuillez indiquer si vous créez cette entreprise pour vous-même.';
+      return null;
+    }
 
     // Étape 1: Informations Personnelles
     if (currentStep === 1) {
@@ -15800,18 +16167,11 @@ const BusinessCreation: React.FC = () => {
       }
       
       // Validation de la localisation personnelle
-      console.log('🔍 DEBUG - Validation localisation étape 1:', {
-        'personal.divisionId': personal.divisionId,
-        'personal.localite': personal.localite,
-        'validation passera': !!(personal.divisionId || personal.localite)
-      });
       
       if (!personal.divisionId && !personal.localite) {
-        console.log('❌ DEBUG - Validation échouée - localisation manquante');
         return 'Votre localisation est requise. Veuillez sélectionner au moins une région ou saisir une localité.';
       }
       
-      console.log('✅ DEBUG - Validation localisation réussie');
       return null;
     }
 
@@ -15820,7 +16180,8 @@ const BusinessCreation: React.FC = () => {
       const company = businessData.companyInfo;
       if (!company) return "Les informations de l'entreprise sont requises.";
       
-      if (!company.nom) return "Le nom de l'entreprise est requis.";
+      // Le nom d'entreprise n'est requis que pour les sociétés, pas pour les entreprises individuelles
+      if (!company.nom && company.typeEntreprise === 'SOCIETE') return "Le nom de l'entreprise est requis.";
       // Le sigle est optionnel
       if (!company.typeEntreprise) return "Le type d'entreprise est requis.";
       if (!company.formeJuridique) return "La forme juridique est requise.";
@@ -15839,24 +16200,13 @@ const BusinessCreation: React.FC = () => {
       const hasDifferentAddress = businessData.personalInfo?.hasDifferentAddress;
       const personalHasLocation = businessData.personalInfo?.divisionId || businessData.personalInfo?.localite;
       
-      console.log('🔍 Validation localisation entreprise:', {
-        hasDifferentAddress,
-        personalHasLocation,
-        companyDivisionCode: company.divisionCode,
-        personalDivisionId: businessData.personalInfo?.divisionId
-      });
-      
       if (!company.divisionCode) {
         // Si la synchronisation est activée (même adresse) et que les données personnelles ont une localisation
         if (hasDifferentAddress === false && personalHasLocation) {
-          console.log('✅ Synchronisation activée - Localisation récupérée depuis les données personnelles');
           // Pas d'erreur, la localisation sera synchronisée
         } else if (hasDifferentAddress === false && !personalHasLocation) {
-          console.log('❌ Synchronisation activée mais localisation personnelle manquante');
           return "Vous avez choisi la même adresse pour l'entreprise, mais votre localisation personnelle n'est pas définie. Retournez à l'étape précédente pour saisir votre localisation.";
         } else {
-          console.log('❌ Validation échouée - divisionCode manquant:', company.divisionCode);
-          console.log('CompanyInfo complète:', company);
           return "La localisation de l'entreprise est requise. Veuillez sélectionner au moins une région.";
         }
       }
@@ -15870,22 +16220,66 @@ const BusinessCreation: React.FC = () => {
       if (!participants || participants.length === 0) return 'Au moins un participant est requis.';
       
       const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-      const gerants = participants.filter(p => p.role === 'GERANT');
-      // Plus de rôle DIRIGEANT - tous sont maintenant GERANT ou ASSOCIE
+      const gerants = participants.filter(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
+      // Plus de rôle DIRIGEANT - tous sont maintenant GERANT, PROMOTEUR ou ASSOCIE
       
       if (isEntrepriseIndividuelle) {
-        // Entreprise individuelle : 1 gérant seulement
-        if (gerants.length !== 1) return 'Une entreprise individuelle doit avoir exactement un gérant.';
+        // Entreprise individuelle : 1 promoteur seulement
+        if (gerants.length !== 1) return 'Une entreprise individuelle doit avoir exactement un promoteur.';
       } else {
-        // Société : 1 gérant + des associés
+        // Société : 1 gérant (peut être le seul participant pour une société unipersonnelle)
         if (gerants.length !== 1) return 'Exactement un gérant est requis pour une société.';
-        // Plus de rôle fondateur - vérifier qu'il y a des associés
-        const associes = participants.filter(p => p.role === 'ASSOCIE');
-        if (associes.length === 0) return 'Au moins un associé est requis pour une société.';
+        // Le gérant peut être le seul participant - pas besoin d'associés obligatoires
       }
       
       const totalParts = participants.reduce((sum, p) => sum + (p.pourcentageParts || 0), 0);
       if (Math.abs(totalParts - 100) > 0.01) return 'La somme des parts doit être égale à 100%.';
+      
+      // Validation des documents requis pour chaque participant
+      const documentErrors: string[] = [];
+      participants.forEach((p, idx) => {
+        const label = p.prenom && p.nom ? `${p.prenom} ${p.nom}` : `Participant ${idx + 1}`;
+        
+        // Validation des documents selon le type de personne
+        if (p.civilite === 'PERSONNE_MORALE') {
+          // Pour les personnes morales, vérifier le document RCCM
+          if (!p.rccmFile) {
+            documentErrors.push(`${label}: document RCCM obligatoire pour les personnes morales`);
+          }
+        } else {
+          // Pour les personnes physiques, vérifier le document d'identité
+          if (!p.typePiece || !p.documentFile) {
+            documentErrors.push(`${label}: type de pièce et document sont obligatoires`);
+          }
+        }
+        
+        // Documents requis pour les gérants/promoteurs - uniquement pour les personnes physiques
+        const requiresManagerDocuments = (p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.civilite !== 'PERSONNE_MORALE';
+        
+        if (requiresManagerDocuments && businessData.personalInfo?.hasCriminalRecord && !p.casierJudiciaireFile) {
+          documentErrors.push(`${label}: casier judiciaire requis`);
+        }
+        if (requiresManagerDocuments && !businessData.personalInfo?.hasCriminalRecord && !p.declarationHonneurFile) {
+          documentErrors.push(`${label}: déclaration d'honneur requise (sans casier judiciaire)`);
+        }
+        if (requiresManagerDocuments && businessData.personalInfo?.isMarried && !p.acteMariageFile) {
+          documentErrors.push(`${label}: acte de mariage requis (si marié)`);
+        }
+        if (requiresManagerDocuments && !p.extraitNaissanceFile) {
+          documentErrors.push(`${label}: extrait de naissance requis`);
+        }
+        // Certificat de résidence requis seulement si le gérant n'est pas de nationalité malienne
+        if (requiresManagerDocuments && !p.certificatResidenceFile) {
+          const gerantNationality = p.nationnalite || businessData.personalInfo?.nationality || 'MALIENNE';
+          if (gerantNationality.toUpperCase() !== 'MALIENNE') {
+            documentErrors.push(`${label}: certificat de résidence requis (nationalité non malienne)`);
+          }
+        }
+      });
+      
+      if (documentErrors.length > 0) {
+        return `Erreurs à corriger\n${documentErrors.join('\n')}`;
+      }
       
       return null;
     }
@@ -15897,726 +16291,21 @@ const BusinessCreation: React.FC = () => {
   const [stepError, setStepError] = useState<string | null>(null);
   const [showValidation, setShowValidation] = useState<boolean>(false);
 
-  const nextStep = async () => {
-    // ÉTAPE 2: Forcer la synchronisation avant validation si nécessaire
-    if (currentStep === 2) {
-      const hasDifferentAddress = businessData.personalInfo?.hasDifferentAddress;
-      const personalHasLocation = businessData.personalInfo?.divisionId || businessData.personalInfo?.localite;
-      const companyMissingLocation = !businessData.companyInfo?.divisionCode;
-      
-      console.log('🔍 Pré-validation étape 2 - Vérification synchronisation:', {
-        hasDifferentAddress,
-        personalHasLocation,
-        companyMissingLocation,
-        personalDivisionId: businessData.personalInfo?.divisionId
-      });
-      
-      // Si synchronisation activée et divisionCode manquant, forcer la mise à jour
-      if (hasDifferentAddress === false && personalHasLocation && companyMissingLocation) {
-        console.log('🔄 Forçage synchronisation avant validation...');
-        
-        try {
-          if (businessData.personalInfo?.divisionId) {
-            const division = await divisionService.getById(businessData.personalInfo.divisionId);
-            if (division && division.code) {
-              // Mettre à jour le divisionCode immédiatement
-              updateBusinessData('companyInfo', {
-                ...businessData.companyInfo,
-                divisionCode: division.code
-              });
-              console.log('✅ divisionCode synchronisé avant validation:', division.code);
-              
-              // Attendre un peu pour que l'état soit mis à jour
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          }
-        } catch (error) {
-          console.error('❌ Erreur lors de la synchronisation forcée:', error);
-          setStepError("Erreur lors de la synchronisation de la localisation. Veuillez réessayer.");
-          setShowValidation(true);
-          return;
-        }
-      }
-    }
-    
-    // Appliquer la validation pour toutes les étapes sauf la 4
-    if (currentStep !== 4) {
-      const err = validateStep();
-      if (err) {
-        setStepError(err);
-        setShowValidation(true);
-        // Faire défiler vers la zone de navigation/erreur
-        try {
-          navigationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch {}
-        return;
-      }
-    }
-    
-    setStepError(null);
-    setShowValidation(false);
-    
-    // WORKFLOW ÉTAPE PAR ÉTAPE
-    try {
-      // ÉTAPE 1: Informations personnelles - PUT/POST selon choix utilisateur
-      if (currentStep === 1) {
-        if (businessData.personalInfo.isForSelf === false && !showForm) {
-          setShowForm(true);
-          return;
-        }
-        
-        // Sauvegarder les informations personnelles (PUT si isForSelf, POST sinon)
-        const savedPerson = await savePersonalInfoWorkflow(businessData.personalInfo);
-        if (!savedPerson) return; // Erreur, on s'arrête
-        
-        // Stocker founderId pour les étapes suivantes
-        updateBusinessData('founderId', savedPerson.id || savedPerson.data?.id);
-        console.log('✅ Étape 1 terminée - founderId:', savedPerson.id);
-      }
-      
-      // ÉTAPE 2: Informations entreprise - Validation uniquement
-      if (currentStep === 2) {
-        console.log('✅ Étape 2 terminée - Informations entreprise validées');
-      }
-      
-      // ÉTAPE 3: Gestion des associés OU gerant (entreprise individuelle)
-      if (currentStep === 3) {
-        const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-        if (!isEntrepriseIndividuelle) {
-          await processAssociatesWorkflow();
-          console.log('✅ Étape 3 terminée - Associés créés');
-        } else {
-          // Pour entreprise individuelle, créer le gerant
-          await processDirigeantWorkflow();
-          console.log('✅ Étape 3 terminée - Dirigeant créé (entreprise individuelle)');
-        }
-      }
-      
-      // ÉTAPE 4: Gestion du gérant - Création avec EntrepriseRole.GERANT (sauf pour entreprise individuelle)
-      if (currentStep === 4) {
-        const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-        const hasGerant = (businessData.participants || []).some(p => p.role === 'GERANT');
-        const participants = businessData.participants || [];
-        
-        console.log('🔍 DEBUG ÉTAPE 4:');
-        console.log('- Type entreprise:', businessData.companyInfo?.typeEntreprise);
-        console.log('- Est entreprise individuelle:', isEntrepriseIndividuelle);
-        console.log('- A gérant:', hasGerant);
-        console.log('- Participants:', participants.map(p => ({ nom: p.nom, role: p.role })));
-        
-        if (!isEntrepriseIndividuelle && hasGerant) {
-          await processManagerWorkflow();
-          console.log('✅ Étape 4 terminée - Gérant créé');
-        } else if (isEntrepriseIndividuelle) {
-          console.log('ℹ️ Étape 4 ignorée - Pas de gérant pour entreprise individuelle');
-        } else {
-          console.log('ℹ️ Étape 4 ignorée - Aucun participant avec le rôle GÉRANT trouvé');
-        }
-      }
-      
-      // ÉTAPE 5: Soumission finale - POST /api/v1/entreprises
-      if (currentStep === 5) {
-        await submitEntrepriseWorkflow();
-        console.log('✅ Étape 5 terminée - Entreprise créée');
-        return; // Pas de passage à l'étape suivante
-      }
-      
-    } catch (error) {
-      console.error('❌ Erreur dans le workflow:', error);
-      setStepError(`Erreur lors du traitement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-      setShowValidation(true);
-      return;
-    }
-    
-    // Passer à l'étape suivante
-    if (currentStep < totalSteps) {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
-    }
-  };
-
-  const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const updateBusinessData = (field: keyof BusinessCreationData, value: any) => {
-    // Debug: Log des mises à jour de données
-    if (field === 'personalInfo' && (value?.divisionId || value?.localite)) {
-      console.log('🔄 DEBUG - Mise à jour personalInfo avec localisation:', {
-        field,
-        'value.divisionId': value?.divisionId,
-        'value.localite': value?.localite,
-        'value complet': value
-      });
-    }
-    
-    setBusinessData(prev => {
-      const newData = {
-        ...prev,
-        [field]: value
-      };
-      
-      // Debug: Log de l'état final après mise à jour
-      if (field === 'personalInfo' && (value?.divisionId || value?.localite)) {
-        console.log('✅ DEBUG - État après mise à jour:', {
-          'newData.personalInfo.divisionId': newData.personalInfo?.divisionId,
-          'newData.personalInfo.localite': newData.personalInfo?.localite
-        });
-      }
-      
-      return newData;
-    });
-  };
-
-  // WORKFLOW FUNCTIONS - Implémentation des étapes du processus
-
-  // Étape 1: Sauvegarder informations personnelles (PUT/POST selon choix)
-  const savePersonalInfoWorkflow = async (personalInfo: any) => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const token = localStorage.getItem('token');
-      
-      if (!token) throw new Error('Aucun token trouvé');
-
-      // Préparer les données selon PersonCreateRequest
-      const personRequest = {
-        nom: personalInfo.lastName,
-        prenom: personalInfo.firstName,
-        telephone1: personalInfo.phone,
-        email: personalInfo.email,
-        dateNaissance: personalInfo.birthDate,
-        lieuNaissance: personalInfo.birthPlace,
-        nationnalite: personalInfo.nationality || 'MALIENNE',
-        sexe: personalInfo.sexe,
-        situationMatrimoniale: personalInfo.situationMatrimoniale || 'CELIBATAIRE', // Valeur par défaut si vide
-        civilite: mapCivilityToBackend(personalInfo.civility),
-        // Récupérer division_id et localite depuis les données personnelles - utiliser null au lieu de undefined
-        division_id: personalInfo.divisionId || personalInfo.division_id || null,
-        divisionCode: personalInfo.divisionCode || null,
-        localite: personalInfo.localite || personalInfo.city || null,
-        role: 'USER',
-        entrepriseRole: 'GERANT'
-      };
-
-      // Logs de debugging pour la localisation
-      console.log('🔍 Données de localisation personnelles:', {
-        'personalInfo.divisionId': personalInfo.divisionId,
-        'personalInfo.division_id': personalInfo.division_id,
-        'personalInfo.divisionCode': personalInfo.divisionCode,
-        'personalInfo.localite': personalInfo.localite,
-        'personalInfo.city': personalInfo.city
-      });
-      // Déduire le sexe à partir de la civilité si nécessaire
-      const deducedSexe = deduceSexeFromCivilite(personalInfo.civility);
-      const finalSexe = personalInfo.sexe || deducedSexe;
-      
-      console.log('🔍 Déduction sexe workflow - Civilité:', personalInfo.civility, '→ Sexe déduit:', deducedSexe, '→ Sexe final:', finalSexe);
-
-      // Mettre à jour le sexe dans la requête
-      personRequest.sexe = finalSexe;
-
-      console.log('💾 Sauvegarde informations personnelles:', personRequest);
-
-      let response;
-      
-      if (personalInfo.isForSelf && currentUser.personne_id) {
-        // PUT - Mise à jour de la personne existante
-        console.log('🔄 PUT - Mise à jour personne existante ID:', currentUser.personne_id);
-        response = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(personRequest)
-        });
-      } else {
-        // POST - Création d'une nouvelle personne
-        console.log('➕ POST - Création nouvelle personne');
-        response = await fetch('/api/v1/persons', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(personRequest)
-        });
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la sauvegarde');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Informations personnelles sauvegardées:', result);
-      
-      // Si c'était un PUT (isForSelf), s'assurer de retourner l'ID correct
-      if (personalInfo.isForSelf && currentUser.personne_id) {
-        return { ...result, id: currentUser.personne_id };
-      }
-      
-      return result;
-    } catch (err) {
-      console.error('❌ Erreur sauvegarde informations personnelles:', err);
-      throw err;
-    }
-  };
-
-  // Étape 3: Traiter les associés avec EntrepriseRole.ASSOCIE
-  const processAssociatesWorkflow = async () => {
-    try {
-      const associates = businessData.participants?.filter(p => p.role === 'ASSOCIE') || [];
-      const createdAssociates = [];
-
-      for (const associate of associates) {
-        // Si l'associé n'a pas encore d'ID, le créer
-        if (!associate.personId) {
-          const associateData = {
-            lastName: associate.nom || '',
-            firstName: associate.prenom || '',
-            phone: associate.telephone || '',
-            email: associate.email || '',
-            birthDate: associate.dateNaissance || '',
-            birthPlace: associate.lieuNaissance || '',
-            nationality: associate.nationnalite || 'MALIENNE',
-            sexe: getConsistentSexe(associate.sexe, associate.civilite || 'MONSIEUR'),
-            situationMatrimoniale: associate.situationMatrimoniale || 'CELIBATAIRE',
-            civility: mapCivilityToBackend(associate.civilite || 'MONSIEUR'),
-            // Ajouter les données de localisation
-            divisionId: associate.divisionId || associate.division_id,
-            divisionCode: associate.divisionCode,
-            localite: associate.localite
-          };
-
-          const createdAssociate = await createAssociateWorkflow(associateData);
-          if (createdAssociate) {
-            associate.personId = createdAssociate.id || createdAssociate.data?.id;
-            createdAssociates.push(createdAssociate);
-          }
-        }
-      }
-
-      console.log('✅ Associés traités:', createdAssociates.length);
-      return createdAssociates;
-    } catch (err) {
-      console.error('❌ Erreur traitement associés:', err);
-      throw err;
-    }
-  };
-
-  // Créer un associé avec EntrepriseRole.ASSOCIE
-  const createAssociateWorkflow = async (associateData: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Aucun token trouvé');
-
-      // Déduire le sexe à partir de la civilité si nécessaire
-      const deducedSexe = deduceSexeFromCivilite(associateData.civility);
-      const finalSexe = associateData.sexe || deducedSexe;
-      
-      console.log('🔍 Déduction sexe associé - Civilité:', associateData.civility, '→ Sexe déduit:', deducedSexe, '→ Sexe final:', finalSexe);
-
-      const personRequest = {
-        nom: associateData.lastName,
-        prenom: associateData.firstName,
-        telephone1: associateData.phone,
-        email: associateData.email,
-        dateNaissance: associateData.birthDate,
-        lieuNaissance: associateData.birthPlace,
-        nationnalite: associateData.nationality || 'MALIENNE',
-        sexe: finalSexe,
-        situationMatrimoniale: associateData.situationMatrimoniale || 'CELIBATAIRE',
-        civilite: mapCivilityToBackend(associateData.civility),
-        // Récupérer division_id et localite depuis les données de l'associé ou utiliser celles de l'entreprise - utiliser null au lieu de undefined
-        division_id: associateData.divisionId || associateData.division_id || businessData.personalInfo?.divisionId || null,
-        divisionCode: associateData.divisionCode || businessData.companyInfo?.divisionCode || null,
-        localite: associateData.localite || associateData.city || businessData.personalInfo?.localite || null,
-        role: 'USER',
-        entrepriseRole: 'ASSOCIE'
-      };
-
-      // Logs de debugging pour la localisation de l'associé
-      console.log('🔍 Données de localisation associé:', {
-        'associateData.divisionId': associateData.divisionId,
-        'businessData.personalInfo?.divisionId': businessData.personalInfo?.divisionId,
-        'businessData.companyInfo?.divisionCode': businessData.companyInfo?.divisionCode,
-        'associateData.localite': associateData.localite,
-        'businessData.personalInfo?.localite': businessData.personalInfo?.localite
-      });
-      console.log('👥 POST - Création associé:', personRequest);
-
-      const response = await fetch('/api/v1/persons', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(personRequest)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création de l\'associé');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Associé créé:', result);
-      
-      return result;
-    } catch (err) {
-      console.error('❌ Erreur création associé:', err);
-      throw err;
-    }
-  };
-
-  // Étape 4: Traiter le gérant avec EntrepriseRole.GERANT
-  const processManagerWorkflow = async () => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const managers = businessData.participants?.filter(p => p.role === 'GERANT') || [];
-      
-      if (managers.length === 0) {
-        throw new Error('Aucun gérant défini');
-      }
-      
-      if (managers.length > 1) {
-        throw new Error('Un seul gérant autorisé par entreprise');
-      }
-
-      const manager = managers[0];
-      let createdManager = null;
-
-      const managerData = {
-        lastName: manager.nom || '',
-        firstName: manager.prenom || '',
-        phone: manager.telephone || '',
-        email: manager.email || '',
-        birthDate: manager.dateNaissance || '',
-        birthPlace: manager.lieuNaissance || '',
-        nationality: manager.nationnalite || 'MALIENNE',
-        sexe: getConsistentSexe(manager.sexe, manager.civilite || 'MONSIEUR'),
-        situationMatrimoniale: manager.situationMatrimoniale || 'CELIBATAIRE',
-        civility: mapCivilityToBackend(manager.civilite || 'MONSIEUR'),
-        // Ajouter les données de localisation
-        divisionId: manager.divisionId || manager.division_id,
-        divisionCode: manager.divisionCode,
-        localite: manager.localite
-      };
-
-      // Si le gérant n'a pas encore d'ID, vérifier si c'est l'utilisateur connecté
-      if (!manager.personId) {
-        // Logs de débogage pour identifier le problème
-        console.log('🔍 DEBUG - businessData.personalInfo?.isForSelf:', businessData.personalInfo?.isForSelf);
-        console.log('🔍 DEBUG - currentUser:', currentUser);
-        console.log('🔍 DEBUG - currentUser.personne_id:', currentUser.personne_id);
-        console.log('🔍 DEBUG - manager.email:', manager.email);
-        console.log('🔍 DEBUG - currentUser.email:', currentUser.email);
-        
-        // Vérifier si l'utilisateur connecté EST le gérant (même email)
-        const isCurrentUserTheManager = currentUser.email === manager.email;
-        console.log('🔍 L\'utilisateur connecté est-il le gérant?', isCurrentUserTheManager);
-        
-        if (isCurrentUserTheManager && currentUser.personne_id) {
-          console.log('🔍 Vérification si l\'utilisateur peut être gérant...');
-          
-          // Vérifier si l'utilisateur est déjà gérant d'une autre entreprise
-          const canBeManagerResponse = await fetch(`/api/v1/persons/${currentUser.personne_id}/can-be-manager`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          
-          if (canBeManagerResponse.ok) {
-            const canBeManagerData = await canBeManagerResponse.json();
-            console.log('🔍 Résultat vérification gérant:', canBeManagerData);
-            
-            if (canBeManagerData.canBeManager) {
-              console.log('👤 Gérant = utilisateur connecté, utilisation ID existant:', currentUser.personne_id);
-              manager.personId = currentUser.personne_id;
-              // Pas besoin de créer ou mettre à jour, l'utilisateur a déjà été mis à jour à l'étape 1
-              createdManager = { id: currentUser.personne_id };
-            } else {
-              throw new Error(`Vous êtes déjà gérant d'une autre entreprise. Un utilisateur ne peut être gérant que d'une seule entreprise. Vous pouvez être gerant ou associé d'autres entreprises.`);
-            }
-          } else {
-            console.warn('⚠️ Impossible de vérifier le statut gérant, création normale');
-            createdManager = await createManagerWorkflow(managerData);
-            if (createdManager) {
-              manager.personId = createdManager.id || createdManager.data?.id;
-            }
-          }
-        } else {
-          console.log('🆕 Création du gérant - Raison:', 
-            !businessData.personalInfo?.isForSelf ? 'isForSelf = false' : 
-            !currentUser.personne_id ? 'personne_id manquant' : 'condition non remplie');
-          createdManager = await createManagerWorkflow(managerData);
-          if (createdManager) {
-            manager.personId = createdManager.id || createdManager.data?.id;
-          }
-        }
-      } else {
-        console.log('🔄 Mise à jour du gérant existant (ID: ' + manager.personId + ')');
-        createdManager = await updateManagerWorkflow(manager.personId, managerData);
-      }
-
-      console.log('✅ Gérant traité:', createdManager);
-      return createdManager;
-    } catch (err) {
-      console.error('❌ Erreur traitement gérant:', err);
-      throw err;
-    }
-  };
-
-  // Mettre à jour un gérant existant
-  const updateManagerWorkflow = async (personId: string, managerData: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Aucun token trouvé');
-
-      const personUpdateRequest = {
-        nom: managerData.lastName,
-        prenom: managerData.firstName,
-        telephone1: managerData.phone,
-        email: managerData.email,
-        dateNaissance: managerData.birthDate,
-        lieuNaissance: managerData.birthPlace,
-        nationnalite: managerData.nationality || 'MALIENNE',
-        sexe: managerData.sexe,
-        situationMatrimoniale: managerData.situationMatrimoniale || 'CELIBATAIRE',
-        civilite: mapCivilityToBackend(managerData.civility),
-        // Récupérer division_id et localite - utiliser null au lieu de undefined
-        division_id: managerData.divisionId || managerData.division_id || businessData.personalInfo?.divisionId || null,
-        divisionCode: managerData.divisionCode || businessData.companyInfo?.divisionCode || null,
-        localite: managerData.localite || managerData.city || businessData.personalInfo?.localite || null
-      };
-
-      console.log('🔄 PUT - Mise à jour gérant:', personUpdateRequest);
-      console.log('🗓️ Date de naissance mise à jour:', {
-        'managerData.birthDate': managerData.birthDate,
-        'personUpdateRequest.dateNaissance': personUpdateRequest.dateNaissance,
-        'type': typeof personUpdateRequest.dateNaissance
-      });
-
-      const response = await fetch(`/api/v1/persons/${personId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(personUpdateRequest)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la mise à jour du gérant');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Gérant mis à jour:', result);
-      
-      return result;
-    } catch (err) {
-      console.error('❌ Erreur mise à jour gérant:', err);
-      throw err;
-    }
-  };
-
-  // Vérifier si l'email correspond à l'utilisateur connecté
-  const getCurrentUserIfEmailMatches = (email: string) => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      if (currentUser.email && email && 
-          currentUser.email.toLowerCase() === email.toLowerCase()) {
-        console.log('✅ Email correspond à l\'utilisateur connecté');
-        return currentUser;
-      }
-      return null;
-    } catch (e) {
-      console.warn('⚠️ Erreur vérification utilisateur connecté:', e);
-      return null;
-    }
-  };
-
-  // Créer un gérant avec EntrepriseRole.GERANT
-  const createManagerWorkflow = async (managerData: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Aucun token trouvé');
-
-      // Vérifier si l'email correspond à l'utilisateur connecté
-      console.log('🔍 Vérification si email correspond à l\'utilisateur connecté:', managerData.email);
-      const currentUser = getCurrentUserIfEmailMatches(managerData.email);
-      
-      if (currentUser && currentUser.id) {
-        console.log('✅ Utilisateur connecté trouvé, réutilisation de l\'ID:', currentUser.id);
-        return currentUser;
-      }
-
-      console.log('👤 Aucun utilisateur trouvé, création d\'un nouveau gérant');
-
-      // Déduire le sexe à partir de la civilité si nécessaire
-      const deducedSexe = deduceSexeFromCivilite(managerData.civility);
-      const finalSexe = managerData.sexe || deducedSexe;
-      
-      console.log('🔍 Déduction sexe gérant - Civilité:', managerData.civility, '→ Sexe déduit:', deducedSexe, '→ Sexe final:', finalSexe);
-
-      const personRequest = {
-        nom: managerData.lastName,
-        prenom: managerData.firstName,
-        telephone1: managerData.phone,
-        email: managerData.email,
-        dateNaissance: managerData.birthDate,
-        lieuNaissance: managerData.birthPlace,
-        nationnalite: managerData.nationality || 'MALIENNE',
-        sexe: finalSexe,
-        situationMatrimoniale: managerData.situationMatrimoniale || 'CELIBATAIRE',
-        civilite: mapCivilityToBackend(managerData.civility),
-        // Récupérer division_id et localite depuis les données du gérant ou utiliser celles de l'entreprise - utiliser null au lieu de undefined
-        division_id: managerData.divisionId || managerData.division_id || businessData.personalInfo?.divisionId || null,
-        divisionCode: managerData.divisionCode || businessData.companyInfo?.divisionCode || null,
-        localite: managerData.localite || managerData.city || businessData.personalInfo?.localite || null,
-        role: 'USER',
-        entrepriseRole: 'GERANT'
-      };
-
-      // Logs de debugging pour la localisation du gérant
-      console.log('🔍 Données de localisation gérant:', {
-        'managerData.divisionId': managerData.divisionId,
-        'businessData.personalInfo?.divisionId': businessData.personalInfo?.divisionId,
-        'businessData.companyInfo?.divisionCode': businessData.companyInfo?.divisionCode,
-        'managerData.localite': managerData.localite,
-        'businessData.personalInfo?.localite': businessData.personalInfo?.localite
-      });
-      console.log('👔 POST - Création gérant:', personRequest);
-      console.log('🗓️ Date de naissance envoyée:', {
-        'managerData.birthDate': managerData.birthDate,
-        'personRequest.dateNaissance': personRequest.dateNaissance,
-        'type': typeof personRequest.dateNaissance
-      });
-
-      const response = await fetch('/api/v1/persons', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(personRequest)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création du gérant');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Gérant créé:', result);
-      
-      return result;
-    } catch (err) {
-      console.error('❌ Erreur création gérant:', err);
-      throw err;
-    }
-  };
-
-  // Étape 3 (bis): Traiter le gérant pour entreprise individuelle
-  const processDirigeantWorkflow = async () => {
-    try {
-      const gerants = businessData.participants?.filter(p => p.role === 'GERANT') || [];
-      
-      if (gerants.length === 0) {
-        throw new Error('Aucun gerant défini pour l\'entreprise individuelle');
-      }
-      
-      if (gerants.length > 1) {
-        throw new Error('Un seul gerant autorisé pour une entreprise individuelle');
-      }
-
-      const gerant = gerants[0];
-      let createdDirigeant = null;
-
-      const gerantData = {
-        lastName: gerant.nom || '',
-        firstName: gerant.prenom || '',
-        phone: gerant.telephone || '',
-        email: gerant.email || '',
-        birthDate: gerant.dateNaissance || '',
-        birthPlace: gerant.lieuNaissance || '',
-        nationality: gerant.nationnalite || 'MALIENNE',
-        sexe: getConsistentSexe(gerant.sexe, gerant.civilite || 'MONSIEUR'),
-        situationMatrimoniale: gerant.situationMatrimoniale || 'CELIBATAIRE',
-        civility: mapCivilityToBackend(gerant.civilite || 'MONSIEUR'),
-        divisionId: gerant.divisionId || gerant.division_id,
-        divisionCode: gerant.divisionCode,
-        localite: gerant.localite
-      };
-
-      // Si le gerant n'a pas encore d'ID, le créer
-      if (!gerant.personId) {
-        console.log('🆕 Création du gerant (entreprise individuelle)');
-        createdDirigeant = await createDirigeantWorkflow(gerantData);
-        if (createdDirigeant) {
-          gerant.personId = createdDirigeant.id || createdDirigeant.data?.id;
-        }
-      } else {
-        console.log('🔄 Mise à jour du gerant existant (ID: ' + gerant.personId + ')');
-        createdDirigeant = await updateDirigeantWorkflow(gerant.personId, gerantData);
-      }
-
-      console.log('✅ Dirigeant traité:', createdDirigeant);
-      return createdDirigeant;
-    } catch (err) {
-      console.error('❌ Erreur traitement gerant:', err);
-      throw err;
-    }
-  };
-
-  // Créer un gerant avec EntrepriseRole.DIRIGEANT
-  const createDirigeantWorkflow = async (gerantData: any) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Aucun token trouvé');
-
-      const personRequest = {
-        nom: gerantData.lastName,
-        prenom: gerantData.firstName,
-        telephone1: gerantData.phone,
-        email: gerantData.email,
-        dateNaissance: gerantData.birthDate,
-        lieuNaissance: gerantData.birthPlace,
-        nationnalite: gerantData.nationality || 'MALIENNE',
-        sexe: gerantData.sexe,
-        situationMatrimoniale: gerantData.situationMatrimoniale || 'CELIBATAIRE',
-        civilite: mapCivilityToBackend(gerantData.civility),
-        division_id: gerantData.divisionId || gerantData.division_id || businessData.personalInfo?.divisionId || null,
-        divisionCode: gerantData.divisionCode || businessData.companyInfo?.divisionCode || null,
-        localite: gerantData.localite || businessData.personalInfo?.localite || null,
-        role: 'USER',
-        entrepriseRole: 'GERANT'
-      };
-
-      console.log('👤 POST - Création gerant:', personRequest);
-
-      const response = await fetch('/api/v1/persons', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(personRequest)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création du gerant');
-      }
-      
-      const result = await response.json();
-      console.log('✅ Dirigeant créé:', result);
-      
-      return result;
-    } catch (err) {
-      console.error('❌ Erreur création gerant:', err);
-      throw err;
+  // Function to check if we can proceed to next step
+  const canProceedToNextStep = () => {
+    switch (currentStep) {
+      case 1:
+        return businessData.personalInfo?.firstName && businessData.personalInfo?.lastName;
+      case 2:
+        return businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' || businessData.companyInfo?.nom;
+      case 3:
+        return businessData.participants && businessData.participants.length > 0;
+      case 4:
+        return true; // Documents are optional
+      case 5:
+        return null; // Final step - submit instead
+      default:
+        return false;
     }
   };
 
@@ -16626,44 +16315,43 @@ const BusinessCreation: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Aucun token trouvé');
 
+      // Reconstruire le numéro complet avec l'indicatif pour la sauvegarde
+      // Utiliser Mali par défaut si pas de pays spécifié
+      const countryCode = '+223'; // Mali par défaut
+      const fullPhoneForUpdateDirigeant = gerantData.phone ? 
+        `${countryCode}${gerantData.phone.replace(/\s/g, '')}` : '';
+
       const personUpdateRequest = {
         nom: gerantData.lastName,
         prenom: gerantData.firstName,
-        telephone1: gerantData.phone,
+        telephone1: fullPhoneForUpdateDirigeant,
         email: gerantData.email,
         dateNaissance: gerantData.birthDate,
         lieuNaissance: gerantData.birthPlace,
-        nationnalite: gerantData.nationality || 'MALIENNE',
-        sexe: gerantData.sexe,
-        situationMatrimoniale: gerantData.situationMatrimoniale || 'CELIBATAIRE',
-        civilite: mapCivilityToBackend(gerantData.civility),
-        division_id: gerantData.divisionId || gerantData.division_id || businessData.personalInfo?.divisionId || null,
-        divisionCode: gerantData.divisionCode || businessData.companyInfo?.divisionCode || null,
-        localite: gerantData.localite || businessData.personalInfo?.localite || null
+        nationnalite: gerantData.nationality,
+        sexe: gerantData.gender,
+        situationMatrimoniale: gerantData.maritalStatus,
+        civilite: gerantData.civility,
+        divisionId: gerantData.divisionId,
+        localite: gerantData.localite
       };
 
-      console.log('🔄 PUT - Mise à jour gerant:', personUpdateRequest);
-
-      const response = await fetch(`/api/v1/persons/${personId}`, {
+      const response = await fetch(`http://localhost:8080/api/v1/persons/${personId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(personUpdateRequest)
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la mise à jour du gerant');
+        const errorData = await response.text();
+        throw new Error(`Erreur ${response.status}: ${errorData}`);
       }
-      
-      const result = await response.json();
-      console.log('✅ Dirigeant mis à jour:', result);
-      
-      return result;
+
+      return await response.json();
     } catch (err) {
-      console.error('❌ Erreur mise à jour gerant:', err);
       throw err;
     }
   };
@@ -16677,7 +16365,7 @@ const BusinessCreation: React.FC = () => {
       // Assembler tous les participants avec leurs IDs
       const allParticipants = businessData.participants?.map(p => {
         // Valider et nettoyer le rôle
-        const validRoles = ['GERANT', 'ASSOCIE'];
+        const validRoles = ['GERANT', 'PROMOTEUR', 'ASSOCIE', 'ADMINISTRATEUR'];
         const cleanRole = p.role?.toString().trim().toUpperCase();
         
         if (!validRoles.includes(cleanRole)) {
@@ -16708,451 +16396,1304 @@ const BusinessCreation: React.FC = () => {
       }
 
       const entrepriseRequest = {
-        nom: businessData.companyInfo?.nom || '',
+        nom: businessData.companyInfo?.nom || (businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+          ? `${businessData.personalInfo?.firstName || ''} ${businessData.personalInfo?.lastName || ''}`.trim() 
+          : ''),
         sigle: businessData.companyInfo?.sigle || '',
-        capitale: businessData.companyInfo?.capitale || '',
+        capitale: businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+          ? '0' 
+          : (businessData.companyInfo?.capitale || ''),
         adresseDifferentIdentite: businessData.personalInfo?.hasDifferentAddress || false,
         extraitJudiciaire: businessData.personalInfo?.hasCriminalRecord || false,
         autorisationGerant: businessData.personalInfo?.allowsMultipleManagers || false,
-        autorisationExercice: businessData.personalInfo?.requiresExerciseAuthorization || false,
+        autorisationExercice: false,
         importExport: businessData.personalInfo?.willImportExport || false,
         statutSociete: true,
         typeEntreprise: businessData.companyInfo?.typeEntreprise || 'SOCIETE',
         statutCreation: 'EN_COURS',
         etapeValidation: 'ACCUEIL',
         formeJuridique: businessData.companyInfo?.formeJuridique || 'SARL',
-        // Logique de priorité pour domaine_activite :
-        // Le backend exige toujours un domaineActivite, donc on doit toujours en fournir un
-        domaineActivite: (() => {
-          const selectedNr = businessData.companyInfo?.domaineActiviteNr;
-          const selectedRegulated = businessData.companyInfo?.domaineActivite;
-          
-          // Si un domaine non réglementé est sélectionné et a des correspondances réglementées
-          if (selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0) {
-            // Prendre la première correspondance réglementée
-            console.log('✅ Domaine réglementé requis:', selectedNr, '→', DOMAINE_MAPPING[selectedNr][0]);
-            return DOMAINE_MAPPING[selectedNr][0];
-          }
-          
-          // Si un domaine réglementé est explicitement sélectionné (cas rare)
-          if (selectedRegulated) {
-            console.log('✅ Domaine réglementé explicite:', selectedRegulated);
-            return selectedRegulated;
-          }
-          
-          // ✅ CORRECTION: Domaine par défaut obligatoire (le backend l'exige)
-          console.log('ℹ️ Utilisation du domaine réglementé par défaut: TRANSPORT');
-          return 'TRANSPORT'; // Domaine par défaut pour éviter l'erreur null
-        })(),
+        domaineActivite: businessData.companyInfo?.domaineActivite,
         domaineActiviteNr: (() => {
-          const selectedNr = businessData.companyInfo?.domaineActiviteNr;
-          const selectedRegulated = businessData.companyInfo?.domaineActivite;
+          const value = businessData.companyInfo?.domaineActiviteNr;
           
-          // Si un domaine non réglementé est explicitement sélectionné, l'utiliser
-          if (selectedNr) {
-            console.log('✅ Domaine non réglementé sélectionné:', selectedNr);
-            return selectedNr;
+          // SOLUTION ROBUSTE: Limiter à 500 caractères maximum (nouvelle limite DB)
+          if (!value) {
+            return null;
           }
           
-          // Sinon, si un domaine réglementé est sélectionné, trouver son équivalent non réglementé
-          if (selectedRegulated && DOMAINE_MAPPING_INVERSE[selectedRegulated]) {
-            console.log('🔄 Auto-mapping domaine réglementé vers non réglementé:', selectedRegulated, '→', DOMAINE_MAPPING_INVERSE[selectedRegulated]);
-            return DOMAINE_MAPPING_INVERSE[selectedRegulated];
+          const stringValue = String(value);
+          
+          if (stringValue.length > 500) {
+            const truncated = stringValue.substring(0, 500);
+            return truncated;
           }
           
-          // ✅ CORRECTION: Domaine non réglementé par défaut (commerce général)
-          console.log('ℹ️ Utilisation du domaine non réglementé par défaut: COMMERCE_ET_DISTRIBUTION');
-          return 'COMMERCE_ET_DISTRIBUTION';
+          return stringValue;
         })(),
-        divisionCode: businessData.companyInfo?.divisionCode || 'ML01',
         activiteSecondaire: businessData.companyInfo?.activiteSecondaire || '',
+        divisionCode: businessData.companyInfo?.divisionCode || '',
+        representativeAdresseLibre: businessData.personalInfo?.adresseLibre || null,
         participants: allParticipants
       };
 
-      console.log('🏢 Données entreprise avant soumission:', {
-        divisionCode: businessData.companyInfo?.divisionCode,
-        domaineActivite: entrepriseRequest.domaineActivite,
-        domaineActiviteNr: entrepriseRequest.domaineActiviteNr,
-        companyInfo: businessData.companyInfo
+
+      const response = await fetch('http://localhost:8080/api/v1/entreprises', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(entrepriseRequest)
       });
 
-      console.log('🏢 POST - Création entreprise:', entrepriseRequest);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Erreur ${response.status}: ${errorData}`);
+      }
 
-      const response = await fetch('/api/v1/entreprises', {
+      const result = await response.json();
+      
+      // Rediriger vers la page de suivi
+      window.location.href = '/tracking';
+      
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const nextStep = async () => {
+    // ÉTAPE 2: Forcer la synchronisation avant validation si nécessaire
+    if (currentStep === 2) {
+      const hasDifferentAddress = businessData.personalInfo?.hasDifferentAddress;
+      const personalHasLocation = businessData.personalInfo?.divisionId || businessData.personalInfo?.localite;
+      const companyMissingLocation = !businessData.companyInfo?.divisionCode;
+      
+      // Si synchronisation activée et divisionCode manquant, forcer la mise à jour
+      if (hasDifferentAddress === false && personalHasLocation && companyMissingLocation) {
+        
+        try {
+          if (businessData.personalInfo?.divisionId) {
+            const division = await divisionService.getById(businessData.personalInfo.divisionId);
+            if (division && division.code) {
+              // Mettre à jour le divisionCode immédiatement
+              updateBusinessData('companyInfo', {
+                ...businessData.companyInfo,
+                divisionCode: division.code
+              });
+              
+              // Attendre un peu pour que l'état soit mis à jour
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+        } catch (error) {
+          setStepError("Erreur lors de la synchronisation de la localisation. Veuillez réessayer.");
+          setShowValidation(true);
+          return;
+        }
+      }
+    }
+    
+    // Appliquer la validation pour toutes les étapes sauf la 4
+    if (currentStep !== 4) {
+      const err = validateStep();
+      if (err) {
+        setStepError(err);
+        setShowValidation(true);
+        // Faire défiler vers la zone de navigation/erreur
+        try {
+          navigationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch {}
+        return;
+      }
+    }
+    
+    setStepError(null);
+    setShowValidation(false);
+    
+    // WORKFLOW ÉTAPE PAR ÉTAPE
+    try {
+      // ÉTAPE 0: Identification - Pas d'action, juste navigation
+      if (currentStep === 0) {
+        // Pas d'action nécessaire, juste passer à l'étape suivante
+      }
+      
+      // ÉTAPE 1: Informations personnelles - PUT/POST selon choix utilisateur
+      if (currentStep === 1) {
+        if (businessData.personalInfo.isForSelf === false && !showForm) {
+          setShowForm(true);
+          return;
+        }
+        
+        // Sauvegarder les informations personnelles (PUT si isForSelf, POST sinon)
+        const savedPerson = await savePersonalInfoWorkflow(businessData.personalInfo);
+        if (!savedPerson) return; // Erreur, on s'arrête
+        
+        // Stocker founderId pour les étapes suivantes
+        updateBusinessData('founderId', savedPerson.id || savedPerson.data?.id);
+      }
+      
+      // ÉTAPE 2: Informations entreprise - Validation uniquement
+      if (currentStep === 2) {
+      }
+      
+      // ÉTAPE 3: Gestion des associés OU gerant (entreprise individuelle)
+      if (currentStep === 3) {
+        const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+        if (!isEntrepriseIndividuelle) {
+          await processAssociatesWorkflow();
+        } else {
+          // Pour entreprise individuelle, créer le gerant
+          await processDirigeantWorkflow();
+        }
+      }
+      
+      // ÉTAPE 4: Gestion du gérant - Création avec EntrepriseRole.GERANT (sauf pour entreprise individuelle)
+      if (currentStep === 4) {
+        const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+        const hasGerant = (businessData.participants || []).some(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
+        const participants = businessData.participants || [];
+        
+        
+        if (!isEntrepriseIndividuelle && hasGerant) {
+          await processManagerWorkflow();
+        } else if (isEntrepriseIndividuelle) {
+        } else {
+        }
+      }
+      
+      // ÉTAPE 5: Soumission finale - POST /api/v1/entreprises
+      if (currentStep === 5) {
+        await submitEntrepriseWorkflow();
+        return; // Pas de passage à l'étape suivante
+      }
+      
+    } catch (error) {
+      setStepError(`Erreur lors du traitement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      setShowValidation(true);
+      return;
+    }
+    
+    // Passer à l'étape suivante
+    if (currentStep < totalSteps) {
+      // Sauvegarder les sélections de localisation avant de changer d'étape
+      saveCurrentLocationSelections();
+      
+      // Pour les entreprises individuelles, sauter l'étape 4 (Documents) et aller directement à l'étape 5
+      const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+      if (currentStep === 3 && isEntrepriseIndividuelle) {
+        setCurrentStep(5); // Aller directement à l'étape 5
+      } else {
+        setCurrentStep(prev => Math.min(prev + 1, 5));
+      }
+    }
+  };
+
+  // Fonction pour sauvegarder les sélections de localisation actuelles
+  const saveCurrentLocationSelections = () => {
+    if (currentStep === 3) { // Étape des informations de l'entreprise
+      console.log('💾 [NAVIGATION DEBUG] Sauvegarde des sélections de localisation avant navigation');
+      
+      // Les variables de sélection sont dans le scope du composant CompanyInfoStep
+      // Pour l'instant, on sauvegarde seulement ce qui est déjà dans businessData.companyInfo
+      const currentCompanyInfo = businessData.companyInfo || {};
+      
+      console.log('💾 [NAVIGATION DEBUG] Données actuelles de companyInfo:', {
+        regionId: currentCompanyInfo.regionId,
+        cercleId: currentCompanyInfo.cercleId,
+        communeId: currentCompanyInfo.communeId,
+        quartierId: currentCompanyInfo.quartierId,
+        divisionCode: currentCompanyInfo.divisionCode
+      });
+      
+      // Les données sont déjà sauvegardées par les handlers onChange des sélecteurs
+      // Cette fonction sert principalement pour le logging et la validation
+    }
+  };
+
+  const prevStep = () => {
+    // Sauvegarder les sélections de localisation avant de changer d'étape
+    saveCurrentLocationSelections();
+    
+    // Pour les entreprises individuelles, si on est à l'étape 5, revenir à l'étape 3 (sauter l'étape 4)
+    const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+    if (currentStep === 5 && isEntrepriseIndividuelle) {
+      setCurrentStep(3); // Revenir à l'étape 3
+    } else {
+      setCurrentStep(prev => Math.max(prev - 1, 0));
+    }
+  };
+
+  // Navigation directe vers une étape spécifique
+  const goToStep = (targetStep: number) => {
+    // Sauvegarder les sélections de localisation avant de changer d'étape
+    saveCurrentLocationSelections();
+    
+    // Pour les entreprises individuelles, ne pas permettre l'accès à l'étape 4 (Documents)
+    const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+    if (targetStep === 4 && isEntrepriseIndividuelle) {
+      console.log('Navigation vers étape Documents bloquée pour entreprise individuelle');
+      return;
+    }
+    
+    // Naviguer vers l'étape cible
+    setCurrentStep(targetStep);
+    console.log(`Navigation directe vers l'étape ${targetStep}`);
+  };
+
+  const updateBusinessData = (field: keyof BusinessCreationData, value: any) => {
+    setBusinessData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      return newData;
+    });
+  };
+
+  // Fonction pour gérer la réponse "Oui, c'est pour moi" / "Non, c'est pour quelqu'un d'autre"
+  const handleResponse = async (response: boolean) => {
+    console.log('🔍 [DEBUG] handleResponse appelé avec:', response);
+    console.log('🔍 [DEBUG] Données avant handleResponse:');
+    console.log('  - personalInfo:', JSON.stringify(businessData.personalInfo, null, 2));
+    console.log('  - companyInfo:', JSON.stringify(businessData.companyInfo, null, 2));
+    
+    setIsForSelf(response);
+    
+    // Sauvegarder isForSelf dans businessData.personalInfo pour les étapes suivantes
+    updateBusinessData('personalInfo', {
+      ...businessData.personalInfo,
+      isForSelf: response
+    });
+    
+    // Si l'utilisateur choisit "Oui, c'est pour moi", on récupère ses informations
+    if (response) {
+      console.log('🔍 [DEBUG] Appel fetchCurrentUser...');
+      await fetchCurrentUser();
+      console.log('🔍 [DEBUG] Données après fetchCurrentUser:');
+      console.log('  - personalInfo:', JSON.stringify(businessData.personalInfo, null, 2));
+      console.log('  - companyInfo:', JSON.stringify(businessData.companyInfo, null, 2));
+    }
+    
+    setShowForm(true);
+    // Passer automatiquement à l'étape suivante
+    setCurrentStep(1);
+  };
+
+  // Fonction pour récupérer les informations de l'utilisateur connecté
+  const fetchCurrentUser = async () => {
+    try {
+      // Réinitialiser la variable globale
+      (window as any).userHasInitialLocationData = false;
+      
+      // Récupérer l'utilisateur depuis le localStorage
+      const currentUser = authAPI.getCurrentUser();
+      
+      if (currentUser && (currentUser.personne_id || currentUser.personneId)) {
+        const personneId = currentUser.personne_id || currentUser.personneId;
+        
+        // Utiliser l'endpoint /api/v1/persons/personne_id pour récupérer les informations
+        const personResponse = await authAPI.getPersonById(personneId);
+        
+        if (personResponse && personResponse.success) {
+          const personData = personResponse.data;
+          
+          // Détecter le pays à partir du numéro de téléphone
+          const detectedCountry = personData.telephone1 ? 
+            countries.find(c => personData.telephone1.startsWith(c.code)) || countries[0] : countries[0];
+          
+          // Extraire le numéro local
+          const localPhone = personData.telephone1 ? 
+            personData.telephone1.replace(detectedCountry.code, '').replace(/\s/g, '') : '';
+          
+          // Formater le numéro selon le pays
+          let formattedPhone = '';
+          if (localPhone) {
+            if (detectedCountry.code === '+223' && localPhone.length === 8) {
+              formattedPhone = `${localPhone.substring(0, 2)} ${localPhone.substring(2, 4)} ${localPhone.substring(4, 6)} ${localPhone.substring(6, 8)}`;
+            } else {
+              formattedPhone = localPhone;
+            }
+          }
+          
+          // Mettre à jour les données personnelles avec les informations récupérées
+          updateBusinessData('personalInfo', {
+            ...businessData.personalInfo,
+            civility: personData.civilite || '',
+            firstName: personData.prenom || '',
+            lastName: personData.nom || '',
+            email: personData.email || '',
+            phone: formattedPhone,
+            phone2: personData.telephone2 || '',
+            birthDate: personData.dateNaissance ? personData.dateNaissance.split('T')[0] : '',
+            birthPlace: personData.lieuNaissance || '',
+            nationality: personData.nationnalite || 'MALIENNE',
+            sexe: personData.sexe || '',
+            situationMatrimoniale: personData.situationMatrimoniale || 'CELIBATAIRE',
+            divisionId: personData.division_id || '',
+            localite: personData.localite || '',
+            porte: personData.porte || '',
+            adresseLibre: personData.adresseLibre || '',
+            isForSelf: true
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des informations utilisateur:', error);
+    }
+  };
+
+  // WORKFLOW FUNCTIONS - Implémentation des étapes du processus
+
+  // Étape 1: Sauvegarder informations personnelles (PUT/POST selon choix)
+  const savePersonalInfoWorkflow = async (personalInfo: any) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const token = localStorage.getItem('token');
+      
+      if (!token) throw new Error('Aucun token trouvé');
+
+      // Formater le numéro de téléphone au format E.164 (+223 + numéro local)
+      let formattedPhone = personalInfo.phone || '';
+      if (formattedPhone && !formattedPhone.startsWith('+')) {
+        // Nettoyer le numéro (enlever espaces, tirets, etc.)
+        formattedPhone = formattedPhone.replace(/[\s\-\.]/g, '');
+        // Ajouter l'indicatif +223 si pas déjà présent
+        formattedPhone = '+223' + formattedPhone;
+      }
+
+      // Validation et logs de débogage pour la date de naissance
+
+      // Diagnostic complet de la date
+      if (personalInfo.birthDate) {
+        const dateStr = personalInfo.birthDate.toString();
+      }
+
+      // Calculer l'âge pour vérification
+      if (personalInfo.birthDate) {
+        const birthDate = new Date(personalInfo.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
+      }
+
+      // Préparer les données selon PersonCreateRequest
+      const personRequest = {
+        nom: personalInfo.lastName,
+        prenom: personalInfo.firstName,
+        telephone1: formattedPhone,
+        telephone2: personalInfo.phone2 ? (personalInfo.phone2.startsWith('+') ? personalInfo.phone2 : '+223' + personalInfo.phone2.replace(/\s/g, '')) : '',
+        email: personalInfo.email,
+        dateNaissance: ensureAdultBirthDate(personalInfo.birthDate),
+        lieuNaissance: personalInfo.birthPlace,
+        nationnalite: personalInfo.nationality || 'MALIENNE',
+        sexe: personalInfo.sexe,
+        situationMatrimoniale: personalInfo.situationMatrimoniale || 'CELIBATAIRE', // Valeur par défaut si vide
+        civilite: mapCivilityToBackend(personalInfo.civility),
+        // Récupérer division_id et localite depuis les données personnelles - utiliser null au lieu de undefined
+        division_id: personalInfo.divisionId || personalInfo.division_id || null,
+        divisionCode: personalInfo.divisionCode || null,
+        localite: personalInfo.localite || personalInfo.city || null,
+        role: 'USER',
+        entrepriseRole: businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
+      };
+
+      // Déduire le sexe à partir de la civilité si nécessaire
+      const deducedSexe = deduceSexeFromCivilite(personalInfo.civility);
+      const finalSexe = personalInfo.sexe || deducedSexe;
+      
+
+      // Mettre à jour le sexe dans la requête
+      personRequest.sexe = finalSexe;
+
+
+      let response;
+      
+      if (personalInfo.isForSelf && currentUser.personne_id) {
+        // PUT - Mise à jour de la personne existante
+        response = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(personRequest)
+        });
+      } else {
+        // POST - Création d'une nouvelle personne
+        response = await fetch('/api/v1/persons', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(personRequest)
+        });
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la sauvegarde');
+      }
+      
+      const result = await response.json();
+      
+      // Si c'était un PUT (isForSelf), s'assurer de retourner l'ID correct
+      if (personalInfo.isForSelf && currentUser.personne_id) {
+        return { ...result, id: currentUser.personne_id };
+      }
+      
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Étape 3: Traiter les associés avec EntrepriseRole.ASSOCIE
+  const processAssociatesWorkflow = async () => {
+    try {
+      const associates = businessData.participants?.filter(p => p.role === 'ASSOCIE') || [];
+      const createdAssociates = [];
+      
+
+      for (const associate of associates) {
+        // Si l'associé n'a pas encore d'ID, le créer
+        if (!associate.personId) {
+          const associateData = {
+            lastName: associate.nom || '',
+            firstName: associate.prenom || '',
+            phone: associate.telephone || '',
+            email: associate.email || '',
+            birthDate: associate.dateNaissance || '',
+            birthPlace: associate.lieuNaissance || '',
+            nationality: associate.nationnalite || 'MALIENNE',
+            sexe: getConsistentSexe(associate.sexe, associate.civilite || 'MONSIEUR'),
+            situationMatrimoniale: associate.situationMatrimoniale || 'CELIBATAIRE',
+            civility: associate.civilite || 'MONSIEUR', // Utiliser la civilité originale, pas mappée
+            // Champs spécifiques aux personnes morales
+            denominationEntreprise: associate.denominationEntreprise,
+            paysEmissionRccm: associate.paysEmissionRccm,
+            // Ajouter les données de localisation
+            divisionId: associate.divisionId || associate.division_id,
+            divisionCode: associate.divisionCode,
+            localite: associate.localite
+          };
+
+          const createdAssociate = await createAssociateWorkflow(associateData);
+          if (createdAssociate) {
+            associate.personId = createdAssociate.id || createdAssociate.data?.id;
+            createdAssociates.push(createdAssociate);
+          }
+        } else {
+          // L'associé a déjà un personId, vérifier s'il a besoin d'une mise à jour
+          
+          const currentUser = authAPI.getCurrentUser();
+          const isCurrentUser = currentUser && (currentUser.personne_id === associate.personId || currentUser.personneId === associate.personId);
+          
+          if (isCurrentUser) {
+            
+            // Vérifier si l'utilisateur a besoin d'une mise à jour (données manquantes)
+            const needsUpdate = !currentUser.dateNaissance || 
+                               !currentUser.lieuNaissance || 
+                               !currentUser.nationnalite ||
+                               !currentUser.sexe ||
+                               !currentUser.situationMatrimoniale;
+            
+            if (needsUpdate) {
+              const updateRequest = {
+                nom: associate.nom || currentUser.nom,
+                prenom: associate.prenom || currentUser.prenom,
+                telephone1: associate.telephone || currentUser.telephone1,
+                email: associate.email || currentUser.email,
+                dateNaissance: ensureAdultBirthDate(associate.dateNaissance) || ensureAdultBirthDate(currentUser.dateNaissance),
+                lieuNaissance: associate.lieuNaissance || currentUser.lieuNaissance,
+                nationnalite: associate.nationnalite || currentUser.nationnalite || 'MALIENNE',
+                sexe: associate.sexe || currentUser.sexe,
+                situationMatrimoniale: associate.situationMatrimoniale || currentUser.situationMatrimoniale || 'CELIBATAIRE',
+                civilite: mapCivilityToBackend(associate.civilite || 'MONSIEUR') || currentUser.civilite,
+                division_id: associate.divisionId || associate.division_id || currentUser.division_id,
+                divisionCode: associate.divisionCode || currentUser.divisionCode,
+                localite: associate.localite || currentUser.localite,
+                porte: (associate as any).porte || (currentUser as any).porte
+              };
+              
+              
+              const token = localStorage.getItem('token');
+              const updateResponse = await fetch(`/api/v1/persons/${associate.personId}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(updateRequest)
+              });
+              
+              if (updateResponse.ok) {
+                const updatedUser = await updateResponse.json();
+                createdAssociates.push({ id: associate.personId, data: updatedUser });
+              } else {
+                throw new Error('Impossible de mettre à jour les données de l\'associé');
+              }
+            } else {
+            }
+          } else {
+          }
+        }
+      }
+
+      return createdAssociates;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Créer un associé avec EntrepriseRole.ASSOCIE
+  const createAssociateWorkflow = async (associateData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Aucun token trouvé');
+
+      // Détecter si c'est une personne morale
+      const isPersonneMorale = associateData.civility === 'PERSONNE_MORALE';
+
+      // Validation préventive pour éviter "Name is null"
+      let finalLastName = associateData.lastName;
+      let finalFirstName = associateData.firstName;
+      
+      if (!associateData.lastName || associateData.lastName.trim() === '') {
+        finalLastName = isPersonneMorale ? associateData.denominationEntreprise || 'Entreprise' : 'Nom';
+      }
+      if (!associateData.firstName || associateData.firstName.trim() === '') {
+        finalFirstName = isPersonneMorale ? 'Représentant' : 'Prénom';
+      }
+
+      // Déduire le sexe à partir de la civilité si nécessaire
+      const deducedSexe = deduceSexeFromCivilite(associateData.civility);
+      const finalSexe = associateData.sexe || deducedSexe;
+      
+
+      // Gestion du téléphone pour les personnes morales
+      let fullPhoneForCreate = '';
+      if (isPersonneMorale) {
+        // Pour les personnes morales, générer un numéro fictif unique
+        const timestamp = Date.now().toString().slice(-8); // 8 derniers chiffres du timestamp
+        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0'); // 2 chiffres aléatoires
+        fullPhoneForCreate = `+223${timestamp.slice(0, 6)}${random}`;
+      } else {
+        // Pour les personnes physiques, reconstruire le numéro
+        const countryCode = '+223'; // Mali par défaut
+        if (associateData.phone) {
+          // Si le numéro commence déjà par +, l'utiliser tel quel, sinon ajouter le préfixe
+          fullPhoneForCreate = associateData.phone.startsWith('+') ? 
+            associateData.phone.replace(/\s/g, '') : 
+            `${countryCode}${associateData.phone.replace(/\s/g, '')}`;
+        }
+      }
+
+      const personRequest = isPersonneMorale ? {
+        // Champs pour personne morale associé
+        nom: finalLastName.trim(),
+        prenom: finalFirstName.trim(),
+        civilite: 'PERSONNE_MORALE',
+        denominationEntreprise: associateData.denominationEntreprise || 'Entreprise Associée',
+        paysEmissionRccm: associateData.paysEmissionRccm || 'MALI',
+        // Champs techniques minimaux pour satisfaire les validations DTO
+        telephone1: fullPhoneForCreate,
+        dateNaissance: '1900-01-01',
+        lieuNaissance: 'N/A',
+        nationnalite: 'MALIENNE', // Valeur par défaut pour satisfaire @NotNull
+        sexe: 'MASCULIN', // Valeur par défaut pour satisfaire @NotNull (sera ignorée par le backend)
+        situationMatrimoniale: 'CELIBATAIRE', // Valeur par défaut pour satisfaire @NotNull
+        // Champs optionnels
+        email: associateData.email || undefined,
+        // Localisation - Les personnes morales ont leur propre localisation
+        division_id: associateData.divisionId || associateData.division_id || null,
+        divisionCode: associateData.divisionCode || null,
+        localite: associateData.localite || associateData.city || null,
+        porte: associateData.porte || null,
+        role: 'USER',
+        entrepriseRole: 'ASSOCIE'
+      } : {
+        // Champs pour personne physique associé
+        nom: finalLastName.trim(),
+        prenom: finalFirstName.trim(),
+        telephone1: fullPhoneForCreate,
+        email: associateData.email,
+        dateNaissance: ensureAdultBirthDate(associateData.birthDate),
+        lieuNaissance: associateData.birthPlace,
+        nationnalite: associateData.nationality || 'MALIENNE',
+        sexe: finalSexe,
+        situationMatrimoniale: associateData.situationMatrimoniale || 'CELIBATAIRE',
+        civilite: mapCivilityToBackend(associateData.civility),
+        // Localisation - Chaque participant a sa propre localisation
+        division_id: associateData.divisionId || associateData.division_id || null,
+        divisionCode: associateData.divisionCode || null,
+        localite: associateData.localite || associateData.city || null,
+        porte: associateData.porte || null,
+        role: 'USER',
+        entrepriseRole: 'ASSOCIE'
+      };
+
+      // Logs de debugging pour la localisation de l'associé
+
+      const response = await fetch('/api/v1/persons', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(entrepriseRequest)
+        body: JSON.stringify(personRequest)
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création de l\'entreprise');
+        throw new Error(errorData.message || 'Erreur lors de la création de l\'associé');
       }
       
-      const created = await response.json();
-      console.log('✅ Entreprise créée avec succès:', created);
-
-      const entrepriseId = created.id || created.data?.id;
-      const entrepriseReference = created.reference || created.data?.reference || 'N/A';
-
-      if (!entrepriseId) {
-        throw new Error('Identifiant entreprise introuvable après création');
-      }
-
-      // Helper: upload pièce d'identité
-      const uploadPieceForParticipant = async (personId: string, typePiece: string, numeroPiece: string, file: File) => {
-        const fd = new FormData();
-        fd.append('personneId', personId);
-        fd.append('entrepriseId', entrepriseId);
-        fd.append('typePiece', typePiece);
-        fd.append('numero', numeroPiece);
-        // Par défaut +5 ans
-        const exp = new Date();
-        exp.setFullYear(exp.getFullYear() + 5);
-        const iso = exp.toISOString().split('T')[0];
-        fd.append('dateExpiration', iso);
-        fd.append('file', file);
-
-        const res = await fetch('/api/v1/documents/piece', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: fd
-        });
-        if (!res.ok) {
-          const err = await safeJson(res);
-          throw new Error(err?.message || `Upload pièce échoué pour ${personId}`);
-        }
-        return res.json();
-      };
-
-      // Helper: upload document (casier, acte mariage, statuts, registre, certificat)
-      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
-        const fd = new FormData();
-        fd.append('personneId', personId);
-        fd.append('entrepriseId', entrepriseId);
-        fd.append('typeDocument', typeDocument);
-        if (numero) fd.append('numero', numero);
-        fd.append('file', file);
-
-        const res = await fetch('/api/v1/documents/document', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: fd
-        });
-        if (!res.ok) {
-          const err = await safeJson(res);
-          throw new Error(err?.message || `Upload document ${typeDocument} échoué pour ${personId}`);
-        }
-        return res.json();
-      };
-
-      // Helper: parse JSON en toute sécurité
-      const safeJson = async (res: Response) => {
-        try { return await res.json(); } catch { return null; }
-      };
-
-      // 1) Upload des pièces d'identité des participants
-      for (const p of businessData.participants || []) {
-        if (p.personId && p.documentFile && p.typePiece && p.numeroPiece) {
-          try {
-            console.log(`📎 Upload pièce pour ${p.personId} (${p.typePiece})`);
-            await uploadPieceForParticipant(p.personId, p.typePiece, p.numeroPiece, p.documentFile);
-          } catch (e) {
-            console.error('❌ Upload pièce participant échoué:', e);
-            throw e; // Re-lancer l'erreur pour qu'elle soit gérée au niveau supérieur
-          }
-        }
-      }
-
-      // 2) Documents spécifiques gérant OU gerant (entreprise individuelle)
-      const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-      const gerant = (businessData.participants || []).find(pp => pp.role === 'GERANT');
-      const gerantId = gerant?.personId || null;
+      const result = await response.json();
       
-      // Pour entreprise individuelle, uploader les documents du gerant (mêmes que gérant)
-      if (isEntrepriseIndividuelle && gerantId) {
-        console.log('📎 Upload documents gerant (entreprise individuelle)');
-        
-        if (gerant?.casierJudiciaireFile && businessData.personalInfo?.hasCriminalRecord) {
-          try {
-            console.log('📎 Upload CASIER_JUDICIAIRE (gerant)');
-            await uploadDocumentFor(gerantId, 'CASIER_JUDICIAIRE', gerant.casierJudiciaireFile, `CJ-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload casier échoué:', e); }
-        }
-        if (gerant?.acteMariageFile && businessData.personalInfo?.isMarried) {
-          try {
-            console.log('📎 Upload ACTE_MARIAGE (gerant)');
-            await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload acte mariage échoué:', e); }
-        }
-        if (!businessData.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
-          try {
-            console.log('📎 Upload DECLARATION_HONNEUR (gerant)');
-            await uploadDocumentFor(gerantId, 'DECLARATION_HONNEUR', gerant.declarationHonneurFile, `DH-${entrepriseReference}`);
-            console.log('✅ Déclaration sur l\'honneur uploadée');
-          } catch (e) { console.error('❌ Upload déclaration honneur échoué:', e); }
-        }
-        if (gerant?.extraitNaissanceFile) {
-          try {
-            console.log('📎 Upload EXTRAIT_NAISSANCE (gerant)');
-            await uploadDocumentFor(gerantId, 'EXTRAIT_NAISSANCE', gerant.extraitNaissanceFile, `EN-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload extrait naissance échoué:', e); }
-        }
-      }
-      
-      // Pour société, uploader les documents du gérant
-      if (!isEntrepriseIndividuelle && gerantId) {
-        console.log('📎 Upload documents gérant (société)');
-        
-        if (gerant?.casierJudiciaireFile && businessData.personalInfo?.hasCriminalRecord) {
-          try {
-            console.log('📎 Upload CASIER_JUDICIAIRE (gérant)');
-            await uploadDocumentFor(gerantId, 'CASIER_JUDICIAIRE', gerant.casierJudiciaireFile, `CJ-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload casier échoué:', e); }
-        }
-        if (gerant?.acteMariageFile && businessData.personalInfo?.isMarried) {
-          try {
-            console.log('📎 Upload ACTE_MARIAGE (gérant)');
-            await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload acte mariage échoué:', e); }
-        }
-        if (!businessData.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
-          try {
-            console.log('📎 Upload DECLARATION_HONNEUR (gérant)');
-            await uploadDocumentFor(gerantId, 'DECLARATION_HONNEUR', gerant.declarationHonneurFile, `DH-${entrepriseReference}`);
-            console.log('✅ Déclaration sur l\'honneur uploadée');
-          } catch (e) { console.error('❌ Upload déclaration honneur échoué:', e); }
-        }
-        if (gerant?.extraitNaissanceFile) {
-          try {
-            console.log('📎 Upload EXTRAIT_NAISSANCE (gérant)');
-            await uploadDocumentFor(gerantId, 'EXTRAIT_NAISSANCE', gerant.extraitNaissanceFile, `EN-${entrepriseReference}`);
-          } catch (e) { console.error('❌ Upload extrait naissance échoué:', e); }
-        }
-      }
-
-      // 3) Documents d'entreprise (statuts, registre, certificat de résidence)
-      // Statuts et Registre sont réservés aux DIRIGEANTS — on utilise le gerantId déjà déclaré
-      // Pour certificat de résidence, utiliser gerantId pour société ou gerantId pour entreprise individuelle
-      const residencePersonId = isEntrepriseIndividuelle ? gerantId : gerantId;
-      
-      if (businessData.documents?.statutes && gerantId) {
-        try {
-          console.log('📎 Upload STATUS_SOCIETE');
-          await uploadDocumentFor(gerantId, 'STATUS_SOCIETE', businessData.documents.statutes, `STATUTS-${entrepriseReference}`);
-        } catch (e) { console.error('❌ Upload statuts échoué:', e); }
-      }
-      if (businessData.documents?.commerceRegistry && gerantId) {
-        try {
-          console.log('📎 Upload REGISTRE_COMMERCE');
-          await uploadDocumentFor(gerantId, 'REGISTRE_COMMERCE', businessData.documents.commerceRegistry, `RC-${entrepriseReference}`);
-        } catch (e) { console.error('❌ Upload registre commerce échoué:', e); }
-      }
-      if (businessData.documents?.residenceCertificate && residencePersonId) {
-        try {
-          console.log('📎 Upload CERTIFICAT_RESIDENCE');
-          await uploadDocumentFor(residencePersonId, 'CERTIFICAT_RESIDENCE', businessData.documents.residenceCertificate, `CR-${entrepriseReference}`);
-        } catch (e) { console.error('❌ Upload certificat de résidence échoué:', e); }
-      }
-
-      alert('🎉 Entreprise créée et documents téléchargés ! Référence: ' + entrepriseReference);
-      
-      return created;
+      return result;
     } catch (err) {
-      console.error('❌ Erreur création entreprise:', err);
       throw err;
     }
   };
 
-  // Déclencheur de soumission pour l'étape 5
-  const [submitTrigger, setSubmitTrigger] = useState<number>(0);
+  // Étape 4: Traiter le gérant avec EntrepriseRole.GERANT
+  const processManagerWorkflow = async () => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const managers = businessData.participants?.filter(p => p.role === 'GERANT' || p.role === 'PROMOTEUR') || [];
+      
+      if (managers.length === 0) {
+        throw new Error('Aucun gérant défini');
+      }
+      
+      if (managers.length > 1) {
+        throw new Error('Un seul gérant autorisé par entreprise');
+      }
+
+      const manager = managers[0];
+      let createdManager = null;
+
+      const managerData = {
+        lastName: manager.nom || '',
+        firstName: manager.prenom || '',
+        phone: manager.telephone || '',
+        email: manager.email || '',
+        birthDate: manager.dateNaissance || '',
+        birthPlace: manager.lieuNaissance || '',
+        nationality: manager.nationnalite || 'MALIENNE',
+        sexe: getConsistentSexe(manager.sexe, manager.civilite || 'MONSIEUR'),
+        situationMatrimoniale: manager.situationMatrimoniale || 'CELIBATAIRE',
+        civility: manager.civilite || 'MONSIEUR', // Utiliser la civilité originale, pas mappée
+        // Champs spécifiques aux personnes morales
+        denominationEntreprise: manager.denominationEntreprise,
+        paysEmissionRccm: manager.paysEmissionRccm,
+        // Ajouter les données de localisation
+        divisionId: manager.divisionId || manager.division_id,
+        divisionCode: manager.divisionCode,
+        localite: manager.localite
+      };
+
+      // Si le gérant n'a pas encore d'ID, vérifier si c'est l'utilisateur connecté
+      if (!manager.personId) {
+        // Logs de débogage pour identifier le problème
+        
+        // Vérifier si l'utilisateur connecté EST le gérant (même email)
+        const isCurrentUserTheManager = currentUser.email === manager.email;
+          
+        if (isCurrentUserTheManager && currentUser.personne_id) {
+          
+          // Vérifier si l'utilisateur est déjà gérant d'une autre entreprise
+          const canBeManagerResponse = await fetch(`/api/v1/persons/${currentUser.personne_id}/can-be-manager`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (canBeManagerResponse.ok) {
+            const canBeManagerData = await canBeManagerResponse.json();
+            
+            if (canBeManagerData.canBeManager) {
+              manager.personId = currentUser.personne_id;
+              
+              // Vérifier si l'utilisateur a besoin d'une mise à jour (données manquantes)
+              const needsUpdate = !currentUser.dateNaissance || 
+                                 !currentUser.lieuNaissance || 
+                                 !currentUser.nationnalite ||
+                                 !currentUser.sexe ||
+                                 !currentUser.situationMatrimoniale;
+              
+              if (needsUpdate) {
+                // Mettre à jour avec les données du formulaire
+                const updateRequest = {
+                  nom: managerData.lastName || currentUser.nom,
+                  prenom: managerData.firstName || currentUser.prenom,
+                  telephone1: managerData.phone || currentUser.telephone1,
+                  email: managerData.email || currentUser.email,
+                  dateNaissance: ensureAdultBirthDate(managerData.birthDate) || ensureAdultBirthDate(currentUser.dateNaissance),
+                  lieuNaissance: managerData.birthPlace || currentUser.lieuNaissance,
+                  nationnalite: managerData.nationality || currentUser.nationnalite || 'MALIENNE',
+                  sexe: managerData.sexe || currentUser.sexe,
+                  situationMatrimoniale: managerData.situationMatrimoniale || currentUser.situationMatrimoniale || 'CELIBATAIRE',
+                  civilite: mapCivilityToBackend(managerData.civility || 'MONSIEUR') || currentUser.civilite,
+                  division_id: managerData.divisionId || currentUser.division_id,
+                  divisionCode: managerData.divisionCode || currentUser.divisionCode,
+                  localite: managerData.localite || currentUser.localite,
+                  porte: (managerData as any).porte || (currentUser as any).porte
+                };
+                
+                
+                const token = localStorage.getItem('token');
+                const updateResponse = await fetch(`/api/v1/persons/${currentUser.personne_id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify(updateRequest)
+                });
+                
+                if (updateResponse.ok) {
+                  const updatedUser = await updateResponse.json();
+                  createdManager = { id: currentUser.personne_id, data: updatedUser };
+                } else {
+                  throw new Error('Impossible de mettre à jour les données utilisateur');
+                }
+              } else {
+                createdManager = { id: currentUser.personne_id };
+              }
+            } else {
+              throw new Error(`Vous êtes déjà gérant d'une autre entreprise. Un utilisateur ne peut être gérant que d'une seule entreprise. Vous pouvez être gérant ou associé d'autres entreprises.`);
+            }
+          } else {
+            createdManager = await createManagerWorkflow(managerData);
+            if (createdManager) {
+              manager.personId = createdManager.id || createdManager.data?.id;
+            }
+          }
+        } else {
+          createdManager = await createManagerWorkflow(managerData);
+          if (createdManager) {
+            manager.personId = createdManager.id || createdManager.data?.id;
+          }
+        }
+      } else {
+        createdManager = await updateManagerWorkflow(manager.personId, managerData);
+      }
+
+      return createdManager;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Mettre à jour un gérant existant
+  const updateManagerWorkflow = async (personId: string, managerData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Aucun token trouvé');
+
+      // Reconstruire le numéro complet avec l'indicatif pour la sauvegarde (format E.164)
+      let fullPhoneForUpdate = '';
+      if (managerData.phone) {
+        const cleanPhone = managerData.phone.replace(/[\s\-\.]/g, '');
+        if (cleanPhone.startsWith('+')) {
+          fullPhoneForUpdate = cleanPhone; // Déjà au format E.164
+        } else {
+          fullPhoneForUpdate = `+223${cleanPhone}`; // Ajouter l'indicatif Mali
+        }
+      }
+
+      const personUpdateRequest = {
+        nom: managerData.lastName,
+        prenom: managerData.firstName,
+        telephone1: fullPhoneForUpdate, // Sauvegarder le numéro complet avec indicatif
+        email: managerData.email,
+        dateNaissance: managerData.birthDate,
+        lieuNaissance: managerData.birthPlace,
+        nationnalite: managerData.nationality || 'MALIENNE',
+        sexe: managerData.sexe,
+        situationMatrimoniale: managerData.situationMatrimoniale || 'CELIBATAIRE',
+        civilite: mapCivilityToBackend(managerData.civility),
+        // Récupérer division_id et localite - utiliser null au lieu de undefined
+        division_id: managerData.divisionId || managerData.division_id || null,
+        divisionCode: managerData.divisionCode || null,
+        localite: managerData.localite || managerData.city || null,
+        porte: managerData.porte || null
+      };
+
+      const response = await fetch(`/api/v1/persons/${personId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(personUpdateRequest)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.message || 'Erreur lors de la mise à jour du gérant';
+        
+        // Si la personne n'existe pas (base H2 vide), créer une nouvelle personne
+        if (errorMessage.includes('Personne introuvable') || errorMessage.includes('introuvable')) {
+          return await createManagerWorkflow(managerData);
+        }
+        
+        // Gestion spécifique de l'erreur de numéro de téléphone déjà utilisé
+        if (errorMessage.includes('numéro de téléphone est déjà utilisé') || 
+            errorMessage.includes('telephone') && errorMessage.includes('déjà')) {
+          
+          // Pour les workflows de gérant, proposer de garder le numéro actuel ou demander un changement
+          if (window.confirm(`Le numéro ${fullPhoneForUpdate} est déjà utilisé par un autre utilisateur.\n\nVoulez-vous continuer sans changer le numéro de téléphone du gérant ?`)) {
+            // Réessayer sans changer le numéro de téléphone
+            
+            // Créer une nouvelle requête sans le champ téléphone
+            const { telephone1, ...personUpdateRequestWithoutPhone } = personUpdateRequest;
+            
+            const retryResponse = await fetch(`/api/v1/persons/${personId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(personUpdateRequestWithoutPhone)
+            });
+            
+            if (!retryResponse.ok) {
+              const retryErrorData = await retryResponse.json();
+              throw new Error(retryErrorData.message || 'Erreur lors de la mise à jour sans le téléphone');
+            }
+            
+            const retryResult = await retryResponse.json();
+            return retryResult;
+          } else {
+            throw new Error(`Le numéro ${fullPhoneForUpdate} est déjà utilisé. Veuillez modifier le numéro du gérant ou annuler l'opération.`);
+          }
+        } else {
+          throw new Error(errorMessage);
+        }
+      }
+      
+      const result = await response.json();
+      
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Vérifier si l'email correspond à l'utilisateur connecté
+  const getCurrentUserIfEmailMatches = (email: string) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser.email && email && 
+          currentUser.email.toLowerCase() === email.toLowerCase()) {
+        return currentUser;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Créer un gérant avec EntrepriseRole.GERANT
+  const createManagerWorkflow = async (managerData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Aucun token trouvé');
+
+      // Vérifier si l'email correspond à l'utilisateur connecté
+      const currentUser = getCurrentUserIfEmailMatches(managerData.email);
+      
+      if (currentUser && currentUser.id) {
+        return currentUser;
+      }
+
+
+      // Détecter si c'est une personne morale
+      const isPersonneMorale = managerData.civility === 'PERSONNE_MORALE';
+
+      // Validation préventive avec fallback pour éviter "Name is null"
+      let finalLastName = managerData.lastName;
+      let finalFirstName = managerData.firstName;
+      
+      if (!managerData.lastName || managerData.lastName.trim() === '') {
+        finalLastName = isPersonneMorale ? managerData.denominationEntreprise || 'Entreprise' : 'Nom';
+      }
+      if (!managerData.firstName || managerData.firstName.trim() === '') {
+        finalFirstName = isPersonneMorale ? 'Représentant' : 'Prénom';
+      }
+      
+
+      // Déduire le sexe à partir de la civilité si nécessaire
+      const deducedSexe = deduceSexeFromCivilite(managerData.civility);
+      const finalSexe = managerData.sexe || deducedSexe;
+      
+
+      // Gestion du téléphone pour les personnes morales
+      let fullPhoneForCreate = '';
+      if (isPersonneMorale) {
+        // Pour les personnes morales, générer un numéro fictif unique
+        const timestamp = Date.now().toString().slice(-8); // 8 derniers chiffres du timestamp
+        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0'); // 2 chiffres aléatoires
+        fullPhoneForCreate = `+223${timestamp.slice(0, 6)}${random}`;
+      } else {
+        // Pour les personnes physiques, reconstruire le numéro
+        const countryCode = '+223'; // Mali par défaut
+        if (managerData.phone) {
+          // Si le numéro commence déjà par +, l'utiliser tel quel, sinon ajouter le préfixe
+          fullPhoneForCreate = managerData.phone.startsWith('+') ? 
+            managerData.phone.replace(/\s/g, '') : 
+            `${countryCode}${managerData.phone.replace(/\s/g, '')}`;
+        }
+        
+      }
+
+      const personRequest = isPersonneMorale ? {
+        // Champs pour personne morale (optimisés)
+        nom: finalLastName.trim(),
+        prenom: finalFirstName.trim(),
+        civilite: 'PERSONNE_MORALE',
+        denominationEntreprise: managerData.denominationEntreprise || 'Entreprise Gérant',
+        paysEmissionRccm: managerData.paysEmissionRccm || 'MALI',
+        // Champs techniques minimaux pour satisfaire les validations DTO
+        telephone1: fullPhoneForCreate,
+        dateNaissance: '1900-01-01',
+        lieuNaissance: 'N/A',
+        nationnalite: 'MALIENNE', // Valeur par défaut pour satisfaire @NotNull
+        sexe: 'MASCULIN', // Valeur par défaut pour satisfaire @NotNull (sera ignorée par le backend)
+        situationMatrimoniale: 'CELIBATAIRE', // Valeur par défaut pour satisfaire @NotNull
+        // Champs optionnels
+        email: managerData.email || undefined,
+        // Localisation - Les personnes morales ont leur propre localisation
+        division_id: managerData.divisionId || managerData.division_id || null,
+        divisionCode: managerData.divisionCode || null,
+        localite: managerData.localite || managerData.city || null,
+        porte: managerData.porte || null,
+        role: 'USER',
+        entrepriseRole: businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
+      } : {
+        // Champs pour personne physique (complets)
+        nom: finalLastName.trim(),
+        prenom: finalFirstName.trim(),
+        telephone1: fullPhoneForCreate,
+        email: managerData.email,
+        dateNaissance: ensureAdultBirthDate(managerData.birthDate),
+        lieuNaissance: managerData.birthPlace,
+        nationnalite: managerData.nationality || 'MALIENNE',
+        sexe: finalSexe,
+        situationMatrimoniale: managerData.situationMatrimoniale || 'CELIBATAIRE',
+        civilite: mapCivilityToBackend(managerData.civility),
+        // Localisation - Chaque participant a sa propre localisation
+        division_id: managerData.divisionId || managerData.division_id || null,
+        divisionCode: managerData.divisionCode || null,
+        localite: managerData.localite || managerData.city || null,
+        porte: managerData.porte || null,
+        role: 'USER',
+        entrepriseRole: businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
+      };
+
+      // Logs de debugging pour la localisation du gérant
+      
+      // Vérification finale avant envoi
+      if (!personRequest.nom || personRequest.nom.trim() === '') {
+        throw new Error('Erreur critique: nom vide avant envoi au backend');
+      }
+      if (!personRequest.prenom || personRequest.prenom.trim() === '') {
+        throw new Error('Erreur critique: prénom vide avant envoi au backend');
+      }
+
+
+      const response = await fetch('/api/v1/persons', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(personRequest)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.message || 'Erreur lors de la création du gérant';
+        
+        // Gestion spécifique de l'erreur de numéro de téléphone déjà utilisé
+        if (errorMessage.includes('numéro de téléphone est déjà utilisé') || 
+            errorMessage.includes('telephone') && errorMessage.includes('déjà')) {
+          
+          
+          throw new Error(`Le numéro ${fullPhoneForCreate} est déjà utilisé par un autre utilisateur. Veuillez utiliser un autre numéro de téléphone pour le gérant.`);
+        } else {
+          throw new Error(errorMessage);
+        }
+      }
+      
+      const result = await response.json();
+      
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Étape 3 (bis): Traiter le gérant pour entreprise individuelle
+  const processDirigeantWorkflow = async () => {
+    try {
+      const gerants = businessData.participants?.filter((p: any) => p.role === 'GERANT' || p.role === 'PROMOTEUR') || [];
+      
+      if (gerants.length === 0) {
+        throw new Error('Aucun gerant défini pour l\'entreprise individuelle');
+      }
+      
+      if (gerants.length > 1) {
+        throw new Error('Un seul gerant autorisé pour une entreprise individuelle');
+      }
+
+      const gerant = gerants[0];
+      let createdDirigeant = null;
+
+      const gerantData = {
+        lastName: gerant.nom || '',
+        firstName: gerant.prenom || '',
+        phone: gerant.telephone || '',
+        email: gerant.email || '',
+        birthDate: gerant.dateNaissance || '',
+        birthPlace: gerant.lieuNaissance || '',
+        nationality: gerant.nationnalite || 'MALIENNE',
+        sexe: getConsistentSexe(gerant.sexe, gerant.civilite || 'MONSIEUR'),
+        situationMatrimoniale: gerant.situationMatrimoniale || 'CELIBATAIRE',
+        civility: mapCivilityToBackend(gerant.civilite || 'MONSIEUR'),
+        divisionId: gerant.divisionId || gerant.division_id,
+        divisionCode: gerant.divisionCode,
+        localite: gerant.localite
+      };
+
+      // Si le gerant n'a pas encore d'ID, le créer
+      if (!gerant.personId) {
+        createdDirigeant = await createDirigeantWorkflow(gerantData);
+        if (createdDirigeant) {
+          gerant.personId = createdDirigeant.id || createdDirigeant.data?.id;
+        }
+      } else {
+        createdDirigeant = await updateManagerWorkflow(gerant.personId, gerantData);
+      }
+
+      return createdDirigeant;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Créer un gerant avec EntrepriseRole.DIRIGEANT
+  const createDirigeantWorkflow = async (gerantData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Aucun token trouvé');
+
+      const personRequest = {
+        nom: gerantData.lastName,
+        prenom: gerantData.firstName,
+        telephone1: gerantData.phone,
+        email: gerantData.email,
+        dateNaissance: gerantData.birthDate,
+        lieuNaissance: gerantData.birthPlace,
+        nationnalite: gerantData.nationality || 'MALIENNE',
+        sexe: gerantData.sexe,
+        situationMatrimoniale: gerantData.situationMatrimoniale || 'CELIBATAIRE',
+        civilite: mapCivilityToBackend(gerantData.civility),
+        division_id: gerantData.divisionId || gerantData.division_id || null,
+        divisionCode: gerantData.divisionCode || null,
+        localite: gerantData.localite || null,
+        role: 'USER',
+        entrepriseRole: businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
+      };
+
+
+      const response = await fetch('/api/v1/persons', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(personRequest)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la création du gerant');
+      }
+      
+      const result = await response.json();
+      
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-mali-light via-white to-mali-light relative overflow-hidden z-0">
-      <AnimatedBackground variant="minimal" className="z-0" />
-      {/* Header */}
-      <div ref={headerRef} className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <Link to="/" className="flex items-center space-x-3">
-              <div ref={logoRef} className="w-10 h-10 bg-gradient-to-r from-mali-emerald to-mali-emerald/80 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">IM</span>
-              </div>
-              <span className="text-xl font-bold text-mali-dark">InvestMali</span>
-            </Link>
-            <div className="text-sm text-gray-600">
-              Étape {currentStep} sur {totalSteps}
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      <Header />
+      <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Création d'entreprise
+            </h1>
+            <p className="text-gray-600">
+              Suivez les étapes pour créer votre entreprise
+            </p>
           </div>
-        </div>
-      </div>
 
-      {/* Hero Section avec informations clés et scène 3D */}
-      <div ref={heroSectionRef} className="bg-gradient-to-r from-mali-emerald to-mali-emerald/90 text-white py-12 relative z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Contenu textuel */}
-            <div className="text-center lg:text-left">
-              <h1 ref={heroTitleRef} className="text-3xl md:text-4xl font-extrabold mb-4">
-                Créez votre <span className="text-mali-gold">entreprise en 24 heures</span>
-              </h1>
-              <p ref={heroSubtitleRef} className="text-xl mb-8 opacity-90">
-                Simplifiez vos démarches administratives avec notre plateforme digitale. 
-                <span className="font-semibold"> Processus 100% en ligne</span>, 
-                accompagnement personnalisé et <span className="font-semibold">délais réduits de 70%</span>.
-              </p>
-              
-              {/* Features clés */}
-              <div ref={heroFeaturesRef} className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm">
-                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                  <svg className="w-5 h-5 text-mali-gold" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>100% Digital</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                  <svg className="w-5 h-5 text-mali-gold" fill="currentColor" viewBox="0 0 20 20">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  <span>Délais réduits de 70%</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
-                  <svg className="w-5 h-5 text-mali-gold" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Accompagnement personnalisé</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Scène 3D interactive */}
-            <div ref={scene3DRef} className="relative">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 shadow-2xl">
-                <BusinessCreation3D currentStep={currentStep} />
-                <div className="text-center mt-4">
-                  <p className="text-sm opacity-75">
-                    Visualisation 3D interactive de votre progression
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div ref={progressRef} className="flex items-center justify-between">
-            {steps.map((step, index) => (
+          {/* Progress Steps */}
+          <div className="flex justify-between items-center mb-8 bg-white rounded-lg p-6 shadow-sm">
+            {[
+              { number: 0, name: 'Identification' },
+              { number: 1, name: 'Informations personnelles' },
+              { number: 2, name: 'Informations entreprise' },
+              { number: 3, name: 'Activités et localisation' },
+              { number: 4, name: 'Documents' },
+              { number: 5, name: 'Validation' }
+            ].filter((step) => {
+              // Masquer l'étape Documents pour les entreprises individuelles
+              const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+              return !(step.number === 4 && isEntrepriseIndividuelle);
+            }).map((step, index, filteredSteps) => (
               <div key={step.number} className="flex items-center">
-                <div className={`flex items-center justify-center w-12 h-12 rounded-full text-sm font-medium transition-all duration-300 ${
-                  step.number <= currentStep 
-                    ? 'bg-mali-emerald text-white shadow-lg' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {step.number < currentStep ? (
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <span className="text-2xl">{step.icon}</span>
-                  )}
-                </div>
-                <div className="ml-3 hidden md:block">
-                  <div className={`text-sm font-medium transition-colors duration-300 ${
-                    step.number <= currentStep ? 'text-mali-emerald' : 'text-gray-500'
+                <button
+                  onClick={() => goToStep(step.number)}
+                  className="flex flex-col items-center group cursor-pointer transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 rounded-lg p-2"
+                  title={`Aller à l'étape ${step.number}: ${step.name}`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-200 ${
+                    currentStep >= step.number 
+                      ? 'bg-green-500 group-hover:bg-green-600' 
+                      : 'bg-gray-300 group-hover:bg-gray-400'
                   }`}>
-                    {step.title}
+                    {step.number}
                   </div>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`hidden md:block w-16 h-1 mx-4 rounded transition-colors duration-300 ${
-                    step.number < currentStep ? 'bg-mali-emerald' : 'bg-gray-200'
-                  }`}></div>
+                  <span className={`text-sm mt-2 text-center font-semibold transition-all duration-200 ${
+                    currentStep >= step.number 
+                      ? 'text-green-600 group-hover:text-green-700' 
+                      : 'text-gray-500 group-hover:text-gray-600'
+                  }`}>
+                    {step.name}
+                  </span>
+                </button>
+                {index < filteredSteps.length - 1 && (
+                  <div className={`w-16 h-1 mx-2 ${
+                    currentStep > step.number ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
                 )}
               </div>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* Main content */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-20">
-        <div ref={contentRef} className="bg-white rounded-2xl shadow-xl p-8 relative z-20 pointer-events-auto">
-          {currentStep === 1 && (
-            <PersonalInfoStep 
-              data={businessData}
-              updateData={updateBusinessData}
-              onNext={() => setCurrentStep(2)}
-              showForm={showForm}
-              setShowForm={setShowForm}
-            />
-          )}
-          {currentStep === 2 && (
-            <CompanyInfoStep 
-              data={businessData} 
-              updateData={updateBusinessData}
-            />
-          )}
-          {currentStep === 3 && (
-            <ParticipantsStep 
-              data={businessData} 
-              updateData={updateBusinessData}
-              onNext={() => setCurrentStep(4)}
-            />
-          )}
-          {currentStep === 4 && (
-            <DocumentsStep 
-              data={businessData} 
-              updateData={updateBusinessData} 
-            />
-          )}
-          {currentStep === 5 && (
-            <SummaryAndSubmissionStep 
-              data={businessData} 
-              updateData={updateBusinessData} 
-              submitTrigger={submitTrigger}
-              personalLocationName={personalLocationName}
-              companyLocationName={companyLocationName}
-            />
-          )}
+          {/* Step Content */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            {currentStep === 0 && (
+              <UserIdentificationStep 
+                isForSelf={isForSelf}
+                setIsForSelf={setIsForSelf}
+                handleResponse={handleResponse}
+              />
+            )}
+            
+            {currentStep === 1 && (
+              <PersonalInfoStep 
+                data={businessData} 
+                updateData={updateBusinessData}
+                isForSelf={isForSelf}
+                setIsForSelf={setIsForSelf}
+                showForm={showForm}
+                setShowForm={setShowForm}
+              />
+            )}
+            
+            {currentStep === 2 && (
+              <CompanyInfoStep 
+                data={businessData} 
+                updateData={updateBusinessData}
+              />
+            )}
+            
+            {currentStep === 3 && (
+              <ParticipantsStep 
+                data={businessData} 
+                updateData={updateBusinessData}
+                onNext={nextStep}
+              />
+            )}
+            
+            {currentStep === 4 && (
+              <DocumentsStep 
+                data={businessData} 
+                updateData={updateBusinessData}
+              />
+            )}
+            
+            {currentStep === 5 && (
+              <SummaryAndSubmissionStep 
+                data={businessData} 
+                updateData={updateBusinessData}
+                submitTrigger={0}
+                personalLocationName={personalLocationName}
+                companyLocationName={companyLocationName}
+              />
+            )}
+          </div>
 
-          {/* Navigation buttons */}
-          {stepError && (
-            <div className="mt-6 mb-2 px-4 py-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
-              {stepError}
+          {/* Error Display */}
+          {showValidation && stepError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="text-red-600 mr-2">⚠️</div>
+                <div className="text-red-800">{stepError}</div>
+              </div>
+              <button 
+                onClick={() => setShowValidation(false)}
+                className="mt-2 text-sm text-red-600 hover:text-red-800"
+              >
+                Fermer
+              </button>
             </div>
           )}
-          <div ref={navigationRef} className="flex justify-between mt-8 pt-6 border-t">
+
+          {/* Navigation */}
+          <div className="flex justify-between">
             <button
               onClick={prevStep}
-              disabled={currentStep === 1}
-              className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                currentStep === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 transform hover:-translate-y-0.5'
+              disabled={currentStep === 0}
+              className={`px-6 py-2 rounded-lg font-medium ${
+                currentStep === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-500 text-white hover:bg-gray-600'
               }`}
             >
-              ← Précédent
+              Précédent
             </button>
             
-            {currentStep < totalSteps ? (
+            {currentStep < 5 && (
               <button
                 onClick={nextStep}
-                className="px-8 py-3 bg-gradient-to-r from-mali-emerald to-mali-emerald/90 text-white rounded-xl font-medium hover:from-mali-emerald/90 hover:to-mali-emerald transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                disabled={!canProceedToNextStep()}
+                className={`px-6 py-2 rounded-lg font-medium ${
+                  canProceedToNextStep()
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
-                Suivant →
-              </button>
-            ) : (
-              <button
-                onClick={() => setSubmitTrigger(Date.now())}
-                className="px-8 py-3 bg-gradient-to-r from-mali-gold to-mali-gold/90 text-white rounded-xl font-medium hover:from-mali-gold/90 hover:to-mali-gold transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-              >
-                Créer l'entreprise 🚀
+                {canProceedToNextStep() === null ? 'Soumettre' : 'Suivant'}
               </button>
             )}
           </div>
@@ -17162,7 +17703,9 @@ const BusinessCreation: React.FC = () => {
   );
 };
 
-
-
 export default BusinessCreation;
+<<<<<<< HEAD
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)
+=======
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)

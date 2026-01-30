@@ -100,6 +100,10 @@ public interface PaiementRepository extends JpaRepository<Paiement, String> {
     // Recherche par statut
     List<Paiement> findByStatut(StatutPaiement statut);
     
+    // Recherche par statut avec chargement des relations
+    @Query("SELECT p FROM Paiement p LEFT JOIN FETCH p.entreprise LEFT JOIN FETCH p.personne WHERE p.statut = :statut")
+    List<Paiement> findByStatutWithRelations(@Param("statut") StatutPaiement statut);
+    
     // Recherche par entreprise
     @Query("SELECT p FROM Paiement p WHERE p.entreprise.id = :entrepriseId")
     List<Paiement> findByEntrepriseId(@Param("entrepriseId") String entrepriseId);

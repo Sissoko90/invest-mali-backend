@@ -69,8 +69,12 @@ export const enumService = {
   getFormeJuridique: async () => apiRequest('/enums/forme-juridique', { method: 'GET' }),
   // GET /enums/domaine-activites
   getDomaineActivites: async () => apiRequest('/enums/domaine-activites', { method: 'GET' }),
+  // GET /enums/domaine-activites-nr
+  getDomaineActivitesNr: async () => apiRequest('/enums/domaine-activites-nr', { method: 'GET' }),
   // GET /enums/situation-matrimoniales
   getSituationMatrimoniales: async () => apiRequest('/enums/situation-matrimoniales', { method: 'GET' }),
+  // GET /enums/pays-emission-rccm
+  getPaysEmissionRccm: async () => apiRequest('/enums/pays-emission-rccm', { method: 'GET' }),
 };
 
 export default enumService;

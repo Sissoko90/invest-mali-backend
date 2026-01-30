@@ -133,11 +133,19 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
           }}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
             signatureMode === 'draw'
+<<<<<<< HEAD
               ? 'bg-sky-600 text-white'
               : 'bg-sky-600 hover:bg-sky-900'
           }`}
         >
           Signer à la main
+=======
+              ? 'bg-mali-emerald text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          ✍️ Signer à la main
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         </button>
         <button
           type="button"
@@ -151,7 +159,11 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
+<<<<<<< HEAD
            Téléverser une signature
+=======
+          📤 Uploader une signature
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
         </button>
       </div>
 
@@ -181,7 +193,11 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
               🗑️ Effacer
             </button>
           </div>
+<<<<<<< HEAD
           <p className="text-sm text-gray-500 text-center">
+=======
+          <p className="text-xs text-gray-500 text-center">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             Signez dans la zone ci-dessus avec votre souris ou votre doigt
           </p>
         </div>
@@ -207,11 +223,19 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
               <div>
                 <label className="cursor-pointer">
                   <div className="space-y-2">
+<<<<<<< HEAD
                     {/* <div className="text-4xl">📤</div> */}
                     <div className="text-sm text-gray-600">
                       Cliquez pour téléverser votre signature
                     </div>
                     <div className="text-sm text-gray-500">
+=======
+                    <div className="text-4xl">📤</div>
+                    <div className="text-sm text-gray-600">
+                      Cliquez pour uploader votre signature
+                    </div>
+                    <div className="text-xs text-gray-500">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       PNG, JPG, JPEG (max 2MB)
                     </div>
                   </div>
@@ -225,7 +249,11 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
               </div>
             )}
           </div>
+<<<<<<< HEAD
           <p className="text-sm text-gray-500 text-center">
+=======
+          <p className="text-xs text-gray-500 text-center">
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
             Uploadez une image de votre signature (signature scannée ou photo)
           </p>
         </div>

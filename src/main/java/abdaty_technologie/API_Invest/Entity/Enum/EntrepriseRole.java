@@ -18,6 +18,8 @@ package abdaty_technologie.API_Invest.Entity.Enum;
  */
 public enum EntrepriseRole {
     GERANT,
-    ASSOCIE
+    PROMOTEUR,
+    ASSOCIE,
+    ADMINISTRATEUR
 }
 >>>>>>> 7674fb3a5 (16e commit - Mise à jour après la réunion du 30/10/2025)

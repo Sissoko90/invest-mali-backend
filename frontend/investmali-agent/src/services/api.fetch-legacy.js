@@ -476,7 +476,7 @@ export default apiServices;
 =======
 // Service API pour InvestMali - Interface Agent
 // Configuration de base
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_USER_API_URL || (process.env.NODE_ENV === 'production' ? 'https://investmali-agent.abdatytch.com/api/v1' : 'http://localhost:8080/api/v1');
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_USER_API_URL || (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 // Fonction utilitaire pour faire des requêtes fetch
 const apiRequest = async (endpoint, options = {}) => {

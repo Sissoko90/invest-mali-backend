@@ -127,6 +127,11 @@ public class PersonController {
 
     @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PersonResponse> update(@PathVariable String id, @Valid @RequestBody PersonUpdateRequest req) {
+        // 🔍 DEBUG: Logs pour tracer la réception du champ 'porte' dans le contrôleur
+        System.out.println("🔍 [PersonController] PUT /persons/" + id);
+        System.out.println("🔍 [PersonController] localite reçu: " + req.localite);
+        System.out.println("🔍 [PersonController] porte reçu: " + req.porte);
+        
         return ResponseEntity.ok(personService.update(id, req));
     }
 

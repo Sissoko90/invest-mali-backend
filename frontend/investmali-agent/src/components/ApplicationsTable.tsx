@@ -124,6 +124,7 @@ const ApplicationsTable: React.FC<Props> = ({ rows, page, limit, total, loading,
 };
 
 export default ApplicationsTable;
+<<<<<<< HEAD
 
 
 
@@ -148,3 +149,29 @@ export default ApplicationsTable;
 
 
 
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
