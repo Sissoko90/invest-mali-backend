@@ -133,11 +133,11 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({ onSignatureChange, ex
           }}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
             signatureMode === 'draw'
-              ? 'bg-mali-emerald text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-sky-600 text-white'
+              : 'bg-sky-600 hover:bg-sky-900'
           }`}
         >
-          ✍️ Signer à la main
+          Signer à la main
         </button>
         <button
           type="button"

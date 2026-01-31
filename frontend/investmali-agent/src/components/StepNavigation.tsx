@@ -107,18 +107,18 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
 
   return (
     <div 
-      className="fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-30 group hover:w-80 w-16 overflow-hidden flex flex-col"
+      className="fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-20 group hover:w-80 w-16 overflow-hidden flex flex-col"
       onMouseEnter={() => setIsCollapsed(false)}
       onMouseLeave={() => setIsCollapsed(true)}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-sky-700 border-b border-sky-700 p-4">
+      <div className="bg-sky-600 to-sky-700 border-b border-sky-700 p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
             <img 
                   src="/api-favicon.png" 
                   alt="API-MALI Logo" 
-                  className="w-14 h-14 mr-4 drop-shadow-lg"
+                  className={`w-14 h-14 mr-4 drop-shadow-lg transition-opacity duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}
                 />
             <h3 className={`text-lg font-bold text-white transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
               Étapes du processus

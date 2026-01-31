@@ -20,15 +20,15 @@ const ChatTestPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl text-white">👨‍💼</span>
+                {/* <span className="text-2xl text-white">👨‍💼</span> */}
               </div>
               <h2 className="text-2xl font-bold text-gray-800">Interface Agent</h2>
               <p className="text-gray-600">Envoie des messages aux utilisateurs</p>
             </div>
             
             <div className="space-y-4">
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                <h3 className="font-semibold text-primary-800 mb-2">✅ Fonctionnalités Actives</h3>
+              <div className="bg-sky-50 border border-skyu-200 rounded-lg p-4">
+                <h3 className="font-semibold text-primary-800 mb-2">Fonctionnalités Actives</h3>
                 <ul className="text-sm text-primary-700 space-y-1">
                   <li>• Envoi de messages aux utilisateurs</li>
                   <li>• Réutilisation des conversations existantes</li>
@@ -38,15 +38,15 @@ const ChatTestPage: React.FC = () => {
                 </ul>
               </div>
               
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                <h3 className="font-semibold text-primary-800 mb-2">📊 Statistiques</h3>
+              <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
+                <h3 className="font-semibold text-primary-800 mb-2">Statistiques</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary-600">6</div>
+                    <div className="text-2xl font-bold text-sky-600">6</div>
                     <div className="text-primary-700">Messages envoyés</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary-600">1</div>
+                    <div className="text-2xl font-bold text-sky-600">1</div>
                     <div className="text-primary-700">Conversation active</div>
                   </div>
                 </div>

@@ -2549,8 +2549,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         : 'text-gray-500'
                     }`}>
                       {isRequired 
-                        ? '🏠 Obligatoire (nationalité non malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
-                        : '🏠 Optionnel (nationalité malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
+                        ? 'Obligatoire (nationalité non malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
+                        : 'Optionnel (nationalité malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
                       }
                     </p>
                   </div>
@@ -2574,7 +2574,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     required
                   />
                   <p className="text-sm text-green-600 mt-1">
-                    🆔 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
+                    Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
               )}
@@ -2582,7 +2582,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               {/* Bouton déclaration sur l'honneur pour les gérants ET promoteurs sans casier judiciaire */}
               {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && !data.personalInfo?.hasCriminalRecord && (
                 <div className="md:col-span-2 mt-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-sky-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
                         <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2590,8 +2590,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-blue-900 mb-2">
-                          📜 Pas de casier judiciaire ?
+                        <h4 className="text-sm font-medium text-sky-900 mb-2">
+                          Pas de casier judiciaire ?
                         </h4>
                         <p className="text-sm text-blue-700 mb-3">
                           Si vous n'avez pas d'extrait de casier judiciaire, vous pouvez faire une déclaration sur l'honneur selon l'article 45, 47 de l'Acte Uniforme OHADA.
@@ -2609,8 +2609,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         
                         {/* Zone de signature pour la déclaration sur l'honneur */}
                         <div className="mt-4">
-                          <label className="block text-sm font-medium text-blue-900 mb-3">
-                            ✍️ Signature de la déclaration sur l'honneur {!formData.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
+                          <label className="block text-sm font-medium text-sky-900 mb-3">
+                            Signature de la déclaration sur l'honneur {!formData.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
                           </label>
                           <SignatureCanvas
                             onSignatureChange={(dataUrl) => {
@@ -2618,7 +2618,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                             }}
                             existingSignature={formData.signatureDataUrl}
                           />
-                          <p className="text-sm text-blue-600 mt-2">
+                          <p className="text-sm text-black-600 mt-2">
                             📋 {formData.declarationHonneurFile 
                               ? 'Signature optionnelle car vous avez uploadé une déclaration' 
                               : 'Signature obligatoire pour générer une déclaration sur l\'honneur'}
@@ -2649,8 +2649,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                               </p>
                             </div>
                           )}
-                          <p className="text-sm text-blue-600 mt-1">
-                            📋 Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)
+                          <p className="text-sm text-black-600 mt-1">
+                             Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                             <br />
                             💡 <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
                           </p>

@@ -2,11 +2,12 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import AnimatedBackground from './AnimatedBackground';
-import { LockClosedIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon, PhoneIcon } from '@heroicons/react/24/outline';
 
 const AgentLogin: React.FC = () => {
+  const [loginType, setLoginType] = useState<'email' | 'telephone'>('email');
   const [loginData, setLoginData] = useState({
-    email: '',
+    identifier: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -27,28 +28,38 @@ const AgentLogin: React.FC = () => {
     e.preventDefault();
     
     // Field validation
-    if (!loginData.email.trim() || !loginData.password) {
+    if (!loginData.identifier.trim() || !loginData.password) {
       setError('Veuillez remplir tous les champs');
       return;
     }
     
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(loginData.email)) {
-      setError('Veuillez entrer une adresse e-mail valide');
-      return;
+    // Validation selon le type de login
+    if (loginType === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(loginData.identifier)) {
+        setError('Veuillez entrer une adresse e-mail valide');
+        return;
+      }
+    } else {
+      // Validation du téléphone (format malien ou international)
+      const phoneRegex = /^(\+223|00223)?[0-9]{8}$/;
+      const cleanPhone = loginData.identifier.replace(/\s/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        setError('Veuillez entrer un numéro de téléphone valide (ex: 70123456 ou +22370123456)');
+        return;
+      }
     }
 
     setIsLoading(true);
     setError('');
     
     try {
-      console.log('🔐 [AgentLogin] Tentative de connexion pour:', loginData.email);
-      const result = await login(loginData.email, loginData.password);
-      console.log('🔐 [AgentLogin] Résultat de connexion:', result);
+      console.log('[AgentLogin] Tentative de connexion pour:', loginData.identifier, 'type:', loginType);
+      const result = await login(loginData.identifier, loginData.password, loginType);
+      console.log('[AgentLogin] Résultat de connexion:', result);
       
       if (result.success) {
-        setLoginData({ email: '', password: '' });
+        setLoginData({ identifier: '', password: '' });
         
         // Logique de redirection intelligente basée sur le rôle
         let redirectPath = result.redirectUrl;
@@ -74,8 +85,8 @@ const AgentLogin: React.FC = () => {
         
         navigate(redirectPath, { replace: true });
       } else {
-        console.error('❌ [AgentLogin] Échec de connexion');
-        setError('E-mail ou mot de passe invalide');
+        console.error('[AgentLogin] Échec de connexion');
+        setError('Identifiant ou mot de passe invalide');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -136,24 +147,64 @@ const AgentLogin: React.FC = () => {
         
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
+            {/* Sélecteur de type de connexion */}
+            <div className="flex rounded-lg bg-gray-100 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('email');
+                  setLoginData({ ...loginData, identifier: '' });
+                  setError('');
+                }}
+                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  loginType === 'email'
+                    ? 'bg-white text-sky-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <EnvelopeIcon className="h-4 w-4 mr-2" />
+                E-mail
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginType('telephone');
+                  setLoginData({ ...loginData, identifier: '' });
+                  setError('');
+                }}
+                className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  loginType === 'telephone'
+                    ? 'bg-white text-sky-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <PhoneIcon className="h-4 w-4 mr-2" />
+                Téléphone
+              </button>
+            </div>
+
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Adresse e-mail
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                {loginType === 'email' ? 'Adresse e-mail' : 'Numéro de téléphone'}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                  {loginType === 'email' ? (
+                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <PhoneIcon className="h-5 w-5 text-gray-400" />
+                  )}
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="identifier"
+                  name="identifier"
+                  type={loginType === 'email' ? 'email' : 'tel'}
+                  autoComplete={loginType === 'email' ? 'email' : 'tel'}
                   required
-                  className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  placeholder="vous@example.com"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                  className="focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  placeholder={loginType === 'email' ? 'vous@example.com' : '70 12 34 56'}
+                  value={loginData.identifier}
+                  onChange={(e) => setLoginData({...loginData, identifier: e.target.value})}
                   disabled={isLoading}
                 />
               </div>

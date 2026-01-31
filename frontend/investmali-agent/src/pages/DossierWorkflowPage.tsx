@@ -4,6 +4,7 @@ import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import DossierWorkflow from '../components/DossierWorkflow';
 import { LogOut, Sun, Moon } from 'lucide-react';
+import apiLogo from '../assets/logos/api-logo.png';
 
 const DossierWorkflowPage: React.FC = () => {
   const { dossierId } = useParams<{ dossierId?: string }>();
@@ -24,9 +25,7 @@ const DossierWorkflowPage: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo et titre */}
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white text-sky-600 rounded-lg flex items-center justify-center font-bold">
-                IM
-              </div>
+              <img src={apiLogo} alt="API-MALI" className="w-10 h-10" />
               <div>
                 <h1 className="text-lg font-semibold text-white">API-MALI</h1>
                 <p className="text-sky-100 text-xs">Gestion des Dossiers</p>
@@ -53,12 +52,12 @@ const DossierWorkflowPage: React.FC = () => {
               </div>
 
               {/* Thème */}
-              <button 
+              {/* <button 
                 onClick={toggleTheme}
                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
+              </button> */}
 
               {/* Déconnexion */}
               <button 

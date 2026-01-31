@@ -39,18 +39,18 @@ const DirectChatAccess: React.FC = () => {
             Veuillez utiliser le lien fourni par votre agent pour accéder à vos messages.
           </p>
           
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-primary-800 mb-2">📝 Format du lien :</h3>
             <code className="text-sm text-primary-700">
               {window.location.origin}/chat?user=VOTRE_ID&action=chat
             </code>
           </div>
           
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
             <h3 className="font-semibold text-primary-800 mb-2">🔗 Exemple de lien :</h3>
             <a 
               href="?user=075e96d0-651c-40e7-a44a-04341daaac56&action=chat"
-              className="text-primary-600 hover:text-primary-800 underline text-sm"
+              className="text-sky-600 hover:text-primary-800 underline text-sm"
             >
               Accéder aux messages de test (Abdoul Doukhanse)
             </a>

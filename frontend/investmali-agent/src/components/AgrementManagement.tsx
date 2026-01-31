@@ -288,7 +288,7 @@ const AgrementManagement: React.FC = () => {
           </button>
         </div>
 
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+        <div className="bg-sky-50 border border-primary-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <InformationCircleIcon className="h-5 w-5 text-primary-500 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-primary-800">

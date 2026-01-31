@@ -166,7 +166,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId, userName }) => {
 
           {/* Section Notifications */}
           {unreadCount > 0 && (
-            <div className="mt-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <div className="mt-6 bg-sky-50 border border-sky-200 rounded-lg p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <span className="text-primary-500 text-xl">🔔</span>

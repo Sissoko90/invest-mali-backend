@@ -700,7 +700,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
+      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center space-x-4 mb-4">
@@ -740,7 +740,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       </div>
 
       {/* Navigation des onglets */}
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
+      <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
         <div className="border-b border-white/40">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
@@ -781,7 +781,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                 </div>
               ) : (
                 regisseurDemandes.map((demande) => (
-                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
@@ -1016,7 +1016,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                 </div>
               ) : (
                 paiementsConfirmes.map((paiement: PaiementResponse) => (
-                <div key={paiement.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <div key={paiement.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-4">

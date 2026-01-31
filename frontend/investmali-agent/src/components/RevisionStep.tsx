@@ -516,7 +516,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
+      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
@@ -544,7 +544,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
 
       {/* Tabs */}
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
+      <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
         <div className="border-b border-white/40">
           <nav className="flex space-x-8 px-6">
             <button
@@ -589,7 +589,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                 </div>
               ) : demandes.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 bg-sky-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+                  <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
                     <DocumentCheckIcon className="h-12 w-12 text-white mx-auto" />
                   </div>
                   <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à réviser</h3>
@@ -821,7 +821,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       {/* Modal de détails */}
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-8xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-8xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-white/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">

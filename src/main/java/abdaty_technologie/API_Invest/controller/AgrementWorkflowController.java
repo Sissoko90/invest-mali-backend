@@ -20,14 +20,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Base64;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

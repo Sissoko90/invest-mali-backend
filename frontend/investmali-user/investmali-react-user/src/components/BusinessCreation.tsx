@@ -5415,7 +5415,7 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
           )}
           
           {!data.documents?.hasCommerceRegistry && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 animate-fade-in">
+            <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 animate-fade-in">
               <p className="text-blue-800 text-sm">
                 <strong>Information :</strong> Si vous n'avez pas encore de registre de commerce, 
                 InvestMali vous aidera dans les démarches d'immatriculation.

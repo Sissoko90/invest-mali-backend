@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AgrementWorkflow from '../components/agrement/AgrementWorkflow';
+import apiLogo from '../assets/logos/api-logo.png';
 
 const AgrementWorkflowPage: React.FC = () => {
   const { agent, logout } = useAgentAuth();
@@ -23,9 +24,7 @@ const AgrementWorkflowPage: React.FC = () => {
           <div className="flex justify-between items-center py-4">
             {/* Logo et titre */}
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white text-sky-600 rounded-lg flex items-center justify-center">
-                <span className="text-sm font-bold">IM</span>
-              </div>
+              <img src={apiLogo} alt="API-MALI" className="w-10 h-10" />
               <div>
                 <h1 className="text-xl font-bold text-white">API-MALI</h1>
                 <p className="text-sky-100 text-sm">Module Agrément</p>

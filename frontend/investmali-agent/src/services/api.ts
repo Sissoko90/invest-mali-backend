@@ -147,9 +147,11 @@ const healthAPI = {
 };
 
 const agentAuthAPI = {
-  login: (credentials: { email: string; password: string }) => {
+  login: (credentials: { email?: string; telephone?: string; password: string }) => {
+    // Le backend attend 'identifiant' (email ou téléphone) et 'motdepasse'
+    const identifiant = credentials.email || credentials.telephone || '';
     return api.post(API_ENDPOINTS.AUTH.LOGIN, { 
-      email: credentials.email, 
+      identifiant, 
       motdepasse: credentials.password 
     });
   },

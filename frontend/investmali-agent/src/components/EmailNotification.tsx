@@ -86,7 +86,7 @@ const EmailNotificationTemplate = () => {
         />
       </div>
       
-      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+      <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
         <h3 className="font-semibold text-primary-800 mb-2">💡 Comment implémenter :</h3>
         <ol className="text-sm text-primary-700 space-y-1">
           <li>1. Configurer un service d'email (SendGrid, Mailgun, etc.)</li>

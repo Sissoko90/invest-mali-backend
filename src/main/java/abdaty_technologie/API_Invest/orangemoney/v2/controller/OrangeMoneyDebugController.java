@@ -101,7 +101,7 @@ public class OrangeMoneyDebugController {
      */
     @GetMapping("/test-order-id")
     public ResponseEntity<Map<String, Object>> testOrderId() {
-        logger.info("🆔 [OrangeMoneyDebug] Test génération Order ID");
+        logger.info("[OrangeMoneyDebug] Test génération Order ID");
         
         String orderId = orangeMoneyServiceV2.generateOrderId("test-entreprise");
         

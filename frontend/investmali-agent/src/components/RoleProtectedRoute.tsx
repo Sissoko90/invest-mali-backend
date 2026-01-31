@@ -35,7 +35,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     return (
       <>
         {fallback || (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-5 w-5 text-primary-400 mr-2" />
               <div>
@@ -57,7 +57,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     return (
       <>
         {fallback || (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-5 w-5 text-primary-400 mr-2" />
               <div>
@@ -79,7 +79,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     return (
       <>
         {fallback || (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-5 w-5 text-primary-400 mr-2" />
               <div>

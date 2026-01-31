@@ -445,9 +445,9 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
   return (
     <div className="space-y-6">
-      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
+      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentCheckIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -458,7 +458,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
         {demandes.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-4 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
             <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
@@ -469,11 +469,11 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
         ) : (
           <div className="space-y-4">
             {demandes.map((demande) => (
-              <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-3">
-                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <BuildingOfficeIcon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
@@ -573,7 +573,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   {/* Informations entreprise modernisées */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <span className="text-lg">🏢</span>
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Informations de l'entreprise</h4>
@@ -624,7 +624,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                     {/* Membres modernisés */}
                     <div className="mt-8">
                       <div className="flex items-center space-x-3 mb-6">
-                        <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
+                        <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                           <span className="text-lg">👥</span>
                         </div>
                         <h4 className="text-xl font-black text-slate-800">Membres ({selectedDemande.membres?.length || 0})</h4>
@@ -680,8 +680,8 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   {/* Documents modernisés */}
                   <div className="space-y-6">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-[#412A5C] to-primary-600 rounded-xl shadow-lg">
-                        <span className="text-lg">📄</span>
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+                        {/* <span className="text-lg">📄</span> */}
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Documents ({selectedDemande.documents.length})</h4>
                     </div>

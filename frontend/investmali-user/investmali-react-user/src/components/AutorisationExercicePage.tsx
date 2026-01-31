@@ -159,7 +159,7 @@ const AutorisationExercicePage: React.FC<AutorisationExercicePageProps> = ({
 
         {/* Informations sur l'entreprise */}
         {currentEntrepriseId && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+          <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-8">
             <div className="flex items-center space-x-3">
               <InformationCircleIcon className="w-6 h-6 text-blue-600" />
               <div>

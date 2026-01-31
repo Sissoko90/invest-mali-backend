@@ -10,23 +10,23 @@ module.exports = {
       colors: {
         // Palette simplifiée à 2 couleurs : Primary (bleu) + Neutral (gris)
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50:  '#0078C8',
+          100: '#0078C8',
+          200: '#0078C8',
+          300: '#0078C8',
+          400: '#0078C8',
+          500: '#0078C8',
+          600: '#0078C8',
+          700: '#0078C8',
+          800: '#0078C8',
+          900: '#0078C8',
         },
         // Alias pour compatibilité avec l'ancien code
-        'mali-emerald': '#4f46e5',
-        'mali-emerald-dark': '#4338ca',
-        'mali-gold': '#6366f1',
-        'mali-light': '#eef2ff',
-        'mali-dark': '#1f2937',
+        'mali-emerald': '#0078C8',
+        'mali-emerald-dark': '#025890ff',
+        'mali-gold': '#4189b9ff',
+        'mali-light': '#9fc7e1ff',
+        'mali-dark': 'rgba(0, 47, 113, 1)',
       },
       keyframes: {
         'fade-in': {

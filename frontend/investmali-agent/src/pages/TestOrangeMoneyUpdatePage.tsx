@@ -127,21 +127,21 @@ const TestOrangeMoneyUpdatePage: React.FC = () => {
                   <p className={`text-sm font-medium ${result.updated ? 'text-primary-600' : 'text-primary-600'}`}>
                     Mis à jour
                   </p>
-                  <p className={`text-lg ${result.updated ? 'text-primary-900' : 'text-primary-900'}`}>
-                    {result.updated ? '✅ Oui' : '⏳ Non'}
+                  <p className={`text-lg ${result.updated ? 'text-sky-900' : 'text-primary-900'}`}>
+                    {result.updated ? 'Oui' : 'Non'}
                   </p>
                 </div>
               </div>
 
               {result.message && (
-                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                <div className="bg-sky-50 border border-primary-200 rounded-lg p-4">
                   <p className="text-primary-800">{result.message}</p>
                 </div>
               )}
 
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-                  📋 Réponse complète (JSON)
+                  Réponse complète (JSON)
                 </summary>
                 <pre className="mt-2 p-3 bg-gray-100 rounded-lg text-xs overflow-auto">
                   {JSON.stringify(result, null, 2)}

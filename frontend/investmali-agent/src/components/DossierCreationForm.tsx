@@ -506,10 +506,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   // État principal du formulaire
   const [formData, setFormData] = useState<FormData>({
-    // Informations Personnelles
+    // Informations Personnelles - champs vides par défaut
     civilite: 'MONSIEUR',
-    prenom: agent?.firstName || '',
-    nom: agent?.lastName || '',
+    prenom: '',
+    nom: '',
     dateNaissance: '',
     lieuNaissance: '',
     nationalite: 'MALIENNE',
@@ -549,9 +549,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       registreCommerce: null,
       justificatifDomicile: null,
     },
-    // Localisation
-    division: agent?.division || '',
-    antenne: agent?.antenne || '',
+    // Localisation - champs vides par défaut
+    division: '',
+    antenne: '',
   });
 
   // Refs pour stocker les valeurs actuelles sans causer de re-renders
@@ -675,8 +675,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         registreCommerce: null,
         justificatifDomicile: null,
       },
-      division: agent?.division || '',
-      antenne: agent?.antenne || '',
+      division: '',
+      antenne: '',
     });
     setCurrentStep(1);
     setIsDossierCreated(false);
@@ -2255,8 +2255,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }
       
       if (allErrors.length > 0) {
-        const errorMessage = `Veuillez corriger les erreurs suivantes avant de soumettre :\n\n${allErrors.join('\n')}`;
-        alert(errorMessage);
+        // Utiliser le système de validation existant au lieu de alert()
+        setValidationErrors(allErrors);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setIsLoading(false);
         return;
       }
@@ -3669,7 +3670,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           </div>
           <div>
             <h2 className="text-xl font-semibold text-sky-800">Type d'entreprise</h2>
-            <p className="text-sky-600 font-medium mt-1">
+            <p className="text-black-600 font-medium mt-1">
               Voulez-vous créer une entreprise individuelle ou une société ?
             </p>
           </div>
@@ -3791,7 +3792,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             defaultValue={formData.nom}
             onBlur={(e) => updateFormData('nom', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            placeholder={agent?.lastName || "Votre nom de famille"}
+            placeholder="Nom de famille"
           />
         </div>
 
@@ -3805,7 +3806,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             defaultValue={formData.prenom}
             onBlur={(e) => updateFormData('prenom', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            placeholder={agent?.firstName || "Votre prénom"}
+            placeholder="Prénom"
           />
         </div>
 
@@ -4259,17 +4260,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         <div className="col-span-2">
           <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <svg className="w-5 h-5 mr-2 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             Votre localisation
           </h4>
 
           <div className="space-y-6">
             <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
               <h3 className="text-base font-semibold text-sky-800 mb-3 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 Recherche rapide de localisation
               </h3>
-              <p className="text-sm text-sky-600 mb-4">
+              <p className="text-sm text-black-600 mb-4">
                 Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative
                 {!formData.hasDifferentAddress && (
                   <span className="block text-sky-700 font-medium mt-1">
@@ -4773,7 +4774,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       <div className="border-t border-gray-200 pt-6">
         <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <svg className="w-5 h-5 mr-2 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           Localisation de l'entreprise
         </h4>
 
@@ -5418,7 +5419,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         {/* Formulaire détaillé pour le créateur */}
         {showDetailedForm && (
-          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  border border-white/60 rounded-lg p-6 mb-6 shadow-sm" style={{ 
+          <div className="bg-gradient-to-r from-white/95   border border-white/60 rounded-lg p-6 mb-6 shadow-sm" style={{ 
           contain: 'layout style paint',
           transform: 'translate3d(0, 0, 0)',
           backfaceVisibility: 'hidden',
@@ -5520,7 +5521,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                         </svg>
                         <span className="text-sm font-bold text-primary-800">Réle sans parts</span>
                       </div>
-                      <p className="text-sm text-primary-700">
+                      <p className="text-sm text-black-600">
                         Les administrateurs n'ont pas de pourcentage de parts dans l'entreprise. 
                         Ils exercent uniquement des fonctions administratives.
                       </p>
@@ -6044,7 +6045,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       </svg>
                       <span className="text-sm font-bold text-primary-800">Réle sans parts</span>
                     </div>
-                    <p className="text-sm text-primary-700">
+                    <p className="text-sm text-black-600">
                       Les administrateurs n'ont pas de pourcentage de parts dans l'entreprise. 
                       Ils exercent uniquement des fonctions administratives.
                     </p>
@@ -6166,7 +6167,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     type="file"
                     onChange={(e) => setNewParticipant({...newParticipant, extraitNaissanceFile: e.target.files?.[0]})}
                   />
-                  <p className="text-xs text-sky-600 mt-1">Obligatoire pour les gérants - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                  <p className="text-xs text-black-600 mt-1">Obligatoire pour les gérants - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                 </div>
               )}
 
@@ -6207,12 +6208,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                         />
                         <p className={`text-xs mt-1 ${
                           isRequired 
-                            ? 'text-green-600' 
-                            : 'text-gray-500'
+                            ? 'text-black-600' 
+                            : 'text-black-600'
                         }`}>
                           {isRequired 
-                            ? '🏠 Obligatoire (nationalité non malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
-                            : '🏠 Optionnel (nationalité malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
+                            ? 'Obligatoire (nationalité non malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
+                            : 'Optionnel (nationalité malienne) - Formats: PDF, JPG, JPEG, PNG (max 5MB)'
                           }
                         </p>
                       </div>
@@ -6230,7 +6231,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                         type="file"
                         onChange={(e) => setNewParticipant({...newParticipant, pieceNationaliteFile: e.target.files?.[0]})}
                       />
-                      <p className="text-xs text-blue-600 mt-1">🆔 Obligatoire pour les entreprises individuelles - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                      <p className="text-xs text-black-600 mt-1">Obligatoire pour les entreprises individuelles - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                     </div>
                   )}
 
@@ -6245,21 +6246,21 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                         type="file"
                         onChange={(e) => setNewParticipant({...newParticipant, acteMariageFile: e.target.files?.[0]})}
                       />
-                      <p className="text-xs text-sky-600 mt-1">Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                      <p className="text-xs text-black-600 mt-1">Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                     </div>
                   )}
 
                   {/* Section déclaration sur l'honneur si pas de casier */}
                   {newParticipant.hasCriminalRecord === false && (
                     <div className="md:col-span-2 mt-4">
-                      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                      <div className="bg-sky-50 border border-primary-200 rounded-lg p-4">
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
-                            <DocumentIcon className="w-6 h-6 text-primary-600" />
+                            <DocumentIcon className="w-6 h-6 text-black-600" />
                           </div>
                           <div className="flex-1">
                             <h4 className="text-sm font-medium text-gray-900 mb-2">Pas de casier judiciaire ?</h4>
-                            <p className="text-sm text-primary-700 mb-3">
+                            <p className="text-sm text-black-600 mb-3">
                               Si vous n'avez pas d'extrait de casier judiciaire, vous pouvez faire une déclaration sur l'honneur selon l'article 45, 47 de l'Acte Uniforme OHADA.
                             </p>
                             
@@ -6269,18 +6270,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 type="button"
                                 onClick={() => handleGenerateDeclaration(newParticipant)}
                                 disabled={!newParticipant.nom || !newParticipant.prenom}
-                                className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                className="w-full py-2 px-4 bg-sky-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                               >
                 ?? Générer la déclaration PDF
                               </button>
-                              <p className="text-xs text-primary-600 mt-1">
+                              <p className="text-xs text-black-600 mt-1">
                                 ?? Génére un PDF de déclaration sur l'honneur avec vos informations et signature
                               </p>
                             </div>
                             
                             {/* Signature de la déclaration */}
                             <div className="mt-4">
-                              <label className="block text-sm font-medium text-primary-900 mb-3">
+                              <label className="block text-sm font-medium text-black-900 mb-3">
                                 ?? Signature de la déclaration sur l'honneur {!newParticipant.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
                               </label>
                               <SignatureCanvas
@@ -6289,7 +6290,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 }}
                                 existingSignature={newParticipant.signatureDataUrl}
                               />
-                              <p className="text-xs text-primary-600 mt-2">
+                              <p className="text-xs text-black-600 mt-2">
                                 ?? {newParticipant.declarationHonneurFile 
                                   ? 'Signature optionnelle car vous avez uploadé une déclaration' 
                                   : 'Signature obligatoire pour générer une déclaration sur l\'honneur'
@@ -6299,7 +6300,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                             {/* Upload déclaration optionnel */}
                             <div className="mt-4">
-                              <label className="block text-sm font-medium text-primary-900 mb-2">
+                              <label className="block text-sm font-medium text-black-600 mb-2">
                                 ?? Uploader la déclaration sur l'honneur (optionnel)
                               </label>
                               <input
@@ -6308,7 +6309,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 type="file"
                                 onChange={(e) => setNewParticipant({...newParticipant, declarationHonneurFile: e.target.files?.[0]})}
                               />
-                              <p className="text-xs text-primary-600 mt-1">
+                              <p className="text-xs text-black-600 mt-1">
                                 ?? Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)<br />
                                 ?? <strong>Astuce:</strong> Si vous uploadez une déclaration déjé signée, la signature ci-dessus devient optionnelle
                               </p>
@@ -6327,7 +6328,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             <div className="md:col-span-3 mt-6">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium text-gray-900">📎 Documents supplémentaires (Optionnel)</h4>
+                  <h4 className="text-sm font-medium text-gray-900">Documents supplémentaires (Optionnel)</h4>
                   <button 
                     type="button" 
                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#47c559] hover:bg-[#47c559]/90 text-white text-sm font-medium rounded-lg transition-colors duration-300"
@@ -6449,7 +6450,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
           <div className="space-y-4">
             {formData.participants.map((participant, index) => (
-            <div key={participant.tempId || participant.id || index} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  p-6 rounded-lg border border-white/60 shadow-sm hover:shadow-sm transition-all duration-300">
+            <div key={participant.tempId || participant.id || index} className="bg-gradient-to-r from-white/95 p-6 rounded-lg border border-white/60 shadow-sm hover:shadow-sm transition-all duration-300">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   {participant.typePersonne === 'MORALE' ? (
@@ -6485,7 +6486,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       {false && (participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && (
                         <div className="mt-4 p-4 bg-gradient-to-r from-white/80 via-slate-50/60 to-primary-50/40  rounded-lg border border-white/50 shadow-lg">
                           <h5 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                            <DocumentIcon className="w-4 h-4 mr-2 text-sky-600" />
+                            <DocumentIcon className="w-4 h-4 mr-2 text-black-600" />
                             Documents du gérant
                           </h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -6563,7 +6564,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         {/* Modal de sélection du type de personne */}
         {showPersonTypeModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  rounded-lg p-6 max-w-md w-full mx-4 shadow-sm border border-white/60">
+            <div className="bg-gradient-to-r from-white/95 rounded-lg p-6 max-w-md w-full mx-4 shadow-sm border border-white/60">
               <h3 className="text-lg font-semibold text-slate-800 mb-4">Type de personne é ajouter</h3>
               <p className="text-slate-600 font-medium mb-6">Choisissez le type de personne que vous souhaitez ajouter :</p>
               
@@ -6767,7 +6768,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         <div className="bg-sky-50 border border-sky-200 rounded-lg p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-sky-100 rounded-lg">
-              <BuildingOfficeIcon className="w-6 h-6 text-sky-600" />
+              <BuildingOfficeIcon className="w-6 h-6 text-black-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-primary-800">Entreprise Individuelle</h3>
@@ -6800,7 +6801,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Informations Personnelles */}
-        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
+        <div className="bg-gradient-to-r from-white/95 p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
           <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
             <UserIcon className="h-5 w-5 text-mali-emerald mr-2" />
             Informations Personnelles
@@ -6886,7 +6887,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </div>
 
         {/* Informations Société */}
-        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
+        <div className="bg-gradient-to-r from-white/95 p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
           <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
             <div className="p-2 bg-[#2d85c9] rounded-xl mr-3 shadow-lg">
               <BuildingOfficeIcon className="h-4 w-4 text-white" />
@@ -6974,7 +6975,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         {/* Participants - Masqué pour les entreprises individuelles */}
         {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
-          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60  p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
+          <div className="bg-gradient-to-r from-white/95 p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
             <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
               <UserIcon className="h-5 w-5 text-mali-emerald mr-2" />
               Participants
@@ -7134,7 +7135,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       <p className="text-sm font-medium text-primary-900">
                         Un email de confirmation sera automatiquement envoyé aux gérants ou aux promoteurs
                       </p>
-                      <p className="text-xs text-primary-700 mt-1">
+                      <p className="text-xs text-black-600 mt-1">
                         {gerantsAvecEmail.length} gérant(s) ou promoteur(s) avec email valide :
                       </p>
                       <ul className="text-xs text-primary-600 mt-1 ml-4">
@@ -7192,7 +7193,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <li>Un seul gérant autorisé par entreprise</li>
                 <li>La somme des parts (gérants + associés) doit égaler 100%</li>
                 {(formData.formeJuridique === 'SA' || formData.formeJuridique === 'SAS') && (
-                  <li className="text-primary-700 font-medium">
+                  <li className="text-black-600 font-medium">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary-100 text-primary-800 mr-1">
                       SA/SAS
                     </span>
@@ -7237,7 +7238,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
                   currentStep >= step.number
                     ? 'bg-[#2d85c9] border-sky-600 text-white hover:bg-sky-700'
-                    : 'border-gray-300 text-gray-500 hover:border-sky-400 hover:text-sky-600'
+                    : 'border-gray-300 text-gray-500 hover:border-sky-400 hover:text-black-600'
                 }`}
                 title={`Aller à l'étape ${step.number}: ${step.title}`}
               >
@@ -7245,7 +7246,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </button>
               <button
                 onClick={() => goToStep(step.number)}
-                className="ml-3 text-left hover:text-sky-600 transition-colors duration-200 focus:outline-none focus:text-sky-600"
+                className="ml-3 text-left hover:text-black-600 transition-colors duration-200 focus:outline-none focus:text-black-600"
                 title={`Aller à l'étape ${step.number}: ${step.title}`}
               >
                 <div className={`text-sm font-medium ${
@@ -7264,34 +7265,91 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </div>
       </div>
 
-      {/* Affichage des erreurs de validation */}
+      {/* Affichage des erreurs de validation - Design professionnel */}
       {validationErrors.length > 0 && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-red-800">
-                Veuillez corriger les erreurs suivantes :
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <ul className="list-disc list-inside space-y-1">
-                  {validationErrors.map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
+        <div className="mb-6 bg-white border border-red-200 rounded-xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-red-50 px-5 py-4 border-b border-red-200 flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-4">
+                <svg className="h-6 w-6 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-800">
+                  Formulaire incomplet
+                </h3>
+                <p className="text-sm text-red-600">
+                  Veuillez corriger les erreurs ci-dessous avant de continuer
+                </p>
               </div>
             </div>
             <button
               onClick={() => setValidationErrors([])}
-              className="ml-3 flex-shrink-0 text-red-500 hover:text-red-700"
+              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
+            </button>
+          </div>
+          
+          {/* Contenu des erreurs */}
+          <div className="p-5 max-h-80 overflow-y-auto">
+            <div className="space-y-4">
+              {validationErrors.reduce((acc: { step: string; errors: string[] }[], error, index) => {
+                // Détecter les titres d'étape (format "étape X:")
+                if (error.match(/^étape \d+:$/)) {
+                  acc.push({ step: error.replace(':', ''), errors: [] });
+                } else if (error.trim() !== '' && error.startsWith('  - ')) {
+                  // Ajouter l'erreur à l'étape courante
+                  if (acc.length > 0) {
+                    acc[acc.length - 1].errors.push(error.replace('  - ', ''));
+                  }
+                } else if (error.trim() !== '' && !error.match(/^étape \d+:$/)) {
+                  // Erreur sans étape
+                  if (acc.length === 0 || acc[acc.length - 1].step !== 'Général') {
+                    acc.push({ step: 'Général', errors: [] });
+                  }
+                  acc[acc.length - 1].errors.push(error);
+                }
+                return acc;
+              }, []).map((group, groupIndex) => (
+                <div key={groupIndex} className="bg-red-50/50 rounded-lg p-4 border border-red-100">
+                  <div className="flex items-center mb-3">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700 text-sm font-bold mr-3">
+                      {group.step.replace('étape ', '')}
+                    </span>
+                    <h4 className="font-semibold text-red-800 capitalize">
+                      {group.step === 'Général' ? 'Erreurs générales' : `Étape ${group.step.replace('étape ', '')}`}
+                    </h4>
+                  </div>
+                  <ul className="space-y-2 ml-10">
+                    {group.errors.map((err, errIndex) => (
+                      <li key={errIndex} className="flex items-start text-sm text-red-700">
+                        <svg className="h-4 w-4 text-red-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <span>{err}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Footer avec compteur */}
+          <div className="bg-red-50 px-5 py-3 border-t border-red-200 flex items-center justify-between">
+            <span className="text-sm text-red-600">
+              {validationErrors.filter(e => e.startsWith('  - ')).length} champ(s) à corriger
+            </span>
+            <button
+              onClick={() => setValidationErrors([])}
+              className="px-4 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+            >
+              Fermer
             </button>
           </div>
         </div>
@@ -7412,7 +7470,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
               
               {/* Note sur le reçu */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-blue-800 text-center">
                   Un reçu temporaire <span className="font-bold">NON PAYÉ</span> a été généré
                 </p>
@@ -7470,7 +7528,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
               
               {/* Note */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
                   <ExclamationTriangleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-blue-800">

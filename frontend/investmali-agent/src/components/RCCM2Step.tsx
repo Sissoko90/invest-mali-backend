@@ -615,7 +615,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="p-4 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+          <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
           </div>
           <p className="text-slate-600 font-medium">Chargement des demandes RCCM Phase 2...</p>
@@ -626,9 +626,9 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
+      <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentCheckIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -639,7 +639,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
 
         {demandes.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-4 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
@@ -650,11 +650,11 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
         ) : (
           <div className="space-y-4">
             {demandes.map((demande) => (
-              <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-3">
-                      <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <BuildingOfficeIcon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">

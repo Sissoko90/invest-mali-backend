@@ -912,7 +912,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       {/* En-tête */}
       <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentTextIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -947,7 +947,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       <div className="space-y-4">
         {entreprises.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
@@ -998,7 +998,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
 
                     {/* Affichage du NINA s'il existe */}
                     {entreprise.numeroNina && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2" />
@@ -1163,16 +1163,16 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       </div>
 
       {/* Informations sur l'API NINA */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-sky-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start">
-          <EyeIcon className="h-6 w-6 text-blue-600 mr-2 mt-0.5" />
+          <EyeIcon className="h-6 w-6 text-sky-600 mr-2 mt-0.5" />
           <div>
-            <h4 className="text-blue-900 font-bold text-xl mt-1">À propos de l'API NINA INSTAT Mali</h4>
-            <p className="text-blue-800 font-medium text-lg mt-1">
+            <h4 className="text-black-900 font-bold text-xl mt-1">À propos de l'API NINA INSTAT Mali</h4>
+            <p className="text-black-800 font-medium text-lg mt-1">
               Le système génère automatiquement les numéros NINA en utilisant les informations de l'entreprise :
               nom, sigle, gérant, localisation INSTAT, et type d'entreprise. Le numéro RCCM doit être fourni manuellement.
             </p>
-            <ul className="text-blue-800 font-medium text-lg mt-2 space-y-1">
+            <ul className="text-black-800 font-medium text-lg mt-2 space-y-1">
               <li>• Type 3 : Entreprise Individuelle</li>
               <li>• Type 4 : Société</li>
               <li>• Type 5 : GIE (Groupement d'Intérêt Économique)</li>

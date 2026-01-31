@@ -397,7 +397,7 @@ l'Institut National de la Statistique (INSTAT)
       {/* Header */}
       <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentArrowDownIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -412,30 +412,30 @@ l'Institut National de la Statistique (INSTAT)
         <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg text-slate-600 font-medium">Dossiers prêts</p>
-              <p className="text-2xl font-black text-slate-800">{entreprises.length}</p>
+              <p className="text-lg text-slate-600 font-bold">Dossiers prêts</p>
+              <p className="text-4xl font-black text-slate-800">{entreprises.length}</p>
             </div>
-            <ClockIcon className="h-10 w-10 text-blue-600" />
+            <ClockIcon className="h-10 w-10 text-sky-600" />
           </div>
         </div>
         
         <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg text-slate-600 font-medium">Documents disponibles</p>
-              <p className="text-2xl font-black text-slate-800">{entreprises.length * 2}</p>
+              <p className="text-lg text-slate-600 font-bold">Documents disponibles</p>
+              <p className="text-4xl font-black text-slate-800">{entreprises.length * 2}</p>
             </div>
-            <DocumentTextIcon className="h-10 w-10 text-blue-600" />
+            <DocumentTextIcon className="h-10 w-10 text-sky-600" />
           </div>
         </div>
         
         <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg text-slate-600 font-medium">En attente de retrait</p>
-              <p className="text-2xl font-black text-slate-800">{entreprises.length}</p>
+              <p className="text-lg text-slate-600 font-bold">En attente de retrait</p>
+              <p className="text-4xl font-black text-slate-800">{entreprises.length}</p>
             </div>
-            <DocumentArrowDownIcon className="h-10 w-10 text-blue-600" />
+            <DocumentArrowDownIcon className="h-10 w-10 text-sky-600" />
           </div>
         </div>
       </div>
@@ -443,10 +443,10 @@ l'Institut National de la Statistique (INSTAT)
       {/* Liste des entreprises */}
       {entreprises.length === 0 ? (
         <div className="text-center py-12">
-          <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+          <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
             <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
           </div>
-          <h3 className="text-xl font-black text-slate-800 mb-3">
+          <h3 className="text-xl font-black text-slate-800 mb-3 ">
             Aucun dossier en attente de retrait
           </h3>
           <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">

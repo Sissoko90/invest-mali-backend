@@ -144,9 +144,9 @@ const AgentDashboard: React.FC = () => {
           activeSection === 'dossier' ? 'w-0' : (sidebarOpen ? 'w-56' : 'w-0')
         } overflow-hidden flex-shrink-0`}>
           
-          {/* Header sidebar avec logo et bouton fermer */}
+          {/* Header sidebar avec logo et bouton fermer - logo caché quand sidebar fermé */}
           <div className="p-4 flex items-center justify-between border-b border-sky-100">
-            <div className="flex items-center space-x-2">
+            <div className={`flex items-center space-x-2 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
               <img src={apiLogo} alt="API-MALI" className="w-10 h-10" />
               <span className="font-bold text-lg text-sky-800">API-MALI</span>
             </div>
@@ -255,7 +255,7 @@ const AgentDashboard: React.FC = () => {
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <header className="bg-gradient-to-r from-sky-600 via-blue-600 to-sky-700 shadow-lg h-20 flex items-center justify-between px-6">
+          <header className="bg-sky-600 shadow-lg h-20 flex items-center justify-between px-6">
             <div className="flex items-center space-x-4">
               {/* Bouton menu pour toggle le sidebar */}
               <button 
@@ -272,7 +272,19 @@ const AgentDashboard: React.FC = () => {
                 <p className="text-white/90 text-lg font-medium">Bienvenue, {agent.firstName} !</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
+              {/* Bouton Dashboard dans le navbar */}
+              <button
+                onClick={() => setActiveSection('dashboard')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                  activeSection === 'dashboard' 
+                    ? 'bg-white text-sky-600' 
+                    : 'bg-white/20 hover:bg-white/30 text-white'
+                }`}
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                <span>Dashboard</span>
+              </button>
               <span className="text-lg font-medium text-white/90">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
           </header>

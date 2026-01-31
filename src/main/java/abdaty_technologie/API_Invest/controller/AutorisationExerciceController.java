@@ -2,7 +2,6 @@ package abdaty_technologie.API_Invest.controller;
 
 import abdaty_technologie.API_Invest.Entity.AgrementAssignment;
 import abdaty_technologie.API_Invest.Entity.DemandeAutorisationExercice;
-import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeDemandeAgrement;
 import abdaty_technologie.API_Invest.repository.AgrementAssignmentRepository;

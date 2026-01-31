@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Users, Shield, AlertCircle, CheckCircle } from './icons';
+import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, TrashIcon, UserCircleIcon, PhoneIcon, EnvelopeIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import AgentManagementService, { 
   AgentResponse, 
   AgentCreationRequest, 
@@ -17,6 +18,19 @@ const AgentManagementFixed: React.FC = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingAgent, setEditingAgent] = useState<AgentResponse | null>(null);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  // Pagination et recherche
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Modal de détails agent
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsAgent, setDetailsAgent] = useState<AgentResponse | null>(null);
+  
+  // Modal de confirmation suppression
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState<AgentResponse | null>(null);
   
   // Form data pour création d'agent
   const [formData, setFormData] = useState<AgentCreationRequest>({
@@ -142,6 +156,32 @@ const AgentManagementFixed: React.FC = () => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
   };
+
+  // Filtrage et pagination des agents
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) return agents;
+    const query = searchQuery.toLowerCase();
+    return agents.filter(agent => 
+      agent.prenom.toLowerCase().includes(query) ||
+      agent.nom.toLowerCase().includes(query) ||
+      agent.email.toLowerCase().includes(query) ||
+      (agent.telephone && agent.telephone.includes(query)) ||
+      agent.role.toLowerCase().includes(query) ||
+      (agent.antenneAgent && agent.antenneAgent.toLowerCase().includes(query))
+    );
+  }, [agents, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / itemsPerPage));
+  
+  const paginatedAgents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAgents.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAgents, currentPage, itemsPerPage]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,16 +327,7 @@ const AgentManagementFixed: React.FC = () => {
   };
 
   const handleDeleteAgent = async (agent: AgentResponse) => {
-    // Demander confirmation avant suppression
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer définitivement l'agent "${agent.prenom} ${agent.nom}" (${agent.email}) ?\n\n⚠️ Cette action est irréversible !\n\n📋 Note: Si cet agent est assigné à des entreprises, elles seront automatiquement désassignées.`
-    );
-    
-    if (!confirmDelete) {
-      console.log('🚫 Suppression annulée par l\'utilisateur');
-      return;
-    }
-    
+    // La confirmation est maintenant gérée par la modale showDeleteModal
     setLoading(true);
 
     try {
@@ -488,100 +519,206 @@ const AgentManagementFixed: React.FC = () => {
 
       {/* Liste des agents - Table simple */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-700">Liste des Agents</h2>
+          
+          {/* Barre de recherche */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email, téléphone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent w-full sm:w-80"
+            />
+          </div>
         </div>
     
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Agent</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Rôle</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Antenne</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Statut</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {agents.map((agent) => (
-                <tr key={agent.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div>
-                      <div className="text-lg font-medium text-slate-800">
-                        {agent.prenom} {agent.nom}
+        {/* Liste des agents en cards */}
+        <div className="p-4">
+          {paginatedAgents.length === 0 ? (
+            <div className="text-center py-12">
+              <UserCircleIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">Aucun agent trouvé</p>
+              {searchQuery && (
+                <p className="text-gray-400 text-sm mt-2">Essayez de modifier votre recherche</p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {paginatedAgents.map((agent) => (
+                <div 
+                  key={agent.id} 
+                  className={`bg-white border rounded-xl p-4 hover:shadow-lg transition-all duration-200 ${
+                    agent.actif ? 'border-gray-200' : 'border-red-200 bg-red-50/30'
+                  }`}
+                >
+                  {/* Header avec avatar et statut */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                        agent.actif ? 'bg-gradient-to-br from-sky-500 to-blue-600' : 'bg-gray-400'
+                      }`}>
+                        {agent.prenom.charAt(0)}{agent.nom.charAt(0)}
                       </div>
-                      <div className="text-sm text-slate-500">{agent.email}</div>
-                      {agent.telephone && (
-                        <div className="text-sm text-slate-500">{agent.telephone}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {agent.roles && agent.roles.length > 0 ? (
-                        agent.roles.map((role, index) => (
-                          <span key={index} className="inline-flex px-2 py-1 rounded text-sm font-medium bg-sky-100 text-sky-800">
-                            {role}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="inline-flex px-2 py-1 rounded text-sm font-medium bg-sky-100 text-sky-800">
-                          {agent.role}
+                      <div>
+                        <h3 className="font-semibold text-slate-800 text-lg">
+                          {agent.prenom} {agent.nom}
+                        </h3>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          agent.actif 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${agent.actif ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          {agent.actif ? 'Actif' : 'Inactif'}
                         </span>
-                      )}
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {agent.antennes && agent.antennes.length > 0 ? (
-                        agent.antennes.map((antenne, index) => (
-                          <span key={index} className="inline-flex px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800">
-                            {antenne}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="inline-flex px-2 py-1 rounded text-sm font-medium bg-gray-100 text-gray-800">
-                          {agent.antenneAgent || 'Non assignée'}
+                  </div>
+
+                  {/* Informations de contact */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <EnvelopeIcon className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="truncate">{agent.email}</span>
+                    </div>
+                    {agent.telephone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <PhoneIcon className="h-4 w-4 mr-2 text-gray-400" />
+                        <span>{agent.telephone}</span>
+                      </div>
+                    )}
+                    {agent.antenneAgent && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPinIcon className="h-4 w-4 mr-2 text-gray-400" />
+                        <span>{agent.antennes && agent.antennes.length > 1 
+                          ? `${agent.antennes[0]} +${agent.antennes.length - 1}` 
+                          : agent.antenneAgent}
                         </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rôles */}
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">Rôles</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(agent.roles && agent.roles.length > 0 ? agent.roles : [agent.role]).slice(0, 2).map((role, index) => (
+                        <span 
+                          key={index} 
+                          className="inline-flex px-2 py-1 rounded-md text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200"
+                        >
+                          {role.replace('AGENT_', '').replace('_', ' ')}
+                        </span>
+                      ))}
+                      {((agent.roles && agent.roles.length > 2) || (agent.antennes && agent.antennes.length > 1)) && (
+                        <button
+                          onClick={() => { setDetailsAgent(agent); setShowDetailsModal(true); }}
+                          className="inline-flex px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
+                        >
+                          Voir tout
+                        </button>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-1 rounded text-sm font-medium ${
-                      agent.actif 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {agent.actif ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => handleToggleAgentStatus(agent)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        agent.actif 
+                          ? 'text-amber-700 bg-amber-50 hover:bg-amber-100' 
+                          : 'text-green-700 bg-green-50 hover:bg-green-100'
+                      }`}
+                    >
+                      {agent.actif ? 'Désactiver' : 'Activer'}
+                    </button>
+                    <div className="flex items-center space-x-1">
                       <button
                         onClick={() => handleEditAgent(agent)}
-                        className="px-3 py-1 text-sm font-medium text-sky-600 hover:bg-sky-50 rounded transition-colors"
+                        className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+                        title="Modifier"
                       >
-                        Modifier
+                        <PencilSquareIcon className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleToggleAgentStatus(agent)}
-                        className="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        onClick={() => { setAgentToDelete(agent); setShowDeleteModal(true); }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Supprimer"
                       >
-                        {agent.actif ? 'Désactiver' : 'Activer'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAgent(agent)}
-                        className="px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        Supprimer
+                        <TrashIcon className="h-5 w-5" />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
+        </div>
+        
+        {/* Pagination */}
+        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm text-gray-600">
+            {filteredAgents.length === 0 ? (
+              <span>Aucun agent trouvé</span>
+            ) : (
+              <span>
+                Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, filteredAgents.length)} sur {filteredAgents.length} agent{filteredAgents.length > 1 ? 's' : ''}
+                {searchQuery && ` (filtrés sur ${agents.length} total)`}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+            </button>
+            
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-sky-600 text-white'
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -787,153 +924,407 @@ const AgentManagementFixed: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de modification simple */}
+      {/* Modal de modification - Design professionnel */}
       {showEditForm && editingAgent && (
         <div className="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-slate-800">Modifier l'Agent</h3>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header avec avatar */}
+            <div className="bg-gradient-to-r from-sky-600 to-blue-700 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
+                    {editingAgent.prenom.charAt(0)}{editingAgent.nom.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">
+                      Modifier l'agent
+                    </h3>
+                    <p className="text-sky-100 text-sm">
+                      {editingAgent.email}
+                    </p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setShowEditForm(false); setEditingAgent(null); }}
-                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Formulaire scrollable */}
+            <form onSubmit={handleUpdateAgent} className="flex-1 overflow-y-auto">
+              <div className="p-6 space-y-6">
+                {/* Section Informations personnelles */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                    <UserCircleIcon className="w-5 h-5 mr-2 text-sky-600" />
+                    Informations personnelles
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Prénom <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={formData.prenom}
+                        onChange={(e) => setFormData({...formData, prenom: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={formData.nom}
+                        onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Contact */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                    <EnvelopeIcon className="w-5 h-5 mr-2 text-sky-600" />
+                    Contact
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
+                      <input
+                        type="tel"
+                        value={formData.telephone}
+                        onChange={(e) => setFormData({...formData, telephone: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        placeholder="+223 XX XX XX XX"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Adresse</label>
+                      <input
+                        type="text"
+                        value={formData.adresse}
+                        onChange={(e) => setFormData({...formData, adresse: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                        placeholder="Adresse complète"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Sécurité */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Sécurité
+                  </h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nouveau mot de passe</label>
+                    <input
+                      type="password"
+                      value={formData.motDePasse}
+                      onChange={(e) => setFormData({...formData, motDePasse: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors"
+                      placeholder="Laisser vide pour conserver le mot de passe actuel"
+                    />
+                    <p className="text-xs text-gray-500 mt-1.5">Laissez vide si vous ne souhaitez pas modifier le mot de passe</p>
+                  </div>
+                </div>
+
+                {/* Section Rôles et Antennes */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center">
+                    <Shield className="w-5 h-5 mr-2 text-sky-600" />
+                    Rôles et Affectations
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Rôles <span className="text-red-500">*</span>
+                        <span className="ml-2 px-2 py-0.5 bg-sky-100 text-sky-700 text-xs rounded-full">
+                          {(formData.roles || []).length} sélectionné(s)
+                        </span>
+                      </label>
+                      <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
+                        {roles.map(role => (
+                          <label key={role.value} className="flex items-center space-x-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={(formData.roles || []).includes(role.value)}
+                              onChange={(e) => {
+                                const currentRoles = formData.roles || [];
+                                if (e.target.checked) {
+                                  setFormData({...formData, roles: [...currentRoles, role.value], role: currentRoles.length === 0 ? role.value : formData.role});
+                                } else {
+                                  const newRoles = currentRoles.filter(r => r !== role.value);
+                                  setFormData({...formData, roles: newRoles, role: newRoles.length > 0 ? newRoles[0] : ''});
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                            />
+                            <span className="text-sm text-gray-700">{role.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Antennes <span className="text-red-500">*</span>
+                        <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                          {(formData.antennes || []).length} sélectionnée(s)
+                        </span>
+                      </label>
+                      <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50">
+                        {antennes.map(antenne => (
+                          <label key={antenne.value} className="flex items-center space-x-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={(formData.antennes || []).includes(antenne.value)}
+                              onChange={(e) => {
+                                const currentAntennes = formData.antennes || [];
+                                if (e.target.checked) {
+                                  setFormData({...formData, antennes: [...currentAntennes, antenne.value], antenneAgent: currentAntennes.length === 0 ? antenne.value : formData.antenneAgent});
+                                } else {
+                                  const newAntennes = currentAntennes.filter(a => a !== antenne.value);
+                                  setFormData({...formData, antennes: newAntennes, antenneAgent: newAntennes.length > 0 ? newAntennes[0] : ''});
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                            />
+                            <span className="text-sm text-gray-700">{antenne.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer avec actions */}
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditForm(false); setEditingAgent(null); }}
+                  className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-sky-600 text-white font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Enregistrement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Enregistrer les modifications</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de détails agent */}
+      {showDetailsModal && detailsAgent && (
+        <div className="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl ${
+                    detailsAgent.actif ? 'bg-gradient-to-br from-sky-500 to-blue-600' : 'bg-gray-400'
+                  }`}>
+                    {detailsAgent.prenom.charAt(0)}{detailsAgent.nom.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-800">
+                      {detailsAgent.prenom} {detailsAgent.nom}
+                    </h3>
+                    <p className="text-sm text-gray-500">{detailsAgent.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowDetailsModal(false); setDetailsAgent(null); }}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-              
-              <form onSubmit={handleUpdateAgent} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Prénom *</label>
-                    <input
-                      type="text"
-                      value={formData.prenom}
-                      onChange={(e) => setFormData({...formData, prenom: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      required
-                    />
+
+              {/* Rôles complets */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase mb-3 flex items-center">
+                  <Shield className="w-4 h-4 mr-2 text-sky-600" />
+                  Rôles ({(detailsAgent.roles || [detailsAgent.role]).length})
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {(detailsAgent.roles && detailsAgent.roles.length > 0 ? detailsAgent.roles : [detailsAgent.role]).map((role, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex px-3 py-1.5 rounded-lg text-sm font-medium bg-sky-50 text-sky-700 border border-sky-200"
+                    >
+                      {role.replace('AGENT_', '').replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Antennes complètes */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase mb-3 flex items-center">
+                  <MapPinIcon className="w-4 h-4 mr-2 text-green-600" />
+                  Antennes ({(detailsAgent.antennes || [detailsAgent.antenneAgent]).filter(Boolean).length})
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {(detailsAgent.antennes && detailsAgent.antennes.length > 0 ? detailsAgent.antennes : [detailsAgent.antenneAgent]).filter(Boolean).map((antenne, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-700 border border-green-200"
+                    >
+                      {antenne}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Informations supplémentaires */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                {detailsAgent.telephone && (
+                  <div className="flex items-center text-sm">
+                    <PhoneIcon className="h-4 w-4 mr-3 text-gray-400" />
+                    <span className="text-gray-700">{detailsAgent.telephone}</span>
                   </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Nom *</label>
-                    <input
-                      type="text"
-                      value={formData.nom}
-                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      required
-                    />
+                )}
+                {detailsAgent.adresse && (
+                  <div className="flex items-center text-sm">
+                    <MapPinIcon className="h-4 w-4 mr-3 text-gray-400" />
+                    <span className="text-gray-700">{detailsAgent.adresse}</span>
                   </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Email *</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
-                    <input
-                      type="password"
-                      value={formData.motDePasse}
-                      onChange={(e) => setFormData({...formData, motDePasse: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      placeholder="Laisser vide pour ne pas changer"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Rôles *</label>
-                    <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
-                      {roles.map(role => (
-                        <label key={role.value} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={(formData.roles || []).includes(role.value)}
-                            onChange={(e) => {
-                              const currentRoles = formData.roles || [];
-                              if (e.target.checked) {
-                                setFormData({...formData, roles: [...currentRoles, role.value], role: currentRoles.length === 0 ? role.value : formData.role});
-                              } else {
-                                const newRoles = currentRoles.filter(r => r !== role.value);
-                                setFormData({...formData, roles: newRoles, role: newRoles.length > 0 ? newRoles[0] : ''});
-                              }
-                            }}
-                            className="rounded border-gray-300 text-sky-600"
-                          />
-                          <span className="text-sm">{role.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Antennes *</label>
-                    <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
-                      {antennes.map(antenne => (
-                        <label key={antenne.value} className="flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={(formData.antennes || []).includes(antenne.value)}
-                            onChange={(e) => {
-                              const currentAntennes = formData.antennes || [];
-                              if (e.target.checked) {
-                                setFormData({...formData, antennes: [...currentAntennes, antenne.value], antenneAgent: currentAntennes.length === 0 ? antenne.value : formData.antenneAgent});
-                              } else {
-                                const newAntennes = currentAntennes.filter(a => a !== antenne.value);
-                                setFormData({...formData, antennes: newAntennes, antenneAgent: newAntennes.length > 0 ? newAntennes[0] : ''});
-                              }
-                            }}
-                            className="rounded border-gray-300 text-sky-600"
-                          />
-                          <span className="text-sm">{antenne.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Téléphone</label>
-                    <input
-                      type="tel"
-                      value={formData.telephone}
-                      onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      placeholder="+223 XX XX XX XX"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-1">Adresse</label>
-                    <input
-                      type="text"
-                      value={formData.adresse}
-                      onChange={(e) => setFormData({...formData, adresse: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
-                      placeholder="Adresse complète"
-                    />
+                )}
+                <div className="flex items-center text-sm">
+                  <span className={`w-2 h-2 rounded-full mr-3 ${detailsAgent.actif ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  <span className="text-gray-700">{detailsAgent.actif ? 'Agent actif' : 'Agent inactif'}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => { setShowDetailsModal(false); setDetailsAgent(null); }}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={() => { 
+                    setShowDetailsModal(false); 
+                    handleEditAgent(detailsAgent); 
+                  }}
+                  className="px-4 py-2 text-white bg-sky-600 hover:bg-sky-700 rounded-lg font-medium transition-colors"
+                >
+                  Modifier
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteModal && agentToDelete && (
+        <div className="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-6">
+              {/* Icône d'alerte */}
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrashIcon className="w-8 h-8 text-red-600" />
+                </div>
+              </div>
+
+              {/* Titre et message */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Confirmer la suppression
+                </h3>
+                <p className="text-gray-600">
+                  Êtes-vous sûr de vouloir supprimer définitivement l'agent
+                </p>
+                <p className="font-semibold text-gray-900 mt-1">
+                  {agentToDelete.prenom} {agentToDelete.nom}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  ({agentToDelete.email})
+                </p>
+              </div>
+
+              {/* Avertissement */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium">Cette action est irréversible</p>
+                    <p className="mt-1">Si cet agent est assigné à des entreprises, elles seront automatiquement désassignées.</p>
                   </div>
                 </div>
-                
-                <div className="flex justify-end pt-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 bg-sky-600 text-white text-lg font-medium rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50"
-                  >
-                    {loading ? 'Modification...' : 'Modifier l\'Agent'}
-                  </button>
-                </div>
-              </form>
+              </div>
+
+              {/* Actions */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setAgentToDelete(null); }}
+                  className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={async () => {
+                    if (agentToDelete) {
+                      setShowDeleteModal(false);
+                      await handleDeleteAgent(agentToDelete);
+                      setAgentToDelete(null);
+                    }
+                  }}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Suppression...' : 'Supprimer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

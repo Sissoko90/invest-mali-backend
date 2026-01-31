@@ -95,6 +95,43 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
   const [manualRccmNumber, setManualRccmNumber] = useState<string>('');
   const [savingManualRccm, setSavingManualRccm] = useState<string | null>(null);
 
+  // États pour le modal d'erreur professionnel
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState('');
+  const [errorModalMessage, setErrorModalMessage] = useState('');
+
+  // États pour le modal de succès
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalTitle, setSuccessModalTitle] = useState('');
+  const [successModalMessage, setSuccessModalMessage] = useState('');
+
+  // Fonction utilitaire pour obtenir le nom d'affichage
+  const getDisplayName = (demande: DemandeTCOM): string => {
+    // Vérifier si le nom existe et n'est pas un fallback avec ID
+    if (demande.nom && demande.nom !== 'Entreprise sans nom' && !demande.nom.startsWith('Entreprise ')) {
+      return demande.nom;
+    }
+    // Si pas de nom d'entreprise valide, utiliser nom/prénom du demandeur
+    if (demande.demandeur?.prenom || demande.demandeur?.nom) {
+      return `${demande.demandeur.prenom || ''} ${demande.demandeur.nom || ''}`.trim();
+    }
+    return 'Entreprise sans nom';
+  };
+
+  // Fonction pour afficher une erreur dans le modal
+  const showError = (title: string, message: string) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setShowErrorModal(true);
+  };
+
+  // Fonction pour afficher un succès dans le modal
+  const showSuccess = (title: string, message: string) => {
+    setSuccessModalTitle(title);
+    setSuccessModalMessage(message);
+    setShowSuccessModal(true);
+  };
+
   // Motifs de rejet prédéfinis pour le retour à RÉVISION
   const rejectReasons = [
     'Document est illisible',
@@ -158,9 +195,13 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
           }
           
           
+          // Déterminer le nom d'affichage: nom entreprise ou nom/prénom du gérant
+          const nomAffichage = entreprise.nom || entreprise.nomEntreprise || 
+            (gerant.prenom || gerant.nom ? `${gerant.prenom || ''} ${gerant.nom || ''}`.trim() : 'Entreprise sans nom');
+          
           return {
             id: entreprise.id,
-            nom: entreprise.nom || entreprise.nomEntreprise || `Entreprise ${entreprise.id}`,
+            nom: nomAffichage,
             typeEntreprise: entreprise.typeEntreprise || 'INDIVIDUELLE',
             formeJuridique: entreprise.formeJuridique || 'EI',
             secteurActivite: entreprise.secteurActivite || entreprise.domaineActivite || 'Commerce',
@@ -386,14 +427,15 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             existingRccmData[demandeId] = localRccmData;
             localStorage.setItem('manual_rccm_data', JSON.stringify(existingRccmData));
             
-            alert(`✅ Numéro RCCM sauvegardé avec succès!\n\nNuméro: ${manualRccmNumber}\n\n💾 Sauvegardé dans la base de données.`);
+            const displayName = demande ? getDisplayName(demande) : 'l\'entreprise';
+            showSuccess('RCCM sauvegardé', `Le numéro RCCM pour "${displayName}" a été sauvegardé avec succès.\n\nNuméro: ${manualRccmNumber}`);
             setManualRccmNumber('');
             return; // Sortir de la fonction, sauvegarde réussie
           }
         } else {
           const errorText = await response.text();
           console.error('❌ [TCOMStep] Erreur endpoint RCCM:', errorText);
-          throw new Error(`Erreur endpoint RCCM: ${response.status} - ${errorText}`);
+          throw new Error('SAVE_ERROR');
         }
       } catch (error) {
         
@@ -426,13 +468,15 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       }
 
       // Si on arrive ici sans return, c'est que la sauvegarde localStorage a été utilisée
-      alert(`✅ Numéro RCCM sauvegardé!\n\nNuméro: ${manualRccmNumber}\n\n💾 Sauvegarde locale activée.`);
+      const displayNameLocal = demande ? getDisplayName(demande) : 'l\'entreprise';
+      showSuccess('RCCM sauvegardé', `Le numéro RCCM pour "${displayNameLocal}" a été sauvegardé.\n\nNuméro: ${manualRccmNumber}`);
       setManualRccmNumber('');
 
     } catch (error) {
       console.error('❌ [TCOMStep] Erreur sauvegarde RCCM manuel:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      alert(`❌ Erreur lors de la sauvegarde du numéro RCCM:\n\n${errorMessage}`);
+      const demandeErr = demandes.find(d => d.id === demandeId);
+      const displayNameErr = demandeErr ? getDisplayName(demandeErr) : 'l\'entreprise';
+      showError('Erreur de sauvegarde', `Impossible de sauvegarder le numéro RCCM pour "${displayNameErr}".\n\nVeuillez réessayer.`);
     } finally {
       setSavingManualRccm(null);
     }
@@ -442,13 +486,15 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
   const handleGenerateRCCM = async (demandeId: string) => {
     const demande = demandes.find(d => d.id === demandeId);
     if (!demande) {
-      alert('Erreur: Demande non trouvée');
+      showError('Erreur', 'Demande non trouvée. Veuillez actualiser la page.');
       return;
     }
 
+    const displayName = getDisplayName(demande);
+
     // Vérifier que c'est une entreprise individuelle
     if (demande.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && demande.typeEntreprise !== 'INDIVIDUELLE') {
-      alert(' La génération automatique RCCM n\'est disponible que pour les entreprises individuelles.');
+      showError('Type d\'entreprise non supporté', 'La génération automatique RCCM n\'est disponible que pour les entreprises individuelles.');
       return;
     }
 
@@ -469,22 +515,40 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ [TCOMStep] Erreur HTTP:', response.status, errorText);
-        throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+        // Message utilisateur-friendly sans détails techniques
+        throw new Error('SERVICE_UNAVAILABLE');
       }
 
       const result = await response.json();
 
       if (result.success) {
-        alert(`✅ RCCM généré avec succès!\n\nNuméro RCCM: ${result.refDos}\nProcessus: ${result.refProcess}\nNom: ${result.name}`);
+        showSuccess(
+          'RCCM généré avec succès',
+          `Le numéro RCCM pour "${displayName}" a été généré avec succès.\n\nNuméro RCCM: ${result.refDos}`
+        );
         await loadDemandesTCOM();
       } else {
-        throw new Error(result.message || 'Erreur inconnue');
+        // Analyser le message d'erreur pour donner un message utilisateur-friendly
+        throw new Error(result.message || 'UNKNOWN_ERROR');
       }
 
     } catch (error) {
       console.error('❌ [TCOMStep] Erreur génération RCCM:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      alert(`❌ Erreur lors de la génération RCCM:\n\n${errorMessage}`);
+      const errorMsg = error instanceof Error ? error.message : '';
+      
+      // Messages utilisateur-friendly selon le type d'erreur
+      let userMessage = '';
+      if (errorMsg.includes('ConnectException') || errorMsg.includes('SERVICE_UNAVAILABLE')) {
+        userMessage = `Le service de génération RCCM est temporairement indisponible pour "${displayName}".\n\nVeuillez réessayer dans quelques instants ou contacter le support technique si le problème persiste.`;
+      } else if (errorMsg.includes('timeout') || errorMsg.includes('Timeout')) {
+        userMessage = `La génération du RCCM pour "${displayName}" a pris trop de temps.\n\nVeuillez réessayer.`;
+      } else if (errorMsg.includes('UNKNOWN_ERROR')) {
+        userMessage = `Une erreur inattendue s'est produite lors de la génération du RCCM pour "${displayName}".\n\nVeuillez réessayer ou contacter le support.`;
+      } else {
+        userMessage = `Impossible de générer le RCCM pour "${displayName}" pour le moment.\n\nVeuillez réessayer ultérieurement.`;
+      }
+      
+      showError('Échec de la génération RCCM', userMessage);
     } finally {
       setGeneratingRCCM(null);
     }
@@ -564,7 +628,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+          <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
           </div>
           <p className="text-lg text-slate-600 font-medium">Chargement des demandes T-COM...</p>
@@ -577,7 +641,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
-          <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mr-4">
+          <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentCheckIcon className="h-8 w-8 text-white" />
           </div>
           <div>
@@ -588,7 +652,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
 
         {demandes.length === 0 ? (
           <div className="text-center py-12">
-            <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+            <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
               <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à traiter</h3>
@@ -603,7 +667,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <DocumentCheckIcon className="h-6 w-6 text-white" />
                       </div>
                       <div>
@@ -630,7 +694,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
+                      className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <EyeIcon className="h-5 w-5" />
                       <span>Voir détails</span>
@@ -646,7 +710,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       {/* Modal de détails */}
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-8xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black text-slate-800">Détails - {selectedDemande.nom}</h3>
@@ -665,7 +729,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && (
                 <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                    <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <CpuChipIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Génération RCCM Automatique</h4>
@@ -678,7 +742,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                   <button
                     onClick={() => handleGenerateRCCM(selectedDemande.id)}
                     disabled={generatingRCCM === selectedDemande.id}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-sky-600 text-white px-6 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {generatingRCCM === selectedDemande.id ? (
                       <>
@@ -699,7 +763,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (selectedDemande.typeEntreprise === 'SOCIETE' || selectedDemande.formeJuridique === 'SARL' || selectedDemande.formeJuridique === 'SA') && (
                 <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                    <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <PencilSquareIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Saisie Manuelle RCCM - Société</h4>
@@ -731,7 +795,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                       <button
                         onClick={() => handleSaveManualRccm(selectedDemande.id)}
                         disabled={savingManualRccm === selectedDemande.id || !manualRccmNumber.trim()}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {savingManualRccm === selectedDemande.id ? (
                           <>
@@ -763,7 +827,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (
                 <div className="bg-gradient-to-r from-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40">
                   <div className="flex items-center space-x-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                    <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <BoltIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Actions finales</h4>
@@ -781,7 +845,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         handleFinaliserTCOM(selectedDemande.id, 'approuve', commentaire || undefined);
                       }}
                       disabled={(selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && !selectedDemande.rccmNumber}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <CheckCircleIcon className="h-6 w-6" />
                       <span>Approuver et Transférer au RCCM</span>
@@ -791,7 +855,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     <div className="relative flex-1">
                       <button
                         onClick={() => setShowRejectModal(true)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg"
+                        className="w-full bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg"
                       >
                         <XMarkIcon className="h-6 w-6" />
                         <span>Rejeter et Retourner à RÉVISION</span>
@@ -884,7 +948,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     }
                   }}
                   disabled={!selectedRejectReason || (selectedRejectReason === 'Autres' && !customRejectReason.trim())}
-                  className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
+                  className="flex-1 px-4 py-2 text-lg bg-sky-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
                 >
                   Confirmer le rejet
                 </button>
@@ -904,6 +968,60 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             setSelectedDocumentName('');
           }}
         />
+      )}
+
+      {/* Modal d'erreur professionnel */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <XCircleIcon className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white">{errorModalTitle}</h3>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-lg whitespace-pre-line">{errorModalMessage}</p>
+            </div>
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-xl transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de succès professionnel */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <CheckCircleIcon className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white">{successModalTitle}</h3>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-lg whitespace-pre-line">{successModalMessage}</p>
+            </div>
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

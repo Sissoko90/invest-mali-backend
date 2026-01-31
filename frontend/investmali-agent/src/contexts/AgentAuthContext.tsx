@@ -58,7 +58,7 @@ interface AgentAuthContextType {
   agent: Agent | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<LoginResult>;
+  login: (identifier: string, password: string, loginType?: 'email' | 'telephone') => Promise<LoginResult>;
   logout: () => void;
   updateAgent: (patch: Partial<Agent>) => void;
   // Nouvelles fonctions RBAC
@@ -125,13 +125,17 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<LoginResult> => {
-    console.log('Tentative de connexion avec:', email);
+  const login = async (identifier: string, password: string, loginType: 'email' | 'telephone' = 'email'): Promise<LoginResult> => {
+    console.log('Tentative de connexion avec:', identifier, 'type:', loginType);
     setIsLoading(true);
     setAgent(null);
     
     try {
-      const response = await agentAuthAPI.login({ email, password });
+      // Construire les credentials selon le type de login
+      const credentials = loginType === 'telephone' 
+        ? { telephone: identifier, password }
+        : { email: identifier, password };
+      const response = await agentAuthAPI.login(credentials);
       // Support both Axios response (with .data) and fetch JSON (plain object)
       const payload: any = (response && (response as any).data) ? (response as any).data : response;
       console.log('Réponse normalisée du serveur:', payload);
@@ -151,7 +155,7 @@ export const AgentAuthProvider: React.FC<AgentAuthProviderProps> = ({ children }
       }
       
       // Création de l'objet agent avec les données reçues
-      const agentSource = agentData || user || { email };
+      const agentSource = agentData || user || { email: identifier };
       
       // Debug: Afficher les données reçues du backend
       console.log('=== DEBUG AGENT LOGIN ===');
