@@ -114,6 +114,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const [documentsTotalElements, setDocumentsTotalElements] = useState(0);
   const documentsPerPage = 10;
 
+  // États pour la pagination des demandes à réviser
+  const [demandesPage, setDemandesPage] = useState(0);
+  const DEMANDES_PER_PAGE = 5;
+
   // Motifs de rejet prédéfinis pour le retour à RÉVISION
   const rejectReasons = [
     'Document est illisible',
@@ -429,6 +433,29 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const handleFinaliserRevision = async (demandeId: string, decision: 'approuve' | 'rejete', commentaire?: string) => {
     try {
       
+      // Si on approuve, approuver automatiquement tous les documents d'abord
+      if (decision === 'approuve' && selectedDemande?.documents) {
+        // Approuver tous les documents localement
+        const updatedDocuments = selectedDemande.documents.map(doc => ({
+          ...doc,
+          statut: 'approuve' as const,
+          dateRevision: new Date().toISOString(),
+          agentRevision: agent?.firstName
+        }));
+        
+        // Mettre à jour l'état local
+        setDemandes(prev => prev.map(demande => {
+          if (demande.id === demandeId) {
+            return { ...demande, documents: updatedDocuments };
+          }
+          return demande;
+        }));
+        
+        setSelectedDemande(prev => prev ? { ...prev, documents: updatedDocuments } : null);
+        
+        console.log(`✅ Tous les documents (${updatedDocuments.length}) ont été approuvés automatiquement`);
+      }
+      
       // Appel API pour finaliser la révision et passer à l'étape suivante
       const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${demandeId}/finaliser-revision`, {
         method: 'PUT',
@@ -493,7 +520,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
   const getStatutColor = (statut: string) => {
     switch (statut) {
-      case 'en_cours': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+      case 'en_cours': return 'bg-sky-50 text-black-800';
       case 'complete': return 'bg-sky-600 text-primary-800';
       case 'rejete': return 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800';
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
@@ -596,7 +623,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <p className="text-lg text-slate-600 font-medium max-w-md mx-auto">Toutes les demandes ont été traitées ou aucune n'est encore arrivée à l'étape de révision.</p>
                 </div>
               ) : (
-                demandes.map((demande) => (
+                <>
+                {demandes
+                  .slice(demandesPage * DEMANDES_PER_PAGE, (demandesPage + 1) * DEMANDES_PER_PAGE)
+                  .map((demande) => (
                   <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
@@ -611,7 +641,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                           <div className="flex items-center space-x-4 mt-2">
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
                               <span className="text-sm text-slate-600 font-bold">
-                                ID: {demande.id}
+                                Réf: {demande.reference || 'N/A'}
                               </span>
                             </div>
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
@@ -658,7 +688,29 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       </div>
                     )}
                   </div>
-                ))
+                ))}
+                
+                {/* Pagination des demandes à réviser - toujours affichée */}
+                <div className="flex items-center justify-center space-x-4 mt-6 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={() => setDemandesPage(prev => Math.max(0, prev - 1))}
+                      disabled={demandesPage === 0}
+                      className="px-4 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    >
+                      ← Précédent
+                    </button>
+                    <span className="text-sm font-medium text-slate-600">
+                      Page {demandesPage + 1} sur {Math.ceil(demandes.length / DEMANDES_PER_PAGE)}
+                    </span>
+                    <button
+                      onClick={() => setDemandesPage(prev => Math.min(Math.ceil(demandes.length / DEMANDES_PER_PAGE) - 1, prev + 1))}
+                      disabled={demandesPage >= Math.ceil(demandes.length / DEMANDES_PER_PAGE) - 1}
+                      className="px-4 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    >
+                      Suivant →
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -737,7 +789,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                               <div className="flex items-center space-x-4 text-lg text-slate-600">
                                 <span className="flex items-center space-x-1">
                                   <UserIcon className="h-4 w-4" />
-                                  <span>ID: {entreprise.id.substring(0, 8)}...</span>
+                                  <span>Réf: {entreprise.reference || 'N/A'}</span>
                                 </span>
                                 <span className="flex items-center space-x-1">
                                   <ClockIcon className="h-4 w-4" />
@@ -830,7 +882,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-slate-800">Révision: {selectedDemande.nom}</h2>
-                    <p className="text-slate-600 font-medium">{selectedDemande.typeEntreprise} • ID: {selectedDemande.id}</p>
+                    <p className="text-slate-600 font-medium">{selectedDemande.typeEntreprise} • RE: {selectedDemande.reference}</p>
                   </div>
                 </div>
                 <button
@@ -851,7 +903,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                 <h3 className="text-xl font-black text-slate-800">Informations de l'Entreprise</h3>
               </div>
               
-              <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl mb-8">
+              <div className="bg-sky-50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Colonne gauche */}
                   <div className="space-y-4">

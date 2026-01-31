@@ -81,7 +81,7 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
     @Query("SELECT e FROM Entreprise e " +
            "LEFT JOIN FETCH e.membres em " +
            "LEFT JOIN FETCH em.personne " +
-           "LEFT JOIN FETCH e.paiement " +
+           "LEFT JOIN FETCH e.paiements " +
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembresAndPaiement(@Param("id") String id);
 

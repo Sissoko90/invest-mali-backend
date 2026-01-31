@@ -47,10 +47,13 @@ interface PaiementResponse {
   numeroTelephone?: string;
   numeroCompte?: string;
   personneId?: string;
-  personneNom?: string;
-  personnePrenom?: string;
+  personneNom?: string; // Nom de l'agent qui a traité
+  personnePrenom?: string; // Prénom de l'agent qui a traité
   entrepriseId?: string;
   entrepriseNom?: string;
+  entrepriseReference?: string; // Référence de l'entreprise (ENT-...)
+  gerantNom?: string; // Nom du gérant/propriétaire de l'entreprise
+  gerantPrenom?: string; // Prénom du gérant/propriétaire de l'entreprise
 }
 
 interface Frais {
@@ -92,6 +95,10 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
   const [paiementsTotalPages, setPaiementsTotalPages] = useState(0);
   const [paiementsTotalElements, setPaiementsTotalElements] = useState(0);
   const [paiementsSearch, setPaiementsSearch] = useState('');
+
+  // États pour la pagination des demandes à traiter
+  const [demandesPage, setDemandesPage] = useState(0);
+  const DEMANDES_PER_PAGE = 5;
 
   // États pour le modal de paiement
   const [paiementModalOpen, setPaiementModalOpen] = useState(false);
@@ -389,9 +396,18 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
         simulerStatutPaiement(demandeId, 'REUSSI');
       }, 3000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur initiation paiement:', error);
-      alert('Erreur lors de l\'initiation du paiement');
+      // Afficher un message convivial selon le type d'erreur
+      if (error.response?.status === 400) {
+        alert('⚠️ Les informations de paiement sont invalides.\n\nVeuillez vérifier les données saisies.');
+      } else if (error.response?.status === 409) {
+        alert('⚠️ Un paiement est déjà en cours pour cette demande.');
+      } else if (error.response?.status >= 500) {
+        alert('⚠️ Le serveur rencontre un problème temporaire.\n\nVeuillez réessayer dans quelques instants.');
+      } else {
+        alert('⚠️ Une erreur est survenue lors de l\'initiation du paiement.\n\nVeuillez réessayer.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -464,9 +480,9 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
 
       setReceiptData(paymentData);
       setShowReceipt(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la génération du reçu:', error);
-      alert('Erreur lors de la génération du reçu');
+      alert('⚠️ Impossible de générer le reçu.\n\nVeuillez réessayer.');
     }
   };
 
@@ -508,9 +524,9 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
 
       setReceiptData(paymentData);
       setShowReceipt(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la génération du reçu:', error);
-      alert('Erreur lors de la génération du reçu');
+      alert('⚠️ Impossible de générer le reçu.\n\nVeuillez réessayer.');
     }
   };
 
@@ -619,9 +635,9 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       });
 
       alert(`✅ Demande "${demande.nom}" validée et transférée à la révision!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur transfert révision:', error);
-      alert('Erreur lors du transfert vers la révision');
+      alert('⚠️ Impossible de transférer la demande vers la révision.\n\nVeuillez réessayer.');
     }
   };
 
@@ -655,9 +671,9 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       });
 
       alert(`✅ Demande "${demande.nom}" retournée à l'accueil!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur retour accueil:', error);
-      alert('Erreur lors du retour vers l\'accueil');
+      alert('⚠️ Impossible de retourner la demande à l\'accueil.\n\nVeuillez réessayer.');
     }
   };
 
@@ -780,7 +796,10 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                   </p>
                 </div>
               ) : (
-                regisseurDemandes.map((demande) => (
+                <>
+                {regisseurDemandes
+                  .slice(demandesPage * DEMANDES_PER_PAGE, (demandesPage + 1) * DEMANDES_PER_PAGE)
+                  .map((demande) => (
                   <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -793,7 +812,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             <p className="text-lg text-slate-600 font-medium">{demande.formeJuridique} - {demande.typeEntreprise}</p>
                           </div>
                         </div>
-                        <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-4 border border-primary-200 mb-3 shadow-sm">
+                        <div className="bg-sky-50 rounded-xl p-4 border border-primary-200 mb-3 shadow-sm">
                           <div className="flex items-center space-x-3">
                             <div className="p-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-lg shadow-md">
                               <UserIcon className="h-5 w-5 text-white" />
@@ -824,7 +843,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                       
                       <div className="flex flex-col space-y-2 ml-6">
                         {/* Statut des paiements */}
-                        <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
+                        <div className="bg-sky-50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
                           <h4 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
                             <CreditCardIcon className="h-5 w-5 text-sky-600" />
                             Statut Paiement
@@ -960,7 +979,29 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                       </div>
                     </div>
                   </div>
-                ))
+                ))}
+                
+                {/* Pagination des demandes - toujours affichée */}
+                <div className="flex items-center justify-center space-x-4 mt-6 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={() => setDemandesPage(prev => Math.max(0, prev - 1))}
+                      disabled={demandesPage === 0}
+                      className="px-4 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    >
+                      ← Précédent
+                    </button>
+                    <span className="text-sm font-medium text-slate-600">
+                      Page {demandesPage + 1} sur {Math.ceil(regisseurDemandes.length / DEMANDES_PER_PAGE)}
+                    </span>
+                    <button
+                      onClick={() => setDemandesPage(prev => Math.min(Math.ceil(regisseurDemandes.length / DEMANDES_PER_PAGE) - 1, prev + 1))}
+                      disabled={demandesPage >= Math.ceil(regisseurDemandes.length / DEMANDES_PER_PAGE) - 1}
+                      className="px-4 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                    >
+                      Suivant →
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -1044,8 +1085,10 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           <div className="flex items-center space-x-2">
                             <h4 className="text-lg font-black text-slate-800">
                               {paiement.entrepriseNom || 
-                               paiement.description?.match(/(?:pour|-)?\ s*([A-Za-zÀ-ÿ\s]+?)(?:\s*-|\s*\(|$)/)?.[1]?.trim() || 
-                               'Entreprise'}
+                               (paiement.gerantPrenom && paiement.gerantNom 
+                                 ? `${paiement.gerantPrenom} ${paiement.gerantNom}` 
+                                 : paiement.gerantNom) || 
+                               'Non spécifié'}
                             </h4>
                             {/* Badge pour identifier le type */}
                             {(() => {
@@ -1071,7 +1114,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             })()}
                           </div>
                           <p className="text-lg text-slate-600 font-medium">
-                            Référence: {paiement.referenceTransaction || 'N/A'}
+                            Référence: {paiement.entrepriseReference || paiement.entrepriseNom || 'N/A'}
                           </p>
                         </div>
                       </div>

@@ -603,8 +603,8 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
   const getStatutColor = (statut: string) => {
     switch (statut) {
       case 'rccm_a_remplacer': return 'bg-gradient-to-r from-primary-100 to-amber-200 text-primary-800';
-      case 'rccm_remplace': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      case 'termine': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+      case 'rccm_remplace': return 'bg-sky-50 text-black-800';
+      case 'termine': return 'bg-sky-50 text-black-800';
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
     }
   };

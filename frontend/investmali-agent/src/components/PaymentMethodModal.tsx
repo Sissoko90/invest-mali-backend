@@ -202,15 +202,25 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         // Vérifier si c'est une erreur 404 (endpoint n'existe pas)
         if (paiementError.response?.status === 404) {
           console.warn('⚠️ L\'endpoint /paiements n\'existe pas encore côté backend');
-          console.warn('⚠️ SOLUTION TEMPORAIRE: Continuer sans créer le paiement en base');
-          console.warn('⚠️ TODO: Créer l\'endpoint PaiementController côté Spring Boot');
-          
-          // Afficher un avertissement mais continuer le processus
-          alert(`⚠️ AVERTISSEMENT: L'endpoint de paiement n'existe pas encore côté backend!\n\n✅ L'entreprise va quand même passer à l'étape REVISION\n❌ Mais le paiement ne sera PAS enregistré en base\n\n📋 TODO: Créer l'endpoint /paiements côté Spring Boot`);
+          // Continuer silencieusement sans alerter l'utilisateur
+        } else if (paiementError.response?.status === 400) {
+          // Erreur de validation - afficher un message convivial
+          const errorData = paiementError.response?.data;
+          const errorMessage = errorData?.message || errorData?.error || 'Données de paiement invalides';
+          alert(`⚠️ Impossible de créer le paiement\n\n${errorMessage}\n\nVeuillez vérifier les informations saisies.`);
+          return;
+        } else if (paiementError.response?.status === 409) {
+          // Conflit - paiement déjà existant
+          alert(`⚠️ Un paiement existe déjà pour cette demande.\n\nVeuillez rafraîchir la page.`);
+          return;
+        } else if (paiementError.response?.status >= 500) {
+          // Erreur serveur
+          alert(`⚠️ Le serveur rencontre un problème temporaire.\n\nVeuillez réessayer dans quelques instants.`);
+          return;
         } else {
-          // Pour les autres erreurs, arrêter le processus
-          alert(`❌ Erreur lors de la création du paiement!\n\nDétails: ${paiementError.message}\nStatut: ${paiementError.response?.status || 'Inconnu'}\nURL: ${paiementError.config?.url || 'Inconnue'}\n\nLe processus a été interrompu pour éviter les incohérences.`);
-          return; // Sortir de la fonction sans mettre à jour l'entreprise
+          // Pour les autres erreurs, afficher un message générique
+          alert(`⚠️ Une erreur est survenue lors de l'enregistrement du paiement.\n\nVeuillez réessayer ou contacter le support si le problème persiste.`);
+          return;
         }
       }
 

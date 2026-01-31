@@ -4261,7 +4261,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         <div className="col-span-2">
           <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            Votre localisation
+            Adresse de résidence (Personne)
           </h4>
 
           <div className="space-y-6">
@@ -4774,15 +4774,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       <div className="border-t border-gray-200 pt-6">
         <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          Localisation de l'entreprise
+          <svg className="w-5 h-5 mr-2 text-black-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+          Siège social de l'entreprise
         </h4>
 
         <div className="space-y-6">
             <div className={`border rounded-xl p-4 ${
               !formData.hasDifferentAddress 
                 ? 'bg-gray-50 border-gray-200' 
-                : 'bg-primary-50 border-primary-200'
+                : 'bg-sky-50 border-primary-200'
             }`}>
               <h3 className={`text-lg font-semibold mb-3 flex items-center ${
                 !formData.hasDifferentAddress 
@@ -6835,20 +6835,28 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               <span className="font-bold text-slate-700">Email :</span>
               <span className="font-medium text-slate-600">{formData.emailPersonnel}</span>
             </div>
-            <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
+            {/* <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
               <span className="font-bold text-slate-700">Adresse :</span>
-              <span className="font-medium text-slate-600">{formData.adressePersonnelle || 'Non renseignée'}</span>
-            </div>
+              <span className="font-medium text-slate-600">{
+                (() => {
+                  const parts = [];
+                  if (formData.localite) parts.push(formData.localite);
+                  if (formData.porte) parts.push(`Porte ${formData.porte}`);
+                  return parts.length > 0 ? parts.join(', ') : 'Non renseignée';
+                })()
+              }</span>
+            </div> */}
             <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
               <span className="font-bold text-slate-700">Localisation :</span>
               <span className="font-medium text-slate-600">{
               (() => {
                 // Construire la localisation hiérarchique personnelle
                 const region = personalRegions.find((r: any) => r.id === personalSelectedRegionId)?.nom || '';
-                const arrondissement = personalArrondissements.find((a: any) => a.id === personalSelectedArrondissementId)?.nom || '';
+                const cercle = personalCercles.find((c: any) => c.id === personalSelectedCercleId)?.nom || '';
+                const commune = personalCommunes.find((c: any) => c.id === personalSelectedCommuneId)?.nom || '';
                 const quartier = personalQuartiers.find((q: any) => q.id === personalSelectedQuartierId)?.nom || '';
                 
-                const parts = [region, arrondissement, quartier].filter(Boolean);
+                const parts = [region, cercle, commune, quartier].filter(Boolean);
                 
                 // Fallback sur les données agent si aucune sélection personnelle
                 if (parts.length === 0) {
@@ -6915,16 +6923,30 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
             )}
             <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
-              <span className="font-bold text-slate-700">Localisation :</span>
+              <span className="font-bold text-slate-700">Siège social :</span>
               <span className="font-medium text-slate-600">{
               (() => {
-                // Construire la localisation hiérarchique de l'entreprise
-                const region = companyRegions.find(r => r.id === companySelectedRegionId)?.nom || '';
-                const arrondissement = companyArrondissements.find(a => a.id === companySelectedArrondissementId)?.nom || '';
-                const quartier = companyQuartiers.find(q => q.id === companySelectedQuartierId)?.nom || '';
-                
-                const parts = [region, arrondissement, quartier].filter(Boolean);
-                return parts.length > 0 ? parts.join(' - ') : 'Non spécifiée';
+                // Si hasDifferentAddress est true, utiliser les données entreprise
+                // Sinon utiliser les données personnelles (synchronisées)
+                if (formData.hasDifferentAddress) {
+                  // Données entreprise spécifiques
+                  const region = companyRegions.find((r: any) => r.id === companySelectedRegionId)?.nom || '';
+                  const cercle = companyCercles.find((c: any) => c.id === companySelectedCercleId)?.nom || '';
+                  const commune = companyCommunes.find((c: any) => c.id === companySelectedCommuneId)?.nom || '';
+                  const quartier = companyQuartiers.find((q: any) => q.id === companySelectedQuartierId)?.nom || '';
+                  
+                  const parts = [region, cercle, commune, quartier].filter(Boolean);
+                  return parts.length > 0 ? parts.join(' - ') : 'Non spécifiée';
+                } else {
+                  // Données personnelles (synchronisées avec l'entreprise)
+                  const region = personalRegions.find((r: any) => r.id === personalSelectedRegionId)?.nom || '';
+                  const cercle = personalCercles.find((c: any) => c.id === personalSelectedCercleId)?.nom || '';
+                  const commune = personalCommunes.find((c: any) => c.id === personalSelectedCommuneId)?.nom || '';
+                  const quartier = personalQuartiers.find((q: any) => q.id === personalSelectedQuartierId)?.nom || '';
+                  
+                  const parts = [region, cercle, commune, quartier].filter(Boolean);
+                  return parts.length > 0 ? parts.join(' - ') : 'Non spécifiée';
+                }
               })()
             }</span>
 
@@ -7461,13 +7483,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
               
               {/* Message selon le mode */}
-              <div className={`rounded-lg p-4 mb-6 ${successData.isSimulated ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+              {/* <div className={`rounded-lg p-4 mb-6 ${successData.isSimulated ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
                 <p className={`text-center font-medium ${successData.isSimulated ? 'text-yellow-800' : 'text-green-800'}`}>
                   {successData.isSimulated 
                     ? '🧪 Mode simulation - Aucune donnée réelle créée' 
                     : '✅ Création réelle avec la logique backend complète !'}
                 </p>
-              </div>
+              </div> */}
               
               {/* Note sur le reçu */}
               <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-6">

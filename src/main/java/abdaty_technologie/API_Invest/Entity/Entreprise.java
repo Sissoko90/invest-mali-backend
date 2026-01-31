@@ -105,9 +105,9 @@ public class Entreprise extends BaseEntity {
   @com.fasterxml.jackson.annotation.JsonIgnore
   private List<Documents> documents = new ArrayList<>();
   
-  @OneToOne(mappedBy = "entreprise", cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
   @com.fasterxml.jackson.annotation.JsonIgnore
-  private Paiement paiement;
+  private List<Paiement> paiements = new ArrayList<>();
 
   // Agent assigné pour traiter cette demande
   @ManyToOne
@@ -334,8 +334,13 @@ public class Entreprise extends BaseEntity {
   public String getNumeroNina() { return numeroNina; }
   public void setNumeroNina(String numeroNina) { this.numeroNina = numeroNina; }
   
-  public Paiement getPaiement() { return paiement; }
-  public void setPaiement(Paiement paiement) { this.paiement = paiement; }
+  public List<Paiement> getPaiements() { return paiements; }
+  public void setPaiements(List<Paiement> paiements) { this.paiements = paiements; }
+  
+  // Méthode utilitaire pour obtenir le dernier paiement (compatibilité)
+  public Paiement getPaiement() { 
+    return paiements != null && !paiements.isEmpty() ? paiements.get(paiements.size() - 1) : null; 
+  }
   
   public Boolean getRccmTelecharge() { return rccmTelecharge; }
   public void setRccmTelecharge(Boolean rccmTelecharge) { this.rccmTelecharge = rccmTelecharge; }

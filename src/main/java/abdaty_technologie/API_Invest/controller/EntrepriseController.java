@@ -47,6 +47,10 @@ import abdaty_technologie.API_Invest.service.EntrepriseService;
 import abdaty_technologie.API_Invest.service.DocumentsService;
 import abdaty_technologie.API_Invest.service.PersonsService;
 import abdaty_technologie.API_Invest.service.InstatApiService;
+import abdaty_technologie.API_Invest.dto.instat.RegionResponse;
+import abdaty_technologie.API_Invest.dto.instat.CercleResponse;
+import abdaty_technologie.API_Invest.dto.instat.CommuneResponse;
+import abdaty_technologie.API_Invest.dto.instat.QuartierResponse;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
 import abdaty_technologie.API_Invest.exception.BadRequestException;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
@@ -1237,12 +1241,11 @@ public class EntrepriseController {
         if (e.getDivisionCode() != null && !e.getDivisionCode().isBlank()) {
             r.divisionCode = e.getDivisionCode();
             
-            // Essayer de récupérer le nom réel via l'API INSTAT
+            // Résoudre toute la hiérarchie via l'API INSTAT
             try {
-                String nomReel = resolveDivisionNameFromInstat(e.getDivisionCode());
-                r.divisionNom = nomReel != null ? nomReel : ("Division " + e.getDivisionCode());
+                resolveHierarchyFromInstat(e.getDivisionCode(), r);
             } catch (Exception ex) {
-                System.err.println("❌ [INSTAT] Erreur résolution division " + e.getDivisionCode() + ": " + ex.getMessage());
+                System.err.println("❌ [INSTAT] Erreur résolution hiérarchie " + e.getDivisionCode() + ": " + ex.getMessage());
                 r.divisionNom = "Division " + e.getDivisionCode(); // Fallback sûr
             }
             
@@ -1254,51 +1257,25 @@ public class EntrepriseController {
                 r.divisionCode = d.getCode();
                 r.divisionNom = d.getNom();
                 System.out.println("🔧 [LEGACY] Division legacy trouvée: " + d.getCode());
+                
+                // Remonter la hiérarchie parentale jusqu'à la racine (REGION)
+                Divisions cursor = d;
+                while (cursor != null) {
+                    DivisionType type = cursor.getDivisionType();
+                    if (type != null) {
+                        switch (type) {
+                            case REGION -> { r.regionCode = cursor.getCode(); r.regionNom = cursor.getNom(); }
+                            case CERCLE -> { r.cercleCode = cursor.getCode(); r.cercleNom = cursor.getNom(); }
+                            case ARRONDISSEMENT -> { r.arrondissementCode = cursor.getCode(); r.arrondissementNom = cursor.getNom(); }
+                            case COMMUNE -> { r.communeCode = cursor.getCode(); r.communeNom = cursor.getNom(); }
+                            case QUARTIER -> { r.quartierCode = cursor.getCode(); r.quartierNom = cursor.getNom(); }
+                            default -> {}
+                        }
+                    }
+                    cursor = cursor.getParent();
+                }
             } else {
                 System.out.println("⚠️ [WARNING] Aucune division trouvée pour l'entreprise: " + e.getId());
-            }
-        }
-        
-        // Pour l'instant, on ne remonte plus la hiérarchie car on utilise l'API INSTAT
-        // TODO: Implémenter la résolution via API INSTAT si nécessaire
-        Divisions d = e.getDivision();
-        if (d != null) {
-
-            // Remonter la hiérarchie parentale jusqu'à la racine (REGION)
-            Divisions cursor = d;
-            while (cursor != null) {
-                DivisionType type = cursor.getDivisionType();
-                if (type != null) {
-                    switch (type) {
-                        case REGION -> { 
-                            // Division de type REGION
-                            r.regionCode = cursor.getCode(); 
-                            r.regionNom = cursor.getNom(); 
-                        }
-                        case CERCLE -> { 
-                            // Division de type CERCLE
-                            r.cercleCode = cursor.getCode(); 
-                            r.cercleNom = cursor.getNom(); 
-                        }
-                        case ARRONDISSEMENT -> { 
-                            // Division de type ARRONDISSEMENT
-                            r.arrondissementCode = cursor.getCode(); 
-                            r.arrondissementNom = cursor.getNom(); 
-                        }
-                        case COMMUNE -> { 
-                            // Division de type COMMUNE
-                            r.communeCode = cursor.getCode(); 
-                            r.communeNom = cursor.getNom(); 
-                        }
-                        case QUARTIER -> { 
-                            // Division de type QUARTIER
-                            r.quartierCode = cursor.getCode(); 
-                            r.quartierNom = cursor.getNom(); 
-                        }
-                        default -> {}
-                    }
-                }
-                cursor = cursor.getParent();
             }
         }
 
@@ -1474,12 +1451,11 @@ public class EntrepriseController {
         if (e.getDivisionCode() != null && !e.getDivisionCode().isBlank()) {
             r.divisionCode = e.getDivisionCode();
             
-            // Essayer de récupérer le nom réel via l'API INSTAT
+            // Résoudre toute la hiérarchie via l'API INSTAT
             try {
-                String nomReel = resolveDivisionNameFromInstat(e.getDivisionCode());
-                r.divisionNom = nomReel != null ? nomReel : ("Division " + e.getDivisionCode());
+                resolveHierarchyFromInstat(e.getDivisionCode(), r);
             } catch (Exception ex) {
-                System.err.println("❌ [INSTAT] Erreur résolution division " + e.getDivisionCode() + ": " + ex.getMessage());
+                System.err.println("❌ [INSTAT] Erreur résolution hiérarchie " + e.getDivisionCode() + ": " + ex.getMessage());
                 r.divisionNom = "Division " + e.getDivisionCode(); // Fallback sûr
             }
         } else {
@@ -1488,27 +1464,23 @@ public class EntrepriseController {
             if (d != null) {
                 r.divisionCode = d.getCode();
                 r.divisionNom = d.getNom();
-            }
-        }
-        
-        // Conserver la logique de hiérarchie pour l'ancien système
-        Divisions d = e.getDivision();
-        if (d != null) {
-
-            Divisions cursor = d;
-            while (cursor != null) {
-                DivisionType type = cursor.getDivisionType();
-                if (type != null) {
-                    switch (type) {
-                        case REGION -> { r.regionCode = cursor.getCode(); r.regionNom = cursor.getNom(); }
-                        case CERCLE -> { r.cercleCode = cursor.getCode(); r.cercleNom = cursor.getNom(); }
-                        case ARRONDISSEMENT -> { r.arrondissementCode = cursor.getCode(); r.arrondissementNom = cursor.getNom(); }
-                        case COMMUNE -> { r.communeCode = cursor.getCode(); r.communeNom = cursor.getNom(); }
-                        case QUARTIER -> { r.quartierCode = cursor.getCode(); r.quartierNom = cursor.getNom(); }
-                        default -> {}
+                
+                // Remonter la hiérarchie parentale
+                Divisions cursor = d;
+                while (cursor != null) {
+                    DivisionType type = cursor.getDivisionType();
+                    if (type != null) {
+                        switch (type) {
+                            case REGION -> { r.regionCode = cursor.getCode(); r.regionNom = cursor.getNom(); }
+                            case CERCLE -> { r.cercleCode = cursor.getCode(); r.cercleNom = cursor.getNom(); }
+                            case ARRONDISSEMENT -> { r.arrondissementCode = cursor.getCode(); r.arrondissementNom = cursor.getNom(); }
+                            case COMMUNE -> { r.communeCode = cursor.getCode(); r.communeNom = cursor.getNom(); }
+                            case QUARTIER -> { r.quartierCode = cursor.getCode(); r.quartierNom = cursor.getNom(); }
+                            default -> {}
+                        }
                     }
+                    cursor = cursor.getParent();
                 }
-                cursor = cursor.getParent();
             }
         }
         r.creation = e.getCreation();
@@ -2901,6 +2873,106 @@ public class EntrepriseController {
         } catch (Exception e) {
             System.err.println("❌ [INSTAT] Erreur lors de la résolution du nom de division: " + e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Résout toute la hiérarchie de localisation via l'API INSTAT
+     * @param divisionCode Code de division INSTAT (ex: "010101010001")
+     * @param r EntrepriseResponse à remplir avec les noms de localisation
+     */
+    private void resolveHierarchyFromInstat(String divisionCode, EntrepriseResponse r) {
+        if (divisionCode == null || divisionCode.length() < 8) {
+            System.out.println("⚠️ [INSTAT] Code division invalide: " + divisionCode);
+            return;
+        }
+        
+        try {
+            // Extraire les codes hiérarchiques du code INSTAT
+            String regionCodePrefix = divisionCode.substring(0, 2);
+            String cercleCodePrefix = divisionCode.substring(0, 4);
+            String communeCodePrefix = divisionCode.substring(0, 8);
+            String quartierCode = divisionCode; // Code complet
+            
+            System.out.println("🔍 [INSTAT HIERARCHY] Résolution hiérarchie pour: " + divisionCode);
+            
+            // 1. Récupérer la région
+            List<RegionResponse> regions = instatApiService.getAllRegions();
+            if (regions != null) {
+                for (RegionResponse region : regions) {
+                    if (region.getCode() != null && region.getCode().startsWith(regionCodePrefix)) {
+                        r.regionCode = region.getCode();
+                        r.regionNom = region.getNom();
+                        System.out.println("✅ [INSTAT] Région: " + r.regionNom);
+                        break;
+                    }
+                }
+            }
+            
+            // 2. Récupérer le cercle
+            if (r.regionCode != null) {
+                List<CercleResponse> cercles = instatApiService.getCerclesByRegion(r.regionCode);
+                if (cercles != null) {
+                    for (CercleResponse cercle : cercles) {
+                        if (cercle.getCode() != null && cercle.getCode().startsWith(cercleCodePrefix)) {
+                            r.cercleCode = cercle.getCode();
+                            r.cercleNom = cercle.getNom();
+                            System.out.println("✅ [INSTAT] Cercle: " + r.cercleNom);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 3. Récupérer la commune
+            if (r.cercleCode != null) {
+                List<CommuneResponse> communes = instatApiService.getCommunesByCercle(r.cercleCode);
+                if (communes != null) {
+                    for (CommuneResponse commune : communes) {
+                        if (commune.getCode() != null && commune.getCode().startsWith(communeCodePrefix)) {
+                            r.communeCode = commune.getCode();
+                            r.communeNom = commune.getNom();
+                            System.out.println("✅ [INSTAT] Commune: " + r.communeNom);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 4. Récupérer le quartier
+            if (r.communeCode != null) {
+                List<QuartierResponse> quartiers = instatApiService.getQuartiersByCommune(r.communeCode);
+                if (quartiers != null) {
+                    for (QuartierResponse quartier : quartiers) {
+                        if (quartierCode.equals(quartier.getCode())) {
+                            r.quartierCode = quartier.getCode();
+                            r.quartierNom = quartier.getNom();
+                            r.divisionNom = quartier.getNom(); // Le nom de division est le quartier
+                            System.out.println("✅ [INSTAT] Quartier: " + r.quartierNom);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Si le quartier n'a pas été trouvé, utiliser la commune comme divisionNom
+            if (r.divisionNom == null && r.communeNom != null) {
+                r.divisionNom = r.communeNom;
+            } else if (r.divisionNom == null && r.cercleNom != null) {
+                r.divisionNom = r.cercleNom;
+            } else if (r.divisionNom == null && r.regionNom != null) {
+                r.divisionNom = r.regionNom;
+            } else if (r.divisionNom == null) {
+                r.divisionNom = "Division " + divisionCode;
+            }
+            
+            System.out.println("🔧 [INSTAT HIERARCHY] Résolution terminée: " + 
+                "Région=" + r.regionNom + ", Cercle=" + r.cercleNom + 
+                ", Commune=" + r.communeNom + ", Quartier=" + r.quartierNom);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [INSTAT HIERARCHY] Erreur: " + e.getMessage());
+            r.divisionNom = "Division " + divisionCode;
         }
     }
 

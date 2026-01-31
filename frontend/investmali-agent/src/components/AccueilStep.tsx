@@ -1205,16 +1205,16 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       // Statuts backend réels (StatutCreation enum)
-      'EN_ATTENTE': { color: 'bg-primary-100 text-primary-800', text: 'En attente' },
-      'EN_COURS': { color: 'bg-primary-100 text-primary-800', text: 'En cours' },
-      'VALIDEE': { color: 'bg-primary-100 text-primary-800', text: 'Validée' },
+      'EN_ATTENTE': { color: 'bg-sky-100 text-primary-800', text: 'En attente' },
+      'EN_COURS': { color: 'bg-sky-100 text-primary-800', text: 'En cours' },
+      'VALIDEE': { color: 'bg-sky-100 text-primary-800', text: 'Validée' },
       'REFUSEE': { color: 'bg-red-100 text-red-800', text: 'Refusée' },
       // Fallbacks pour compatibilité
-      'NOUVEAU': { color: 'bg-primary-100 text-primary-800', text: 'Nouveau' },
-      'SOUMIS': { color: 'bg-primary-100 text-primary-800', text: 'Soumis' },
-      'VALIDE': { color: 'bg-primary-100 text-primary-800', text: 'Validé' },
+      'NOUVEAU': { color: 'bg-sky-100 text-primary-800', text: 'Nouveau' },
+      'SOUMIS': { color: 'bg-sky-100 text-primary-800', text: 'Soumis' },
+      'VALIDE': { color: 'bg-sky-100 text-primary-800', text: 'Validé' },
       'REJETE': { color: 'bg-red-100 text-red-800', text: 'Rejeté' },
-      'INCOMPLET': { color: 'bg-primary-100 text-primary-800', text: 'Incomplet' }
+      'INCOMPLET': { color: 'bg-sky-100 text-primary-800', text: 'Incomplet' }
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['EN_COURS'];

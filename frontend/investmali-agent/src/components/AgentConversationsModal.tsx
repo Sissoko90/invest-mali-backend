@@ -243,7 +243,7 @@ const AgentConversationsModal: React.FC<AgentConversationsModalProps> = ({
                             <div>{formatTime(conv.lastMessageTime)}</div>
                             <div className={`mt-1 px-2 py-1 rounded-full text-xs ${
                               conv.status === 'ACTIVE' 
-                                ? 'bg-primary-100 text-primary-800' 
+                                ? 'bg-sky-100 text-primary-800' 
                                 : 'bg-gray-100 text-gray-600'
                             }`}>
                               {conv.status === 'ACTIVE' ? 'Actif' : 'Inactif'}

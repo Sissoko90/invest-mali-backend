@@ -68,7 +68,7 @@ const AgentDashboard: React.FC = () => {
       firstName: 'Moussa',
       lastName: 'Coulibaly',
       email: 'moussa.coulibaly@email.com',
-      phone: '+223 70 12 34 56',
+      phone: '+223 XX XX XX XX',
       status: 'pending',
       submissionDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       documents: {
@@ -439,12 +439,12 @@ const AgentDashboard: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-primary-100 text-primary-800';
-      case 'pending_validation': return 'bg-primary-100 text-primary-800';
+      case 'pending': return 'bg-sky-100 text-primary-800';
+      case 'pending_validation': return 'bg-sky-100 text-primary-800';
       case 'in_review': return 'bg-sky-600 text-white-100';
-      case 'approved': return 'bg-primary-100 text-primary-800';
+      case 'approved': return 'bg-sky-100 text-primary-800';
       case 'rejected': return 'bg-red-100 text-red-800';
-      case 'requires_info': return 'bg-primary-100 text-primary-800';
+      case 'requires_info': return 'bg-sky-100 text-primary-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -477,9 +477,9 @@ const AgentDashboard: React.FC = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'low': return 'bg-primary-100 text-primary-800';
-      case 'medium': return 'bg-primary-100 text-primary-800';
-      case 'high': return 'bg-primary-100 text-primary-800';
+      case 'low': return 'bg-sky-100 text-primary-800';
+      case 'medium': return 'bg-sky-100 text-primary-800';
+      case 'high': return 'bg-sky-100 text-primary-800';
       case 'urgent': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }

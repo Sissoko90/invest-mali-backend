@@ -614,7 +614,8 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       setShowDetails(false);
       setShowStepDropdown(false);
       
-      alert(`✅ Entreprise retournée à l'étape ${stepId} avec succès.`);
+      // Notification silencieuse - pas d'alerte pour ne pas interrompre le flux
+      console.log(`✅ Entreprise retournée à l'étape ${stepId} avec succès.`);
       
     } catch (error) {
       console.error('❌ [TCOMStep] Erreur lors du retour:', error);

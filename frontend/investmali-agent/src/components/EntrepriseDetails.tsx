@@ -222,7 +222,7 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
         icon: ClockIcon
       },
       'EN_COURS': { 
-        color: 'bg-[#2d85c9] text-white shadow-lg', 
+        color: 'bg-sky-50 text-black shadow-lg', 
         text: 'En cours',
         icon: ArrowPathIcon
       },
@@ -303,6 +303,7 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
       'REGISTRE_COMMERCE': 'Registre de commerce',
       'RCCM': 'RCCM',
       'NINA': 'Nina',
+      'PIECE_NATIONALITE': 'Certificat de nationalité',
       'AUTRES': 'Autres',
     };
     
@@ -336,7 +337,8 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
       'CARTE_CONSULAIRE': 'Carte consulaire',
       'CARTE_ELECTEUR': 'Carte d\'électeur',
       'CARTE_IDENTITE': 'Carte d\'identité',
-      'ACTE_NAISSANCE': 'Acte de naissance'
+      'ACTE_NAISSANCE': 'Acte de naissance',
+      'PIECE_NATIONALITE': 'Certificat de nationalité'
     };
     
     return typeNames[type.toUpperCase() as keyof typeof typeNames] || type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
@@ -578,22 +580,6 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
-                    <IdentificationIcon className="w-4 h-4" />
-                    <span>Code division</span>
-                  </label>
-                  <p className="text-base font-semibold text-slate-800">{entreprise.divisionCode}</p>
-                </div>
-                
-                <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
-                  <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
-                    <BuildingOfficeIcon className="w-4 h-4" />
-                    <span>Division</span>
-                  </label>
-                  <p className="text-base font-semibold text-slate-800">{entreprise.divisionNom}</p>
-                </div>
-                
                 {entreprise.regionNom && (
                   <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
                     <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
@@ -601,6 +587,26 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                       <span>Région</span>
                     </label>
                     <p className="text-base font-semibold text-slate-800">{entreprise.regionNom}</p>
+                  </div>
+                )}
+                
+                {entreprise.cercleNom && (
+                  <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                      <BuildingOfficeIcon className="w-4 h-4" />
+                      <span>Cercle</span>
+                    </label>
+                    <p className="text-base font-semibold text-slate-800">{entreprise.cercleNom}</p>
+                  </div>
+                )}
+                
+                {entreprise.communeNom && (
+                  <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                      <BuildingLibraryIcon className="w-4 h-4" />
+                      <span>Commune</span>
+                    </label>
+                    <p className="text-base font-semibold text-slate-800">{entreprise.communeNom}</p>
                   </div>
                 )}
                 

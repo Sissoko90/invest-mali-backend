@@ -439,7 +439,8 @@ const RCCM1Step: React.FC<RCCM1StepProps> = ({ onDossierUpdate }) => {
       }
 
       // Afficher un message de succès
-      alert(`Étape RCCM1 finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM2.' : 'Entreprise retournée aux Impôts.'}`);
+      // Notification silencieuse - pas d'alerte pour ne pas interrompre le flux
+      console.log(`Étape RCCM1 finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM2.' : 'Entreprise retournée aux Impôts.'}`);
       
     } catch (error) {
       console.error('❌ [RCCM1Step] Erreur lors de la finalisation:', error);
@@ -450,10 +451,10 @@ const RCCM1Step: React.FC<RCCM1StepProps> = ({ onDossierUpdate }) => {
 
   const getStatutColor = (statut: string) => {
     switch (statut) {
-      case 'rccm_en_attente': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      case 'rccm_valide': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      case 'termine': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
+      case 'rccm_en_attente': return 'bg-sky-50 text-black-800';
+      case 'rccm_valide': return 'bg-sky-50 text-black-800';
+      case 'termine': return 'bg-sky-50 text-black-800';
+      default: return 'bg-sky-50 text-black-800';
     }
   };
 
@@ -739,11 +740,11 @@ const RCCM1Step: React.FC<RCCM1StepProps> = ({ onDossierUpdate }) => {
                                 <div className="flex-1">
                                   <h5 className="text-lg font-black text-slate-800">{doc.nom || 'Document sans nom'}</h5>
                                   <div className="flex items-center space-x-2 mt-1">
-                                    <span className="px-3 py-1 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 font-bold rounded-xl text-xs shadow-lg">
+                                    <span className="px-3 py-1 bg-sky-50 text-black-800 text-primary-800 font-bold rounded-xl text-xs shadow-lg">
                                       {doc.type || 'Type non spécifié'}
                                     </span>
                                     {(doc.type === 'RCCM' || doc.type === 'REGISTRE_COMMERCE' || doc.type === 'STATUS_SOCIETE') && (
-                                      <span className="px-3 py-1 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 font-bold rounded-xl text-xs shadow-lg">
+                                      <span className="px-3 py-1 bg-sky-50 text-black-800font-bold rounded-xl text-xs shadow-lg">
                                         🎯 RCCM
                                       </span>
                                     )}

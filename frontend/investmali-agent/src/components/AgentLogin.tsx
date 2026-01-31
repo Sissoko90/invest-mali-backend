@@ -202,7 +202,7 @@ const AgentLogin: React.FC = () => {
                   autoComplete={loginType === 'email' ? 'email' : 'tel'}
                   required
                   className="focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  placeholder={loginType === 'email' ? 'vous@example.com' : '70 12 34 56'}
+                  placeholder={loginType === 'email' ? 'vous@example.com' : 'XX XX XX XX'}
                   value={loginData.identifier}
                   onChange={(e) => setLoginData({...loginData, identifier: e.target.value})}
                   disabled={isLoading}
@@ -259,11 +259,11 @@ const AgentLogin: React.FC = () => {
               </label>
             </div>
 
-            <div className="text-sm">
+            {/* <div className="text-sm">
               <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
                 Mot de passe oublié ?
               </Link>
-            </div>
+            </div> */}
           </div>
 
           <div>
