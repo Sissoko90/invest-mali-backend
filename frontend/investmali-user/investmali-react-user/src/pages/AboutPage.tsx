@@ -8,6 +8,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import '../styles/swiper-custom.css';
+import apiLogo from '../assets/images/api-logo.png';
 import { 
   BuildingOfficeIcon,
   UsersIcon,
@@ -414,7 +415,11 @@ const AboutPage: React.FC = () => {
                   />
                   */}
                   <div className="w-64 h-64 bg-gradient-to-br from-investmali-primary to-investmali-accent rounded-2xl flex items-center justify-center shadow-xl">
-                    <span className="text-white font-bold text-6xl">AT</span>
+                    <img 
+                  src={apiLogo} 
+                  alt="API Mali Logo" 
+                  className="w-full h-full object-contain"
+                />
                   </div>
                 </div>
               </div>
