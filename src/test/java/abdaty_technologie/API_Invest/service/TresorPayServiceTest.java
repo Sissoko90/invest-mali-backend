@@ -69,7 +69,7 @@ class TresorPayServiceTest {
 
         TresorPayNoticeRequest request = tresorPayService.buildNoticeRequest(
                 "ENT123", "ENT-2025-001", "Test Company", 250000L, "Test payment", 
-                "John", "Doe", "john@test.com", "70123456"
+                "John", "Doe", "john@test.com", "XX-XX-XX-XX"
         );
 
         // Act
@@ -126,7 +126,7 @@ class TresorPayServiceTest {
         // Act
         TresorPayNoticeRequest request = tresorPayService.buildNoticeRequest(
                 "ENT123", "ENT-2025-001", "Test Company", 250000L, "Test payment", 
-                "John", "Doe", "john@test.com", "70123456"
+                "John", "Doe", "john@test.com", "XX-XX-XX-XX"
         );
 
         // Assert
@@ -141,7 +141,7 @@ class TresorPayServiceTest {
         assertEquals("John", request.getTaxPayer().getFirstName());
         assertEquals("Test Company", request.getTaxPayer().getCompanyName());
         assertEquals("john@test.com", request.getTaxPayer().getEmail());
-        assertEquals("70123456", request.getTaxPayer().getPhoneNumber());
+        assertEquals("XX-XX-XX-XX", request.getTaxPayer().getPhoneNumber());
         
         assertNotNull(request.getItems());
         assertEquals(1, request.getItems().size());
@@ -182,7 +182,7 @@ class TresorPayServiceTest {
 
         TresorPayNoticeRequest request = tresorPayService.buildNoticeRequest(
                 "ENT123", "ENT-2025-001", "Test Company", 250000L, "Test payment", 
-                "John", "Doe", "john@test.com", "70123456"
+                "John", "Doe", "john@test.com", "XX-XX-XX-XX"
         );
 
         // Act & Assert
@@ -210,7 +210,7 @@ class TresorPayServiceTest {
 
         TresorPayNoticeRequest request = tresorPayService.buildNoticeRequest(
                 "ENT123", "ENT-2025-001", "Test Company", 250000L, "Test payment", 
-                "John", "Doe", "john@test.com", "70123456"
+                "John", "Doe", "john@test.com", "XX-XX-XX-XX"
         );
 
         // Act & Assert

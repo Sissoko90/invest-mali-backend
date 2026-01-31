@@ -45,7 +45,7 @@ const AgentLogin: React.FC = () => {
       const phoneRegex = /^(\+223|00223)?[0-9]{8}$/;
       const cleanPhone = loginData.identifier.replace(/\s/g, '');
       if (!phoneRegex.test(cleanPhone)) {
-        setError('Veuillez entrer un numéro de téléphone valide (ex: 70123456 ou +22370123456)');
+        setError('Veuillez entrer un numéro de téléphone valide (ex: XX-XX-XX-XX ou +223 XX-XX-XX-XX)');
         return;
       }
     }
