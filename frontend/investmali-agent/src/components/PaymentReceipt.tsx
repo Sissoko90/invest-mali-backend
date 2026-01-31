@@ -129,60 +129,130 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
           <style>
             * {
               box-sizing: border-box;
+              margin: 0;
+              padding: 0;
             }
             body {
               margin: 0;
-              padding: 10mm;
+              padding: 8mm;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-              font-size: 11px;
+              font-size: 9px;
               line-height: 1.3;
+              color: #000;
             }
+            img {
+              max-width: 100%;
+              height: auto;
+            }
+            h1 {
+              font-size: 14px;
+              margin-bottom: 3px;
+            }
+            h2 {
+              font-size: 15px;
+              margin-bottom: 5px;
+            }
+            h3 {
+              font-size: 11px;
+              margin-bottom: 4px;
+            }
+            h4 {
+              font-size: 10px;
+              margin-bottom: 3px;
+            }
+            p {
+              margin: 2px 0;
+            }
+            .text-xs { font-size: 7px; }
+            .text-sm { font-size: 8px; }
+            .text-base { font-size: 9px; }
+            .text-lg { font-size: 10px; }
+            .text-xl { font-size: 11px; }
+            .text-2xl { font-size: 14px; }
+            .text-3xl { font-size: 15px; }
+            .font-medium { font-weight: 500; }
+            .font-semibold { font-weight: 600; }
+            .font-bold { font-weight: 700; }
+            .font-black { font-weight: 900; }
+            .mb-2 { margin-bottom: 3px; }
+            .mb-3 { margin-bottom: 4px; }
+            .mb-4 { margin-bottom: 5px; }
+            .mb-6 { margin-bottom: 7px; }
+            .mb-8 { margin-bottom: 9px; }
+            .mt-1 { margin-top: 2px; }
+            .mt-2 { margin-top: 3px; }
+            .mt-4 { margin-top: 5px; }
+            .mt-8 { margin-top: 7px; }
+            .p-3 { padding: 5px; }
+            .p-4 { padding: 6px; }
+            .p-6 { padding: 7px; }
+            .p-8 { padding: 9px; }
+            .pt-6 { padding-top: 7px; }
+            .space-y-2 > * + * { margin-top: 3px; }
+            .space-y-4 > * + * { margin-top: 5px; }
+            .gap-8 { gap: 7px; }
+            .space-x-4 > * + * { margin-left: 5px; }
+            .flex { display: flex; }
+            .items-start { align-items: flex-start; }
+            .items-center { align-items: center; }
+            .justify-between { justify-content: space-between; }
+            .justify-center { justify-content: center; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+            .border { border: 1px solid #e5e7eb; }
+            .border-t { border-top: 1px solid #e5e7eb; }
+            .border-2 { border-width: 1px; }
+            .border-4 { border-width: 2px; }
+            .rounded-lg { border-radius: 4px; }
+            .rounded-full { border-radius: 9999px; }
+            .bg-green-50 { background-color: #f0fdf4; }
+            .border-green-300 { border-color: #86efac; }
+            .border-green-500 { border-color: #22c55e; }
+            .text-green-600 { color: #16a34a; }
+            .text-green-700 { color: #15803d; }
+            .text-green-800 { color: #166534; }
+            .bg-red-100 { background-color: #fee2e2; }
+            .border-red-300 { border-color: #fca5a5; }
+            .text-red-600 { color: #dc2626; }
+            .text-red-800 { color: #991b1b; }
+            .text-gray-500 { color: #6b7280; }
+            .text-gray-600 { color: #4b5563; }
+            .text-gray-700 { color: #374151; }
+            .text-gray-900 { color: #111827; }
+            .inline-flex { display: inline-flex; }
+            .w-24 { width: 50px; }
+            .h-24 { height: 50px; }
+            .w-32 { width: 65px; }
+            .h-32 { height: 65px; }
+            .w-4 { width: 8px; }
+            .h-4 { height: 8px; }
+            .w-5 { width: 10px; }
+            .h-5 { height: 10px; }
+            .w-6 { width: 12px; }
+            .h-6 { height: 12px; }
+            .mx-auto { margin-left: auto; margin-right: auto; }
+            .relative { position: relative; }
+            .transform { transform: translateZ(0); }
+            .rotate-12 { transform: rotate(12deg); }
+            .gap-2 { gap: 2px; }
+            .px-4 { padding-left: 4px; padding-right: 4px; }
+            .py-2 { padding-top: 2px; padding-bottom: 2px; }
             @media print {
               @page {
                 size: A4 portrait;
-                margin: 10mm;
+                margin: 8mm;
               }
               body {
                 margin: 0;
-                padding: 0;
-                transform: scale(0.85);
-                transform-origin: top left;
-                width: 117.6%;
+                padding: 3mm;
               }
-              h1, h2, h3 {
-                margin-top: 0.5em;
-                margin-bottom: 0.5em;
-              }
-              p {
-                margin: 0.3em 0;
-              }
-              .space-y-4 > * + * {
-                margin-top: 0.5rem !important;
-              }
-              .space-y-2 > * + * {
-                margin-top: 0.25rem !important;
-              }
-              .mb-8 {
-                margin-bottom: 1rem !important;
-              }
-              .mb-6 {
-                margin-bottom: 0.75rem !important;
-              }
-              .mb-4 {
-                margin-bottom: 0.5rem !important;
-              }
-              .p-8 {
-                padding: 1rem !important;
-              }
-              .p-6 {
-                padding: 0.75rem !important;
-              }
-              .p-4 {
-                padding: 0.5rem !important;
+              .no-print {
+                display: none !important;
               }
             }
           </style>
-          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
         </head>
         <body>
           ${receiptContent}
@@ -197,7 +267,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
-      }, 250);
+      }, 500);
     };
   };
 
@@ -309,7 +379,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                 <div className="space-y-2">
                   <div>
                     <span className="font-medium text-gray-700">Nom:</span>
-                    <p className="text-xl font-bold text-gray-900">{paymentData.entrepriseName}</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      {paymentData.entrepriseName || 
+                        (paymentData.prenom && paymentData.nom ? `${paymentData.prenom} ${paymentData.nom}` : 'N/A')}
+                    </p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Localité:</span>

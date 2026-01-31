@@ -18,6 +18,7 @@ import abdaty_technologie.API_Invest.Entity.InvestmentAgreement;
 import abdaty_technologie.API_Invest.Entity.Paiement;
 import abdaty_technologie.API_Invest.Entity.Payment;
 import abdaty_technologie.API_Invest.Entity.Persons;
+import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutPaiement;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePaiement;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
@@ -31,6 +32,7 @@ import abdaty_technologie.API_Invest.repository.InvestmentAgreementRepository;
 import abdaty_technologie.API_Invest.repository.PaiementRepository;
 import abdaty_technologie.API_Invest.repository.PaymentRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
+import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
 import abdaty_technologie.API_Invest.service.IPaiementService;
 
 @Service
@@ -51,6 +53,9 @@ public class PaiementServiceImpl implements IPaiementService {
     
     @Autowired
     private InvestmentAgreementRepository investmentAgreementRepository;
+
+    @Autowired
+    private UtilisateursRepository utilisateursRepository;
 
     @Override
     public PaiementResponse creerPaiement(PaiementRequest request) {
@@ -247,6 +252,51 @@ public class PaiementServiceImpl implements IPaiementService {
         if (paiement.getEntreprise() != null) {
             response.setEntrepriseId(paiement.getEntreprise().getId());
             response.setEntrepriseNom(paiement.getEntreprise().getNom());
+            response.setEntrepriseReference(paiement.getEntreprise().getReference());
+            
+            // Récupérer le gérant/propriétaire de l'entreprise
+            boolean membreTrouve = false;
+            System.out.println("🔍 [PaiementService] Entreprise: " + paiement.getEntreprise().getId());
+            System.out.println("🔍 [PaiementService] Membres null? " + (paiement.getEntreprise().getMembres() == null));
+            if (paiement.getEntreprise().getMembres() != null) {
+                System.out.println("🔍 [PaiementService] Nombre de membres: " + paiement.getEntreprise().getMembres().size());
+                paiement.getEntreprise().getMembres().forEach(m -> 
+                    System.out.println("   - Membre: " + m.getRole() + " - " + (m.getPersonne() != null ? m.getPersonne().getNom() + " " + m.getPersonne().getPrenom() : "null"))
+                );
+            }
+            
+            if (paiement.getEntreprise().getMembres() != null && !paiement.getEntreprise().getMembres().isEmpty()) {
+                // Chercher le gérant ou le fondateur dans les membres
+                Optional<abdaty_technologie.API_Invest.Entity.EntrepriseMembre> membreOpt = 
+                    paiement.getEntreprise().getMembres().stream()
+                        .filter(m -> m.getRole() == abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.GERANT 
+                                  || m.getRole() == abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.PROMOTEUR)
+                        .findFirst();
+                
+                if (membreOpt.isPresent() && membreOpt.get().getPersonne() != null) {
+                    abdaty_technologie.API_Invest.Entity.EntrepriseMembre gerant = membreOpt.get();
+                    System.out.println("✅ [PaiementService] Membre trouvé: " + gerant.getPersonne().getNom() + " " + gerant.getPersonne().getPrenom());
+                    response.setGerantNom(gerant.getPersonne().getNom());
+                    response.setGerantPrenom(gerant.getPersonne().getPrenom());
+                    membreTrouve = true;
+                }
+            }
+            
+            System.out.println("🔍 [PaiementService] Membre trouvé? " + membreTrouve);
+            
+            // Si pas de membre trouvé (entreprise individuelle), utiliser le créateur de l'entreprise
+            if (!membreTrouve && paiement.getEntreprise().getCreatedBy() != null) {
+                try {
+                    Utilisateurs createur = paiement.getEntreprise().getCreatedBy();
+                    if (createur != null && createur.getPersonne() != null) {
+                        System.out.println("⚠️ [PaiementService] Utilisation du créateur: " + createur.getPersonne().getNom() + " " + createur.getPersonne().getPrenom());
+                        response.setGerantNom(createur.getPersonne().getNom());
+                        response.setGerantPrenom(createur.getPersonne().getPrenom());
+                    }
+                } catch (Exception e) {
+                    System.err.println("⚠️ [PaiementService] Erreur lors de la récupération du créateur: " + e.getMessage());
+                }
+            }
         }
 
         return response;

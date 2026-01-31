@@ -6465,7 +6465,7 @@ const SummaryAndSubmissionStep: React.FC<{
           {/* Informations personnelles */}
           {data.personalInfo && (
             <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.3s'}}>
-              <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+              <h3 className="text-base text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
                 <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">👤</span>
                 Informations Personnelles
               </h3>

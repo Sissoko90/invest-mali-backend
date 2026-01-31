@@ -147,7 +147,7 @@ const PaymentTresorPayPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-sky-600 rounded-xl shadow-lg">
                 <CreditCardIcon className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -174,7 +174,7 @@ const PaymentTresorPayPage: React.FC = () => {
               
               <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg shadow-md">
+                  <div className="p-2 bg-sky-600 rounded-lg shadow-md">
                     <ShieldCheckIcon className="h-5 w-5 text-white" />
                   </div>
                   <div>

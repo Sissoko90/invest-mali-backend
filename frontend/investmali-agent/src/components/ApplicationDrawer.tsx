@@ -62,7 +62,7 @@ const ApplicationDrawer: React.FC<Props> = ({ open, onClose, application, onUpda
     const base = 'px-2 py-1 rounded-full text-xs font-medium';
     const color = status === 'approved' ? 'bg-primary-100 text-primary-800'
       : status === 'rejected' ? 'bg-red-100 text-red-800'
-      : status === 'in_review' ? 'bg-primary-100 text-primary-800'
+      : status === 'in_review' ? 'bg-sky-600 text-white-100'
       : status === 'pending_validation' || status === 'pending' ? 'bg-primary-100 text-primary-800'
       : 'bg-gray-100 text-gray-800';
     return <span className={`${base} ${color}`}>{formatStatus(status)}</span>;

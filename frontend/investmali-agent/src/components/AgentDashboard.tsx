@@ -441,7 +441,7 @@ const AgentDashboard: React.FC = () => {
     switch (status) {
       case 'pending': return 'bg-primary-100 text-primary-800';
       case 'pending_validation': return 'bg-primary-100 text-primary-800';
-      case 'in_review': return 'bg-primary-100 text-primary-800';
+      case 'in_review': return 'bg-sky-600 text-white-100';
       case 'approved': return 'bg-primary-100 text-primary-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       case 'requires_info': return 'bg-primary-100 text-primary-800';

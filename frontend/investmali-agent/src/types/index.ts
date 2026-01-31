@@ -63,6 +63,7 @@ export interface DemandeEntreprise {
   antenne?: string;
   etapeActuelle: string;
   motifRejet?: string;
+  paiementEffectue?: boolean;
 }
 
 export interface Agent {

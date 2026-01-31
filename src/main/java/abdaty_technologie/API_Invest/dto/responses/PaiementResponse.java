@@ -33,4 +33,9 @@ public class PaiementResponse {
     // Informations de l'entreprise (optionnel)
     private String entrepriseId;
     private String entrepriseNom;
+    private String entrepriseReference;
+    
+    // Informations du gérant/propriétaire de l'entreprise
+    private String gerantNom;
+    private String gerantPrenom;
 }

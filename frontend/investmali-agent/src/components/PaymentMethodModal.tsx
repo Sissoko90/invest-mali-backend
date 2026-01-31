@@ -276,7 +276,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                 <CreditCardIcon className="h-6 w-6 text-white" />
               </div>
               Choisir une méthode de paiement
@@ -318,7 +318,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                         className="w-10 h-10 object-contain rounded"
                       />
                     ) : (
-                      <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         {React.createElement(method.icon, { className: "h-6 w-6 text-white" })}
                       </div>
                     )}
@@ -349,7 +349,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           {/* Security Notice */}
           <div className="mt-6 p-4 bg-sky-50 rounded-lg border border-sky-200">
             <div className="flex items-start space-x-3">
-              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg shadow-md">
+              <div className="p-2 bg-sky-600 rounded-lg shadow-md">
                 <ShieldCheckIcon className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -375,7 +375,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
             <button
               onClick={handleContinueToDetails}
               disabled={!selectedMethod}
-              className="px-6 py-2 text-lg bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
+              className="px-6 py-2 text-lg bg-sky-600 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
             >
               Continuer
             </button>

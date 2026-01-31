@@ -232,7 +232,7 @@ const PaymentCashPage: React.FC = () => {
   const handleCloseReceipt = () => {
     setShowReceipt(false);
     setReceiptData(null);
-    navigate('/dossier');
+    navigate('/accueil', { state: { activeTab: 'regisseur' } });
   };
 
   return (
@@ -256,7 +256,7 @@ const PaymentCashPage: React.FC = () => {
         <div className="max-w-md mx-auto">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-sky-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+              <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                 <BuildingOffice2Icon className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Validation de paiement</h2>
@@ -338,7 +338,7 @@ const PaymentCashPage: React.FC = () => {
                   type="button"
                   onClick={handleCancel}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-2 py-0 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
                 >
                   <ArrowLeftIcon className="h-5 w-5" />
                   Annuler
@@ -346,7 +346,7 @@ const PaymentCashPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-3 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all font-bold"
+                  className="flex-1 px-2 py-0 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all font-bold"
                 >
                   <CheckCircleIcon className="h-5 w-5" />
                   <span>{loading ? 'Validation...' : 'Valider le paiement'}</span>

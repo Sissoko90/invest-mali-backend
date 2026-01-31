@@ -12,7 +12,6 @@ import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.Paiement;
 import abdaty_technologie.API_Invest.Entity.Persons;
-import abdaty_technologie.API_Invest.Entity.Utilisateurs;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
 import abdaty_technologie.API_Invest.repository.UtilisateursRepository;
 

@@ -214,8 +214,8 @@ const PaymentTresorPayPage: React.FC = () => {
 
       alert(`✅ Paiement TresorPay validé avec succès pour "${paymentData.entrepriseNom}"!\n\n✅ Entreprise transférée à l'étape de révision`);
 
-      // Retourner au dashboard
-      navigate('/dashboard');
+      // Retourner vers RegisseurStep
+      navigate('/accueil', { state: { activeTab: 'regisseur' } });
 
     } catch (error: any) {
       console.error('❌ Erreur lors de la mise à jour:', error);
@@ -245,7 +245,7 @@ const PaymentTresorPayPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-sky-600 rounded-xl shadow-lg">
                 <CreditCardIcon className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -273,7 +273,7 @@ const PaymentTresorPayPage: React.FC = () => {
               
               <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg shadow-md">
+                  <div className="p-2 bg-sky-600 rounded-lg shadow-md">
                     <ShieldCheckIcon className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -351,7 +351,7 @@ const PaymentTresorPayPage: React.FC = () => {
                 <button
                   onClick={handleInitiatePayment}
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
+                  className="flex-1 px-4 py-2 text-lg bg-sky-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
                 >
                   {isProcessing ? 'Création...' : 'Procéder au paiement'}
                 </button>
@@ -383,7 +383,7 @@ const PaymentTresorPayPage: React.FC = () => {
               <div className="space-y-4">
                 <button
                   onClick={handleOpenPaymentUrl}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-lg font-bold flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-sky-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-lg font-bold flex items-center justify-center gap-2"
                 >
                   <LinkIcon className="h-5 w-5" />
                   Ouvrir la page de paiement TresorPay
@@ -418,7 +418,7 @@ const PaymentTresorPayPage: React.FC = () => {
                 <button
                   onClick={handleVerifyPayment}
                   disabled={isProcessing}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl text-lg font-bold flex items-center justify-center gap-2"
+                  className="w-full px-6 py-3 bg-sky-600 text-white rounded-md hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl text-lg font-bold flex items-center justify-center gap-2"
                 >
                   <MagnifyingGlassIcon className="h-5 w-5" />
                   {isProcessing ? 'Vérification...' : 'Vérifier le paiement'}

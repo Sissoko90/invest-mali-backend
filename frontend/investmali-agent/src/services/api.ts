@@ -184,7 +184,8 @@ const entreprisesAPI = {
   update: (id: string | number, updateData: Record<string, any>) => 
     api.put(API_ENDPOINTS.ENTREPRISES.UPDATE(id), updateData),
   // Mettre à jour le statut d'une entreprise (utilise l'endpoint update général)
-  updateStatus: (id: string | number, status: string, note?: string) => {
+  // etapeOverride permet de forcer une étape spécifique (ex: REVISION si déjà payé)
+  updateStatus: (id: string | number, status: string, note?: string, etapeOverride?: string) => {
     // Mapper les statuts vers les enums backend
     let statutCreation = '';
     let etapeValidation = 'ACCUEIL';
@@ -192,7 +193,7 @@ const entreprisesAPI = {
     switch (status) {
       case 'VALIDE':
         statutCreation = 'VALIDEE';
-        etapeValidation = 'REGISSEUR'; // Passe à l'étape suivante
+        etapeValidation = etapeOverride || 'REGISSEUR'; // Utilise l'override si fourni, sinon REGISSEUR
         break;
       case 'PAIEMENT_VALIDE':
         statutCreation = 'VALIDEE';

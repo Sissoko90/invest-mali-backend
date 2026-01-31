@@ -12,12 +12,17 @@ import {
   BuildingOffice2Icon,
   UserIcon,
   BanknotesIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  DocumentArrowDownIcon,
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { DemandeEntreprise } from '../types';
 import { API_CONFIG } from '../config/api.config';
 import PaymentMethodModal from './PaymentMethodModal';
+import PaymentReceipt from './PaymentReceipt';
 
 interface Paiement {
   id: string;
@@ -72,15 +77,21 @@ interface RegisseurStepProps {
 }
 
 const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate }) => {
+  console.log('🚀 [RegisseurStep] Composant chargé');
   const { agent, canEditStep } = useAgentAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<'demandes' | 'paiements'>('demandes');
+  console.log('📍 [RegisseurStep] activeTab initial:', activeTab);
   const [isLoading, setIsLoading] = useState(false);
   const [regisseurDemandes, setRegisseurDemandes] = useState<DemandeRegisseur[]>([]);
   const [selectedDemande, setSelectedDemande] = useState<DemandeRegisseur | null>(null);
   const [paiementMethod, setPaiementMethod] = useState<'CASH' | 'MOOV_MONEY' |  'ORANGE_MONEY' | 'STRIPE'>('CASH');
   const [fraisCalcules, setFraisCalcules] = useState<any>(null);
   const [paiementsConfirmes, setPaiementsConfirmes] = useState<PaiementResponse[]>([]);
+  const [paiementsPage, setPaiementsPage] = useState(0);
+  const [paiementsTotalPages, setPaiementsTotalPages] = useState(0);
+  const [paiementsTotalElements, setPaiementsTotalElements] = useState(0);
+  const [paiementsSearch, setPaiementsSearch] = useState('');
 
   // États pour le modal de paiement
   const [paiementModalOpen, setPaiementModalOpen] = useState(false);
@@ -89,6 +100,10 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
     nom: string;
     totalAmount?: number;
   } | null>(null);
+
+  // États pour le reçu de paiement
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const canEdit = canEditStep('REGISSEUR');
 
@@ -115,19 +130,28 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
     syncFromDatabase();
     
     // Charger les paiements confirmés
-    loadPaiementsConfirmes().then(paiements => {
+    loadPaiementsConfirmes(0, '').then(paiements => {
       setPaiementsConfirmes(paiements);
     });
   }, []);
 
-  // Recharger les paiements quand on change d'onglet vers "paiements"
+  // Recharger les paiements quand on change d'onglet, de page ou de recherche
   useEffect(() => {
+    console.log('🔄 [RegisseurStep useEffect] Déclenché - activeTab:', activeTab, 'Page:', paiementsPage, 'Search:', paiementsSearch);
     if (activeTab === 'paiements') {
-      loadPaiementsConfirmes().then(paiements => {
+      console.log('🔍 [RegisseurStep] CHARGEMENT PAIEMENTS DEBUT');
+      loadPaiementsConfirmes(paiementsPage, paiementsSearch).then(paiements => {
+        console.log('✅ [RegisseurStep] Paiements reçus:', paiements);
+        console.log('✅ [RegisseurStep] Nombre de paiements:', paiements.length);
         setPaiementsConfirmes(paiements);
+        console.log('📊 [RegisseurStep] État mis à jour - paiementsConfirmes.length:', paiements.length);
+      }).catch(error => {
+        console.error('❌ [RegisseurStep] Erreur chargement:', error);
       });
+    } else {
+      console.log('⏭️ [RegisseurStep] Onglet actif n\'est pas paiements:', activeTab);
     }
-  }, [activeTab]);
+  }, [activeTab, paiementsPage, paiementsSearch]);
 
   const loadRegisseurDemandes = () => {
     try {
@@ -273,7 +297,8 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
             agentAccueilNom: agentAccueilNom,
             agentAccueilEmail: agentAccueilEmail,
             agentAccueilId: agentAccueilId,
-            totalAmount: entreprise.totalAmount || 0
+            totalAmount: entreprise.totalAmount || 0,
+            statutPaiement: entreprise.statutPaiement || (entreprise.statutCreation === 'PAIEMENT_VALIDE' ? 'REUSSI' : null)
           };
           
           return demandeData;
@@ -398,6 +423,97 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
     }
   };
 
+  // Voir le reçu de paiement depuis les paiements confirmés
+  const handleVoirRecuPaiement = async (paiement: PaiementResponse) => {
+    try {
+      // Récupérer les détails de l'entreprise si disponible
+      let entrepriseData: any = null;
+      let gerant: any = null;
+
+      if (paiement.entrepriseId) {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${paiement.entrepriseId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          entrepriseData = await response.json();
+          gerant = entrepriseData.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+        }
+      }
+
+      const paymentData = {
+        entrepriseId: paiement.entrepriseId || '',
+        entrepriseName: paiement.entrepriseNom || '',
+        entrepriseType: entrepriseData?.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+        localisation: entrepriseData?.divisionNom || 'Non spécifié',
+        commune: entrepriseData?.communeNom || entrepriseData?.quartierNom || 'Non spécifié',
+        amount: paiement.montant ? Number(paiement.montant) : 0,
+        paymentMethod: paiement.typePaiement || 'Cash',
+        transactionId: paiement.referenceTransaction || paiement.id,
+        paymentDate: paiement.datePaiement || paiement.dateCreation || new Date().toISOString(),
+        status: 'success' as const,
+        dossierNumber: entrepriseData?.reference || paiement.entrepriseId || 'N/A',
+        processedByAgent: true,
+        agentName: agent ? `${agent.firstName} ${agent.lastName}` : 'Agent API-INVEST',
+        prenom: gerant?.prenom || paiement.personnePrenom || '',
+        nom: gerant?.nom || paiement.personneNom || ''
+      };
+
+      setReceiptData(paymentData);
+      setShowReceipt(true);
+    } catch (error) {
+      console.error('Erreur lors de la génération du reçu:', error);
+      alert('Erreur lors de la génération du reçu');
+    }
+  };
+
+  // Voir le reçu de paiement
+  const handleVoirRecu = async (demande: DemandeRegisseur) => {
+    try {
+      // Récupérer le gérant pour avoir prénom et nom
+      const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${demande.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Impossible de récupérer les détails de l\'entreprise');
+      }
+
+      const entrepriseData = await response.json();
+      const gerant = entrepriseData.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+
+      const paymentData = {
+        entrepriseId: demande.id,
+        entrepriseName: demande.nom || '',
+        entrepriseType: demande.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+        localisation: entrepriseData.divisionNom || 'Non spécifié',
+        commune: entrepriseData.communeNom || entrepriseData.quartierNom || 'Non spécifié',
+        amount: demande.frais?.fraisTotal || demande.totalAmount || 0,
+        paymentMethod: 'Cash',
+        transactionId: (demande as any).referenceTransaction || `TXN-${demande.id}`,
+        paymentDate: (demande as any).datePaiement || new Date().toISOString(),
+        status: 'success' as const,
+        dossierNumber: entrepriseData.reference || demande.id,
+        processedByAgent: true,
+        agentName: agent ? `${agent.firstName} ${agent.lastName}` : 'Agent API-INVEST',
+        prenom: gerant?.prenom || '',
+        nom: gerant?.nom || ''
+      };
+
+      setReceiptData(paymentData);
+      setShowReceipt(true);
+    } catch (error) {
+      console.error('Erreur lors de la génération du reçu:', error);
+      alert('Erreur lors de la génération du reçu');
+    }
+  };
+
   // Imprimer le reçu
   const imprimerRecu = (demande: DemandeRegisseur) => {
     if (!demande.paiement || !demande.frais) {
@@ -424,11 +540,20 @@ Agent: ${agent?.firstName} ${agent?.lastName}
     alert('🖨️ Reçu imprimé avec succès!\n\n' + recu);
   };
 
-  // Récupérer les paiements confirmés depuis la base de données
-  const loadPaiementsConfirmes = async (): Promise<PaiementResponse[]> => {
+  // Récupérer les paiements confirmés depuis la base de données avec pagination et recherche
+  const loadPaiementsConfirmes = async (page: number = 0, search: string = ''): Promise<PaiementResponse[]> => {
+    console.log('🌐 [loadPaiementsConfirmes] DEBUT - page:', page, 'search:', search);
     try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        size: '10',
+        ...(search && { search })
+      });
       
-      const response = await fetch(`${API_CONFIG.BASE_URL}/paiements/confirmes`, {
+      const url = `${API_CONFIG.BASE_URL}/paiements/confirmes?${params}`;
+      console.log('🌐 [loadPaiementsConfirmes] URL:', url);
+      
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
           'Content-Type': 'application/json'
@@ -439,14 +564,21 @@ Agent: ${agent?.firstName} ${agent?.lastName}
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const paiements = await response.json();
+      const data = await response.json();
       
-      // Debug détaillé de chaque paiement
-      paiements.forEach((paiement: PaiementResponse, index: number) => {
-        // Log removed for production
+      console.log('📦 [RegisseurStep] Données reçues du backend:', {
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalElements: data.totalElements,
+        contentLength: data.content?.length || 0
       });
       
-      return paiements;
+      // Mettre à jour les informations de pagination
+      setPaiementsPage(data.currentPage);
+      setPaiementsTotalPages(data.totalPages);
+      setPaiementsTotalElements(data.totalElements);
+      
+      return data.content || [];
     } catch (error) {
       console.error('❌ [RegisseurStep] Erreur lors du chargement des paiements:', error);
       return [];
@@ -572,7 +704,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center space-x-4 mb-4">
-              <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg">
+              <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
                 <BanknotesIcon className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -653,7 +785,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
-                          <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                          <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                             <BuildingOffice2Icon className="h-6 w-6 text-white" />
                           </div>
                           <div>
@@ -714,7 +846,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               <button
                                 onClick={() => handlePasserAuPaiement(demande.id)}
                                 disabled={isLoading}
-                                className="inline-flex items-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
+                                className="inline-flex items-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-sky-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
                               >
                                 <CreditCardIcon className="h-4 w-4 mr-1" />
                                 Passer au paiement
@@ -760,10 +892,19 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               </span>
                               <span className="text-sm text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
                               {(demande as any).statutPaiement === 'REUSSI' && (
-                                <span className="text-sm text-green-600 font-bold flex items-center gap-1">
-                                  <CheckCircleIcon className="h-4 w-4" />
-                                  Paiement confirmé
-                                </span>
+                                <>
+                                  <span className="text-sm text-green-600 font-bold flex items-center gap-1">
+                                    <CheckCircleIcon className="h-4 w-4" />
+                                    Paiement confirmé
+                                  </span>
+                                  <button
+                                    onClick={() => handleVoirRecu(demande)}
+                                    className="inline-flex items-center px-3 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-md hover:shadow-lg transition-all duration-200 w-full justify-center"
+                                  >
+                                    <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                                    Télécharger reçu
+                                  </button>
+                                </>
                               )}
                             </div>
                           )}
@@ -783,7 +924,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             <button
                               onClick={() => initierPaiement(demande.id, paiementMethod)}
                               disabled={isLoading}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-sky-600 hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
                               <CreditCardIcon className="h-5 w-5 mr-2" />
                               Initier Paiement
@@ -832,18 +973,38 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                     <CreditCardIcon className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-xl font-black text-slate-800">Paiements confirmés</h3>
+                  {paiementsTotalElements > 0 && (
+                    <span className="text-sm text-slate-600 font-medium">({paiementsTotalElements} paiement{paiementsTotalElements > 1 ? 's' : ''})</span>
+                  )}
                 </div>
                 <button
                   onClick={async () => {
-                    const paiements = await loadPaiementsConfirmes();
+                    const paiements = await loadPaiementsConfirmes(paiementsPage, paiementsSearch);
                     setPaiementsConfirmes(paiements);
                   }}
-                  className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg font-bold hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+                  className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg font-bold hover:bg-sky-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
                   title="Recharger les paiements confirmés"
                 >
                   <ArrowLeftIcon className="h-5 w-5 transform rotate-90" />
                   Actualiser
                 </button>
+              </div>
+              
+              {/* Barre de recherche */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={paiementsSearch}
+                  onChange={(e) => {
+                    setPaiementsSearch(e.target.value);
+                    setPaiementsPage(0); // Réinitialiser à la première page lors de la recherche
+                  }}
+                  placeholder="Rechercher par nom d'entreprise, référence, nom de personne..."
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-base"
+                />
               </div>
               {paiementsConfirmes.length === 0 ? (
                 <div className="text-center py-8">
@@ -873,7 +1034,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             );
                           } else {
                             return (
-                              <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                              <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                                 <BuildingOffice2Icon className="h-6 w-6 text-white" />
                               </div>
                             );
@@ -947,15 +1108,76 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                       )}
                     </div>
                     
-                    <div className="text-right ml-6">
+                    <div className="text-right ml-6 flex flex-col space-y-3">
                       <span className="inline-flex items-center px-4 py-2 text-lg font-bold rounded-xl bg-gradient-to-r from-green-100 to-green-200 text-green-800 shadow-lg">
                         <CheckCircleIcon className="h-5 w-5 mr-2" />
                         Confirmé
                       </span>
+                      <button
+                        onClick={() => handleVoirRecuPaiement(paiement)}
+                        className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-md hover:shadow-lg transition-all duration-200 justify-center"
+                      >
+                        <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                        Télécharger reçu
+                      </button>
                     </div>
                   </div>
                 </div>
                 ))
+              )}
+              
+              {/* Pagination */}
+              {paiementsTotalPages > 0 && (
+                <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-md">
+                  <div className="text-sm text-slate-600">
+                    Page {paiementsPage + 1} sur {paiementsTotalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setPaiementsPage(Math.max(0, paiementsPage - 1))}
+                      disabled={paiementsPage === 0}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeftIcon className="h-5 w-5" />
+                      Précédent
+                    </button>
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, paiementsTotalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (paiementsTotalPages <= 5) {
+                          pageNum = i;
+                        } else if (paiementsPage < 3) {
+                          pageNum = i;
+                        } else if (paiementsPage > paiementsTotalPages - 4) {
+                          pageNum = paiementsTotalPages - 5 + i;
+                        } else {
+                          pageNum = paiementsPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setPaiementsPage(pageNum)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                              paiementsPage === pageNum
+                                ? 'bg-sky-600 text-white'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setPaiementsPage(Math.min(paiementsTotalPages - 1, paiementsPage + 1))}
+                      disabled={paiementsPage >= paiementsTotalPages - 1}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      Suivant
+                      <ChevronRightIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -969,6 +1191,14 @@ Agent: ${agent?.firstName} ${agent?.lastName}
           onClose={() => setPaiementModalOpen(false)}
           entreprise={paiementEntreprise}
           onPaiementComplete={handlePaiementComplete}
+        />
+      )}
+
+      {/* Reçu de paiement */}
+      {showReceipt && receiptData && (
+        <PaymentReceipt
+          paymentData={receiptData}
+          onClose={() => setShowReceipt(false)}
         />
       )}
     </div>

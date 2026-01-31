@@ -792,7 +792,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   {selectedDemande.rccmNumber && (
                     <div className="mt-6">
                       <div className="flex items-center space-x-3 mb-6">
-                        <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                        <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                           <DocumentTextIcon className="h-6 w-6 text-white" />
                         </div>
                         <h4 className="text-xl font-black text-slate-800">

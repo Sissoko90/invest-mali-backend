@@ -188,18 +188,94 @@ public class PaiementController {
     }
 
     @GetMapping("/confirmes")
-    @Operation(summary = "Récupérer les paiements confirmés", description = "Récupère tous les paiements avec le statut REUSSI")
-    public ResponseEntity<?> getPaiementsConfirmes() {
+    @Operation(summary = "Récupérer les paiements confirmés", description = "Récupère tous les paiements avec le statut REUSSI avec pagination et recherche")
+    public ResponseEntity<?> getPaiementsConfirmes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search) {
         try {
             System.out.println("🔍 [PaiementController] Récupération des paiements confirmés...");
+            System.out.println("📄 [PaiementController] Page: " + page + ", Size: " + size + ", Search: '" + search + "'");
+            System.out.println("🔍 [PaiementController] Search is null? " + (search == null) + ", Search is empty? " + (search != null && search.trim().isEmpty()));
             
             List<PaiementResponse> paiementsConfirmes = paiementService.getPaiementsByStatut(StatutPaiement.VALIDE);
             
-            System.out.println("✅ [PaiementController] " + paiementsConfirmes.size() + " paiements confirmés trouvés");
+            System.out.println("📋 [PaiementController] " + paiementsConfirmes.size() + " paiements confirmés trouvés");
             
-            return ResponseEntity.ok(paiementsConfirmes);
+            // Debug: Afficher les champs du premier paiement pour vérifier
+            if (!paiementsConfirmes.isEmpty()) {
+                PaiementResponse first = paiementsConfirmes.get(0);
+                System.out.println("🔍 [DEBUG] Premier paiement:");
+                System.out.println("   - EntrepriseNom: '" + first.getEntrepriseNom() + "'");
+                System.out.println("   - EntrepriseReference: '" + first.getEntrepriseReference() + "'");
+                System.out.println("   - GerantNom: '" + first.getGerantNom() + "'");
+                System.out.println("   - GerantPrenom: '" + first.getGerantPrenom() + "'");
+                System.out.println("   - PersonneNom (Agent): '" + first.getPersonneNom() + "'");
+                System.out.println("   - PersonnePrenom (Agent): '" + first.getPersonnePrenom() + "'");
+                System.out.println("   - ReferenceTransaction: '" + first.getReferenceTransaction() + "'");
+                System.out.println("   - Description: '" + first.getDescription() + "'");
+                System.out.println("   - TypePaiement: '" + first.getTypePaiement() + "'");
+            }
+            
+            // Filtrer par recherche si fournie
+            if (search != null && !search.trim().isEmpty()) {
+                String searchLower = search.toLowerCase().trim();
+                System.out.println("🔍 [PaiementController] Recherche avec: '" + searchLower + "'");
+                
+                paiementsConfirmes = paiementsConfirmes.stream()
+                    .filter(p -> 
+                        (p.getEntrepriseNom() != null && !p.getEntrepriseNom().equals("null") && p.getEntrepriseNom().toLowerCase().contains(searchLower)) ||
+                        (p.getEntrepriseReference() != null && p.getEntrepriseReference().toLowerCase().contains(searchLower)) ||
+                        (p.getGerantNom() != null && p.getGerantNom().toLowerCase().contains(searchLower)) ||
+                        (p.getGerantPrenom() != null && p.getGerantPrenom().toLowerCase().contains(searchLower)) ||
+                        (p.getReferenceTransaction() != null && p.getReferenceTransaction().toLowerCase().contains(searchLower)) ||
+                        (p.getPersonneNom() != null && p.getPersonneNom().toLowerCase().contains(searchLower)) ||
+                        (p.getPersonnePrenom() != null && p.getPersonnePrenom().toLowerCase().contains(searchLower)) ||
+                        (p.getDescription() != null && p.getDescription().toLowerCase().contains(searchLower)) ||
+                        (p.getTypePaiement() != null && p.getTypePaiement().toString().toLowerCase().contains(searchLower))
+                    )
+                    .collect(java.util.stream.Collectors.toList());
+                System.out.println("✅ [PaiementController] Après filtrage: " + paiementsConfirmes.size() + " paiements trouvés");
+            }
+            
+            // Calculer la pagination
+            int totalElements = paiementsConfirmes.size();
+            int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            
+            System.out.println("📊 [PaiementController] Calcul pagination:");
+            System.out.println("   - totalElements: " + totalElements);
+            System.out.println("   - size: " + size);
+            System.out.println("   - totalPages calculé: " + totalPages);
+            System.out.println("   - fromIndex: " + fromIndex);
+            System.out.println("   - toIndex: " + toIndex);
+            
+            // Extraire la page demandée
+            List<PaiementResponse> pagedPaiements = fromIndex < totalElements 
+                ? paiementsConfirmes.subList(fromIndex, toIndex)
+                : java.util.Collections.emptyList();
+            
+            // Créer la réponse paginée
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("content", pagedPaiements);
+            response.put("currentPage", page);
+            response.put("totalElements", totalElements);
+            response.put("totalPages", totalPages);
+            response.put("size", size);
+            response.put("hasNext", page < totalPages - 1);
+            response.put("hasPrevious", page > 0);
+            
+            System.out.println("✅ [PaiementController] Réponse paginée:");
+            System.out.println("   - Page actuelle: " + page);
+            System.out.println("   - Total pages: " + totalPages);
+            System.out.println("   - Éléments sur cette page: " + pagedPaiements.size());
+            System.out.println("   - Total éléments: " + totalElements);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("❌ [PaiementController] Erreur lors de la récupération des paiements confirmés: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(new ErrorResponse("Erreur lors de la récupération des paiements confirmés: " + e.getMessage()));
         }
     }

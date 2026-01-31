@@ -7,7 +7,6 @@ import abdaty_technologie.API_Invest.dto.InvestmentAgreementRequest;
 import abdaty_technologie.API_Invest.dto.InvestmentAgreementDocumentDto;
 import abdaty_technologie.API_Invest.repository.InvestmentAgreementRepository;
 import abdaty_technologie.API_Invest.repository.InvestmentAgreementDocumentRepository;
-import abdaty_technologie.API_Invest.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

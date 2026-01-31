@@ -13,6 +13,9 @@ import {
   EyeSlashIcon,
   DocumentMagnifyingGlassIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
@@ -61,10 +64,40 @@ interface RevisionStepProps {
 const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const { agent, canEditStep } = useAgentAuth();
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Fonction utilitaire pour obtenir le nom d'affichage d'une entreprise
+  // Utilise prénom+nom du gérant/promoteur si le nom d'entreprise est null
+  const getDisplayName = (entreprise: any): string => {
+    if (entreprise.nom) {
+      return entreprise.nom;
+    }
+    
+    // Si pas de nom d'entreprise, chercher le gérant/promoteur dans les membres
+    const gerant = entreprise.membres?.find((m: any) => 
+      m.role === 'GERANT' || m.role === 'PROMOTEUR' || 
+      m.entrepriseRole === 'GERANT' || m.entrepriseRole === 'PROMOTEUR'
+    );
+    const personne = gerant?.personne || gerant;
+    
+    if (personne) {
+      const fullName = `${personne.prenom || ''} ${personne.nom || ''}`.trim();
+      return fullName || 'Entreprise sans nom';
+    }
+    
+    // Fallback sur le créateur
+    if (entreprise.createdBy?.personne) {
+      const createur = entreprise.createdBy.personne;
+      const fullName = `${createur.prenom || ''} ${createur.nom || ''}`.trim();
+      return fullName || 'Entreprise sans nom';
+    }
+    
+    return 'Entreprise sans nom';
+  };
   const [activeTab, setActiveTab] = useState<'demandes' | 'documents'>('demandes');
   const [isLoading, setIsLoading] = useState(false);
   const [demandes, setDemandes] = useState<DemandeRevision[]>([]);
   const [entreprisesPostRevision, setEntreprisesPostRevision] = useState<DemandeRevision[]>([]);
+  const [filteredEntreprises, setFilteredEntreprises] = useState<DemandeRevision[]>([]);
   const [selectedDemande, setSelectedDemande] = useState<DemandeRevision | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -73,6 +106,13 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRejectReason, setSelectedRejectReason] = useState('');
   const [customRejectReason, setCustomRejectReason] = useState('');
+
+  // États pour la pagination et la recherche des documents révisés
+  const [documentsSearch, setDocumentsSearch] = useState('');
+  const [documentsPage, setDocumentsPage] = useState(0);
+  const [documentsTotalPages, setDocumentsTotalPages] = useState(0);
+  const [documentsTotalElements, setDocumentsTotalElements] = useState(0);
+  const documentsPerPage = 10;
 
   // Motifs de rejet prédéfinis pour le retour à RÉVISION
   const rejectReasons = [
@@ -153,6 +193,32 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
     }
   }, [activeTab]);
 
+  // Filtrer et paginer les entreprises post-révision
+  useEffect(() => {
+    let filtered = entreprisesPostRevision;
+    
+    // Appliquer la recherche par nom entreprise, nom/prénom personne, référence
+    if (documentsSearch.trim()) {
+      const searchLower = documentsSearch.toLowerCase();
+      filtered = entreprisesPostRevision.filter(e => 
+        e.nom?.toLowerCase().includes(searchLower) ||
+        e.reference?.toLowerCase().includes(searchLower) ||
+        e.demandeur?.nom?.toLowerCase().includes(searchLower) ||
+        e.demandeur?.prenom?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Calculer la pagination
+    setDocumentsTotalElements(filtered.length);
+    setDocumentsTotalPages(Math.ceil(filtered.length / documentsPerPage));
+    
+    // Appliquer la pagination
+    const startIndex = documentsPage * documentsPerPage;
+    const paginatedEntreprises = filtered.slice(startIndex, startIndex + documentsPerPage);
+    
+    setFilteredEntreprises(paginatedEntreprises);
+  }, [entreprisesPostRevision, documentsSearch, documentsPage]);
+
   const loadDemandesRevision = async () => {
     setIsLoading(true);
     try {
@@ -166,7 +232,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       const demandesRevision: DemandeRevision[] = await Promise.all(
         entreprises.map(async (entreprise: any) => ({
           id: entreprise.id,
-          nom: entreprise.nom,
+          nom: getDisplayName(entreprise),
           typeEntreprise: entreprise.typeEntreprise || 'SARL',
           formeJuridique: entreprise.formeJuridique || entreprise.typeEntreprise || 'SARL',
           secteurActivite: entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr?.label || entreprise.secteurActivite || 'Non spécifié',
@@ -275,7 +341,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           // Mapper les données pour chaque entreprise
           const entreprisesMappees = entreprises.map((entreprise: any) => ({
             id: entreprise.id,
-            nom: entreprise.nom,
+            nom: getDisplayName(entreprise),
+            reference: entreprise.reference || entreprise.numeroReference || '',
             typeEntreprise: entreprise.typeEntreprise || 'SARL',
             formeJuridique: entreprise.formeJuridique || entreprise.typeEntreprise || 'SARL',
             secteurActivite: entreprise.secteurActivite || 'Non spécifié',
@@ -284,8 +351,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             etapeActuelle: etape,
             statut: 'approuve', // Ces entreprises ont dépassé la révision donc sont approuvées
             demandeur: {
-              nom: entreprise.createdBy?.personne?.nom || 'Utilisateur',
-              prenom: entreprise.createdBy?.personne?.prenom || 'Inconnu',
+              nom: entreprise.createdBy?.personne?.nom || entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR')?.personne?.nom || 'Utilisateur',
+              prenom: entreprise.createdBy?.personne?.prenom || entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR')?.personne?.prenom || 'Inconnu',
               email: entreprise.createdBy?.email || 'email@example.com',
               telephone: entreprise.createdBy?.personne?.telephone1 || '+223 00 00 00 00'
             },
@@ -427,7 +494,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const getStatutColor = (statut: string) => {
     switch (statut) {
       case 'en_cours': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      case 'complete': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
+      case 'complete': return 'bg-sky-600 text-primary-800';
       case 'rejete': return 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800';
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
     }
@@ -452,7 +519,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
+            <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
               <DocumentCheckIcon className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -461,7 +528,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <span className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
+            <span className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
               <DocumentMagnifyingGlassIcon className="h-5 w-5" />
               Étape REVISION
             </span>
@@ -515,14 +582,14 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="space-y-4">
               {isLoading ? (
                 <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
+                  <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
                     <ClockIcon className="h-8 w-8 text-white mx-auto" />
                   </div>
                   <p className="text-lg text-slate-600 font-medium">Chargement des demandes...</p>
                 </div>
               ) : demandes.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
+                  <div className="p-4 bg-sky-700 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
                     <DocumentCheckIcon className="h-12 w-12 text-white mx-auto" />
                   </div>
                   <h3 className="text-xl font-black text-slate-800 mb-3">Aucune demande à réviser</h3>
@@ -533,7 +600,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-2xl shadow-lg">
+                        <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
                           <BuildingOfficeIcon className="h-6 w-6 text-white" />
                         </div>
                         <div className="flex-1">
@@ -566,7 +633,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                             setSelectedDemande(demande);
                             setShowDetails(true);
                           }}
-                          className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold text-lg"
+                          className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold text-lg"
                         >
                           <EyeIcon className="h-5 w-5" />
                           <span>Réviser</span>
@@ -600,19 +667,60 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           {activeTab === 'documents' && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-sky-50/50 to-blue-50/50 rounded-2xl p-6 border border-sky-200">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
-                    <DocumentTextIcon className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-sky-600 rounded-xl shadow-lg">
+                      <DocumentTextIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800">Entreprises Post-Révision</h3>
+                      <p className="text-lg text-slate-600 font-medium">
+                        Entreprises ayant dépassé l'étape de révision
+                        {documentsTotalElements > 0 && (
+                          <span className="ml-2">({documentsTotalElements} entreprise{documentsTotalElements > 1 ? 's' : ''})</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Entreprises Post-Révision</h3>
-                    <p className="text-lg text-slate-600 font-medium">Entreprises ayant dépassé l'étape de révision</p>
+                  <button
+                    onClick={() => loadEntreprisesPostRevision()}
+                    className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg font-bold hover:bg-sky-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+                    title="Recharger les entreprises"
+                  >
+                    <ArrowLeftIcon className="h-5 w-5 transform rotate-90" />
+                    Actualiser
+                  </button>
+                </div>
+
+                {/* Barre de recherche */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                   </div>
+                  <input
+                    type="text"
+                    value={documentsSearch}
+                    onChange={(e) => {
+                      setDocumentsSearch(e.target.value);
+                      setDocumentsPage(0); // Réinitialiser à la première page lors de la recherche
+                    }}
+                    placeholder="Rechercher par nom d'entreprise, nom, prénom ou référence..."
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-base"
+                  />
                 </div>
 
                 {/* Liste des entreprises */}
                 <div className="space-y-3">
-                  {entreprisesPostRevision.map((entreprise, index) => (
+                  {filteredEntreprises.length === 0 ? (
+                    <div className="text-center py-8">
+                      <DocumentMagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h4 className="text-xl font-medium text-gray-700 mb-2">Aucune entreprise trouvée</h4>
+                      <p className="text-lg text-gray-500">
+                        {documentsSearch ? 'Aucun résultat pour votre recherche.' : 'Aucune entreprise n\'a encore dépassé l\'étape de révision.'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredEntreprises.map((entreprise) => (
                       <div 
                         key={entreprise.id} 
                         className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/60 shadow-sm hover:shadow-md transition-all duration-300 hover:bg-white/90"
@@ -629,7 +737,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                               <div className="flex items-center space-x-4 text-lg text-slate-600">
                                 <span className="flex items-center space-x-1">
                                   <UserIcon className="h-4 w-4" />
-                                  <span>ID: {entreprise.id}</span>
+                                  <span>ID: {entreprise.id.substring(0, 8)}...</span>
                                 </span>
                                 <span className="flex items-center space-x-1">
                                   <ClockIcon className="h-4 w-4" />
@@ -640,7 +748,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                           </div>
                           
                           <div className="flex items-center space-x-3">
-                            {/* Juste un badge simple avec l'étape actuelle */}
                             <div className="px-3 py-1 bg-gradient-to-r from-green-50 to-green-50 rounded-lg border border-green-200">
                               <span className="text-lg font-bold text-green-700">
                                 Étape: {entreprise.etapeActuelle || 'TERMINÉ'}
@@ -649,16 +756,61 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  
-                  {/* Message si aucune entreprise */}
-                  {entreprisesPostRevision.length === 0 && (
-                    <div className="text-center py-8">
-                      <DocumentMagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-xl font-medium text-gray-700 mb-2">Aucune entreprise trouvée</h4>
-                      <p className="text-lg text-gray-500">Aucune entreprise n'a encore dépassé l'étape de révision.</p>
-                    </div>
+                    ))
                   )}
+                </div>
+
+                {/* Pagination - toujours affichée */}
+                <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                  <div className="text-sm text-gray-700">
+                    Page <span className="font-medium">{documentsPage + 1}</span> sur <span className="font-medium">{Math.max(1, documentsTotalPages)}</span>
+                    {' '}({documentsTotalElements} résultat{documentsTotalElements > 1 ? 's' : ''})
+                  </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setDocumentsPage(Math.max(0, documentsPage - 1))}
+                        disabled={documentsPage === 0}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <ChevronLeftIcon className="h-5 w-5" />
+                        Précédent
+                      </button>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: Math.min(5, documentsTotalPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (documentsTotalPages <= 5) {
+                            pageNum = i;
+                          } else if (documentsPage < 3) {
+                            pageNum = i;
+                          } else if (documentsPage > documentsTotalPages - 4) {
+                            pageNum = documentsTotalPages - 5 + i;
+                          } else {
+                            pageNum = documentsPage - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setDocumentsPage(pageNum)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                documentsPage === pageNum
+                                  ? 'bg-sky-600 text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {pageNum + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setDocumentsPage(Math.min(documentsTotalPages - 1, documentsPage + 1))}
+                        disabled={documentsPage >= documentsTotalPages - 1}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        Suivant
+                        <ChevronRightIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -673,7 +825,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="p-6 border-b border-white/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
+                  <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
                     <DocumentCheckIcon className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -693,7 +845,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="p-6">
               {/* Section Informations de l'Entreprise */}
               <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                   <BuildingOfficeIcon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-black text-slate-800">Informations de l'Entreprise</h3>
@@ -754,7 +906,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {selectedDemande.participants.map((participant: any, index: number) => (
                         <div key={index} className="bg-white/60 rounded-xl p-4 border border-white/40">
                           <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-lg">
+                            <div className="p-2 bg-sky-600 rounded-lg">
                               <UserIcon className="h-5 w-5 text-white" />
                             </div>
                             <div>
@@ -774,7 +926,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
               {/* Section Documents */}
               <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                   <DocumentTextIcon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-black text-slate-800">Documents à Réviser</h3>
@@ -786,7 +938,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <div key={document.id} className="bg-gradient-to-r from-white/90 via-slate-50/70 to-sky-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                        <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                           <DocumentTextIcon className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -812,7 +964,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {/* Bouton Visualiser - toujours disponible */}
                       <button
                         onClick={() => handleViewDocument(document, selectedDemande.id)}
-                        className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-4 py-2 rounded-xl text-lg hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                        className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                       >
                         <EyeIcon className="h-5 w-5" />
                         <span>Visualiser</span>
@@ -862,7 +1014,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (
                 <div className="mt-8 pt-6 border-t border-white/40">
                   <div className="flex items-center space-x-3 mb-6">
-                    <div className="p-2 bg-gradient-to-br from-sky-600 to-blue-600 rounded-xl shadow-lg">
+                    <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <CheckCircleIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Finaliser la Révision</h4>

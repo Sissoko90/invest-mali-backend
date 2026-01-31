@@ -92,6 +92,9 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   // État pour les compteurs de messages non lus par entreprise
   const [unreadCountsByEntreprise, setUnreadCountsByEntreprise] = useState<{[key: string]: number}>({});
 
+  // État pour les statuts de paiement par entreprise (true = payé, false = non payé)
+  const [paiementStatusByEntreprise, setPaiementStatusByEntreprise] = useState<{[key: string]: boolean}>({});
+
   // Fonction utilitaire pour obtenir le nom d'affichage d'une entreprise
   // Utilise prénom+nom du gérant si le nom d'entreprise est null
   const getDisplayName = (entreprise: any, gerantPersonne?: any): string => {
@@ -149,6 +152,39 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   };
 
   const canEdit = canEditStep('ACCUEIL');
+
+  // Fonction pour vérifier les statuts de paiement des demandes assignées
+  const checkPaiementStatusForDemandes = async (demandeIds: string[]) => {
+    const statusMap: {[key: string]: boolean} = {};
+    
+    for (const demandeId of demandeIds) {
+      try {
+        const paiementResponse = await fetch(`${API_CONFIG.BASE_URL}/paiements/entreprise/${demandeId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (paiementResponse.ok) {
+          const paiements = await paiementResponse.json();
+          
+          // Chercher un paiement validé
+          const paiementValide = Array.isArray(paiements) 
+            ? paiements.find((p: any) => p.statut === 'VALIDE' || p.statut === 'REUSSI' || p.statut === 'PAID')
+            : (paiements.statut === 'VALIDE' || paiements.statut === 'REUSSI' || paiements.statut === 'PAID' ? paiements : null);
+          
+          statusMap[demandeId] = !!paiementValide;
+        } else {
+          statusMap[demandeId] = false;
+        }
+      } catch (error) {
+        statusMap[demandeId] = false;
+      }
+    }
+    
+    setPaiementStatusByEntreprise(prev => ({ ...prev, ...statusMap }));
+  };
 
   // useEffect pour récupérer les compteurs de messages non lus
   useEffect(() => {
@@ -385,7 +421,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
             division: divisionName,
             antenne: entreprise.antenne || '',
             etapeActuelle: entreprise.etapeValidation || 'ACCUEIL',
-            motifRejet: entreprise.motifRejet || entreprise.motif_rejet
+            motifRejet: entreprise.motifRejet || entreprise.motif_rejet,
+            paiementEffectue: entreprise.paiementEffectue || false
           };
         })
       );
@@ -498,7 +535,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                 division: divisionName,
                 antenne: entreprise.antenne || '',
                 etapeActuelle: entreprise.etapeValidation || 'ACCUEIL',
-                motifRejet: entreprise.motifRejet || entreprise.motif_rejet
+                motifRejet: entreprise.motifRejet || entreprise.motif_rejet,
+                paiementEffectue: entreprise.paiementEffectue || false
               };
             })
           );
@@ -594,12 +632,19 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
             division: divisionName,
             antenne: entreprise.antenne || '',
             etapeActuelle: entreprise.etapeValidation || 'ACCUEIL',
-            motifRejet: entreprise.motifRejet || entreprise.motif_rejet
+            motifRejet: entreprise.motifRejet || entreprise.motif_rejet,
+            paiementEffectue: entreprise.paiementEffectue || false
           };
         })
       );
       
       setAssignedDemandes(demandesFormatted);
+      
+      // Vérifier les statuts de paiement pour les demandes assignées
+      const demandeIds = demandesFormatted.map(d => d.id);
+      if (demandeIds.length > 0) {
+        checkPaiementStatusForDemandes(demandeIds);
+      }
     } catch (error) {
       setAssignedDemandes([]);
     } finally {
@@ -641,9 +686,46 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
       
       switch (action) {
         case 'accept':
-          newStatus = 'VALIDE';
-          newEtape = 'REGISSEUR';
-          note = 'Demande validée par l\'agent d\'accueil et transférée au régisseur';
+          // Vérifier si un paiement existe dans la base de données
+          let isPaid = false;
+          try {
+            console.log('🔍 [AccueilStep] Vérification du paiement pour:', demandeId);
+            const paiementResponse = await fetch(`${API_CONFIG.BASE_URL}/paiements/entreprise/${demandeId}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (paiementResponse.ok) {
+              const paiements = await paiementResponse.json();
+              console.log('✅ [AccueilStep] Paiements trouvés:', paiements);
+              
+              // Chercher un paiement validé
+              const paiementValide = Array.isArray(paiements) 
+                ? paiements.find((p: any) => p.statut === 'VALIDE' || p.statut === 'REUSSI' || p.statut === 'PAID')
+                : (paiements.statut === 'VALIDE' || paiements.statut === 'REUSSI' || paiements.statut === 'PAID' ? paiements : null);
+              
+              isPaid = !!paiementValide;
+              console.log('💰 [AccueilStep] Paiement validé:', isPaid);
+            }
+          } catch (error) {
+            console.warn('⚠️ [AccueilStep] Erreur lors de la vérification du paiement:', error);
+          }
+          
+          if (isPaid) {
+            // Si payé, passer directement à REVISION
+            newStatus = 'VALIDE';
+            newEtape = 'REVISION';
+            note = 'Demande validée par l\'agent d\'accueil - Paiement déjà effectué, transférée directement à la révision';
+            console.log('✅ [AccueilStep] Paiement trouvé - Transfert direct vers REVISION');
+          } else {
+            // Si non payé, passer au REGISSEUR
+            newStatus = 'VALIDE';
+            newEtape = 'REGISSEUR';
+            note = 'Demande validée par l\'agent d\'accueil et transférée au régisseur pour paiement';
+            console.log('💳 [AccueilStep] Pas de paiement - Transfert vers REGISSEUR');
+          }
           break;
         case 'reject':
           newStatus = 'REJETE';
@@ -658,12 +740,13 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
       }
       
       
-      // Mettre à jour via l'API backend
-      await entreprisesAPI.updateStatus(demandeId, newStatus, note);
+      // Mettre à jour via l'API backend avec l'étape appropriée
+      await entreprisesAPI.updateStatus(demandeId, newStatus, note, newEtape);
       
       if (action === 'accept') {
-        // Validation réussie - l'assignation est préservée lors du passage au régisseur
-        console.log(`✅ Demande "${demande.nom}" validée et transférée au régisseur avec succès!`);
+        // Validation réussie
+        const destination = newEtape === 'REVISION' ? 'la révision (paiement déjà effectué)' : 'le régisseur';
+        console.log(`✅ Demande "${demande.nom}" validée et transférée à ${destination} avec succès!`);
       } else {
         console.log(`✅ Demande "${demande.nom}" ${action === 'reject' ? 'rejetée' : 'marquée comme incomplète'} avec succès!`);
       }
@@ -752,67 +835,83 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   };
 
   // Fonction pour afficher le reçu d'une entreprise
+  // Vérifie d'abord si un paiement existe dans la base de données
   const handleViewReceipt = async (demande: DemandeEntreprise) => {
     try {
-      // Récupérer les données complètes de l'entreprise depuis l'API
-      let entrepriseData = null;
-      let totalAmount = 1000000; // Montant par défaut
-      let referenceEntreprise = demande.id;
+      console.log('🔍 [AccueilStep] Recherche de paiement pour entreprise:', demande.id);
       
-      try {
-        const response = await entreprisesAPI.getById(demande.id);
-        entrepriseData = response.data;
-        
-        // Utiliser la vraie référence si disponible
-        if (entrepriseData?.reference) {
-          referenceEntreprise = entrepriseData.reference;
+      // 1. Vérifier si un paiement existe dans la base de données pour cette entreprise
+      const paiementResponse = await fetch(`${API_CONFIG.BASE_URL}/paiements/entreprise/${demande.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+          'Content-Type': 'application/json'
         }
+      });
+
+      if (paiementResponse.ok) {
+        const paiements = await paiementResponse.json();
+        console.log('✅ [AccueilStep] Paiements trouvés:', paiements);
         
-        // Utiliser le montant réel depuis l'API si disponible
-        if (entrepriseData?.totalAmount && entrepriseData.totalAmount > 0) {
-          totalAmount = entrepriseData.totalAmount;
-          console.log('✅ Montant réel récupéré depuis l\'API:', totalAmount, 'FCFA');
-        } else {
-          // Fallback: Calculer le montant selon le type d'entreprise
-          if (demande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
-            totalAmount = 180; // Montant par défaut pour E.I.
-          } else {
-            totalAmount = 14500; // Montant par défaut pour sociétés
+        // Chercher un paiement validé (VALIDE ou REUSSI)
+        const paiementValide = Array.isArray(paiements) 
+          ? paiements.find((p: any) => p.statut === 'VALIDE' || p.statut === 'REUSSI' || p.statut === 'PAID')
+          : (paiements.statut === 'VALIDE' || paiements.statut === 'REUSSI' || paiements.statut === 'PAID' ? paiements : null);
+        
+        if (paiementValide) {
+          console.log('✅ [AccueilStep] Paiement validé trouvé:', paiementValide);
+          
+          // Récupérer les détails de l'entreprise
+          let entrepriseData: any = null;
+          let gerant: any = null;
+          
+          try {
+            const entrepriseResponse = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${demande.id}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (entrepriseResponse.ok) {
+              entrepriseData = await entrepriseResponse.json();
+              gerant = entrepriseData.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+            }
+          } catch (e) {
+            console.warn('⚠️ [AccueilStep] Impossible de récupérer les détails entreprise');
           }
-          console.log('⚠️ Montant non disponible dans l\'API, utilisation du montant par défaut:', totalAmount, 'FCFA');
+          
+          // Générer le reçu payé comme dans le Régisseur
+          const paymentData = {
+            entrepriseId: demande.id,
+            entrepriseName: demande.nom || paiementValide.entrepriseNom || '',
+            entrepriseType: demande.typeEntreprise || entrepriseData?.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+            localisation: demande.division || entrepriseData?.divisionNom || 'Non spécifié',
+            commune: entrepriseData?.communeNom || entrepriseData?.quartierNom || 'Non spécifié',
+            amount: paiementValide.montant ? Number(paiementValide.montant) : 0,
+            paymentMethod: paiementValide.typePaiement || 'Cash',
+            transactionId: paiementValide.referenceTransaction || paiementValide.id,
+            paymentDate: paiementValide.datePaiement || paiementValide.dateCreation || new Date().toISOString(),
+            status: 'success' as const,
+            dossierNumber: entrepriseData?.reference || paiementValide.entrepriseReference || demande.id,
+            processedByAgent: true,
+            agentName: agent ? `${agent.firstName} ${agent.lastName}` : 'Agent API-INVEST',
+            prenom: gerant?.personne?.prenom || gerant?.prenom || paiementValide.personnePrenom || demande.demandeur?.prenom || '',
+            nom: gerant?.personne?.nom || gerant?.nom || paiementValide.personneNom || demande.demandeur?.nom || ''
+          };
+          
+          setReceiptData(paymentData);
+          setReceiptModalOpen(true);
+          return;
         }
-        
-        console.log('✅ Données entreprise récupérées:', entrepriseData);
-        console.log('💰 Montant final:', totalAmount, 'FCFA pour', demande.typeEntreprise);
-      } catch (error) {
-        console.warn('⚠️ Impossible de récupérer les données complètes, utilisation des données de base');
-        // Calculer le montant même en cas d'erreur
-        totalAmount = demande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 180 : 14500;
       }
       
-      const receipt = generateUnpaidReceiptData(
-        {
-          id: demande.id,
-          nom: demande.nom,
-          typeEntreprise: demande.typeEntreprise,
-          companyName: demande.nom,
-          businessType: demande.typeEntreprise,
-          reference: referenceEntreprise,
-          referenceServeur: referenceEntreprise,
-          numeroReference: referenceEntreprise,
-          localisation: demande.division || entrepriseData?.division?.nom || 'Non spécifiée',
-          adresse: demande.division || entrepriseData?.adresse || 'Non spécifiée',
-          prenom: demande.demandeur?.prenom,
-          nomParticipant: demande.demandeur?.nom
-        },
-        totalAmount,
-        'Agent API-INVEST'
-      );
+      // 2. Si pas de paiement trouvé, afficher un message
+      console.log('⚠️ [AccueilStep] Aucun paiement validé trouvé pour cette entreprise');
+      alert('Aucun paiement validé trouvé pour ce dossier.');
       
-      setReceiptData(receipt);
-      setReceiptModalOpen(true);
     } catch (error) {
-      console.error('Erreur lors de la génération du reçu:', error);
+      console.error('Erreur lors de la récupération du reçu:', error);
+      alert('Erreur lors de la récupération du reçu de paiement.');
     }
   };
 
@@ -1700,7 +1799,7 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                           </button>
                           <button onClick={() => handleDemandeAction(demande.id, 'accept')} disabled={isLoading}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
-                            Valider → Régisseur
+                            {paiementStatusByEntreprise[demande.id] ? 'Valider → Révision' : 'Valider → Régisseur'}
                           </button>
                           <button onClick={() => handleUnassign(demande.id)} disabled={isLoading}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>

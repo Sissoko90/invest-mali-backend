@@ -4,7 +4,6 @@ import abdaty_technologie.API_Invest.dto.instat.RegionResponse;
 import abdaty_technologie.API_Invest.dto.instat.CercleResponse;
 import abdaty_technologie.API_Invest.dto.instat.CommuneResponse;
 import abdaty_technologie.API_Invest.dto.instat.QuartierResponse;
-import abdaty_technologie.API_Invest.dto.instat.InstatApiResponse;
 import abdaty_technologie.API_Invest.service.InstatApiService;
 
 import abdaty_technologie.API_Invest.config.InstatApiConfig;
