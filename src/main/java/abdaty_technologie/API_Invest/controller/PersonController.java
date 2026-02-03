@@ -45,6 +45,7 @@ public class PersonController {
     public ResponseEntity<PersonResponse> update(@PathVariable String id, @Valid @RequestBody PersonUpdateRequest req) {
         // 🔍 DEBUG: Logs pour tracer la réception du champ 'porte' dans le contrôleur
         System.out.println("🔍 [PersonController] PUT /persons/" + id);
+        System.out.println("🔍 [PersonController] email reçu: '" + req.email + "' (null=" + (req.email == null) + ")");
         System.out.println("🔍 [PersonController] localite reçu: " + req.localite);
         System.out.println("🔍 [PersonController] porte reçu: " + req.porte);
         

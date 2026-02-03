@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import image1 from '../assets/images/API_SecteursEco-Mali-16 - Copie.jpg';
+import image2 from '../assets/images/API_SecteursEco-Mali-22 - Copie.jpg';
+import image3 from '../assets/images/API_SecteursEco-Mali-78 copy.jpg';
+import image4 from '../assets/images/API_SecteursEco-Mali-99.jpg';
 
 const ImageSlider: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   
   const images = [
     {
-      src: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80",
+      src: image1,
       alt: "Création d'entreprise - Entrepreneur au travail",
       title: "Démarrez votre entreprise",
       description: "Processus simplifié en 24h"
     },
     {
-      src: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80",
+      src: image2,
       alt: "Équipe d'entrepreneurs - Collaboration",
       title: "Équipe dynamique",
       description: "Accompagnement personnalisé"
     },
     {
-      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+      src: image3,
       alt: "Entrepreneur avec ordinateur - Innovation",
       title: "Innovation digitale",
       description: "Solutions technologiques avancées"
     },
     {
-      src: "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=800&q=80",
+      src: image4,
       alt: "Réunion d'affaires - Investissement",
       title: "Investissement sécurisé",
       description: "Partenaires de confiance"
@@ -39,12 +43,12 @@ const ImageSlider: React.FC = () => {
 
   return (
     <div className="rounded-3xl shadow-2xl overflow-hidden relative group">
-      <div className="relative h-80 md:h-96">
+      <div className="relative h-80 md:h-96 bg-gray-900">
         {images.map((image, index) => (
-          <div key={index} className={`absolute inset-0 transition-all duration-700 transform ${
+          <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ${
             index === currentSlide 
-              ? 'opacity-100 scale-100' 
-              : 'opacity-0 scale-105'
+              ? 'opacity-100 z-10' 
+              : 'opacity-0 z-0'
           }`}>
             <img 
               src={image.src} 

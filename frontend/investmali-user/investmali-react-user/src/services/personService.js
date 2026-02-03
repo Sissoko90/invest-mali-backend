@@ -5,6 +5,31 @@ import { apiRequest } from "./api";
 
 const BASE = "/api/v1/persons";
 
+// Fonction utilitaire pour valider et nettoyer l'email
+// Retourne undefined si l'email est vide, invalide ou ressemble à un numéro de téléphone
+const cleanAndValidateEmail = (email) => {
+  if (!email || email.trim() === '') {
+    return undefined;
+  }
+  
+  const emailValue = email.trim();
+  
+  // Vérifier que ce n'est pas un numéro de téléphone (commence par + ou contient uniquement des chiffres et espaces)
+  if (emailValue.startsWith('+') || /^[\d\s\-\.]+$/.test(emailValue)) {
+    console.warn('🔍 [EMAIL SERVICE] Valeur rejetée car ressemble à un numéro de téléphone:', emailValue);
+    return undefined;
+  }
+  
+  // Vérifier le format email avec une regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailValue)) {
+    console.warn('🔍 [EMAIL SERVICE] Valeur rejetée car format invalide:', emailValue);
+    return undefined;
+  }
+  
+  return emailValue;
+};
+
 export const personService = {
   // GET /api/v1/creation-entreprise/person
   list: async () => {
@@ -61,7 +86,7 @@ export function buildPersonRequestDto(person = {}) {
   const dto = {
     nom: person.nom || "",
     prenom: person.prenom || "",
-    email: person.email || undefined,
+    email: cleanAndValidateEmail(person.email),
     telephone1: person.telephone || person.telephone1 || undefined,
     telephone2: person.telephone2 || undefined,
     dateNaissance: person.dateNaissance || undefined, // Format: YYYY-MM-DD
@@ -94,7 +119,7 @@ export function buildPersonUpdateRequestDto(person = {}) {
   const dto = {
     nom: person.nom || undefined,
     prenom: person.prenom || undefined,
-    email: person.email || undefined,
+    email: cleanAndValidateEmail(person.email),
     telephone1: person.telephone || person.telephone1 || undefined,
     telephone2: person.telephone2 || undefined,
     dateNaissance: person.dateNaissance || undefined, // Format: YYYY-MM-DD

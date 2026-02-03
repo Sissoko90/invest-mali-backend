@@ -62,6 +62,27 @@ export const enumsAPI = {
 
 // Services d'authentification
 export const authAPI = {
+  // Vérifier les doublons avant inscription
+  checkDuplicate: async (userData) => {
+    try {
+      const checkData = {
+        email: userData.email || null,
+        telephone1: userData.phone,
+        nom: userData.lastName,
+        prenom: userData.firstName
+      };
+      
+      const response = await apiRequest(API_ENDPOINTS.AUTH.CHECK_DUPLICATE, {
+        method: 'POST',
+        body: JSON.stringify(checkData),
+      });
+      
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, message: error.message || 'Erreur lors de la vérification' };
+    }
+  },
+
   // Inscription utilisateur
   register: async (userData) => {
     try {
@@ -110,8 +131,12 @@ export const authAPI = {
         localStorage.setItem('token', token);
         // Stocker les informations complètes de l'utilisateur retournées par le backend
         // S'assurer que personne_id est inclus dans les données utilisateur
+        // Nettoyer l'email pour éviter de stocker un numéro de téléphone
+        const rawEmail = response.email || credentials.email;
+        const cleanedEmail = (rawEmail && !rawEmail.startsWith('+') && rawEmail.includes('@')) ? rawEmail : null;
+        
         const user = {
-          email: response.email || credentials.email,
+          email: cleanedEmail,
           nom: response.nom,
           prenom: response.prenom,
           personne_id: response.personne_id,
@@ -228,6 +253,21 @@ export const businessAPI = {
         body: formData,
         headers: {}, // laisser le navigateur définir le Content-Type pour FormData
       });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Vérifier l'unicité du nom et domaine d'activité avant création
+  checkUniqueness: async (personId, nom, domaineActivite) => {
+    try {
+      const params = new URLSearchParams();
+      params.append('personId', personId);
+      if (nom) params.append('nom', nom);
+      if (domaineActivite) params.append('domaineActivite', domaineActivite);
+      
+      const response = await apiRequest(`${API_ENDPOINTS.ENTREPRISES.CHECK_UNIQUENESS}?${params.toString()}`);
       return response;
     } catch (error) {
       throw error;

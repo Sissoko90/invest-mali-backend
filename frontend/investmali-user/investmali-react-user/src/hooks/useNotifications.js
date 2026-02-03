@@ -12,12 +12,19 @@ export const useNotifications = (entrepriseId) => {
 
     try {
       const userId = user?.id || user?.personne_id;
-      let url = `${API_CONFIG.BASE_URL}/chat/conversations/user/${userId}`;
+      let url = `${API_CONFIG.BASE_URL}/conversations/user/${userId}`;
       if (entrepriseId) {
         url += `?entrepriseId=${entrepriseId}`;
       }
 
       const response = await fetch(url);
+      
+      // Si l'endpoint n'existe pas (404) ou erreur serveur (500), ignorer silencieusement
+      if (!response.ok) {
+        // Ne pas logger l'erreur pour éviter de polluer la console
+        return;
+      }
+      
       const data = await response.json();
 
       if (data.status === 'SUCCESS' && data.conversations) {

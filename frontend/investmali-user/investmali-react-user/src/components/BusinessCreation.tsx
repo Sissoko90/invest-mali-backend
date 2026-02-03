@@ -110,6 +110,31 @@ const ensureAdultBirthDate = (birthDate: string | null | undefined): string => {
   return formatted || birthDate;
 };
 
+// Fonction utilitaire pour valider et nettoyer l'email
+// Retourne null si l'email est vide, invalide ou ressemble à un numéro de téléphone
+const cleanAndValidateEmail = (email: string | undefined | null): string | null => {
+  if (!email || email.trim() === '') {
+    return null;
+  }
+  
+  const emailValue = email.trim();
+  
+  // Vérifier que ce n'est pas un numéro de téléphone (commence par + ou contient uniquement des chiffres et espaces)
+  if (emailValue.startsWith('+') || /^[\d\s\-\.]+$/.test(emailValue)) {
+    console.warn('🔍 [EMAIL] Valeur rejetée car ressemble à un numéro de téléphone:', emailValue);
+    return null;
+  }
+  
+  // Vérifier le format email avec une regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailValue)) {
+    console.warn('🔍 [EMAIL] Valeur rejetée car format invalide:', emailValue);
+    return null;
+  }
+  
+  return emailValue;
+};
+
 // Fonction pour mapper les civilités frontend vers backend
 const mapCivilityToBackend = (frontendCivility: string): string => {
   const mapping: Record<string, string> = {
@@ -898,6 +923,8 @@ export interface Participant {
   // Champ spécifique pour le certificat de résidence des gérants
   certificatResidenceFile?: File;
   certificatResidenceUrl?: string;
+  // Champ spécifique pour le certificat de nationalité des gérants
+  certificatNationaliteFile?: File;
   // Champ spécifique pour la pièce de nationalité des gérants d'entreprises individuelles
   pieceNationaliteFile?: File;
   // Champ spécifique pour la déclaration sur l'honneur des gérants
@@ -914,6 +941,11 @@ export interface Participant {
   paysEmissionRccm?: string;
   denominationEntreprise?: string;
   rccmFile?: File;
+  // Champs pour les questions spécifiques aux gérants (par participant)
+  hasCriminalRecord?: boolean;
+  isMarried?: boolean;
+  authorizeOthers?: boolean;
+  isForSelf?: boolean; // true = pour moi-même, false = pour une autre personne
   // Documents supplémentaires pour les entreprises individuelles
   autresDocuments?: Array<{
     id: string;
@@ -975,11 +1007,19 @@ interface PersonalInfo {
   selectedCercleId?: string;
   selectedCommuneId?: string;
   selectedQuartierId?: string;
+  selectedLocationName?: string; // Nom de la localisation pour la récap
   position: string;
   powers: string[];
   roleId: number;
   idDocument?: File | null;
   idDocumentName?: string;
+  // Questions spécifiques
+  isForSelf?: boolean; // Créez-vous cette entreprise pour vous-même ?
+  hasCriminalRecord?: boolean;
+  isMarried?: boolean;
+  allowsMultipleManagers?: boolean;
+  requiresExerciseAuthorization?: boolean;
+  hasDifferentAddress?: boolean;
 }
 
 // Structure pour les informations de l'entreprise (étape 2)
@@ -1008,6 +1048,7 @@ interface CompanyInfo {
   quartierId?: string;
   rue?: string;
   porte?: string;
+  selectedLocationName?: string; // Nom de la localisation pour la récap
 }
 
 interface Documents {
@@ -1941,11 +1982,11 @@ const PersonalLocationStep: React.FC<{
   return (
     <div className="space-y-6">
       {/* Recherche rapide */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
-          🔍 Recherche rapide de localisation
+      <div className="bg-primary-50 border border-blue-200 rounded-xl p-4">
+        <h3 className="text-lg font-semibold text-black-800 mb-3 flex items-center">
+           Recherche rapide de localisation
         </h3>
-        <p className="text-sm text-blue-600 mb-4">
+        <p className="text-sm text-black-600 mb-4">
           Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative
         </p>
         <DivisionSearchInput
@@ -2155,16 +2196,18 @@ const PersonalLocationStep: React.FC<{
             const quartierId = e.target.value;
             const quartier = personalQuartiers.find(q => q.id === quartierId);
             const quartierCode = quartier?.code || '';
+            const quartierNom = quartier?.nom || '';
             
             setPersonalSelectedQuartierId(quartierId);
             setPersonalSelectedQuartierCode(quartierCode);
             
-            // Sauvegarder les IDs de sélection dans businessData pour localStorage
+            // Sauvegarder les IDs de sélection et le nom du quartier dans businessData pour localStorage
             const divisionId = quartierId || '';
             updateData('personalInfo', { 
               ...data.personalInfo, 
               divisionId,
-              selectedQuartierId: quartierId
+              selectedQuartierId: quartierId,
+              selectedLocationName: quartierNom // Stocker le nom pour la récap
             });
           }}
           disabled={(() => {
@@ -2479,11 +2522,14 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
           
           // Mettre à jour les données du formulaire avec les informations de la table persons
           // IMPORTANT: Préserver toutes les données existantes, ne modifier que personalInfo
+          // Nettoyer l'email pour éviter d'utiliser un numéro de téléphone
+          const cleanedEmail = cleanAndValidateEmail(personData.email) || cleanAndValidateEmail(currentUser.email) || '';
+          
           updateData('personalInfo', {
             ...data.personalInfo,
             firstName: personData.prenom || '',
             lastName: personData.nom || '',
-            email: personData.email || currentUser.email || '',
+            email: cleanedEmail,
             phone: localPhoneNumber, // Utiliser le numéro local sans indicatif
             phone2: localPhoneNumber2, // Ajouter le téléphone 2
             civility: personData.civilite || 
@@ -2579,7 +2625,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
         prenom: personalData.firstName,
         telephone1: personalData.phone,
         telephone2: personalData.phone2,
-        email: personalData.email,
+        email: cleanAndValidateEmail(personalData.email),
         dateNaissance: personalData.birthDate,
         lieuNaissance: personalData.birthPlace,
         nationnalite: personalData.nationality,
@@ -2650,7 +2696,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
         prenom: associateData.firstName,
         telephone1: associateData.phone,
         telephone2: associateData.phone2,
-        email: associateData.email,
+        email: cleanAndValidateEmail(associateData.email),
         dateNaissance: associateData.birthDate,
         lieuNaissance: associateData.birthPlace,
         nationnalite: associateData.nationality,
@@ -2710,7 +2756,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
         prenom: managerData.firstName,
         telephone1: formattedManagerPhone,
         telephone2: managerData.phone2,
-        email: managerData.email,
+        email: cleanAndValidateEmail(managerData.email),
         dateNaissance: managerData.birthDate,
         lieuNaissance: managerData.birthPlace,
         nationnalite: managerData.nationality,
@@ -2771,12 +2817,17 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
         }
 
         // Préparer les données selon PersonCreateRequest
+        // DEBUG: Afficher la valeur brute de l'email avant nettoyage
+        console.log('🔍 [HANDLE NEXT] Valeur brute data.personalInfo.email:', data.personalInfo.email);
+        const cleanedEmailForNext = cleanAndValidateEmail(data.personalInfo.email);
+        console.log('🔍 [HANDLE NEXT] Valeur après cleanAndValidateEmail:', cleanedEmailForNext);
+        
         const personRequest = {
           nom: data.personalInfo.lastName,
           prenom: data.personalInfo.firstName,
           telephone1: fullPhoneForSave, // Sauvegarder le numéro complet avec indicatif
           telephone2: data.personalInfo.phone2 ? (data.personalInfo.phone2.startsWith('+') ? data.personalInfo.phone2 : '+223' + data.personalInfo.phone2.replace(/\s/g, '')) : '',
-          email: data.personalInfo.email,
+          email: cleanedEmailForNext,
           dateNaissance: data.personalInfo.birthDate,
           lieuNaissance: data.personalInfo.birthPlace,
           nationnalite: data.personalInfo.nationality,
@@ -2835,47 +2886,9 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
 
   return (
     <div className="animate-fade-in">
-      {/* Questionnaire de sélection du type d'entreprise */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-4 sm:p-6 mb-6">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="p-3 bg-[#47c559] rounded-lg">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-green-800">Type d'entreprise</h2>
-            <p className="text-green-600 font-medium mt-1">
-              Création d'entreprise individuelle
-            </p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4">
-          <button
-            type="button"
-            onClick={() => updateData('companyInfo', { ...data.companyInfo, typeEntreprise: 'ENTREPRISE_INDIVIDUELLE' })}
-            className="p-4 sm:p-6 rounded-xl border-2 transition-all duration-300 text-left border-[#47c559] bg-green-50 shadow-lg"
-          >
-            <div className="flex items-start space-x-4">
-              <div className="p-2 rounded-lg bg-[#47c559] text-white">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-green-800">
-                  Entreprise Individuelle
-                </h3>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-
       <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-investmali-neutral-dark mb-2">Informations Personnelles</h2>
       <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-        Commençons par quelques informations sur vous avant de créer votre {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'entreprise individuelle' : 'société'}.
+        Commençons par quelques informations sur vous avant de créer votre entreprise individuelle.
       </p>
 
       {isLoading ? (
@@ -3239,7 +3252,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
               {/* Localisation personnelle avec sélection hiérarchique */}
               <div className="sm:col-span-2">
                 <h4 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-                  <span className="text-lg sm:text-xl mr-1.5 sm:mr-2">📍</span>
+                  {/* <span className="text-lg sm:text-xl mr-1.5 sm:mr-2">📍</span> */}
                   Votre localisation
                   {/* {isForSelf && (
                     <span className="ml-1.5 sm:ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
@@ -3349,7 +3362,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                         ...data.personalInfo,
                         hasCriminalRecord: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.hasCriminalRecord === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${(data.personalInfo?.hasCriminalRecord === false || data.personalInfo?.hasCriminalRecord === undefined) ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -3376,7 +3389,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                         ...data.personalInfo,
                         isMarried: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${(data.personalInfo?.isMarried === false || data.personalInfo?.isMarried === undefined) ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -3404,7 +3417,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                         ...data.personalInfo,
                         allowsMultipleManagers: false
                       })}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.allowsMultipleManagers === false ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${(data.personalInfo?.allowsMultipleManagers === false || data.personalInfo?.allowsMultipleManagers === undefined) ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
                       Non
                     </button>
@@ -4602,9 +4615,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
       <div className="space-y-8">
         {/* Informations de base */}
-        <div className="bg-gradient-to-br from-investmali-accent/5 to-investmali-accent/10 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-investmali-accent/20 shadow-sm animate-slide-up" style={{animationDelay: '0.2s'}}>
+        <div className="rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-primary/20 shadow-sm animate-slide-up" style={{animationDelay: '0.2s'}}>
           <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 lg:mb-6 flex items-center">
-            <span className="text-lg sm:text-xl mr-2 animate-bounce">🏢</span>
+            {/* <span className="text-lg sm:text-xl mr-2 animate-bounce">🏢</span> */}
             Informations de base
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
@@ -4726,7 +4739,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
 
             {/* Domaine d'activité non réglementé */}
             <div className="animate-slide-up" style={{animationDelay: '0.52s'}}>
-              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé</label>
+              <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Domaine d'activité non réglementé *</label>
               <select
                 value={data.companyInfo?.domaineActiviteNr || ''}
                 onChange={(e) => {
@@ -4851,9 +4864,9 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
         </div>
 
         {/* Localisation */}
-        <div className="bg-gradient-to-br from-investmali-warning/5 to-investmali-warning/10 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-investmali-warning/20 shadow-sm animate-slide-up" style={{animationDelay: '0.55s'}}>
+        <div className="rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 border border-primary/20 shadow-sm animate-slide-up" style={{animationDelay: '0.55s'}}>
           <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 lg:mb-6 flex items-center">
-            <span className="text-lg sm:text-xl mr-2 animate-bounce">📍</span>
+            {/* <span className="text-lg sm:text-xl mr-2 animate-bounce">📍</span> */}
             Localisation de l'entreprise
           </h3>
 
@@ -4866,12 +4879,12 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                 return null;
               } else {
                 return (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                  <div className="bg-black-50 border border-black-200 rounded-xl p-4 mb-6">
                     <div className="flex items-center mb-2">
-                      <span className="text-red-600 mr-2">⚠️</span>
-                      <h4 className="text-lg font-semibold text-red-800">Localisation personnelle manquante</h4>
+                      {/* <span className="text-red-600 mr-2">⚠️</span> */}
+                      <h4 className="text-lg font-semibold text-black-800">Localisation personnelle manquante</h4>
                     </div>
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-black-600">
                       Vous avez choisi la même adresse pour l'entreprise, mais votre localisation personnelle n'est pas définie. 
                       La synchronisation ne peut pas fonctionner sans ces informations.
                     </p>
@@ -4885,7 +4898,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             })()
           )}
 
-          {data.personalInfo?.hasDifferentAddress === true && (
+          {/* {data.personalInfo?.hasDifferentAddress === true && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
               <div className="flex items-center mb-2">
                 <span className="text-green-600 mr-2">✅</span>
@@ -4897,14 +4910,14 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               </p>
             </div>
           )}
-          
+           */}
           {/* Recherche rapide pour l'entreprise */}
           {data.personalInfo?.hasDifferentAddress !== false && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-              <h4 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
-                🔍 Recherche rapide de localisation
+            <div className="bg-black-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <h4 className="text-lg font-semibold text-black-800 mb-3 flex items-center">
+                Recherche rapide de localisation
               </h4>
-              <p className="text-sm text-orange-600 mb-4">
+              <p className="text-sm text-black-600 mb-4">
                 Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative de l'entreprise
               </p>
               <DivisionSearchInput
@@ -4974,7 +4987,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
               return (
                 <div className="animate-slide-up" style={{animationDelay: '0.65s'}}>
                   <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Cercle
+                    Cercle *
                   </label>
               <select
                 value={selectedCercleId || ''}
@@ -5020,7 +5033,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             {/* Commune - Structure INSTAT moderne */}
             <div className="animate-slide-up" style={{animationDelay: '0.75s'}}>
               <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Commune
+                Commune *
               </label>
               <select
                 value={selectedCommuneId || ''}
@@ -5057,7 +5070,7 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
             {/* Quartier */}
             <div className="animate-slide-up" style={{animationDelay: '0.8s'}}>
               <label className="block text-sm sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Quartier
+                Quartier *
               </label>
               <select
                 value={selectedQuartierId || ''}
@@ -5065,16 +5078,18 @@ const CompanyInfoStep: React.FC<{data: BusinessCreationData, updateData: (field:
                   const selectedOption = e.target.selectedOptions[0];
                   const quartierId = selectedOption.value;
                   const quartierCode = selectedOption.getAttribute('data-code') || '';
+                  const quartierNom = selectedOption.text || '';
                   
                   setSelectedQuartierId(quartierId);
                   setSelectedQuartierCode(quartierCode);
                   
-                  // Mettre à jour le divisionCode et quartierId dans companyInfo
+                  // Mettre à jour le divisionCode, quartierId et le nom du quartier dans companyInfo
                   const divisionCode = quartierCode || selectedCommuneCode || selectedArrondissementCode || selectedCercleCode || selectedRegionCode || '';
                   updateBusinessData('companyInfo', { 
                     ...data.companyInfo, 
                     divisionCode,
-                    quartierId
+                    quartierId,
+                    selectedLocationName: quartierNom // Stocker le nom pour la récap
                   });
                 }}
                 disabled={(() => {
@@ -5527,6 +5542,135 @@ const SummaryAndSubmissionStep: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{step: number, title: string, errors: string[]}[]>([]);
+
+  // Fonction de validation complète de toutes les étapes
+  const validateAllSteps = (): {step: number, title: string, errors: string[]}[] => {
+    const allErrors: {step: number, title: string, errors: string[]}[] = [];
+
+    // Étape 2: Informations Personnelles
+    const personalErrors: string[] = [];
+    const personal = data.personalInfo;
+    if (!personal?.civility) personalErrors.push('Civilité non renseignée');
+    if (!personal?.firstName) personalErrors.push('Prénom non renseigné');
+    if (!personal?.lastName) personalErrors.push('Nom non renseigné');
+    if (!personal?.phone) personalErrors.push('Téléphone non renseigné');
+    if (!personal?.birthDate) personalErrors.push('Date de naissance non renseignée');
+    if (!personal?.birthPlace) personalErrors.push('Lieu de naissance non renseigné');
+    if (!personal?.divisionId) personalErrors.push('Localisation non renseignée (Région, Cercle, Commune, Quartier)');
+    
+    // Validation du format email (optionnel mais doit être valide si renseigné)
+    if (personal?.email && personal.email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(personal.email)) {
+        personalErrors.push('L\'adresse email n\'est pas valide (format attendu: exemple@domaine.com)');
+      }
+    }
+    
+    // Validation de l'âge minimum (18 ans)
+    if (personal?.birthDate) {
+      const birthDate = new Date(personal.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        personalErrors.push('L\'utilisateur doit avoir au moins 18 ans');
+      }
+    }
+    
+    if (personalErrors.length > 0) {
+      allErrors.push({ step: 2, title: 'Informations Personnelles', errors: personalErrors });
+    }
+
+    // Étape 3: Informations Société
+    const companyErrors: string[] = [];
+    const company = data.companyInfo;
+    if (!company?.typeEntreprise) companyErrors.push('Type d\'entreprise non sélectionné');
+    if (!company?.formeJuridique) companyErrors.push('Forme juridique non sélectionnée');
+    if (company?.typeEntreprise === 'SOCIETE' && !company?.nom) companyErrors.push('Nom de l\'entreprise non renseigné');
+    if (!company?.domaineActiviteNr) companyErrors.push('Domaine d\'activité non sélectionné');
+    
+    // Validation localisation entreprise si adresse différente
+    if (personal?.hasDifferentAddress === true) {
+      if (!company?.regionId && !company?.divisionCode) companyErrors.push('Région de l\'entreprise non sélectionnée');
+      if (!company?.cercleId && !company?.arrondissementId && !company?.divisionCode) companyErrors.push('Cercle/Arrondissement de l\'entreprise non sélectionné');
+      if (!company?.communeId && !company?.divisionCode) companyErrors.push('Commune de l\'entreprise non sélectionnée');
+      if (!company?.quartierId && !company?.divisionCode) companyErrors.push('Quartier de l\'entreprise non sélectionné');
+    }
+    
+    if (companyErrors.length > 0) {
+      allErrors.push({ step: 3, title: 'Informations Société', errors: companyErrors });
+    }
+
+    // Étape 4: Participants
+    const participantErrors: string[] = [];
+    const participants = data.participants;
+    const isEntrepriseIndividuelle = company?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
+    
+    if (!participants || participants.length === 0) {
+      participantErrors.push('Aucun participant ajouté');
+    } else {
+      const gerants = participants.filter(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
+      
+      if (isEntrepriseIndividuelle) {
+        if (gerants.length !== 1) participantErrors.push('Une entreprise individuelle doit avoir exactement un promoteur');
+      } else {
+        if (gerants.length !== 1) participantErrors.push('Exactement un gérant est requis pour une société');
+      }
+      
+      const totalParts = participants.reduce((sum, p) => sum + (p.pourcentageParts || 0), 0);
+      if (Math.abs(totalParts - 100) > 0.01) {
+        participantErrors.push(`La somme des parts doit être égale à 100% (actuellement: ${totalParts}%)`);
+      }
+      
+      // Validation des documents pour chaque participant
+      participants.forEach((p, index) => {
+        const participantLabel = `Participant ${index + 1}`;
+        
+        if (p.civilite === 'PERSONNE_MORALE') {
+          if (!p.rccmFile) participantErrors.push(`${participantLabel}: Document RCCM manquant`);
+        } else {
+          if (!p.typePiece) participantErrors.push(`${participantLabel}: Type de pièce d'identité non sélectionné`);
+          if (!p.documentFile) participantErrors.push(`${participantLabel}: Document d'identité manquant`);
+          
+          // Documents requis pour les gérants/promoteurs
+          if (p.role === 'GERANT' || p.role === 'PROMOTEUR') {
+            // Vérifier que la question casier judiciaire a été répondue
+            if (p.hasCriminalRecord === undefined || p.hasCriminalRecord === null) {
+              participantErrors.push(`${participantLabel}: Veuillez répondre à la question "Avez-vous un extrait de casier judiciaire ?"`);
+            }
+            
+            if (!p.extraitNaissanceFile) participantErrors.push(`${participantLabel}: Extrait de naissance manquant`);
+            // Certificat de nationalité: vérifier pieceNationaliteFile OU certificatNationaliteFile
+            if (!p.certificatNationaliteFile && !p.pieceNationaliteFile) participantErrors.push(`${participantLabel}: Certificat de nationalité manquant`);
+            
+            // Si oui au casier judiciaire -> casier obligatoire
+            if (p.hasCriminalRecord === true && !p.casierJudiciaireFile) {
+              participantErrors.push(`${participantLabel}: Casier judiciaire manquant (vous avez indiqué en avoir un)`);
+            }
+            
+            // Si non au casier judiciaire -> déclaration sur l'honneur obligatoire
+            if (p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
+              participantErrors.push(`${participantLabel}: Déclaration sur l'honneur manquante (vous avez indiqué ne pas avoir de casier judiciaire)`);
+            }
+            
+            if (p.isMarried === true && !p.acteMariageFile) {
+              participantErrors.push(`${participantLabel}: Acte de mariage manquant (vous avez indiqué être marié(e))`);
+            }
+          }
+        }
+      });
+    }
+    
+    if (participantErrors.length > 0) {
+      allErrors.push({ step: 4, title: 'Participants', errors: participantErrors });
+    }
+
+    return allErrors;
+  };
   // Listes pour les sélecteurs en cascade
   const [regions, setRegions] = useState<any[]>([]);
   const [cercles, setCercles] = useState<any[]>([]);
@@ -5637,9 +5781,52 @@ const SummaryAndSubmissionStep: React.FC<{
 
   // Fonction de soumission de l'entreprise
   const handleSubmitEntreprise = async () => {
+    // Valider toutes les étapes avant de soumettre
+    const errors = validateAllSteps();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setSubmitError('Veuillez corriger les erreurs ci-dessous avant de soumettre votre demande.');
+      return;
+    }
+    
+    setValidationErrors([]);
     setSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
+
+    // Vérifier l'unicité du nom et domaine d'activité pour cet utilisateur
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const token = localStorage.getItem('token');
+      
+      if (currentUser.personne_id && token) {
+        const nomEntreprise = data.companyInfo?.nom || '';
+        const domaineActivite = data.companyInfo?.domaineActivite || '';
+        
+        const checkUrl = `/api/v1/entreprises/check-uniqueness?personId=${currentUser.personne_id}&nom=${encodeURIComponent(nomEntreprise)}&domaineActivite=${encodeURIComponent(domaineActivite)}`;
+        
+        const checkResponse = await fetch(checkUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (checkResponse.ok) {
+          const checkResult = await checkResponse.json();
+          
+          if (!checkResult.canCreate) {
+            const conflictMessages = checkResult.conflicts || [];
+            setSubmitError(`❌ Impossible de créer cette entreprise:\n${conflictMessages.join('\n')}\n\nVeuillez choisir un nom d'entreprise et/ou un domaine d'activité différent de vos entreprises existantes.`);
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+    } catch (checkError) {
+      console.warn('⚠️ Erreur lors de la vérification d\'unicité:', checkError);
+      // Continuer quand même si la vérification échoue
+    }
 
     try {
       // ÉTAPE 1: Sauvegarder les informations personnelles (incluant le champ 'porte')
@@ -5677,12 +5864,17 @@ const SummaryAndSubmissionStep: React.FC<{
             }
 
             // Mise à jour des informations personnelles existantes
+            // DEBUG: Afficher la valeur brute de l'email avant nettoyage
+            console.log('🔍 [DEBUG EMAIL] Valeur brute data.personalInfo.email:', data.personalInfo.email);
+            const cleanedEmailValue = cleanAndValidateEmail(data.personalInfo.email);
+            console.log('🔍 [DEBUG EMAIL] Valeur après cleanAndValidateEmail:', cleanedEmailValue);
+            
             const personUpdateRequest = {
               nom: data.personalInfo.lastName,
               prenom: data.personalInfo.firstName,
               telephone1: formattedPhone,
               telephone2: formattedPhone2,
-              email: data.personalInfo.email,
+              email: cleanedEmailValue,
               // Convertir la date en format LocalDate si nécessaire
               dateNaissance: data.personalInfo.birthDate ? new Date(data.personalInfo.birthDate).toISOString().split('T')[0] : null,
               lieuNaissance: data.personalInfo.birthPlace,
@@ -5747,14 +5939,15 @@ const SummaryAndSubmissionStep: React.FC<{
         // Documents requis pour GERANT/PROMOTEUR - uniquement pour les personnes physiques
         const requiresManagerDocuments = (p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.civilite !== 'PERSONNE_MORALE';
         
-        if (requiresManagerDocuments && data.personalInfo?.hasCriminalRecord && !p.casierJudiciaireFile) {
+        // Utiliser les valeurs du participant (p.hasCriminalRecord, p.isMarried) au lieu de personalInfo
+        if (requiresManagerDocuments && p.hasCriminalRecord === true && !p.casierJudiciaireFile) {
           missingDocs.push(`${label}: casier judiciaire manquant`);
         }
-        if (requiresManagerDocuments && !data.personalInfo?.hasCriminalRecord && !p.declarationHonneurFile && !p.signatureDataUrl) {
+        if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
           missingDocs.push(`${label}: déclaration d'honneur manquante (sans casier judiciaire) - uploadez une déclaration ou signez pour en générer une`);
         }
-        if (requiresManagerDocuments && data.personalInfo?.isMarried && !p.acteMariageFile) {
-          missingDocs.push(`${label}: acte de mariage manquant (si marié)`);
+        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
+          missingDocs.push(`${label}: acte de mariage manquant`);
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
           missingDocs.push(`${label}: extrait de naissance manquant`);
@@ -5849,7 +6042,7 @@ const SummaryAndSubmissionStep: React.FC<{
                   nom: associate.nom || currentUser.nom,
                   prenom: associate.prenom || currentUser.prenom,
                   telephone1: associate.telephone || currentUser.telephone1,
-                  email: associate.email || currentUser.email,
+                  email: cleanAndValidateEmail(associate.email) || cleanAndValidateEmail(currentUser.email),
                   dateNaissance: ensureAdultBirthDate(associate.dateNaissance) || ensureAdultBirthDate(currentUser.dateNaissance),
                   lieuNaissance: associate.lieuNaissance || currentUser.lieuNaissance,
                   nationnalite: associate.nationnalite || currentUser.nationnalite || 'MALIENNE',
@@ -5905,7 +6098,7 @@ const SummaryAndSubmissionStep: React.FC<{
           nom: participant.nom,
           prenom: participant.prenom,
           telephone1: validPhone,
-          email: participant.email || '',
+          email: cleanAndValidateEmail(participant.email),
           dateNaissance: participant.dateNaissance || '',
           lieuNaissance: participant.lieuNaissance || '',
           nationnalite: participant.nationnalite || 'MALIENNE',
@@ -5978,7 +6171,7 @@ const SummaryAndSubmissionStep: React.FC<{
         if (!founderExists) {
           const founderParticipant: any = {
             personId: data.founderId,
-            role: 'DIRIGEANT',
+            role: isEntrepriseIndividuelle ? 'PROMOTEUR' : 'GERANT',
             pourcentageParts: 100 - allParticipants.reduce((sum, p) => sum + p.pourcentageParts, 0),
             dateDebut: new Date().toISOString().split('T')[0],
             dateFin: '9999-12-31'
@@ -6255,7 +6448,9 @@ const SummaryAndSubmissionStep: React.FC<{
                   // Préparer les données en corrigeant le format de date
                   const correctedPersonData = {
                     ...personData,
-                    situationMatrimoniale: 'MARIE'
+                    situationMatrimoniale: 'MARIE',
+                    // Nettoyer l'email pour éviter d'envoyer un numéro de téléphone
+                    email: cleanAndValidateEmail(personData.email)
                   };
                   
                   // Corriger le format de dateNaissance si nécessaire
@@ -6405,7 +6600,11 @@ const SummaryAndSubmissionStep: React.FC<{
           {/* Informations de l'entreprise */}
           <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.2s'}}>
             <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">🏢</span>
+              <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </span>
               Informations de l'Entreprise
             </h3>
             <div className="space-y-2 sm:space-y-3">
@@ -6466,7 +6665,11 @@ const SummaryAndSubmissionStep: React.FC<{
           {data.personalInfo && (
             <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.3s'}}>
               <h3 className="text-base text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-                <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">👤</span>
+                <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </span>
                 Informations Personnelles
               </h3>
               <div className="space-y-2 sm:space-y-3">
@@ -6486,23 +6689,13 @@ const SummaryAndSubmissionStep: React.FC<{
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs sm:text-sm text-gray-600">Localisation personnelle :</span>
-                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{personalLocationName || data.personalInfo.divisionId || 'Non spécifiée'}</span>
+                  <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{personalLocationName || 'Non spécifiée'}</span>
                 </div>
-                {(data.personalInfo.localite || data.personalInfo.porte) && (
-                  <>
-                    {data.personalInfo.localite && (
-                      <div className="flex justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600">Rue :</span>
-                        <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.localite}</span>
-                      </div>
-                    )}
-                    {data.personalInfo.porte && (
-                      <div className="flex justify-between">
-                        <span className="text-xs sm:text-sm text-gray-600">Porte :</span>
-                        <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.porte}</span>
-                      </div>
-                    )}
-                  </>
+                {data.personalInfo.porte && (
+                  <div className="flex justify-between">
+                    <span className="text-xs sm:text-sm text-gray-600">Porte :</span>
+                    <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.porte}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -6516,7 +6709,11 @@ const SummaryAndSubmissionStep: React.FC<{
         <div className="space-y-4 sm:space-y-6">
           <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up" style={{animationDelay: '0.6s'}}>
             <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-              <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">⏳</span>
+              <span className="bg-investmali-warning text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
               Prochaines Étapes
             </h3>
             <div className="space-y-3 sm:space-y-4">
@@ -6557,7 +6754,11 @@ const SummaryAndSubmissionStep: React.FC<{
           {/* Informations importantes */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-blue-200 animate-slide-up" style={{animationDelay: '0.7s'}}>
             <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
-              <span className="bg-blue-500 text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">ℹ️</span>
+              <span className="bg-blue-500 text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm mr-2 sm:mr-3">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
               Informations Importantes
             </h3>
             
@@ -6577,7 +6778,11 @@ const SummaryAndSubmissionStep: React.FC<{
                 </div>
               </div>
               <div className="flex items-start space-x-2 sm:space-x-3">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1 flex-shrink-0">⏱</div>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 sm:mt-1 flex-shrink-0">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
                 <div>
                   <p className="text-sm sm:text-base font-medium text-gray-800">Délai de traitement</p>
                   <p className="text-xs sm:text-sm text-gray-600">Votre demande sera traitée dans un délai maximum de 48 heures ouvrables.</p>
@@ -6592,6 +6797,44 @@ const SummaryAndSubmissionStep: React.FC<{
               {submitError}
             </div>
           )}
+          
+          {/* Affichage détaillé des erreurs de validation par étape */}
+          {validationErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-300 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 animate-slide-up">
+              <h4 className="text-base sm:text-lg font-semibold text-red-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Erreurs à corriger avant soumission
+              </h4>
+              
+              <div className="space-y-4">
+                {validationErrors.map((stepError, stepIndex) => (
+                  <div key={stepIndex} className="bg-white rounded-lg p-3 sm:p-4 border border-red-200">
+                    <h5 className="text-sm sm:text-base font-semibold text-red-700 mb-2 flex items-center">
+                      <span className="bg-red-100 text-red-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-2">
+                        {stepError.step}
+                      </span>
+                      Étape {stepError.step}: {stepError.title}
+                    </h5>
+                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm text-red-600">
+                      {stepError.errors.map((error, errorIndex) => (
+                        <li key={errorIndex}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              
+              <button 
+                onClick={() => setValidationErrors([])}
+                className="mt-4 text-sm text-red-600 hover:text-red-800 underline"
+              >
+                Fermer les erreurs
+              </button>
+            </div>
+          )}
+          
           {submitSuccess && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg mb-3 sm:mb-4 text-xs sm:text-sm">
               {submitSuccess}
@@ -6599,7 +6842,7 @@ const SummaryAndSubmissionStep: React.FC<{
           )}
 
           {/* Bouton de soumission */}
-          <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
+          <div className="bg-gradient-to-r from-investmali-accent to-investmali-primary p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg animate-slide-up" style={{animationDelay: '0.8s'}}>
             <button
               onClick={() => handleSubmitEntreprise()}
               disabled={submitting || submitSuccess !== null}
@@ -6639,6 +6882,7 @@ const SummaryAndSubmissionStep: React.FC<{
 // Fonction pour récupérer le nom de la division depuis l'API INSTAT directement
 const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
   try {
+    if (!divisionCodeOrId) return 'Non spécifiée';
     
     // Détecter si c'est un UUID (retourner tel quel car pas supporté par INSTAT)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(divisionCodeOrId);
@@ -6646,54 +6890,86 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
       return divisionCodeOrId;
     }
     
+    const instatHeaders = {
+      'accept': '*/*',
+      'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
+      'X-CSRF-TOKEN': ''
+    };
+    
     // Pour les codes de division, utiliser l'API INSTAT selon la longueur
     const codeLength = divisionCodeOrId.length;
     
     if (codeLength === 2) {
-      // Région (ex: "90" pour Bamako)
+      // Région - Récupérer le nom depuis l'API
+      try {
+        const response = await fetch('https://apimali.test.instat.ml/api/get/regions', { headers: instatHeaders });
+        if (response.ok) {
+          const regions = await response.json();
+          const region = regions?.find((r: any) => r.code === divisionCodeOrId);
+          if (region) return region.nom;
+        }
+      } catch (e) { console.log('Erreur API régions:', e); }
       return `Région ${divisionCodeOrId}`;
     } else if (codeLength === 4) {
-      // Cercle (ex: "9001" pour Bamako)
+      // Cercle - Récupérer le nom depuis l'API
+      const regionCode = divisionCodeOrId.substring(0, 2);
+      try {
+        const response = await fetch(`https://apimali.test.instat.ml/api/get/cercles/${regionCode}`, { headers: instatHeaders });
+        if (response.ok) {
+          const cercles = await response.json();
+          const cercle = cercles?.find((c: any) => c.code === divisionCodeOrId);
+          if (cercle) return cercle.nom;
+        }
+      } catch (e) { console.log('Erreur API cercles:', e); }
       return `Cercle ${divisionCodeOrId}`;
     } else if (codeLength === 8) {
-      // Commune (ex: "90010701" pour Commune 7)
+      // Commune - Récupérer le nom depuis l'API
+      const cercleCode = divisionCodeOrId.substring(0, 4);
+      try {
+        const response = await fetch(`https://apimali.test.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
+        if (response.ok) {
+          const communes = await response.json();
+          const commune = communes?.find((c: any) => c.code === divisionCodeOrId);
+          if (commune) return commune.nom;
+        }
+      } catch (e) { console.log('Erreur API communes:', e); }
       return `Commune ${divisionCodeOrId}`;
     } else if (codeLength === 12) {
       // Quartier - Extraire le code commune parent
       const communeCode = divisionCodeOrId.substring(0, 8);
       
-      const endpoint = `https://apimali.test.instat.ml/api/get/vfq/${communeCode}`;
-      
-      const response = await fetch(endpoint, {
-        headers: {
-          'accept': '*/*',
-          'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
-          'X-CSRF-TOKEN': ''
-        }
-      });
-      
-      if (response.ok) {
-        const quartiers = await response.json();
+      try {
+        const response = await fetch(`https://apimali.test.instat.ml/api/get/vfq/${communeCode}`, { headers: instatHeaders });
         
-        // Chercher le quartier avec le bon code
-        const quartier = quartiers?.find((q: any) => q.code === divisionCodeOrId);
-        if (quartier) {
-          return quartier.nom;
-        } else {
-          console.log(`Quartier non trouvé pour le code: ${divisionCodeOrId}`);
-          return `Localisation ${divisionCodeOrId}`;
+        if (response.ok) {
+          const quartiers = await response.json();
+          
+          // Chercher le quartier avec le bon code
+          const quartier = quartiers?.find((q: any) => q.code === divisionCodeOrId);
+          if (quartier) {
+            return quartier.nom;
+          }
         }
-      } else {
-        console.log(`Erreur API INSTAT pour le code: ${divisionCodeOrId}`);
-        return `Localisation ${divisionCodeOrId}`;
-      }
+      } catch (e) { console.log('Erreur API quartiers:', e); }
+      
+      // Fallback: essayer de récupérer le nom de la commune
+      try {
+        const cercleCode = divisionCodeOrId.substring(0, 4);
+        const response = await fetch(`https://apimali.test.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
+        if (response.ok) {
+          const communes = await response.json();
+          const commune = communes?.find((c: any) => c.code === communeCode);
+          if (commune) return commune.nom;
+        }
+      } catch (e) { }
+      
+      return `Quartier (${divisionCodeOrId})`;
     } else {
-      console.log(`Code de division non supporté: ${divisionCodeOrId}`);
-      return `Localisation ${divisionCodeOrId}`;
+      return `Localisation (${divisionCodeOrId})`;
     }
   } catch (error) {
     console.log(`Erreur lors de la récupération du nom de division:`, error);
-    return `Localisation ${divisionCodeOrId}`;
+    return `Localisation (${divisionCodeOrId})`;
   }
 };
 
@@ -6701,9 +6977,9 @@ const BusinessCreation: React.FC = () => {
   console.log('🚀 [BUSINESSCREATION] Composant chargé');
   
   const location = useLocation();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [isForSelf, setIsForSelf] = useState<boolean | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showForm, setShowForm] = useState(true);
+  const [isForSelf, setIsForSelf] = useState<boolean | null>(true);
   
   // États pour les noms des divisions
   const [personalLocationName, setPersonalLocationName] = useState<string>('');
@@ -6813,6 +7089,15 @@ const BusinessCreation: React.FC = () => {
       try {
         const parsedData = JSON.parse(savedData);
         console.log('✅ [LOCALSTORAGE] Données restaurées:', parsedData);
+        
+        // Supprimer les noms de localisation cachés pour forcer le rechargement depuis l'API
+        if (parsedData.personalInfo) {
+          delete parsedData.personalInfo.selectedLocationName;
+        }
+        if (parsedData.companyInfo) {
+          delete parsedData.companyInfo.selectedLocationName;
+        }
+        
         setBusinessData(parsedData);
       } catch (error) {
         console.error('❌ [LOCALSTORAGE] Erreur lors du chargement des données sauvegardées:', error);
@@ -6868,13 +7153,14 @@ const BusinessCreation: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const navigationRef = useRef<HTMLDivElement>(null);
 
-  const totalSteps = 5;
+  const totalSteps = 6;
   const steps = [
-    { number: 1, title: 'Informations Personnelles', icon: '👤' },
-    { number: 2, title: 'Informations Société', icon: '🏢' },
-    { number: 3, title: 'Activité', icon: '💼' },
-    { number: 4, title: 'Documents', icon: '📄' },
-    { number: 5, title: 'Récapitulatif', icon: '✅' }
+    { number: 1, title: 'Identification', icon: '👤' },
+    { number: 2, title: 'Informations Personnelles', icon: '📝' },
+    { number: 3, title: 'Informations Société', icon: '🏢' },
+    { number: 4, title: 'Participants', icon: '👥' },
+    { number: 5, title: 'Documents', icon: '📄' },
+    { number: 6, title: 'Récapitulatif', icon: '✅' }
   ];
 
   // Détecter le retour depuis la déclaration sur l'honneur
@@ -7048,29 +7334,32 @@ const BusinessCreation: React.FC = () => {
   // Récupérer les noms des divisions pour l'affichage dans le récapitulatif
   useEffect(() => {
     const fetchDivisionNames = async () => {
-      // Debug: Afficher les données de localisation
+      // Priorité: selectedLocationName (stocké lors de la sélection) > localite > code
+      // Note: L'API INSTAT a des problèmes CORS, donc on utilise les noms stockés
       
       // Récupérer le nom de la localisation personnelle
-      if (businessData.personalInfo?.divisionId) {
-        const personalName = await getDivisionName(businessData.personalInfo.divisionId);
-        setPersonalLocationName(personalName);
+      if (businessData.personalInfo?.selectedLocationName) {
+        setPersonalLocationName(businessData.personalInfo.selectedLocationName);
+      } else if (businessData.personalInfo?.localite) {
+        setPersonalLocationName(businessData.personalInfo.localite);
+      } else if (businessData.personalInfo?.divisionId) {
+        // Fallback: afficher le code si pas de nom disponible
+        setPersonalLocationName(`Localisation ${businessData.personalInfo.divisionId}`);
       } else {
-        if (businessData.personalInfo?.localite) {
-          setPersonalLocationName(businessData.personalInfo.localite);
-        } else {
-          setPersonalLocationName('');
-        }
+        setPersonalLocationName('');
       }
       
       // Récupérer le nom de la localisation de l'entreprise
-      if (businessData.companyInfo?.divisionCode) {
-        const companyName = await getDivisionName(businessData.companyInfo.divisionCode);
-        setCompanyLocationName(companyName);
+      if (businessData.companyInfo?.selectedLocationName) {
+        setCompanyLocationName(businessData.companyInfo.selectedLocationName);
+      } else if (businessData.companyInfo?.divisionCode) {
+        // Fallback: afficher le code si pas de nom disponible
+        setCompanyLocationName(`Localisation ${businessData.companyInfo.divisionCode}`);
       }
     };
     
     fetchDivisionNames();
-  }, [businessData.personalInfo?.divisionId, businessData.companyInfo?.divisionCode]);
+  }, [businessData.personalInfo?.divisionId, businessData.personalInfo?.selectedLocationName, businessData.companyInfo?.divisionCode, businessData.companyInfo?.selectedLocationName]);
 
   // Animation lors du changement d'étape
   useEffect(() => {
@@ -7082,19 +7371,19 @@ const BusinessCreation: React.FC = () => {
     }
   }, [currentStep]);
 
-  // Validation par étape (Étape 4 facultative)
+  // Validation par étape (Étape 5 Documents facultative)
   const validateStep = (): string | null => {
-    // Étape 4 est facultative -> pas de validation bloquante
-    if (currentStep === 4) return null;
+    // Étape 5 (Documents) est facultative -> pas de validation bloquante
+    if (currentStep === 5) return null;
 
-    // Étape 0: Identification utilisateur
-    if (currentStep === 0) {
+    // Étape 1: Identification utilisateur
+    if (currentStep === 1) {
       if (isForSelf === null) return 'Veuillez indiquer si vous créez cette entreprise pour vous-même.';
       return null;
     }
 
-    // Étape 1: Informations Personnelles
-    if (currentStep === 1) {
+    // Étape 2: Informations Personnelles
+    if (currentStep === 2) {
       const personal = businessData.personalInfo;
       if (!personal) return 'Les informations personnelles sont requises.';
       
@@ -7103,6 +7392,15 @@ const BusinessCreation: React.FC = () => {
       if (!personal.lastName) return 'Le nom est requis.';
       if (!personal.phone) return 'Le téléphone est requis.';
       if (!personal.birthDate) return 'La date de naissance est requise.';
+      if (!personal.birthPlace) return 'Le lieu de naissance est requis.';
+      
+      // Validation du format email (optionnel mais doit être valide si renseigné)
+      if (personal.email && personal.email.trim() !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(personal.email)) {
+          return 'L\'adresse email n\'est pas valide (format attendu: exemple@domaine.com).';
+        }
+      }
       
       // Validation de l'âge minimum (18 ans)
       if (personal.birthDate) {
@@ -7128,8 +7426,8 @@ const BusinessCreation: React.FC = () => {
       return null;
     }
 
-    // Étape 2: Informations Société
-    if (currentStep === 2) {
+    // Étape 3: Informations Société
+    if (currentStep === 3) {
       const company = businessData.companyInfo;
       if (!company) return "Les informations de l'entreprise sont requises.";
       
@@ -7139,7 +7437,12 @@ const BusinessCreation: React.FC = () => {
       if (!company.typeEntreprise) return "Le type d'entreprise est requis.";
       if (!company.formeJuridique) return "La forme juridique est requise.";
       
-      // Validation du domaine d'activité : optionnel
+      // Validation du domaine d'activité non réglementé : OBLIGATOIRE
+      if (!company.domaineActiviteNr) {
+        return "Le domaine d'activité non réglementé est obligatoire.";
+      }
+      
+      // Validation du domaine d'activité réglementé si nécessaire
       const selectedNr = company.domaineActiviteNr;
       const requiresRegulatedDomain = selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0;
       
@@ -7147,26 +7450,44 @@ const BusinessCreation: React.FC = () => {
         return `Le domaine d'activité réglementé est requis pour ${selectedNr}.`;
       }
       
-      // Validation de la localisation avec prise en compte de la synchronisation
+      // Validation de la localisation : SEULEMENT si l'adresse de l'entreprise est différente de l'adresse personnelle
       const hasDifferentAddress = businessData.personalInfo?.hasDifferentAddress;
       const personalHasLocation = businessData.personalInfo?.divisionId || businessData.personalInfo?.localite;
       
-      if (!company.divisionCode) {
-        // Si la synchronisation est activée (même adresse) et que les données personnelles ont une localisation
-        if (hasDifferentAddress === false && personalHasLocation) {
-          // Pas d'erreur, la localisation sera synchronisée
-        } else if (hasDifferentAddress === false && !personalHasLocation) {
+      // Si même adresse que la personne, pas besoin de valider la localisation entreprise
+      if (hasDifferentAddress === false) {
+        if (!personalHasLocation) {
           return "Vous avez choisi la même adresse pour l'entreprise, mais votre localisation personnelle n'est pas définie. Retournez à l'étape précédente pour saisir votre localisation.";
-        } else {
-          return "La localisation de l'entreprise est requise. Veuillez sélectionner au moins une région.";
         }
+        // Synchronisation activée et localisation personnelle définie - OK
+        return null;
+      }
+      
+      // Si adresse différente, valider les champs de localisation entreprise
+      const missingFields: string[] = [];
+      
+      if (!company.regionId && !company.divisionCode) {
+        missingFields.push("Région");
+      }
+      if (!company.cercleId && !company.arrondissementId && !company.divisionCode) {
+        missingFields.push("Cercle/Arrondissement");
+      }
+      if (!company.communeId && !company.divisionCode) {
+        missingFields.push("Commune");
+      }
+      if (!company.quartierId && !company.divisionCode) {
+        missingFields.push("Quartier");
+      }
+      
+      if (missingFields.length > 0) {
+        return `Les champs suivants sont obligatoires : ${missingFields.join(", ")}. Utilisez la recherche rapide ou les sélecteurs pour renseigner la localisation.`;
       }
       
       return null;
     }
 
-    // Étape 3: Participants
-    if (currentStep === 3) {
+    // Étape 4: Participants
+    if (currentStep === 4) {
       const participants = businessData.participants;
       if (!participants || participants.length === 0) return 'Au moins un participant est requis.';
       
@@ -7188,48 +7509,57 @@ const BusinessCreation: React.FC = () => {
       
       // Validation des documents requis pour chaque participant
       const documentErrors: string[] = [];
-      participants.forEach((p, idx) => {
-        const label = p.prenom && p.nom ? `${p.prenom} ${p.nom}` : `Participant ${idx + 1}`;
-        
+      participants.forEach((p) => {
         // Validation des documents selon le type de personne
         if (p.civilite === 'PERSONNE_MORALE') {
           // Pour les personnes morales, vérifier le document RCCM
           if (!p.rccmFile) {
-            documentErrors.push(`${label}: document RCCM obligatoire pour les personnes morales`);
+            documentErrors.push("Document RCCM obligatoire pour les personnes morales");
           }
         } else {
           // Pour les personnes physiques, vérifier le document d'identité
           if (!p.typePiece || !p.documentFile) {
-            documentErrors.push(`${label}: type de pièce et document sont obligatoires`);
+            documentErrors.push("Type de pièce d'identité et document sont obligatoires");
           }
         }
         
         // Documents requis pour les gérants/promoteurs - uniquement pour les personnes physiques
         const requiresManagerDocuments = (p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.civilite !== 'PERSONNE_MORALE';
         
-        if (requiresManagerDocuments && businessData.personalInfo?.hasCriminalRecord && !p.casierJudiciaireFile) {
-          documentErrors.push(`${label}: casier judiciaire requis`);
+        // Vérifier que la question casier judiciaire a été répondue
+        if (requiresManagerDocuments && (p.hasCriminalRecord === undefined || p.hasCriminalRecord === null)) {
+          documentErrors.push("Veuillez répondre à la question 'Avez-vous un extrait de casier judiciaire ?'");
         }
-        if (requiresManagerDocuments && !businessData.personalInfo?.hasCriminalRecord && !p.declarationHonneurFile) {
-          documentErrors.push(`${label}: déclaration d'honneur requise (sans casier judiciaire)`);
+        
+        // Vérifier si le participant a répondu à la question casier judiciaire (valeur par défaut: false)
+        if (requiresManagerDocuments && p.hasCriminalRecord === true && !p.casierJudiciaireFile) {
+          documentErrors.push("Casier judiciaire requis");
         }
-        if (requiresManagerDocuments && businessData.personalInfo?.isMarried && !p.acteMariageFile) {
-          documentErrors.push(`${label}: acte de mariage requis (si marié)`);
+        if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
+          documentErrors.push("Déclaration d'honneur ou signature requise (sans casier judiciaire)");
+        }
+        // Utiliser isMarried pour la validation de l'acte de mariage
+        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
+          documentErrors.push("Acte de mariage requis");
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
-          documentErrors.push(`${label}: extrait de naissance requis`);
+          documentErrors.push("Extrait de naissance requis");
+        }
+        // Certificat de nationalité: vérifier pieceNationaliteFile OU certificatNationaliteFile
+        if (requiresManagerDocuments && !p.certificatNationaliteFile && !p.pieceNationaliteFile) {
+          documentErrors.push("Certificat de nationalité requis");
         }
         // Certificat de résidence requis seulement si le gérant n'est pas de nationalité malienne
         if (requiresManagerDocuments && !p.certificatResidenceFile) {
           const gerantNationality = p.nationnalite || businessData.personalInfo?.nationality || 'MALIENNE';
           if (gerantNationality.toUpperCase() !== 'MALIENNE') {
-            documentErrors.push(`${label}: certificat de résidence requis (nationalité non malienne)`);
+            documentErrors.push("Certificat de résidence requis (nationalité non malienne)");
           }
         }
       });
       
       if (documentErrors.length > 0) {
-        return `Erreurs à corriger\n${documentErrors.join('\n')}`;
+        return `Documents manquants :\n• ${documentErrors.join('\n• ')}`;
       }
       
       return null;
@@ -7246,20 +7576,34 @@ const BusinessCreation: React.FC = () => {
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 1:
-        // Vérifier que tous les champs obligatoires sont remplis
+        // Étape 1: Identification - vérifier que l'utilisateur a choisi
+        return isForSelf !== null;
+      case 2:
+        // Étape 2: Informations Personnelles - Vérifier que tous les champs obligatoires sont remplis
         const personal = businessData.personalInfo;
         return personal?.firstName && 
                personal?.lastName && 
                personal?.birthDate &&
+               personal?.birthPlace &&
                personal?.divisionId;
-      case 2:
-        return businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' || businessData.companyInfo?.nom;
       case 3:
-        return businessData.participants && businessData.participants.length > 0;
+        // Étape 3: Informations Société - Validation: Domaine d'activité, Région, Cercle/Arrondissement, Commune, Quartier obligatoires
+        const company = businessData.companyInfo;
+        const hasDomaineActivite = company?.domaineActiviteNr || company?.domaineActivite;
+        const hasRegion = company?.regionId || company?.divisionCode;
+        // Pour Bamako: arrondissement requis, sinon cercle requis
+        const hasCercleOrArrondissement = company?.cercleId || company?.arrondissementId || company?.divisionCode;
+        const hasCommune = company?.communeId || company?.divisionCode;
+        const hasQuartier = company?.quartierId || company?.divisionCode;
+        
+        return hasDomaineActivite && hasRegion && hasCercleOrArrondissement && hasCommune && hasQuartier;
       case 4:
-        return true; // Documents are optional
+        // Étape 4: Participants
+        return businessData.participants && businessData.participants.length > 0;
       case 5:
-        return null; // Final step - submit instead
+        return true; // Étape 5: Documents are optional
+      case 6:
+        return null; // Étape 6: Final step - submit instead
       default:
         return false;
     }
@@ -7281,7 +7625,7 @@ const BusinessCreation: React.FC = () => {
         nom: gerantData.lastName,
         prenom: gerantData.firstName,
         telephone1: fullPhoneForUpdateDirigeant,
-        email: gerantData.email,
+        email: cleanAndValidateEmail(gerantData.email),
         dateNaissance: gerantData.birthDate,
         lieuNaissance: gerantData.birthPlace,
         nationnalite: gerantData.nationality,
@@ -7318,6 +7662,52 @@ const BusinessCreation: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Aucun token trouvé');
 
+      // VALIDATION PRÉALABLE: Vérifier l'unicité du nom et domaine d'activité pour TOUS les participants
+      const nomEntreprise = businessData.companyInfo?.nom || (businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
+        ? `${businessData.personalInfo?.firstName || ''} ${businessData.personalInfo?.lastName || ''}`.trim() 
+        : '');
+      const domaineActivite = businessData.companyInfo?.domaineActivite || businessData.companyInfo?.domaineActiviteNr;
+      
+      // Collecter tous les personId à vérifier (participants + fondateur + utilisateur connecté)
+      const personIdsToCheck = new Set<string>();
+      
+      // Ajouter les participants
+      if (businessData.participants) {
+        businessData.participants.forEach(p => {
+          if (p.personId) personIdsToCheck.add(p.personId);
+        });
+      }
+      
+      // Ajouter le fondateur s'il n'est pas déjà dans les participants
+      if (businessData.founderId && !personIdsToCheck.has(businessData.founderId)) {
+        personIdsToCheck.add(businessData.founderId);
+      }
+      
+      // Ajouter l'utilisateur connecté (qui pourrait être un participant d'une entreprise existante)
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser.personne_id && !personIdsToCheck.has(currentUser.personne_id)) {
+        personIdsToCheck.add(currentUser.personne_id);
+      }
+      
+      // Vérifier l'unicité pour chaque personne
+      for (const personId of Array.from(personIdsToCheck)) {
+        try {
+          const uniquenessCheck = await businessAPI.checkUniqueness(personId, nomEntreprise, domaineActivite);
+          
+          if (uniquenessCheck && !uniquenessCheck.canCreate) {
+            const conflicts = uniquenessCheck.conflicts || [];
+            throw new Error(conflicts.join('\n') || 'Un des participants a déjà une entreprise avec ce nom ou ce domaine d\'activité.');
+          }
+        } catch (checkError: any) {
+          // Si c'est une erreur de validation (pas une erreur réseau), la propager
+          if (checkError.message && !checkError.message.includes('fetch')) {
+            throw checkError;
+          }
+          // Sinon, continuer (le backend fera la validation finale)
+          console.warn('⚠️ Vérification d\'unicité ignorée pour personId', personId, ':', checkError.message);
+        }
+      }
+
       // Assembler tous les participants avec leurs IDs
       const allParticipants = businessData.participants?.map(p => {
         // Valider et nettoyer le rôle
@@ -7341,9 +7731,10 @@ const BusinessCreation: React.FC = () => {
       if (businessData.founderId) {
         const founderExists = allParticipants.some(p => p.personId === businessData.founderId);
         if (!founderExists) {
+          const isEntrepriseIndividuelleLocal = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
           allParticipants.push({
             personId: businessData.founderId,
-            role: 'DIRIGEANT',
+            role: isEntrepriseIndividuelleLocal ? 'PROMOTEUR' : 'GERANT',
             pourcentageParts: 100 - allParticipants.reduce((sum, p) => sum + p.pourcentageParts, 0),
             dateDebut: new Date().toISOString().split('T')[0],
             dateFin: '9999-12-31'
@@ -7451,18 +7842,16 @@ const BusinessCreation: React.FC = () => {
       }
     }
     
-    // Appliquer la validation pour toutes les étapes sauf la 4
-    if (currentStep !== 4) {
-      const err = validateStep();
-      if (err) {
-        setStepError(err);
-        setShowValidation(true);
-        // Faire défiler vers la zone de navigation/erreur
-        try {
-          navigationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } catch {}
-        return;
-      }
+    // Appliquer la validation pour toutes les étapes (y compris 3 et 4)
+    const err = validateStep();
+    if (err) {
+      setStepError(err);
+      setShowValidation(true);
+      // Faire défiler vers la zone de navigation/erreur
+      try {
+        navigationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch {}
+      return;
     }
     
     setStepError(null);
@@ -7494,28 +7883,26 @@ const BusinessCreation: React.FC = () => {
       if (currentStep === 2) {
       }
       
-      // ÉTAPE 3: Gestion des associés OU gerant (entreprise individuelle)
+      // ÉTAPE 3: Gestion des associés (seulement pour les sociétés, pas pour entreprise individuelle)
       if (currentStep === 3) {
         const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
         if (!isEntrepriseIndividuelle) {
           await processAssociatesWorkflow();
-        } else {
-          // Pour entreprise individuelle, créer le gerant
-          await processDirigeantWorkflow();
         }
+        // Pour entreprise individuelle, le promoteur sera traité à l'étape 4 après ajout du participant
       }
       
-      // ÉTAPE 4: Gestion du gérant - Création avec EntrepriseRole.GERANT (sauf pour entreprise individuelle)
+      // ÉTAPE 4: Gestion du gérant/promoteur
       if (currentStep === 4) {
         const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
         const hasGerant = (businessData.participants || []).some(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
-        const participants = businessData.participants || [];
         
-        
-        if (!isEntrepriseIndividuelle && hasGerant) {
+        if (isEntrepriseIndividuelle && hasGerant) {
+          // Pour entreprise individuelle, traiter le promoteur
+          await processDirigeantWorkflow();
+        } else if (!isEntrepriseIndividuelle && hasGerant) {
+          // Pour les sociétés, traiter le gérant
           await processManagerWorkflow();
-        } else if (isEntrepriseIndividuelle) {
-        } else {
         }
       }
       
@@ -7526,7 +7913,7 @@ const BusinessCreation: React.FC = () => {
       }
       
     } catch (error) {
-      setStepError(`Erreur lors du traitement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      setStepError(error instanceof Error ? error.message : 'Erreur inconnue');
       setShowValidation(true);
       return;
     }
@@ -7536,19 +7923,19 @@ const BusinessCreation: React.FC = () => {
       // Sauvegarder les sélections de localisation avant de changer d'étape
       saveCurrentLocationSelections();
       
-      // Pour les entreprises individuelles, sauter l'étape 4 (Documents) et aller directement à l'étape 5
+      // Pour les entreprises individuelles, sauter l'étape 5 (Documents) et aller directement à l'étape 6
       const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-      if (currentStep === 3 && isEntrepriseIndividuelle) {
-        setCurrentStep(5); // Aller directement à l'étape 5
+      if (currentStep === 4 && isEntrepriseIndividuelle) {
+        setCurrentStep(6); // Aller directement à l'étape 6 (Récapitulatif)
       } else {
-        setCurrentStep(prev => Math.min(prev + 1, 5));
+        setCurrentStep(prev => Math.min(prev + 1, 6));
       }
     }
   };
 
   // Fonction pour sauvegarder les sélections de localisation actuelles
   const saveCurrentLocationSelections = () => {
-    if (currentStep === 3) { // Étape des informations de l'entreprise
+    if (currentStep === 3) { // Étape 3: Informations de l'entreprise
       console.log('💾 [NAVIGATION DEBUG] Sauvegarde des sélections de localisation avant navigation');
       
       // Les variables de sélection sont dans le scope du composant CompanyInfoStep
@@ -7572,12 +7959,12 @@ const BusinessCreation: React.FC = () => {
     // Sauvegarder les sélections de localisation avant de changer d'étape
     saveCurrentLocationSelections();
     
-    // Pour les entreprises individuelles, si on est à l'étape 5, revenir à l'étape 3 (sauter l'étape 4)
+    // Pour les entreprises individuelles, si on est à l'étape 6 (Récapitulatif), revenir à l'étape 4 (Participants) - sauter l'étape 5 (Documents)
     const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-    if (currentStep === 5 && isEntrepriseIndividuelle) {
-      setCurrentStep(3); // Revenir à l'étape 3
+    if (currentStep === 6 && isEntrepriseIndividuelle) {
+      setCurrentStep(4); // Revenir à l'étape 4 (Participants)
     } else {
-      setCurrentStep(prev => Math.max(prev - 1, 0));
+      setCurrentStep(prev => Math.max(prev - 1, 1));
     }
   };
 
@@ -7586,9 +7973,9 @@ const BusinessCreation: React.FC = () => {
     // Sauvegarder les sélections de localisation avant de changer d'étape
     saveCurrentLocationSelections();
     
-    // Pour les entreprises individuelles, ne pas permettre l'accès à l'étape 4 (Documents)
+    // Pour les entreprises individuelles, ne pas permettre l'accès à l'étape 5 (Documents)
     const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-    if (targetStep === 4 && isEntrepriseIndividuelle) {
+    if (targetStep === 5 && isEntrepriseIndividuelle) {
       console.log('Navigation vers étape Documents bloquée pour entreprise individuelle');
       return;
     }
@@ -7618,24 +8005,53 @@ const BusinessCreation: React.FC = () => {
     
     setIsForSelf(response);
     
-    // Sauvegarder isForSelf dans businessData.personalInfo pour les étapes suivantes
-    updateBusinessData('personalInfo', {
-      ...businessData.personalInfo,
-      isForSelf: response
-    });
-    
     // Si l'utilisateur choisit "Oui, c'est pour moi", on récupère ses informations
     if (response) {
+      // Sauvegarder isForSelf dans businessData.personalInfo pour les étapes suivantes
+      updateBusinessData('personalInfo', {
+        ...businessData.personalInfo,
+        isForSelf: response
+      });
       console.log('🔍 [DEBUG] Appel fetchCurrentUser...');
       await fetchCurrentUser();
       console.log('🔍 [DEBUG] Données après fetchCurrentUser:');
       console.log('  - personalInfo:', JSON.stringify(businessData.personalInfo, null, 2));
       console.log('  - companyInfo:', JSON.stringify(businessData.companyInfo, null, 2));
+    } else {
+      // Si l'utilisateur choisit "Non, c'est pour quelqu'un d'autre", on nettoie le formulaire
+      updateBusinessData('personalInfo', {
+        ...businessData.personalInfo,
+        isForSelf: false,
+        // Vider les champs personnels pour une nouvelle personne
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        phone2: '',
+        birthDate: '',
+        birthPlace: '',
+        civility: '',
+        sexe: '',
+        nationality: 'MALIENNE',
+        situationMatrimoniale: '',
+        localite: '',
+        porte: '',
+        adresseLibre: '',
+        divisionId: '',
+        selectedRegionId: '',
+        selectedCercleId: '',
+        selectedCommuneId: '',
+        selectedQuartierId: '',
+        hasCriminalRecord: false,
+        isMarried: false,
+        allowsMultipleManagers: false,
+        requiresExerciseAuthorization: false
+      });
     }
     
     setShowForm(true);
-    // Passer automatiquement à l'étape suivante
-    setCurrentStep(1);
+    // Passer automatiquement à l'étape suivante (étape 2 = Informations Personnelles)
+    setCurrentStep(2);
   };
 
   // Fonction pour récupérer les informations de l'utilisateur connecté
@@ -7680,7 +8096,7 @@ const BusinessCreation: React.FC = () => {
             civility: personData.civilite || '',
             firstName: personData.prenom || '',
             lastName: personData.nom || '',
-            email: personData.email || '',
+            email: cleanAndValidateEmail(personData.email) || '',
             phone: formattedPhone,
             phone2: personData.telephone2 || '',
             birthDate: personData.dateNaissance ? personData.dateNaissance.split('T')[0] : '',
@@ -7741,12 +8157,17 @@ const BusinessCreation: React.FC = () => {
       }
 
       // Préparer les données selon PersonCreateRequest
+      // DEBUG: Afficher la valeur brute de l'email
+      console.log('🔍 [SAVE PERSONAL INFO WORKFLOW] personalInfo.email BRUT:', personalInfo.email);
+      const cleanedEmailForWorkflow = cleanAndValidateEmail(personalInfo.email);
+      console.log('🔍 [SAVE PERSONAL INFO WORKFLOW] Email après cleanAndValidateEmail:', cleanedEmailForWorkflow);
+      
       const personRequest = {
         nom: personalInfo.lastName,
         prenom: personalInfo.firstName,
         telephone1: formattedPhone,
         telephone2: personalInfo.phone2 ? (personalInfo.phone2.startsWith('+') ? personalInfo.phone2 : '+223' + personalInfo.phone2.replace(/\s/g, '')) : '',
-        email: personalInfo.email,
+        email: cleanedEmailForWorkflow,
         dateNaissance: ensureAdultBirthDate(personalInfo.birthDate),
         lieuNaissance: personalInfo.birthPlace,
         nationnalite: personalInfo.nationality || 'MALIENNE',
@@ -7769,6 +8190,9 @@ const BusinessCreation: React.FC = () => {
       // Mettre à jour le sexe dans la requête
       personRequest.sexe = finalSexe;
 
+      // DEBUG: Afficher la requête complète avant envoi
+      console.log('🔍 [SAVE PERSONAL INFO] Requête complète avant envoi:', JSON.stringify(personRequest, null, 2));
+      console.log('🔍 [SAVE PERSONAL INFO] Email dans la requête:', personRequest.email);
 
       let response;
       
@@ -7796,7 +8220,90 @@ const BusinessCreation: React.FC = () => {
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la sauvegarde');
+        const errorMessage = errorData.message || 'Erreur lors de la sauvegarde';
+        
+        // Si la personne n'existe pas par ID, chercher par téléphone
+        if (errorMessage.includes('Personne introuvable') || errorMessage.includes('introuvable')) {
+          console.log('🔍 [savePersonalInfoWorkflow] Personne introuvable par ID, recherche par téléphone:', formattedPhone);
+          
+          try {
+            const searchResponse = await fetch(`/api/v1/persons/search?telephone=${encodeURIComponent(formattedPhone)}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (searchResponse.ok) {
+              const existingPerson = await searchResponse.json();
+              console.log('✅ [savePersonalInfoWorkflow] Personne trouvée par téléphone:', existingPerson.id);
+              
+              // Mettre à jour le localStorage avec le bon personne_id
+              currentUser.personne_id = existingPerson.id;
+              localStorage.setItem('user', JSON.stringify(currentUser));
+              console.log('✅ [savePersonalInfoWorkflow] localStorage mis à jour avec personne_id:', existingPerson.id);
+              
+              // Mettre à jour cette personne existante
+              const updateResponse = await fetch(`/api/v1/persons/${existingPerson.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(personRequest)
+              });
+              
+              if (updateResponse.ok) {
+                const updatedPerson = await updateResponse.json();
+                console.log('✅ [savePersonalInfoWorkflow] Personne existante mise à jour:', updatedPerson.id);
+                return { ...updatedPerson, id: existingPerson.id };
+              } else {
+                // Retourner la personne existante même si la mise à jour échoue
+                console.warn('⚠️ [savePersonalInfoWorkflow] Mise à jour échouée, utilisation de la personne existante');
+                return existingPerson;
+              }
+            } else {
+              // Aucune personne trouvée par téléphone, créer une nouvelle
+              console.log('🔍 [savePersonalInfoWorkflow] Aucune personne trouvée par téléphone, création nouvelle');
+              const createResponse = await fetch('/api/v1/persons', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(personRequest)
+              });
+              
+              if (!createResponse.ok) {
+                const createError = await createResponse.json();
+                throw new Error(createError.message || 'Erreur lors de la création de la personne');
+              }
+              
+              const newPerson = await createResponse.json();
+              // Mettre à jour le localStorage avec le nouveau personne_id
+              currentUser.personne_id = newPerson.id;
+              localStorage.setItem('user', JSON.stringify(currentUser));
+              return newPerson;
+            }
+          } catch (searchError) {
+            console.warn('⚠️ [savePersonalInfoWorkflow] Erreur recherche par téléphone:', searchError);
+            throw searchError;
+          }
+        }
+        
+        // Analyser l'erreur pour fournir un message plus clair
+        let friendlyMessage = errorMessage;
+        if (errorMessage.includes('téléphone') && errorMessage.includes('déjà')) {
+          friendlyMessage = 'Ce numéro de téléphone est déjà utilisé par un autre compte.';
+        } else if (errorMessage.includes('email') && errorMessage.includes('déjà')) {
+          friendlyMessage = 'Cette adresse email est déjà utilisée par un autre compte.';
+        } else if (errorMessage.includes('date') || errorMessage.includes('naissance')) {
+          friendlyMessage = 'La date de naissance est invalide ou manquante.';
+        } else if (errorMessage.includes('division') || errorMessage.includes('localisation')) {
+          friendlyMessage = 'La localisation est invalide ou manquante. Veuillez sélectionner une région, cercle, commune et quartier.';
+        }
+        
+        throw new Error(friendlyMessage);
       }
       
       const result = await response.json();
@@ -7808,7 +8315,9 @@ const BusinessCreation: React.FC = () => {
       
       return result;
     } catch (err) {
-      throw err;
+      // Retourner directement le message d'erreur sans préfixe redondant
+      const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue lors de la sauvegarde';
+      throw new Error(errorMsg);
     }
   };
 
@@ -7826,7 +8335,7 @@ const BusinessCreation: React.FC = () => {
             lastName: associate.nom || '',
             firstName: associate.prenom || '',
             phone: associate.telephone || '',
-            email: associate.email || '',
+            email: cleanAndValidateEmail(associate.email) || '',
             birthDate: associate.dateNaissance || '',
             birthPlace: associate.lieuNaissance || '',
             nationality: associate.nationnalite || 'MALIENNE',
@@ -7867,7 +8376,7 @@ const BusinessCreation: React.FC = () => {
                 nom: associate.nom || currentUser.nom,
                 prenom: associate.prenom || currentUser.prenom,
                 telephone1: associate.telephone || currentUser.telephone1,
-                email: associate.email || currentUser.email,
+                email: cleanAndValidateEmail(associate.email) || cleanAndValidateEmail(currentUser.email),
                 dateNaissance: ensureAdultBirthDate(associate.dateNaissance) || ensureAdultBirthDate(currentUser.dateNaissance),
                 lieuNaissance: associate.lieuNaissance || currentUser.lieuNaissance,
                 nationnalite: associate.nationnalite || currentUser.nationnalite || 'MALIENNE',
@@ -7968,7 +8477,7 @@ const BusinessCreation: React.FC = () => {
         sexe: 'MASCULIN', // Valeur par défaut pour satisfaire @NotNull (sera ignorée par le backend)
         situationMatrimoniale: 'CELIBATAIRE', // Valeur par défaut pour satisfaire @NotNull
         // Champs optionnels
-        email: associateData.email || undefined,
+        email: cleanAndValidateEmail(associateData.email),
         // Localisation - Les personnes morales ont leur propre localisation
         division_id: associateData.divisionId || associateData.division_id || null,
         divisionCode: associateData.divisionCode || null,
@@ -7981,7 +8490,7 @@ const BusinessCreation: React.FC = () => {
         nom: finalLastName.trim(),
         prenom: finalFirstName.trim(),
         telephone1: fullPhoneForCreate,
-        email: associateData.email,
+        email: cleanAndValidateEmail(associateData.email),
         dateNaissance: ensureAdultBirthDate(associateData.birthDate),
         lieuNaissance: associateData.birthPlace,
         nationnalite: associateData.nationality || 'MALIENNE',
@@ -8042,7 +8551,7 @@ const BusinessCreation: React.FC = () => {
         lastName: manager.nom || '',
         firstName: manager.prenom || '',
         phone: manager.telephone || '',
-        email: manager.email || '',
+        email: cleanAndValidateEmail(manager.email) || '',
         birthDate: manager.dateNaissance || '',
         birthPlace: manager.lieuNaissance || '',
         nationality: manager.nationnalite || 'MALIENNE',
@@ -8093,7 +8602,7 @@ const BusinessCreation: React.FC = () => {
                   nom: managerData.lastName || currentUser.nom,
                   prenom: managerData.firstName || currentUser.prenom,
                   telephone1: managerData.phone || currentUser.telephone1,
-                  email: managerData.email || currentUser.email,
+                  email: cleanAndValidateEmail(managerData.email) || cleanAndValidateEmail(currentUser.email),
                   dateNaissance: ensureAdultBirthDate(managerData.birthDate) || ensureAdultBirthDate(currentUser.dateNaissance),
                   lieuNaissance: managerData.birthPlace || currentUser.lieuNaissance,
                   nationnalite: managerData.nationality || currentUser.nationnalite || 'MALIENNE',
@@ -8172,7 +8681,7 @@ const BusinessCreation: React.FC = () => {
         nom: managerData.lastName,
         prenom: managerData.firstName,
         telephone1: fullPhoneForUpdate, // Sauvegarder le numéro complet avec indicatif
-        email: managerData.email,
+        email: cleanAndValidateEmail(managerData.email),
         dateNaissance: managerData.birthDate,
         lieuNaissance: managerData.birthPlace,
         nationnalite: managerData.nationality || 'MALIENNE',
@@ -8199,9 +8708,57 @@ const BusinessCreation: React.FC = () => {
         const errorData = await response.json();
         const errorMessage = errorData.message || 'Erreur lors de la mise à jour du gérant';
         
-        // Si la personne n'existe pas (base H2 vide), créer une nouvelle personne
+        // Si la personne n'existe pas, chercher par téléphone d'abord
         if (errorMessage.includes('Personne introuvable') || errorMessage.includes('introuvable')) {
-          return await createManagerWorkflow(managerData);
+          console.log('🔍 [updateManagerWorkflow] Personne introuvable par ID, recherche par téléphone:', fullPhoneForUpdate);
+          
+          // Chercher la personne par numéro de téléphone
+          try {
+            const searchResponse = await fetch(`/api/v1/persons/search?telephone=${encodeURIComponent(fullPhoneForUpdate)}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (searchResponse.ok) {
+              const existingPerson = await searchResponse.json();
+              console.log('✅ [updateManagerWorkflow] Personne trouvée par téléphone:', existingPerson.id);
+              
+              // Mettre à jour le localStorage avec le bon personne_id
+              const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+              currentUser.personne_id = existingPerson.id;
+              localStorage.setItem('user', JSON.stringify(currentUser));
+              console.log('✅ [updateManagerWorkflow] localStorage mis à jour avec personne_id:', existingPerson.id);
+              
+              // Mettre à jour cette personne existante
+              const updateExistingResponse = await fetch(`/api/v1/persons/${existingPerson.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(personUpdateRequest)
+              });
+              
+              if (updateExistingResponse.ok) {
+                const updatedPerson = await updateExistingResponse.json();
+                console.log('✅ [updateManagerWorkflow] Personne existante mise à jour:', updatedPerson.id);
+                return updatedPerson;
+              } else {
+                const updateError = await updateExistingResponse.json();
+                console.warn('⚠️ [updateManagerWorkflow] Erreur mise à jour personne existante:', updateError.message);
+                // Retourner la personne existante sans modification
+                return existingPerson;
+              }
+            } else {
+              console.log('🔍 [updateManagerWorkflow] Aucune personne trouvée par téléphone, création nouvelle');
+              return await createManagerWorkflow(managerData);
+            }
+          } catch (searchError) {
+            console.warn('⚠️ [updateManagerWorkflow] Erreur recherche par téléphone:', searchError);
+            return await createManagerWorkflow(managerData);
+          }
         }
         
         // Gestion spécifique de l'erreur de numéro de téléphone déjà utilisé
@@ -8421,7 +8978,7 @@ const BusinessCreation: React.FC = () => {
         lastName: gerant.nom || '',
         firstName: gerant.prenom || '',
         phone: gerant.telephone || '',
-        email: gerant.email || '',
+        email: cleanAndValidateEmail(gerant.email) || '',
         birthDate: gerant.dateNaissance || '',
         birthPlace: gerant.lieuNaissance || '',
         nationality: gerant.nationnalite || 'MALIENNE',
@@ -8503,7 +9060,7 @@ const BusinessCreation: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8 relative">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2 py-5">
               Création d'entreprise
             </h1>
             <p className="text-gray-600">
@@ -8525,51 +9082,51 @@ const BusinessCreation: React.FC = () => {
 
           {/* Progress Steps */}
           <div className="flex justify-between items-center mb-8 bg-white rounded-lg p-6 shadow-sm">
-            {[
-              { number: 0, name: 'Identification' },
-              { number: 1, name: 'Informations personnelles' },
-              { number: 2, name: 'Informations entreprise' },
-              { number: 3, name: 'Activités et localisation' },
-              { number: 4, name: 'Documents' },
-              { number: 5, name: 'Validation' }
-            ].filter((step) => {
-              // Masquer l'étape Documents pour les entreprises individuelles
+            {(() => {
               const isEntrepriseIndividuelle = businessData.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
-              return !(step.number === 4 && isEntrepriseIndividuelle);
-            }).map((step, index, filteredSteps) => (
-              <div key={step.number} className="flex items-center">
-                <button
-                  onClick={() => goToStep(step.number)}
-                  className="flex flex-col items-center group cursor-pointer transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-investmali-accent focus:ring-opacity-50 rounded-lg p-2"
-                  title={`Aller à l'étape ${step.number}: ${step.name}`}
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-200 ${
-                    currentStep >= step.number 
-                      ? 'bg-green-500 group-hover:bg-green-600' 
-                      : 'bg-gray-300 group-hover:bg-gray-400'
-                  }`}>
-                    {step.number}
-                  </div>
-                  <span className={`text-sm mt-2 text-center font-semibold transition-all duration-200 ${
-                    currentStep >= step.number 
-                      ? 'text-green-600 group-hover:text-green-700' 
-                      : 'text-gray-500 group-hover:text-gray-600'
-                  }`}>
-                    {step.name}
-                  </span>
-                </button>
-                {index < filteredSteps.length - 1 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    currentStep > step.number ? 'bg-green-500' : 'bg-gray-300'
-                  }`} />
-                )}
-              </div>
-            ))}
+              const allSteps = [
+                { number: 1, name: 'Identification' },
+                { number: 2, name: 'Informations personnelles' },
+                { number: 3, name: 'Informations entreprise' },
+                { number: 4, name: 'Participants' },
+                ...(isEntrepriseIndividuelle ? [] : [{ number: 5, name: 'Documents' }]),
+                { number: isEntrepriseIndividuelle ? 5 : 6, name: 'Récapitulatif', actualStep: 6 }
+              ];
+              return allSteps.map((step, index) => (
+                <div key={step.number} className="flex items-center">
+                  <button
+                    onClick={() => goToStep((step as any).actualStep || step.number)}
+                    className="flex flex-col items-center group cursor-pointer transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-investmali-accent focus:ring-opacity-50 rounded-lg p-2"
+                    title={`Aller à l'étape ${step.number}: ${step.name}`}
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-200 ${
+                      currentStep >= ((step as any).actualStep || step.number)
+                        ? 'bg-green-500 group-hover:bg-green-600' 
+                        : 'bg-gray-300 group-hover:bg-gray-400'
+                    }`}>
+                      {step.number}
+                    </div>
+                    <span className={`text-sm mt-2 text-center font-semibold transition-all duration-200 ${
+                      currentStep >= ((step as any).actualStep || step.number)
+                        ? 'text-green-600 group-hover:text-green-700' 
+                        : 'text-gray-500 group-hover:text-gray-600'
+                    }`}>
+                      {step.name}
+                    </span>
+                  </button>
+                  {index < allSteps.length - 1 && (
+                    <div className={`w-16 h-1 mx-2 ${
+                      currentStep > ((step as any).actualStep || step.number) ? 'bg-green-500' : 'bg-gray-300'
+                    }`} />
+                  )}
+                </div>
+              ));
+            })()}
           </div>
 
           {/* Step Content */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            {currentStep === 0 && (
+            {currentStep === 1 && (
               <UserIdentificationStep 
                 isForSelf={isForSelf}
                 setIsForSelf={setIsForSelf}
@@ -8577,7 +9134,7 @@ const BusinessCreation: React.FC = () => {
               />
             )}
             
-            {currentStep === 1 && (
+            {currentStep === 2 && (
               <PersonalInfoStep 
                 data={businessData} 
                 updateData={updateBusinessData}
@@ -8588,14 +9145,14 @@ const BusinessCreation: React.FC = () => {
               />
             )}
             
-            {currentStep === 2 && (
+            {currentStep === 3 && (
               <CompanyInfoStep 
                 data={businessData} 
                 updateData={updateBusinessData}
               />
             )}
             
-            {currentStep === 3 && (
+            {currentStep === 4 && (
               <ParticipantsStep 
                 data={businessData} 
                 updateData={updateBusinessData}
@@ -8603,14 +9160,14 @@ const BusinessCreation: React.FC = () => {
               />
             )}
             
-            {currentStep === 4 && (
+            {currentStep === 5 && (
               <DocumentsStep 
                 data={businessData} 
                 updateData={updateBusinessData}
               />
             )}
             
-            {currentStep === 5 && (
+            {currentStep === 6 && (
               <SummaryAndSubmissionStep 
                 data={businessData} 
                 updateData={updateBusinessData}
@@ -8624,9 +9181,9 @@ const BusinessCreation: React.FC = () => {
           {/* Error Display */}
           {showValidation && stepError && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <div className="text-red-600 mr-2">⚠️</div>
-                <div className="text-red-800">{stepError}</div>
+              <div className="flex items-start">
+                <div className="text-red-600 mr-2 mt-1">⚠️</div>
+                <div className="text-red-800 whitespace-pre-line">{stepError}</div>
               </div>
               <button 
                 onClick={() => setShowValidation(false)}
@@ -8641,9 +9198,9 @@ const BusinessCreation: React.FC = () => {
           <div className="flex justify-between">
             <button
               onClick={prevStep}
-              disabled={currentStep === 0}
+              disabled={currentStep === 1}
               className={`px-6 py-2 rounded-lg font-medium ${
-                currentStep === 0
+                currentStep === 1
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-500 text-white hover:bg-gray-600'
               }`}
@@ -8651,7 +9208,7 @@ const BusinessCreation: React.FC = () => {
               Précédent
             </button>
             
-            {currentStep < 5 && (
+            {currentStep < 6 && (
               <button
                 onClick={nextStep}
                 disabled={!canProceedToNextStep()}

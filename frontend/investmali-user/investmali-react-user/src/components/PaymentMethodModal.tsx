@@ -83,7 +83,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+              <div className="p-2 bg-investmali-accent-600 rounded-xl shadow-lg">
                 <CreditCardIcon className="h-6 w-6 text-white" />
               </div>
               Choisir une méthode de paiement
@@ -97,7 +97,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
           </div>
           {(amount || fees) && (
             <p className="text-lg text-gray-600 mt-2">
-              Montant à payer: <span className="font-semibold text-sky-700">
+              Montant à payer: <span className="font-semibold text-investmali-accent-700">
                 {paymentService.formatAmount(amount || (fees ? fees.amount : 0))}
               </span>
             </p>
@@ -107,7 +107,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         {/* Loading */}
         {loading && (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-investmali-accent-600 mx-auto"></div>
             <p className="mt-2 text-lg text-gray-600">Chargement des frais...</p>
           </div>
         )}
@@ -121,8 +121,8 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                   key={method.id}
                   className={`border rounded-lg p-4 cursor-pointer transition-all ${
                     selectedMethod === method.id
-                      ? 'border-sky-600 bg-sky-50'
-                      : 'border-gray-200 hover:border-sky-600 hover:bg-gray-50'
+                      ? 'border-investmali-accent-600 bg-investmali-accent-50'
+                      : 'border-gray-200 hover:border-investmali-accent-600 hover:bg-gray-50'
                   } ${!method.supported ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={() => method.supported && handleMethodSelect(method.id)}
                 >
@@ -136,7 +136,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                           className="w-10 h-10 object-contain rounded"
                         />
                       ) : (
-                        <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+                        <div className="p-2 bg-investmali-accent-600 rounded-xl shadow-lg">
                           <CreditCardIcon className="h-6 w-6 text-white" />
                         </div>
                       )}
@@ -165,14 +165,14 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
             </div>
 
             {/* Security Notice */}
-            <div className="mt-6 p-4 bg-sky-50 rounded-lg border border-sky-200">
+            <div className="mt-6 p-4 bg-investmali-accent-50 rounded-lg border border-investmali-accent-200">
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-sky-600 rounded-lg shadow-md">
+                <div className="p-2 bg-investmali-accent-600 rounded-lg shadow-md">
                   <ShieldCheckIcon className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-medium text-sky-900">Paiement sécurisé</h4>
-                  <p className="text-lg text-sky-700 mt-1">
+                  <h4 className="text-lg font-medium text-investmali-accent-900">Paiement sécurisé</h4>
+                  <p className="text-lg text-investmali-accent-700 mt-1">
                     Toutes les transactions sont sécurisées et chiffrées. 
                     Vos données bancaires ne sont jamais stockées sur nos serveurs.
                   </p>
@@ -194,7 +194,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
             <button
               onClick={handleContinue}
               disabled={!selectedMethod || loading}
-              className="px-6 py-2 text-lg bg-gradient-to-r from-sky-600 to-blue-600 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
+              className="px-6 py-2 text-lg bg-investmali-accent text-white rounded-lg hover:from-investmali-accent-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl font-bold"
             >
               Continuer
             </button>

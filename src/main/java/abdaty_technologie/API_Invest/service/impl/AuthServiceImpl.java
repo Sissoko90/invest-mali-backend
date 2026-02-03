@@ -56,6 +56,9 @@ public class AuthServiceImpl implements IAuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private abdaty_technologie.API_Invest.service.PersonDuplicateDetectionService duplicateDetectionService;
+
     @Override
     public LoginResponse authenticate(LoginRequest loginRequest) {
         String identifiant = loginRequest.getEmail();
@@ -220,34 +223,148 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional
     public LoginResponse register(RegisterRequest request) {
-        // Vérification des doublons
-        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
-            if (personsRepository.existsByEmail(request.getEmail())) {
-                throw new RuntimeException("Cette adresse email est déjà utilisée");
+        // Normaliser le téléphone en supprimant tous les espaces
+        String normalizedPhone = request.getTelephone1() != null 
+            ? request.getTelephone1().replaceAll("\\s+", "").trim() 
+            : null;
+        
+        log.info("🔍 [REGISTER] Début inscription - Nom: {}, Prénom: {}, Tel: {} → {}, Email: {}", 
+            request.getNom(), request.getPrenom(), request.getTelephone1(), normalizedPhone, request.getEmail());
+        
+        // ÉTAPE 1: Détecter les doublons potentiels
+        abdaty_technologie.API_Invest.dto.response.DuplicateCheckResult duplicateCheck = 
+            duplicateDetectionService.checkForDuplicates(
+                request.getEmail(), 
+                normalizedPhone, 
+                request.getNom(), 
+                request.getPrenom()
+            );
+        
+        log.info("📊 [REGISTER] Résultat détection: exists={}, hasAccount={}, conflict={}, resolution={}, score={}", 
+            duplicateCheck.isExists(), 
+            duplicateCheck.isHasUserAccount(), 
+            duplicateCheck.isNameConflict(), 
+            duplicateCheck.getConflictResolutionRequired(),
+            duplicateCheck.getNameSimilarityScore());
+        
+        Persons person = null;
+        boolean isExistingPerson = false;
+        
+        // ÉTAPE 2: Gérer selon le type de conflit
+        if (duplicateCheck.isExists()) {
+            String resolutionType = duplicateCheck.getConflictResolutionRequired();
+            
+            // CAS 1: Compte utilisateur existe déjà
+            if ("ACCOUNT_EXISTS".equals(resolutionType)) {
+                log.error("❌ [REGISTER] Compte utilisateur existe déjà");
+                throw new RuntimeException(duplicateCheck.getMessage());
             }
-        }
-        if (personsRepository.existsByTelephone1(request.getTelephone1())) {
-            throw new RuntimeException("Ce numéro de téléphone est déjà utilisé");
-        }
-
-        // Création de la personne avec uniquement les champs fournis
-        Persons person = new Persons();
-        person.setNom(request.getNom());
-        person.setPrenom(request.getPrenom());
-        person.setCivilite(request.getCivilite());
-        person.setSexe(request.getSexe());
-        person.setEmail(request.getEmail());
-        person.setTelephone1(request.getTelephone1());
+            
+            // CAS 2: Conflit critique - noms très différents (< 50% similarité)
+            if ("BLOCKED_CONTACT_SUPPORT".equals(resolutionType)) {
+                log.error("🚨 [REGISTER] CONFLIT CRITIQUE - Inscription bloquée");
+                throw new RuntimeException(duplicateCheck.getMessage());
+            }
+            
+            // CAS 3: Conflit modéré - demander confirmation (50-70% similarité)
+            if ("CONFIRM_AND_UPDATE".equals(resolutionType)) {
+                log.warn("⚠️ [REGISTER] Conflit modéré détecté - Fusion avec mise à jour");
+                person = personsRepository.findById(duplicateCheck.getPersonId())
+                    .orElseThrow(() -> new RuntimeException("Personne introuvable"));
+                
+                isExistingPerson = true;
+                
+                // Mettre à jour avec les nouvelles informations
+                log.info("🔄 [REGISTER] Mise à jour: '{}{}' → '{} {}'", 
+                    person.getPrenom(), person.getNom(), request.getPrenom(), request.getNom());
+                person.setNom(request.getNom());
+                person.setPrenom(request.getPrenom());
+                if (request.getCivilite() != null) {
+                    person.setCivilite(request.getCivilite());
+                }
+                if (request.getSexe() != null) {
+                    person.setSexe(request.getSexe());
+                }
+                if (request.getEmail() != null && !request.getEmail().isBlank()) {
+                    if (personsRepository.existsByEmailAndIdNot(request.getEmail(), person.getId())) {
+                        throw new RuntimeException("Cette adresse email est déjà utilisée par un autre compte");
+                    }
+                    person.setEmail(request.getEmail());
+                }
+                person.setRole(Roles.USER);
+            }
+            
+            // CAS 4: Fusion automatique avec mise à jour (70-85% similarité)
+            else if ("AUTO_MERGE_WITH_UPDATE".equals(resolutionType)) {
+                log.info("✅ [REGISTER] Fusion automatique avec mise à jour");
+                person = personsRepository.findById(duplicateCheck.getPersonId())
+                    .orElseThrow(() -> new RuntimeException("Personne introuvable"));
+                
+                isExistingPerson = true;
+                
+                log.info("🔄 [REGISTER] Mise à jour légère: '{}{}' → '{} {}'", 
+                    person.getPrenom(), person.getNom(), request.getPrenom(), request.getNom());
+                person.setNom(request.getNom());
+                person.setPrenom(request.getPrenom());
+                if (request.getCivilite() != null) {
+                    person.setCivilite(request.getCivilite());
+                }
+                if (request.getSexe() != null) {
+                    person.setSexe(request.getSexe());
+                }
+                if (request.getEmail() != null && !request.getEmail().isBlank()) {
+                    if (personsRepository.existsByEmailAndIdNot(request.getEmail(), person.getId())) {
+                        throw new RuntimeException("Cette adresse email est déjà utilisée par un autre compte");
+                    }
+                    person.setEmail(request.getEmail());
+                }
+                person.setRole(Roles.USER);
+            }
+            
+            // CAS 5: Fusion automatique sans mise à jour (>85% similarité)
+            else if ("AUTO_MERGE".equals(resolutionType)) {
+                log.info("✅ [REGISTER] Fusion automatique - noms identiques");
+                person = personsRepository.findById(duplicateCheck.getPersonId())
+                    .orElseThrow(() -> new RuntimeException("Personne introuvable"));
+                
+                isExistingPerson = true;
+                
+                if (request.getEmail() != null && !request.getEmail().isBlank() && 
+                    (person.getEmail() == null || person.getEmail().isBlank())) {
+                    if (personsRepository.existsByEmailAndIdNot(request.getEmail(), person.getId())) {
+                        throw new RuntimeException("Cette adresse email est déjà utilisée par un autre compte");
+                    }
+                    person.setEmail(request.getEmail());
+                }
+                person.setRole(Roles.USER);
+            }
+        } 
         
-        // Rôle par défaut
-        person.setRole(Roles.USER);
-        
+        // ÉTAPE 3: Créer nouvelle personne si aucun doublon
+        else {
+            log.info("✅ [REGISTER] Création nouvelle personne");
+            
+            if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+                if (personsRepository.existsByEmail(request.getEmail())) {
+                    throw new RuntimeException("Cette adresse email est déjà utilisée");
+                }
+            }
+            
+            person = new Persons();
+            person.setNom(request.getNom());
+            person.setPrenom(request.getPrenom());
+            person.setCivilite(request.getCivilite());
+            person.setSexe(request.getSexe());
+            person.setEmail(request.getEmail());
+            person.setTelephone1(normalizedPhone);
+            person.setRole(Roles.USER);
+        }
 
         // Création du compte utilisateur avec mot de passe haché
         // Utiliser l'email si fourni, sinon le téléphone comme identifiant
         String identifiant = (request.getEmail() != null && !request.getEmail().trim().isEmpty()) 
             ? request.getEmail() 
-            : request.getTelephone1();
+            : normalizedPhone;
         
         Utilisateurs utilisateur = new Utilisateurs();
         utilisateur.setUtilisateur(identifiant);

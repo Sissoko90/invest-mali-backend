@@ -68,7 +68,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               ...userData,
               firstName: userData.prenom || (userData as any).firstName,
               lastName: userData.nom || (userData as any).lastName,
-              id: userData.personne_id || (userData as any).id
+              id: userData.personne_id || (userData as any).id,
+              phone: (userData as any).telephone1 || userData.telephone || (userData as any).phone
             };
             setUser(user);
           } else {
@@ -104,7 +105,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           ...userData,
           firstName: userData.prenom || (userData as any).firstName,
           lastName: userData.nom || (userData as any).lastName,
-          id: userData.personne_id || (userData as any).id
+          id: userData.personne_id || (userData as any).id,
+          phone: (userData as any).telephone1 || userData.telephone || (userData as any).phone
         };
         setUser(user);
         setIsLoading(false);

@@ -1,7 +1,6 @@
 package abdaty_technologie.API_Invest.dto.request;
 
 import abdaty_technologie.API_Invest.Entity.Enum.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -11,7 +10,8 @@ public class PersonCreateRequest {
     public String nom;
     @NotBlank
     public String prenom;
-    @Email
+    // Email optionnel - accepte null, chaîne vide, ou email valide
+    @jakarta.validation.constraints.Pattern(regexp = "^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", message = "doit être une adresse électronique syntaxiquement correcte")
     public String email;
     @NotBlank
     public String telephone1;

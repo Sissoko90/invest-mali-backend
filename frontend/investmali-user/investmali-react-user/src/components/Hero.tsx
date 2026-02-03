@@ -5,10 +5,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Homepage3D from './Homepage3D';
 
 // Import local images
-import image1 from '../assets/images/9152579890_ef26494a82_b.jpg';
-import image2 from '../assets/images/pngtree-bank-of-africa-in-bamako-river-construction-boa-photo-image_2872523.jpg';
-import image3 from '../assets/images/istockphoto-132031519-612x612.jpg';
-import image4 from '../assets/images/pngtree-bozo-fisherman-in-bamako-mali-culture-tradition-one-photo-image_2812581.jpg';
+import image1 from '../assets/images/API-1.jpg';
+import image2 from '../assets/images/API-2.jpg';
+import image3 from '../assets/images/API-3.jpg';
+import image4 from '../assets/images/API-4.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
 

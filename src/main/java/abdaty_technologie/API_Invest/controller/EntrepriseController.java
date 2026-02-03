@@ -23,11 +23,13 @@ import org.springframework.http.HttpStatus;
 
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
+import abdaty_technologie.API_Invest.Entity.Enum.DomaineActivites;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
 import abdaty_technologie.API_Invest.Entity.Divisions;
 import abdaty_technologie.API_Invest.Entity.Enum.DivisionType;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutPaiement;
+import abdaty_technologie.API_Invest.Entity.Paiement;
 import abdaty_technologie.API_Invest.Entity.InvestmentAgreement;
 import abdaty_technologie.API_Invest.Entity.AgrementAssignment;
 import abdaty_technologie.API_Invest.service.InvestmentAgreementService;
@@ -233,6 +235,82 @@ public class EntrepriseController {
     }
 
     /**
+     * Vérifier si un utilisateur peut créer une entreprise avec le nom et domaine d'activité donnés.
+     * Retourne les conflits éventuels (nom ou domaine déjà utilisés par cet utilisateur).
+     */
+    @GetMapping("/check-uniqueness")
+    public ResponseEntity<Map<String, Object>> checkEntrepriseUniqueness(
+            @RequestParam(value = "personId") String personId,
+            @RequestParam(value = "nom", required = false) String nom,
+            @RequestParam(value = "domaineActivite", required = false) String domaineActivite) {
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("canCreate", true);
+        List<String> conflicts = new ArrayList<>();
+        
+        // Vérifier si le nom est déjà utilisé par cet utilisateur
+        if (nom != null && !nom.isBlank()) {
+            boolean nomExists = entrepriseRepository.existsByPersonIdAndNom(personId, nom.trim());
+            if (nomExists) {
+                conflicts.add("Vous avez déjà une entreprise avec le nom '" + nom + "'");
+                result.put("nomConflict", true);
+            }
+        }
+        
+        // Vérifier si le domaine d'activité est déjà utilisé par cet utilisateur
+        if (domaineActivite != null && !domaineActivite.isBlank()) {
+            boolean domaineFound = false;
+            
+            // Essayer d'abord comme DomaineActivites (réglementé)
+            try {
+                DomaineActivites domaineEnum = DomaineActivites.valueOf(domaineActivite.trim());
+                boolean domaineExists = entrepriseRepository.existsByPersonIdAndDomaineActivite(personId, domaineEnum);
+                if (domaineExists) {
+                    conflicts.add("Vous avez déjà une entreprise dans le domaine d'activité '" + domaineActivite + "'");
+                    result.put("domaineConflict", true);
+                    domaineFound = true;
+                }
+            } catch (IllegalArgumentException e) {
+                // Pas un DomaineActivites, essayer DomaineActiviteNr
+            }
+            
+            // Si pas trouvé, essayer comme DomaineActiviteNr (non réglementé)
+            if (!domaineFound) {
+                try {
+                    abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr domaineNrEnum = 
+                        abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr.valueOf(domaineActivite.trim());
+                    boolean domaineNrExists = entrepriseRepository.existsByPersonIdAndDomaineActiviteNr(personId, domaineNrEnum);
+                    if (domaineNrExists) {
+                        conflicts.add("Vous avez déjà une entreprise dans le domaine d'activité '" + domaineActivite + "'");
+                        result.put("domaineConflict", true);
+                    }
+                } catch (IllegalArgumentException e2) {
+                    System.out.println("⚠️ [EntrepriseController] Domaine d'activité non reconnu: " + domaineActivite);
+                }
+            }
+        }
+        
+        if (!conflicts.isEmpty()) {
+            result.put("canCreate", false);
+            result.put("conflicts", conflicts);
+        }
+        
+        // Récupérer les entreprises existantes de l'utilisateur pour information
+        List<Entreprise> existingEntreprises = entrepriseRepository.findAllByPersonId(personId);
+        List<Map<String, String>> existingInfo = existingEntreprises.stream()
+            .map(e -> {
+                Map<String, String> info = new HashMap<>();
+                info.put("nom", e.getNom());
+                info.put("domaineActivite", e.getDomaineActivite() != null ? e.getDomaineActivite().name() : null);
+                return info;
+            })
+            .collect(Collectors.toList());
+        result.put("existingEntreprises", existingInfo);
+        
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Liste paginée des entreprises.
      * - Paramètres Spring Data: page, size, sort
      * - Filtres optionnels: divisionCode, etapeValidation, nom, reference, statut
@@ -312,18 +390,9 @@ public class EntrepriseController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<EntrepriseResponse> getEntrepriseById(@PathVariable String id) {
-        // Charger avec fetch join pour inclure membres, personnes ET paiement
+        // Charger avec fetch join pour inclure membres et personnes
         Entreprise e = entrepriseRepository.findByIdWithMembresAndPaiement(id)
             .orElseThrow(() -> new NotFoundException("Entreprise introuvable: " + id));
-        
-        // LOG DE DEBUG POUR DIAGNOSTIQUER LE PROBLÈME
-        System.out.println("🔍 [DEBUG] Entreprise chargée: " + e.getNom());
-        System.out.println("🔍 [DEBUG] Paiement associé: " + (e.getPaiement() != null ? "OUI" : "NON"));
-        if (e.getPaiement() != null) {
-            System.out.println("🔍 [DEBUG] Statut paiement: " + e.getPaiement().getStatut());
-            System.out.println("🔍 [DEBUG] Montant paiement: " + e.getPaiement().getMontant());
-            System.out.println("🔍 [DEBUG] Référence paiement: " + e.getPaiement().getReferenceTransaction());
-        }
         
         return ResponseEntity.ok(toResponse(e));
     }
@@ -1515,14 +1584,25 @@ public class EntrepriseController {
         }
         
         // === INFORMATIONS DE PAIEMENT ===
-        if (e.getPaiement() != null) {
-            r.statutPaiement = e.getPaiement().getStatut();
-            r.datePaiement = e.getPaiement().getDatePaiement();
-            r.montantPaiement = e.getPaiement().getMontant();
-            r.referencePaiement = e.getPaiement().getReferenceTransaction();
-            r.paiementEffectue = (e.getPaiement().getStatut() != null && 
-                                 e.getPaiement().getStatut().toString().equals("VALIDE"));
-        } else {
+        // Utiliser try-catch pour éviter LazyInitializationException sur la collection paiements
+        try {
+            Paiement paiement = e.getPaiement();
+            if (paiement != null) {
+                r.statutPaiement = paiement.getStatut();
+                r.datePaiement = paiement.getDatePaiement();
+                r.montantPaiement = paiement.getMontant();
+                r.referencePaiement = paiement.getReferenceTransaction();
+                r.paiementEffectue = (paiement.getStatut() != null && 
+                                     paiement.getStatut().toString().equals("VALIDE"));
+            } else {
+                r.statutPaiement = null;
+                r.datePaiement = null;
+                r.montantPaiement = null;
+                r.referencePaiement = null;
+                r.paiementEffectue = false;
+            }
+        } catch (org.hibernate.LazyInitializationException ex) {
+            // Collection paiements non initialisée - valeurs par défaut
             r.statutPaiement = null;
             r.datePaiement = null;
             r.montantPaiement = null;

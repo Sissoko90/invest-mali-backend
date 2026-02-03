@@ -103,7 +103,7 @@ const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
             onClick={handleTriggerClick}
             className="px-6 py-3 bg-investmali-accent text-white rounded-lg hover:bg-investmali-accent-dark transition-colors flex items-center space-x-2"
           >
-            <span>💳</span>
+            {/* <span>💳</span> */}
             <span>Procéder au paiement</span>
           </button>
         )}

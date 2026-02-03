@@ -905,9 +905,78 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
         }
       }
       
-      // 2. Si pas de paiement trouvé, afficher un message
-      console.log('⚠️ [AccueilStep] Aucun paiement validé trouvé pour cette entreprise');
-      alert('Aucun paiement validé trouvé pour ce dossier.');
+      // 2. Si pas de paiement trouvé, générer un reçu NON PAYÉ
+      console.log('⚠️ [AccueilStep] Aucun paiement validé trouvé, génération reçu non payé');
+      
+      // Récupérer les détails de l'entreprise pour le reçu non payé
+      let entrepriseData: any = null;
+      let gerant: any = null;
+      
+      try {
+        const entrepriseResponse = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${demande.id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (entrepriseResponse.ok) {
+          entrepriseData = await entrepriseResponse.json();
+          console.log('🔍 [AccueilStep] Données entreprise complètes:', entrepriseData);
+          console.log('🔍 [AccueilStep] totalAmount dans entrepriseData:', entrepriseData?.totalAmount);
+          gerant = entrepriseData.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+        }
+      } catch (e) {
+        console.warn('⚠️ [AccueilStep] Impossible de récupérer les détails entreprise');
+      }
+      
+      // Utiliser nom+prénom si entrepriseName est null
+      const entrepriseName = demande.nom || entrepriseData?.nom;
+      const displayName = entrepriseName || 
+        (gerant?.personne?.prenom && gerant?.personne?.nom 
+          ? `${gerant.personne.prenom} ${gerant.personne.nom}`
+          : (demande.demandeur?.prenom && demande.demandeur?.nom
+              ? `${demande.demandeur.prenom} ${demande.demandeur.nom}`
+              : 'Entreprise'));
+      
+      // Récupérer le montant depuis plusieurs sources possibles
+      // Convertir en nombre car BigDecimal peut être sérialisé comme string ou objet
+      const totalAmountValue = entrepriseData?.totalAmount ? Number(entrepriseData.totalAmount) : 0;
+      const demandeTotalAmountValue = (demande as any).totalAmount ? Number((demande as any).totalAmount) : 0;
+      
+      const montant = (totalAmountValue > 0 ? totalAmountValue : null) || 
+                      (demandeTotalAmountValue > 0 ? demandeTotalAmountValue : null) ||
+                      entrepriseData?.montantFraisDepot || 
+                      50000;
+      
+      console.log('💰 [AccueilStep] Montant reçu:', {
+        totalAmountRaw: entrepriseData?.totalAmount,
+        totalAmountConverted: totalAmountValue,
+        demandeTotalAmount: demandeTotalAmountValue,
+        montantFraisDepot: entrepriseData?.montantFraisDepot,
+        montantUtilise: montant
+      });
+      
+      const paymentData = {
+        entrepriseId: demande.id,
+        entrepriseName: displayName,
+        entrepriseType: demande.typeEntreprise || entrepriseData?.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+        localisation: entrepriseData?.quartierNom || entrepriseData?.divisionNom || demande.division || 'Non spécifié',
+        commune: entrepriseData?.communeNom || entrepriseData?.arrondissementNom || 'Bamako',
+        amount: montant,
+        paymentMethod: 'À définir',
+        transactionId: `TEMP-${demande.id}`,
+        paymentDate: new Date().toISOString(),
+        status: 'pending' as const,
+        dossierNumber: entrepriseData?.reference || demande.id,
+        processedByAgent: true,
+        agentName: agent ? `${agent.firstName} ${agent.lastName}` : 'Agent API-INVEST',
+        prenom: gerant?.personne?.prenom || gerant?.prenom || demande.demandeur?.prenom || '',
+        nom: gerant?.personne?.nom || gerant?.nom || demande.demandeur?.nom || ''
+      };
+      
+      setReceiptData(paymentData);
+      setReceiptModalOpen(true);
       
     } catch (error) {
       console.error('Erreur lors de la récupération du reçu:', error);

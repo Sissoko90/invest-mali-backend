@@ -134,12 +134,21 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         // Valider participants (rôles/dates/parts/âge/autorisation)
         validateParticipants(req);
         
-        // Vérifier qu'un participant ne crée pas plusieurs entreprises avec le même domaine d'activité
+        // Vérifier qu'un participant ne crée pas plusieurs entreprises avec le même nom ou domaine d'activité
         if (req.participants != null && !req.participants.isEmpty()) {
             for (var participant : req.participants) {
                 if (participant.personId != null && !participant.personId.isBlank()) {
                     List<Entreprise> existingEntreprises = entrepriseRepository.findByParticipantId(participant.personId);
                     for (Entreprise existing : existingEntreprises) {
+                        // Vérifier le nom exact de l'entreprise (si fourni)
+                        if (req.nom != null && !req.nom.isBlank() && existing.getNom() != null && 
+                            existing.getNom().trim().equalsIgnoreCase(req.nom.trim())) {
+                            throw new BadRequestException(
+                                "Ce participant a déjà une entreprise avec le nom '" + req.nom + "'. " +
+                                "Vous ne pouvez pas créer deux entreprises avec le même nom."
+                            );
+                        }
+                        
                         // Vérifier le domaine d'activité réglementé
                         if (req.domaineActivite != null && existing.getDomaineActivite() != null && 
                             existing.getDomaineActivite().equals(req.domaineActivite)) {
@@ -148,6 +157,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
                                 req.domaineActivite + "'. Veuillez choisir un domaine différent pour éviter les conflits de génération du RCCM."
                             );
                         }
+                        
                         // Vérifier le domaine d'activité non réglementé
                         if (req.domaineActiviteNr != null && existing.getDomaineActiviteNr() != null && 
                             existing.getDomaineActiviteNr().equals(req.domaineActiviteNr)) {

@@ -34,6 +34,14 @@ interface PaymentReceiptProps {
 const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
 
+  // Log pour déboguer le montant
+  console.log('💰 [PaymentReceipt] Données reçues:', {
+    amount: paymentData.amount,
+    entrepriseName: paymentData.entrepriseName,
+    status: paymentData.status,
+    fullData: paymentData
+  });
+
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',

@@ -11,6 +11,8 @@ import PaymentMethodModal from './PaymentMethodModal';
 import { API_CONFIG } from '../config/api.config';
 import { useNavigate } from 'react-router-dom';
 import DivisionSearchInput from './DivisionSearchInput';
+import PaymentReceipt from './PaymentReceipt';
+import { generateUnpaidReceiptData } from '../services/receiptService';
 
 interface TrackingStep {
   id: string;
@@ -37,13 +39,14 @@ interface BusinessApplication {
 }
 
 const stageProgressMap: Record<string, number> = {
-  ACCUEIL: 14.28,
-  REGISSEUR: 28.56,
-  REVISION: 42.84,
-  IMPOT: 57.12,
-  RCCM1: 71.4,
-  RCCM2: 85.68,
-  NINA: 92.84,
+  ACCUEIL: 12.5,
+  REGISSEUR: 25,
+  REVISION: 37.5,
+  IMPOT: 50,
+  RCCM1: 62.5,
+  TCOM: 75,
+  RCCM2: 87.5,
+  NINA: 93.75,
   RETRAIT: 100,
 };
 
@@ -53,6 +56,7 @@ const stageOrder: string[] = [
   'REVISION',
   'IMPOT',
   'RCCM1',
+  'TCOM',
   'RCCM2',
   'NINA',
   'RETRAIT'
@@ -70,6 +74,7 @@ const normalizeStage = (stage?: string): string => {
     case 'REVISION':
     case 'IMPOT':
     case 'RCCM1':
+    case 'TCOM':
     case 'RCCM2':
     case 'NINA':
     case 'RETRAIT':
@@ -145,6 +150,9 @@ const UserProfile: React.FC = () => {
   const [documentDeleteConfirm, setDocumentDeleteConfirm] = useState<string | null>(null);
   // État pour tracker les téléchargements de documents par entreprise
   const [downloadedDocuments, setDownloadedDocuments] = useState<Record<string, { rccm: boolean; nina: boolean }>>({});
+  // États pour le reçu
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
   // Toasts globaux
   const [toasts, setToasts] = useState<Array<{ id: string; type: 'success' | 'error'; text: string }>>([]);
   const addToast = (type: 'success' | 'error', text: string) => {
@@ -249,9 +257,11 @@ const UserProfile: React.FC = () => {
   }, [appEditMode]);
 
   useEffect(() => {
-    const load = async () => {
+    const load = async (silent = false) => {
       if (!user) return;
-      setAppsLoading(true);
+      if (!silent) {
+        setAppsLoading(true);
+      }
       setAppsError(null);
       try {
         const resp = await businessAPI.getMyApplications();
@@ -285,8 +295,8 @@ const UserProfile: React.FC = () => {
             'in-progress';
           return {
             id: String(a.id ?? a.applicationId ?? ''),
-            companyName: a.nom || a.businessName || a.business_name || a.companyName || a.entrepriseName || '—',
-            businessName: a.nom || a.businessName || a.business_name || a.companyName || a.entrepriseName || '—',
+            companyName: a.nom || a.businessName || a.business_name || a.companyName || a.entrepriseName || '',
+            businessName: a.nom || a.businessName || a.business_name || a.companyName || a.entrepriseName || '',
             legalForm: a.formeJuridique || a.legalForm || '—',
             status,
             submittedAt: a.creation || a.createdAt || a.submittedAt || new Date().toISOString(),
@@ -331,10 +341,23 @@ const UserProfile: React.FC = () => {
         setAppsError(apiUtils.formatError(err));
         setApplications([]);
       } finally {
-        setAppsLoading(false);
+        if (!silent) {
+          setAppsLoading(false);
+        }
       }
     };
+    
+    // Chargement initial
     load();
+    
+    // Rafraîchissement automatique toutes les 30 secondes
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Rafraîchissement automatique de l\'état des dossiers...');
+      load(true); // silent = true pour ne pas afficher le loader
+    }, 3000); // 30 secondes
+    
+    // Nettoyage à la destruction du composant
+    return () => clearInterval(refreshInterval);
   }, [user]);
 
   const loadApplicationDetails = async (id: string, forceReload = false) => {
@@ -1775,6 +1798,36 @@ const UserProfile: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-500 mb-1">Membre depuis</label>
                       <p className="text-sm sm:text-base font-medium text-investmali-neutral-dark">{registeredAtText}</p>
                     </div>
+
+                    {/* Section Entreprises */}
+                    {applications.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold text-investmali-neutral-dark mb-4">Mes Entreprises</h3>
+                        <div className="space-y-3">
+                          {applications.map((app) => {
+                            const appData = appDetails[app.id];
+                            const entrepriseName = appData?.nom || appData?.businessName || app.businessName || app.companyName;
+                            const displayName = entrepriseName || 
+                              (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Entreprise');
+                            const reference = appData?.reference || app.id.substring(0, 8);
+                            
+                            return (
+                              <div key={app.id} className="bg-white border border-gray-200 p-4 rounded-xl">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-semibold text-investmali-neutral-dark">{displayName}</p>
+                                    <p className="text-sm text-gray-600 mt-1">Réf: {reference}</p>
+                                  </div>
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                                    {getStatusText(app.status)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1809,8 +1862,12 @@ const UserProfile: React.FC = () => {
                         <div className="bg-gray-50 p-4 sm:p-6 border-b border-gray-200">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <h3 className="text-lg sm:text-xl font-semibold text-investmali-neutral-dark">{app.businessName || app.companyName}</h3>
-                              <p className="text-sm sm:text-base text-gray-600">{app.legalForm} • {app.businessName || app.companyName}</p>
+                              <h3 className="text-lg sm:text-xl font-semibold text-investmali-neutral-dark">
+                                {app.businessName || app.companyName || (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Entreprise')}
+                              </h3>
+                              <p className="text-sm sm:text-base text-gray-600">
+                                {app.legalForm} • Réf: {appDetails[app.id]?.reference || app.id.substring(0, 8)}
+                              </p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
                               {getStatusText(app.status)}
@@ -1845,25 +1902,25 @@ const UserProfile: React.FC = () => {
                           </div>
 
                           {app.status === 'in-progress' && app.currentStep && (
-                            <div className="mt-4 p-3 bg-investmali-primary/10 rounded-lg border border-investmali-primary/20">
-                              <p className="text-investmali-primary text-sm">
+                            <div className="mt-4 p-3 bg-investmali-accent/10 rounded-lg border border-investmali-primary/20">
+                              <p className="text-black text-sm">
                                 <strong>Étape actuelle :</strong> {app.steps.find(step => step.status === 'in-progress')?.title || 'En cours...'}
                               </p>
                             </div>
                           )}
 
                           {/* Message d'étape et contrôles */}
-                          <div className="mt-4 p-3 sm:p-4 bg-investmali-primary/10 border border-investmali-primary/20 rounded-lg">
+                          <div className="mt-4 p-3 sm:p-4 bg-investmali-accent/10 border border-investmali-primary/20 rounded-lg">
                             <div className="flex items-start space-x-3">
-                              <div className="text-investmali-primary text-sm sm:text-base">ℹ️</div>
+                              <div className="text-black text-sm sm:text-base">ℹ️</div>
                               <div className="flex-1">
-                                <h4 className="text-sm sm:text-base font-medium text-investmali-primary mb-1">
+                                <h4 className="text-sm sm:text-base font-medium text-black mb-1">
                                   Étape actuelle: {(() => {
                                     const backendStage = appDetails[app.id]?.etapeValidation || appDetails[app.id]?.etape_validation;
                                     return normalizeStage(backendStage);
                                   })()}
                                 </h4>
-                                <p className="text-xs sm:text-sm text-investmali-primary/80">
+                                <p className="text-xs sm:text-sm text-black/80">
                                   {getStageMessage(app)}
                                 </p>
                               </div>
@@ -1935,11 +1992,163 @@ const UserProfile: React.FC = () => {
                                   );
                                 })() : (
                                   <>
-                                    <button className="bg-gray-100 text-gray-700 px-3 py-2 sm:px-4 rounded-lg hover:bg-gray-200 transition-colors text-xs sm:text-sm">
+                                    <button 
+                                      onClick={async () => {
+                                        console.log('🎯 [DEBUT] Bouton Télécharger le reçu cliqué pour:', app.id);
+                                        try {
+                                          const token = localStorage.getItem('token');
+                                          console.log('🔑 [Token] Token récupéré:', token ? 'OUI' : 'NON');
+                                          
+                                          // Charger les détails si pas encore chargés
+                                          if (!appDetails[app.id]) {
+                                            console.log('📥 [Détails] Chargement des détails pour:', app.id);
+                                            await loadApplicationDetails(app.id);
+                                          }
+                                          
+                                          const appData = appDetails[app.id];
+                                          console.log('📋 [AppData] Données app chargées:', appData ? 'OUI' : 'NON');
+                                          
+                                          // 1. Vérifier si un paiement existe
+                                          console.log('🔍 [Reçu] Récupération paiements pour entreprise:', app.id);
+                                          const paymentsResponse = await fetch(`/api/v1/paiements/entreprise/${app.id}`, {
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                          });
+                                          
+                                          console.log('📡 [Reçu] Statut réponse API paiements:', paymentsResponse.status);
+                                          
+                                          let paidPayment = null;
+                                          if (paymentsResponse.ok) {
+                                            const payments = await paymentsResponse.json();
+                                            console.log('💳 [Reçu] Paiements trouvés:', JSON.stringify(payments, null, 2));
+                                            
+                                            if (Array.isArray(payments)) {
+                                              console.log('📋 [Reçu] Nombre de paiements:', payments.length);
+                                              payments.forEach((p: any, index: number) => {
+                                                console.log(`💰 [Reçu] Paiement ${index + 1}:`, {
+                                                  id: p.id,
+                                                  statut: p.statut,
+                                                  status: p.status,
+                                                  montant: p.montant,
+                                                  referenceTransaction: p.referenceTransaction
+                                                });
+                                              });
+                                              paidPayment = payments.find((p: any) => 
+                                                p.statut === 'VALIDE' || p.statut === 'REUSSI' || p.status === 'PAID'
+                                              );
+                                            } else {
+                                              console.log('📋 [Reçu] Paiement unique:', {
+                                                statut: payments.statut,
+                                                status: payments.status
+                                              });
+                                              paidPayment = (
+                                                payments.statut === 'VALIDE' || 
+                                                payments.statut === 'REUSSI' || 
+                                                payments.status === 'PAID' 
+                                                  ? payments 
+                                                  : null
+                                              );
+                                            }
+                                            
+                                            console.log('💳 [Reçu] Paiement validé trouvé:', paidPayment ? 'OUI' : 'NON');
+                                            if (paidPayment) {
+                                              console.log('✅ [Reçu] Détails paiement validé:', {
+                                                statut: paidPayment.statut,
+                                                montant: paidPayment.montant,
+                                                referenceTransaction: paidPayment.referenceTransaction
+                                              });
+                                            }
+                                          } else {
+                                            const errorText = await paymentsResponse.text();
+                                            console.error('❌ [Reçu] Erreur récupération paiements:', {
+                                              status: paymentsResponse.status,
+                                              statusText: paymentsResponse.statusText,
+                                              error: errorText
+                                            });
+                                          }
+                                          
+                                          // Utiliser nom entreprise ou nom+prénom de la personne
+                                          const entrepriseName = appData?.nom || appData?.businessName || app.businessName || app.companyName;
+                                          const displayName = entrepriseName || 
+                                            (user?.firstName && user?.lastName 
+                                              ? `${user.firstName} ${user.lastName}`
+                                              : 'Entreprise');
+                                          
+                                          // 2. Si paiement validé → Générer le reçu PAYÉ
+                                          if (paidPayment) {
+                                            console.log('✅ [Reçu] Génération reçu PAYÉ avec paiement validé');
+                                            
+                                            const receiptDataPaid = {
+                                              entrepriseId: app.id,
+                                              entrepriseName: displayName,
+                                              entrepriseType: appData?.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+                                              localisation: appData?.quartierNom || appData?.divisionNom || 'Non spécifié',
+                                              commune: appData?.communeNom || 'Bamako',
+                                              amount: paidPayment.montant || appData?.totalAmount || app.totalAmount || 50000,
+                                              paymentMethod: paidPayment.typePaiement || 'TresorPay',
+                                              transactionId: paidPayment.referenceTransaction || paidPayment.tresorPayReference || paidPayment.id,
+                                              paymentDate: paidPayment.datePaiement || new Date().toISOString(),
+                                              status: 'success' as const,  // ✅ 'success' pour afficher "PAYÉ"
+                                              dossierNumber: appData?.reference || app.id,
+                                              processedByAgent: false,
+                                              prenom: user?.firstName || '',
+                                              nom: user?.lastName || ''
+                                            };
+                                            
+                                            setReceiptData(receiptDataPaid);
+                                            setReceiptModalOpen(true);
+                                            return;
+                                          }
+                                          
+                                          // 3. Sinon → Générer le reçu NON PAYÉ localement
+                                          console.log('⚠️ [Reçu] Génération reçu NON PAYÉ (paiement non trouvé)');
+                                          console.log('⚠️ [Reçu] paidPayment est NULL ou undefined:', paidPayment === null || paidPayment === undefined);
+                                          
+                                          console.log('📋 Données reçu:', {
+                                            appData,
+                                            entrepriseName,
+                                            displayName,
+                                            user: { firstName: user?.firstName, lastName: user?.lastName }
+                                          });
+                                          
+                                          const receiptDataGenerated = generateUnpaidReceiptData(
+                                            {
+                                              id: app.id,
+                                              nom: entrepriseName || '', // Nom entreprise seulement (pas le fallback)
+                                              typeEntreprise: appData?.typeEntreprise || 'ENTREPRISE_INDIVIDUELLE',
+                                              reference: appData?.reference || app.id,
+                                              divisionNom: appData?.divisionNom || 'Non spécifié',
+                                              communeNom: appData?.communeNom || 'Bamako',
+                                              regionNom: appData?.regionNom || 'Bamako',
+                                              prenom: user?.firstName || '', // Prénom pour fallback
+                                              nomParticipant: user?.lastName || '' // Nom pour fallback
+                                            },
+                                            appData?.montantFraisDepot || app.totalAmount || 50000,
+                                            'Client'
+                                          );
+                                          
+                                          setReceiptData(receiptDataGenerated);
+                                          setReceiptModalOpen(true);
+                                          
+                                        } catch (error: any) {
+                                          console.error('❌ [ERREUR CRITIQUE] Erreur téléchargement reçu:', error);
+                                          console.error('❌ [ERREUR CRITIQUE] Stack:', error.stack);
+                                          alert('Erreur lors de la récupération du reçu: ' + error.message);
+                                        }
+                                      }}
+                                      className="bg-gray-200 text-black px-3 py-2 sm:px-4 rounded-lg hover:bg-investmali-accent transition-colors text-xs sm:text-sm"
+                                    >
                                       Télécharger le reçu
                                     </button>
                                     {app.status === 'completed' && (
-                                      <button className="bg-investmali-accent text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-investmali-accent/90 transition-colors text-xs sm:text-sm">
+                                      <button 
+                                        onClick={() => {
+                                          const appData = appDetails[app.id];
+                                          if (appData?.id) {
+                                            window.open(`/api/v1/entreprises/${appData.id}/documents`, '_blank');
+                                          }
+                                        }}
+                                        className="bg-investmali-accent text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-investmali-accent/90 transition-colors text-xs sm:text-sm"
+                                      >
                                         Télécharger les documents
                                       </button>
                                     )}
@@ -1951,10 +2160,10 @@ const UserProfile: React.FC = () => {
                               {isPaymentRequired(app) && (
                                 <button
                                   onClick={() => handlePaymentClick(app.id)}
-                                  className="bg-investmali-warning text-white px-4 py-2 sm:px-6 rounded-lg hover:bg-investmali-warning/90 
+                                  className="bg-investmali-accent text-white px-4 py-2 sm:px-6 rounded-lg hover:bg-investmali-accent/90 
                                            transition-colors text-xs sm:text-sm font-medium flex items-center justify-center space-x-2"
                                 >
-                                  <span>💳</span>
+                                  {/* <span>💳</span> */}
                                   <span>Procéder au paiement</span>
                                 </button>
                               )}
@@ -2013,7 +2222,10 @@ const UserProfile: React.FC = () => {
                                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                         />
                                       ) : (
-                                        <p className="font-medium">{appDetails[app.id]?.businessName || appDetails[app.id]?.business_name || appDetails[app.id]?.nom || appDetails[app.id]?.companyName || app.businessName || app.companyName || '—'}</p>
+                                        <p className="font-medium">
+                                          {appDetails[app.id]?.businessName || appDetails[app.id]?.business_name || appDetails[app.id]?.nom || appDetails[app.id]?.companyName || app.businessName || app.companyName || 
+                                          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : '—')}
+                                        </p>
                                       )}
                                     </div>
                                     <div>
@@ -3102,12 +3314,27 @@ const UserProfile: React.FC = () => {
                                   <p className="text-xs sm:text-sm text-gray-600">Notre équipe support est là pour vous accompagner</p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-                                  <button className="bg-investmali-accent text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-investmali-accent/90 transition-colors text-xs sm:text-sm">
-                                    Chat Support
+                                  <button 
+                                    onClick={() => {
+                                      setActiveTab('messages');
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    className="bg-investmali-accent text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-investmali-accent/90 transition-colors text-xs sm:text-sm flex items-center justify-center space-x-2"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    <span>Chat Support</span>
                                   </button>
-                                  <button className="bg-gray-100 text-gray-700 px-3 py-2 sm:px-4 rounded-lg hover:bg-gray-200 transition-colors text-xs sm:text-sm">
-                                    +223 XX XX XX XX
-                                  </button>
+                                  <a 
+                                    href="tel:+22320292929"
+                                    className="bg-gray-100 text-gray-700 px-3 py-2 sm:px-4 rounded-lg hover:bg-gray-200 transition-colors text-xs sm:text-sm flex items-center justify-center space-x-2"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <span>+223 20 29 29 29</span>
+                                  </a>
                                 </div>
                               </div>
                             </div>
@@ -3362,6 +3589,14 @@ const UserProfile: React.FC = () => {
           amount={selectedEntrepriseAmount}
           onMethodSelected={handlePaymentMethodSelected}
         />
+
+        {/* Modal du reçu */}
+        {receiptModalOpen && receiptData && (
+          <PaymentReceipt
+            paymentData={receiptData}
+            onClose={() => setReceiptModalOpen(false)}
+          />
+        )}
       </div>
     </div>
   );

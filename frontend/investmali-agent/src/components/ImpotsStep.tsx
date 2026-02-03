@@ -470,7 +470,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
         ) : (
           <div className="space-y-4">
             {demandes.map((demande) => (
-              <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
+              <div key={demande.id} className="bg-sky rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-3">
@@ -480,8 +480,8 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                       <div className="flex-1">
                         <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
                         <span className={`px-3 py-1 text-xs font-bold rounded-xl shadow-lg ${getStatutColor(demande.statutImpots)}`}>
-                          {demande.statutImpots === 'nif_en_attente' ? '⏳ NIF en attente' : 
-                           demande.statutImpots === 'nif_valide' ? '✅ NIF validé' : demande.statutImpots}
+                          {demande.statutImpots === 'nif_en_attente' ? 'NIF en attente' : 
+                           demande.statutImpots === 'nif_valide' ? 'NIF validé' : demande.statutImpots}
                         </span>
                       </div>
                     </div>
@@ -502,9 +502,9 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                   </div>
                   <div className="flex flex-col items-end space-y-3 ml-6">
                     {!demande.nifUploaded && canEdit && (
-                      <label className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold">
+                      <label className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:sky-700 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold">
                         <CloudArrowUpIcon className="h-5 w-5" />
-                        <span>{uploadingNif === demande.id ? '⏳ Upload...' : '📤 Upload NIF'}</span>
+                        <span>{uploadingNif === demande.id ? 'Upload...' : 'Upload NIF'}</span>
                         <input
                           type="file"
                           className="hidden"
@@ -524,7 +524,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
-                      className="bg-gradient-to-r from-[#412A5C] to-primary-600 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-[#412A5C] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                      className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:sky-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                     >
                       <EyeIcon className="h-5 w-5" />
                       <span>👁️ Détails</span>
@@ -541,7 +541,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/50 to-primary-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-8 mx-auto p-8 w-11/12 max-w-6xl">
-            <div className="bg-gradient-to-br from-white/95 via-slate-50/90 to-primary-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+            <div className="backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
               {/* Header modernisé */}
               <div className="bg-gradient-to-r from-[#412A5C]/90 to-primary-600/90 backdrop-blur-xl p-8 border-b border-white/20">
                 <div className="flex items-center justify-between">
@@ -740,7 +740,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
 
                 {/* Actions modernisées */}
                 {canEdit && (
-                  <div className="bg-gradient-to-r from-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
+                  <div className="backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
                     <div className="flex items-center space-x-3 mb-6">
                       <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg">
                         <span className="text-lg">⚡</span>
@@ -798,7 +798,7 @@ const ImpotsStep: React.FC<ImpotsStepProps> = ({ canEditStep, onDossierUpdate })
                     </div>
                     
                     {!selectedDemande.nifUploaded && (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-amber-50 rounded-xl border border-primary-200 shadow-lg">
+                      <div className="mt-4 p-4 bg-sky-to-r from-sky-50 to-sky-50 rounded-xl border border-primary-200 shadow-lg">
                         <p className="text-primary-800 text-sm font-medium flex items-center space-x-2">
                           <span>⚠️</span>
                           <span><strong>Attention :</strong> Le NIF doit être uploadé avant de pouvoir approuver le dossier.</span>

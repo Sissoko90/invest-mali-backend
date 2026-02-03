@@ -88,13 +88,21 @@ public class PersonServiceImpl implements PersonService {
         // (unicité vérifiée uniquement si fourni)
         // Rôle par défaut USER
         Roles role = (req.role == null) ? Roles.USER : req.role;
-        if (!isPersonneMorale && role != Roles.USER && (req.email == null || req.email.isBlank())) {
+        
+        // Nettoyer l'email s'il ressemble à un numéro de téléphone
+        String cleanedEmail = req.email;
+        if (cleanedEmail != null && (cleanedEmail.startsWith("+") || cleanedEmail.matches("^[\\d\\s\\-\\.]+$"))) {
+            System.out.println("🔍 [PersonService.create] Email rejeté car ressemble à un numéro de téléphone: " + cleanedEmail);
+            cleanedEmail = null;
+        }
+        
+        if (!isPersonneMorale && role != Roles.USER && (cleanedEmail == null || cleanedEmail.isBlank())) {
             throw new BadRequestException(Messages.PERSON_EMAIL_OBLIGATOIRE_SI_NON_USER);
         } else if (isPersonneMorale) {
             System.out.println("🏢 [PersonService] Personne morale - email optionnel même pour rôles non-USER");
         }
-        if (req.email != null && !req.email.isBlank()) {
-            if (personsRepository.existsByEmail(req.email)) throw new BadRequestException(Messages.PERSON_EMAIL_DEJA_UTILISE);
+        if (cleanedEmail != null && !cleanedEmail.isBlank()) {
+            if (personsRepository.existsByEmail(cleanedEmail)) throw new BadRequestException(Messages.PERSON_EMAIL_DEJA_UTILISE);
         }
         // Validations téléphone uniquement pour les personnes physiques
         if (!isPersonneMorale) {
@@ -261,7 +269,7 @@ public class PersonServiceImpl implements PersonService {
         Persons p = new Persons();
         p.setNom(req.nom.trim());
         p.setPrenom(req.prenom.trim());
-        p.setEmail(req.email != null && !req.email.isBlank() ? req.email.trim() : null);
+        p.setEmail(cleanedEmail != null && !cleanedEmail.isBlank() ? cleanedEmail.trim() : null);
         p.setTelephone1(req.telephone1.trim());
         p.setTelephone2(req.telephone2 != null ? req.telephone2.trim() : null);
         p.setDateNaissance(java.util.Date.from(req.dateNaissance.atStartOfDay(ZoneId.of("Africa/Bamako")).toInstant()));
@@ -359,15 +367,43 @@ public class PersonServiceImpl implements PersonService {
     public PersonResponse update(String id, abdaty_technologie.API_Invest.dto.request.PersonUpdateRequest req) {
         Persons p = personsRepository.findById(id).orElseThrow(() -> new NotFoundException("Personne introuvable"));
 
-        // Unicité email/téléphone si modifiés
-        if (req.email != null && !req.email.isBlank() && !req.email.equalsIgnoreCase(p.getEmail())) {
-            if (personsRepository.existsByEmail(req.email)) throw new BadRequestException(Messages.PERSON_EMAIL_DEJA_UTILISE);
-            p.setEmail(req.email.trim());
+        // Unicité email/téléphone si modifiés (exclure la personne en cours de mise à jour)
+        // Nettoyer l'email existant s'il ressemble à un numéro de téléphone
+        if (p.getEmail() != null && (p.getEmail().startsWith("+") || p.getEmail().matches("^[\\d\\s\\-\\.]+$"))) {
+            System.out.println("🔍 [PersonService.update] Nettoyage email invalide: " + p.getEmail() + " -> null");
+            p.setEmail(null);
         }
-        if (req.telephone1 != null && !req.telephone1.isBlank() && !req.telephone1.equals(p.getTelephone1())) {
-            if (!isValidInternationalPhone(req.telephone1)) throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
-            if (personsRepository.existsByTelephone1(req.telephone1)) throw new BadRequestException(Messages.PERSON_TEL_DEJA_UTILISE);
-            p.setTelephone1(req.telephone1.trim());
+        
+        if (req.email != null && !req.email.isBlank() && !req.email.equalsIgnoreCase(p.getEmail())) {
+            // Vérifier que l'email n'est pas un numéro de téléphone
+            if (req.email.startsWith("+") || req.email.matches("^[\\d\\s\\-\\.]+$")) {
+                System.out.println("🔍 [PersonService.update] Email rejeté car ressemble à un numéro de téléphone: " + req.email);
+                // Ne pas mettre à jour l'email, le laisser null
+            } else {
+                if (personsRepository.existsByEmailAndIdNot(req.email, id)) throw new BadRequestException(Messages.PERSON_EMAIL_DEJA_UTILISE);
+                p.setEmail(req.email.trim());
+            }
+        }
+        if (req.telephone1 != null && !req.telephone1.isBlank()) {
+            String normalizedNewPhone = req.telephone1.trim().replaceAll("[\\s\\-\\.]", "");
+            String normalizedCurrentPhone = p.getTelephone1() != null ? p.getTelephone1().trim().replaceAll("[\\s\\-\\.]", "") : "";
+            
+            System.out.println("🔍 [PersonService.update] ID personne: " + id);
+            System.out.println("🔍 [PersonService.update] Téléphone actuel: " + normalizedCurrentPhone);
+            System.out.println("🔍 [PersonService.update] Téléphone reçu: " + normalizedNewPhone);
+            System.out.println("🔍 [PersonService.update] Téléphones identiques: " + normalizedNewPhone.equals(normalizedCurrentPhone));
+            
+            // Ne vérifier la duplication que si le téléphone change réellement
+            if (!normalizedNewPhone.equals(normalizedCurrentPhone)) {
+                if (!isValidInternationalPhone(normalizedNewPhone)) throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);
+                // Exclure la personne en cours de mise à jour de la vérification de duplication
+                boolean existsElsewhere = personsRepository.existsByTelephone1AndIdNot(normalizedNewPhone, id);
+                System.out.println("🔍 [PersonService.update] Téléphone existe ailleurs: " + existsElsewhere);
+                if (existsElsewhere) throw new BadRequestException(Messages.PERSON_TEL_DEJA_UTILISE);
+                p.setTelephone1(normalizedNewPhone);
+            } else {
+                System.out.println("🔍 [PersonService.update] Téléphone inchangé, pas de vérification de duplication");
+            }
         }
         if (req.telephone2 != null) {
             if (!req.telephone2.isBlank() && !isValidInternationalPhone(req.telephone2)) throw new BadRequestException(Messages.PERSON_TELEPHONE_INVALIDE);

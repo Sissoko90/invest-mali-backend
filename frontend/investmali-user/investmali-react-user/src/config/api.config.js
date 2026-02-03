@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    CHECK_DUPLICATE: '/auth/check-duplicate',
     PROFILE: '/auth/profile',
     LOGOUT: '/auth/logout',
   },
@@ -78,6 +79,7 @@ export const API_ENDPOINTS = {
     DETAIL: (id) => `/entreprises/${id}`,
     UPDATE: (id) => `/entreprises/${id}`,
     DELETE: (id) => `/entreprises/${id}`,
+    CHECK_UNIQUENESS: '/entreprises/check-uniqueness',
   },
   
   // Business Applications

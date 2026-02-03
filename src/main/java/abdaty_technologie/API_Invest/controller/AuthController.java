@@ -24,6 +24,27 @@ public class AuthController {
     @Autowired
     private IAuthService authService;
 
+    @Autowired
+    private abdaty_technologie.API_Invest.service.PersonDuplicateDetectionService duplicateDetectionService;
+
+    @PostMapping("/check-duplicate")
+    @Operation(summary = "Vérifier les doublons", description = "Vérifie si un compte existe déjà avec ces informations avant l'inscription")
+    public ResponseEntity<?> checkDuplicate(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String telephone = request.get("telephone1");
+            String nom = request.get("nom");
+            String prenom = request.get("prenom");
+            
+            abdaty_technologie.API_Invest.dto.response.DuplicateCheckResult result = 
+                duplicateDetectionService.checkForDuplicates(email, telephone, nom, prenom);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse("Erreur lors de la vérification: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/register")
     @Operation(summary = "Inscription", description = "Inscription d'une nouvelle personne et création du compte utilisateur")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {

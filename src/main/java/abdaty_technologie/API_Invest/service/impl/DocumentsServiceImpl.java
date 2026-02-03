@@ -223,7 +223,7 @@ public class DocumentsServiceImpl implements DocumentsService {
 
         // Valider la taille du fichier
         if (!fileStorageService.isValidFileSize(file.getSize())) {
-            throw new BadRequestException("Fichier trop volumineux. Taille maximale autorisée: 10MB");
+            throw new BadRequestException("Fichier trop volumineux. Taille maximale autorisée: 50MB");
         }
 
         // Récupérer le document existant

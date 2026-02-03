@@ -77,11 +77,10 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembres(@Param("id") String id);
 
-    // Chargement avec fetch join des membres, personnes ET paiement pour l'API complète
+    // Chargement avec fetch join des membres et personnes (paiements chargés séparément pour éviter MultipleBagFetchException)
     @Query("SELECT e FROM Entreprise e " +
            "LEFT JOIN FETCH e.membres em " +
            "LEFT JOIN FETCH em.personne " +
-           "LEFT JOIN FETCH e.paiements " +
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembresAndPaiement(@Param("id") String id);
 
@@ -110,4 +109,34 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
            "JOIN e.membres em " +
            "WHERE em.personne.id = :personId")
     List<Entreprise> findByParticipantId(@Param("personId") String personId);
+    
+    // Vérifier si un utilisateur a déjà une entreprise avec le même nom
+    @Query("SELECT COUNT(e) > 0 FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId AND LOWER(e.nom) = LOWER(:nom)")
+    boolean existsByPersonIdAndNom(@Param("personId") String personId, @Param("nom") String nom);
+    
+    // Vérifier si un utilisateur a déjà une entreprise avec le même domaine d'activité (réglementé)
+    @Query("SELECT COUNT(e) > 0 FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId AND e.domaineActivite = :domaineActivite")
+    boolean existsByPersonIdAndDomaineActivite(@Param("personId") String personId, @Param("domaineActivite") abdaty_technologie.API_Invest.Entity.Enum.DomaineActivites domaineActivite);
+    
+    // Vérifier si un utilisateur a déjà une entreprise avec le même domaine d'activité non réglementé
+    @Query("SELECT COUNT(e) > 0 FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId AND e.domaineActiviteNr = :domaineActiviteNr")
+    boolean existsByPersonIdAndDomaineActiviteNr(@Param("personId") String personId, @Param("domaineActiviteNr") abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr domaineActiviteNr);
+    
+    // Vérifier si un utilisateur a déjà une entreprise avec le même nom ET domaine d'activité
+    @Query("SELECT COUNT(e) > 0 FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId AND (LOWER(e.nom) = LOWER(:nom) OR e.domaineActivite = :domaineActivite)")
+    boolean existsByPersonIdAndNomOrDomaineActivite(@Param("personId") String personId, @Param("nom") String nom, @Param("domaineActivite") abdaty_technologie.API_Invest.Entity.Enum.DomaineActivites domaineActivite);
+    
+    // Récupérer les entreprises d'un utilisateur pour afficher les noms et domaines déjà utilisés
+    @Query("SELECT e FROM Entreprise e " +
+           "JOIN e.membres em " +
+           "WHERE em.personne.id = :personId")
+    List<Entreprise> findAllByPersonId(@Param("personId") String personId);
 }

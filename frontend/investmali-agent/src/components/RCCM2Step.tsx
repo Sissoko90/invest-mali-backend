@@ -602,7 +602,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
 
   const getStatutColor = (statut: string) => {
     switch (statut) {
-      case 'rccm_a_remplacer': return 'bg-gradient-to-r from-primary-100 to-amber-200 text-primary-800';
+      case 'rccm_a_remplacer': return 'bg-gradient-to-r from-sky-50 to-sky-100 text-black-800';
       case 'rccm_remplace': return 'bg-sky-50 text-black-800';
       case 'termine': return 'bg-sky-50 text-black-800';
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
@@ -682,7 +682,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   </div>
                   <div className="flex flex-col items-end space-y-3 ml-6">
                     {canEdit && (
-                      <label className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg">
+                      <label className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 cursor-pointer flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg">
                         {replacingRCCM === demande.id ? (
                           <ClockIcon className="h-5 w-5 animate-spin" />
                         ) : demande.rccmExistant ? (
@@ -718,7 +718,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                         setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
-                      className="bg-gradient-to-r from-sky-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
+                      className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <EyeIcon className="h-5 w-5" />
                       <span>Détails</span>
@@ -735,7 +735,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/50 to-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
           <div className="relative top-8 mx-auto p-8 w-11/12 max-w-8xl">
-            <div className="bg-gradient-to-br from-white/95 via-slate-50/90 to-primary-50/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+            <div className="bg-gradient-to-br from-white/95 rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
               {/* Header modernisé */}
               <div className="bg-gradient-to-r from-[#1e5987]/90 to-[#2d6aa0]/90 backdrop-blur-xl p-8 border-b border-white/20">
                 <div className="flex items-center justify-between">
@@ -765,9 +765,9 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
               {/* Contenu modernisé */}
               <div className="p-8 max-h-[70vh] overflow-y-auto">
                 {/* Statut RCCM Phase 2 modernisé */}
-                <div className="mt-6 p-6 bg-gradient-to-r from-primary-50/80 to-amber-50/60 backdrop-blur-xl rounded-2xl border-2 border-primary-200 shadow-xl">
+                <div className="mt-6 p-6 rounded-2xl border-2 border-primary-200 shadow-xl">
                   <div className="flex items-center space-x-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-amber-600 rounded-xl shadow-lg">
+                    <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <ArrowPathIcon className="h-5 w-5 text-white" />
                     </div>
                     <h5 className="text-lg font-black text-slate-800">Statut RCCM</h5>
@@ -862,9 +862,9 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
 
                 {/* Actions modernisées */}
                 {canEdit && (
-                  <div className="bg-gradient-to-r from-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border-t border-white/40 mt-8">
+                  <div className="rounded-2xl p-6 border-t border-white/40 mt-8">
                     <div className="flex items-center space-x-3 mb-6">
-                      <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                      <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <BoltIcon className="h-6 w-6 text-white" />
                       </div>
                       <h4 className="text-xl font-black text-slate-800">Actions finales</h4>
@@ -880,11 +880,11 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                           const commentaire = prompt('💬 Commentaire final (optionnel):');
                           handleFinaliserRCCM2(selectedDemande.id, 'approuve', commentaire || undefined);
                         }}
-                        className="flex-1 bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-8 py-4 rounded-2xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!selectedDemande.rccmNumber}
                       >
                         <CheckCircleIcon className="h-6 w-6" />
-                        <span>✅ Approuver et Transférer au NINA</span>
+                        <span>Approuver et Transférer au NINA</span>
                       </button>
                       
                       {/* Bouton de retour d'étape avec menu déroulant */}
@@ -892,7 +892,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                         <button
                           onClick={() => setShowStepDropdown(!showStepDropdown)}
                           disabled={isLoading}
-                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
+                          className="w-full bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
                         >
                           <XMarkIcon className="h-6 w-6" />
                           <span>Rejeter et Retourner</span>
@@ -924,9 +924,9 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                     </div>
                     
                     {!selectedDemande.rccmNumber && (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-amber-50 rounded-xl border border-primary-200 shadow-lg">
-                        <p className="text-primary-800 text-sm font-medium flex items-center space-x-2">
-                          <span>⚠️</span>
+                      <div className="mt-4 p-4 rounded-xl border border-primary-200 shadow-lg">
+                        <p className="text-black-800 text-sm font-medium flex items-center space-x-2">
+                          {/* <span>⚠️</span> */}
                           <span><strong>Attention :</strong> Le numéro RCCM doit être généré à l'étape TCOM avant de pouvoir approuver le dossier.</span>
                         </p>
                       </div>

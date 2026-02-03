@@ -243,7 +243,7 @@ public class InvestmentAgreementService {
         }
         
         if (!fileStorageService.isValidFileSize(file.getSize())) {
-            throw new IllegalArgumentException("Fichier trop volumineux (max 10MB)");
+            throw new IllegalArgumentException("Fichier trop volumineux (max 50MB)");
         }
         
         // Sauvegarder le fichier sur le disque

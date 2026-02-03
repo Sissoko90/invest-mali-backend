@@ -6088,7 +6088,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   onChange={(e) => setNewParticipant({...newParticipant, typePiece: e.target.value})}
                 >
                   <option value="">Sélectionnez un type de piéce</option>
-                  <option value="CNI">Carte Nationale d'Identité</option>
+                  <option value="CNI">Carte d'Identité Nationale</option>
                   <option value="PASSEPORT">Passeport</option>
                   <option value="CARTE_CONSULAIRE">Carte consulaire</option>
                   <option value="CARTE_ELECTEUR">Carte électorale</option>
@@ -6185,7 +6185,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                         type="file"
                         onChange={(e) => setNewParticipant({...newParticipant, casierJudiciaireFile: e.target.files?.[0]})}
                       />
-                      <p className="text-xs text-red-600 mt-1">Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                      <p className="text-xs text-black-600 mt-1">Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                     </div>
                   )}
 

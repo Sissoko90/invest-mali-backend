@@ -80,10 +80,10 @@ public class FileStorageService {
     }
 
     /**
-     * Vérifier la taille du fichier (max 10MB)
+     * Vérifier la taille du fichier (max 50MB)
      */
     public boolean isValidFileSize(long fileSize) {
-        return fileSize <= 10 * 1024 * 1024; // 10MB
+        return fileSize <= 50 * 1024 * 1024; // 50MB
     }
 
     /**

@@ -6,6 +6,31 @@ import documentsService from '../services/documentsService';
 
 import SignatureCanvas from './SignatureCanvas';
 
+// Fonction utilitaire pour valider et nettoyer l'email
+// Retourne null si l'email est vide, invalide ou ressemble à un numéro de téléphone
+const cleanAndValidateEmail = (email: string | undefined | null): string | null => {
+  if (!email || email.trim() === '') {
+    return null;
+  }
+  
+  const emailValue = email.trim();
+  
+  // Vérifier que ce n'est pas un numéro de téléphone (commence par + ou contient uniquement des chiffres et espaces)
+  if (emailValue.startsWith('+') || /^[\d\s\-\.]+$/.test(emailValue)) {
+    console.warn('🔍 [EMAIL PARTICIPANTS] Valeur rejetée car ressemble à un numéro de téléphone:', emailValue);
+    return null;
+  }
+  
+  // Vérifier le format email avec une regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailValue)) {
+    console.warn('🔍 [EMAIL PARTICIPANTS] Valeur rejetée car format invalide:', emailValue);
+    return null;
+  }
+  
+  return emailValue;
+};
+
 /**
  * ARCHITECTURE PERSONNES MORALES - DOCUMENTATION
  * 
@@ -86,7 +111,12 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
     certificatResidenceFile: undefined,
     certificatResidenceUrl: '',
     signatureDataUrl: undefined,
-    autresDocuments: []
+    autresDocuments: [],
+    // Questions spécifiques aux gérants - hasCriminalRecord undefined pour forcer la réponse
+    hasCriminalRecord: undefined,
+    isMarried: false,
+    authorizeOthers: false,
+    isForSelf: undefined // Pour moi-même ou pour une autre personne
   });
   
   // Liste des pays avec codes téléphoniques et drapeaux
@@ -429,7 +459,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
     const mysqlLimit = 1 * 1024 * 1024; // 1MB limite MySQL actuelle
     
     if (file.size > maxSize) {
-      alert('Le fichier est trop volumineux. Taille maximum autorisée : 50MB');
+      setErrors(['Le fichier est trop volumineux. Taille maximum autorisée : 50MB']);
       inputElement.value = '';
       return undefined;
     }
@@ -443,10 +473,10 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
         try {
           const compressedFile = await compressImage(file);
           const newSizeMB = (compressedFile.size / (1024 * 1024)).toFixed(2);
-          alert(`Image compressée avec succès ! Nouvelle taille : ${newSizeMB}MB`);
+          console.log(`Image compressée avec succès ! Nouvelle taille : ${newSizeMB}MB`);
           return compressedFile;
         } catch (error) {
-          alert('Erreur lors de la compression. Le fichier original sera utilisé.');
+          console.warn('Erreur lors de la compression. Le fichier original sera utilisé.');
         }
       }
     }
@@ -1071,23 +1101,27 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
     // Déterminer la source des données selon isForSelf
     const isForSelf = data.personalInfo?.isForSelf;
 
+    // Debug: Afficher la date de naissance récupérée depuis personalInfo
+    console.log('🔍 [PARTICIPANTS] Date de naissance depuis personalInfo:', data.personalInfo?.birthDate);
+    console.log('🔍 [PARTICIPANTS] Toutes les données personalInfo:', JSON.stringify(data.personalInfo, null, 2));
+
     let participantData: Participant;
 
     if (isForSelf) {
-      // Si "Oui, c'est pour moi" : utiliser les données récupérées automatiquement
+      // Si "Oui, c'est pour moi" : utiliser les données saisies dans le formulaire (étape 2)
       participantData = {
         personId: currentUser.personne_id,
-        nom: data.personalInfo?.lastName || currentUser.nom || '',
-        prenom: data.personalInfo?.firstName || currentUser.prenom || '',
-        telephone: data.personalInfo?.phone || currentUser.telephone || '',
+        nom: data.personalInfo?.lastName || '',
+        prenom: data.personalInfo?.firstName || '',
+        telephone: data.personalInfo?.phone || '',
         telephone2: data.personalInfo?.phone2 || '',
-        email: data.personalInfo?.email || currentUser.email || '',
+        email: data.personalInfo?.email || '',
         dateNaissance: data.personalInfo?.birthDate || '',
         lieuNaissance: data.personalInfo?.birthPlace || '',
         nationnalite: data.personalInfo?.nationality || 'MALIENNE',
         civilite: mapCivilityToBackend(data.personalInfo?.civility || 'MONSIEUR'),
         sexe: data.personalInfo?.sexe || 'MASCULIN',
-        situationMatrimoniale: data.personalInfo?.situationMatrimoniale || 'CELIBATAIRE',
+        situationMatrimoniale: data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE',
         role: cleanUserRole,
         pourcentageParts: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 100 : (cleanUserRole === 'GERANT' ? 0 : 100),
         dateDebut: new Date().toISOString().split('T')[0],
@@ -1099,6 +1133,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
         casierJudiciaireFile: undefined,
         acteMariageFile: undefined,
         certificatResidenceFile: undefined,
+        // Hériter les valeurs des questions spécifiques de personalInfo - undefined pour forcer la réponse
+        hasCriminalRecord: data.personalInfo?.hasCriminalRecord,
+        isMarried: data.personalInfo?.isMarried ?? false,
+        authorizeOthers: false,
+        isForSelf: true, // Pour moi-même
         // Données de localisation récupérées automatiquement
         divisionId: data.personalInfo?.divisionId,
         division_id: data.personalInfo?.divisionId,
@@ -1119,7 +1158,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
         nationnalite: data.personalInfo?.nationality || 'MALIENNE',
         civilite: mapCivilityToBackend(data.personalInfo?.civility || 'MONSIEUR'),
         sexe: data.personalInfo?.sexe || 'MASCULIN',
-        situationMatrimoniale: data.personalInfo?.situationMatrimoniale || 'CELIBATAIRE',
+        situationMatrimoniale: data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE',
         role: cleanUserRole,
         pourcentageParts: data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 100 : (cleanUserRole === 'GERANT' ? 0 : 100),
         dateDebut: new Date().toISOString().split('T')[0],
@@ -1131,6 +1170,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
         casierJudiciaireFile: undefined,
         acteMariageFile: undefined,
         certificatResidenceFile: undefined,
+        // Hériter les valeurs des questions spécifiques de personalInfo - undefined pour forcer la réponse
+        hasCriminalRecord: data.personalInfo?.hasCriminalRecord,
+        isMarried: data.personalInfo?.isMarried ?? false,
+        authorizeOthers: false,
+        isForSelf: false, // Pour une autre personne
         // Données de localisation saisies manuellement
         divisionId: data.personalInfo?.divisionId,
         division_id: data.personalInfo?.divisionId,
@@ -1244,7 +1288,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
             prenom: associate.prenom,
             telephone1: fullPhoneForAssociate, // Sauvegarder le numéro complet avec indicatif
             telephone2: associate.telephone2,
-            email: associate.email || '',
+            email: cleanAndValidateEmail(associate.email),
             dateNaissance: associate.dateNaissance || '',
             lieuNaissance: associate.lieuNaissance || '',
             nationnalite: associate.nationnalite || 'MALIENNE',
@@ -1533,7 +1577,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
         {data.participants && data.participants.length > 0 ? (
           <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             {data.participants.map((participant, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-3 sm:p-4 border">
+              <div key={index} className="">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
                   {/* Section détaillée du participant - MASQUÉE */}
                   {false && (
@@ -1707,15 +1751,15 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   )}
                   
                   {/* Affichage simplifié du participant */}
-                  <div className="flex-1">
+                  {/* <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900">
                       {participant.civilite === 'PERSONNE_MORALE' 
                         ? participant.denominationEntreprise || participant.nom
                         : `${participant.prenom} ${participant.nom}`
                       }
                     </div>
-                  </div>
-                  <div className="flex gap-1.5 sm:gap-2 mt-2 sm:mt-0">
+                  </div> */}
+                  {/* <div className="flex gap-1.5 sm:gap-2 mt-2 sm:mt-0">
                     <button
                       onClick={() => handleEditParticipant(index)}
                       className="text-blue-600 hover:text-blue-800 p-1 sm:p-1.5"
@@ -1732,7 +1776,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             ))}
@@ -1877,14 +1921,14 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                         if (file) {
                           // Validation de la taille (max 5MB)
                           if (file.size > 5 * 1024 * 1024) {
-                            alert('Le fichier RCCM ne doit pas dépasser 5MB');
+                            setErrors(['Le fichier RCCM ne doit pas dépasser 5MB']);
                             e.target.value = '';
                             return;
                           }
                           // Validation du type de fichier
                           const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
                           if (!allowedTypes.includes(file.type)) {
-                            alert('Format de fichier non autorisé. Utilisez PDF, JPG ou PNG');
+                            setErrors(['Format de fichier non autorisé. Utilisez PDF, JPG ou PNG']);
                             e.target.value = '';
                             return;
                           }
@@ -1917,7 +1961,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       const newRole = e.target.value as EntrepriseRole;
                       // Empêcher les personnes morales d'être ADMINISTRATEUR
                       if (newRole === 'ADMINISTRATEUR') {
-                        alert('Une personne morale ne peut pas avoir le rôle ADMINISTRATEUR');
+                        setErrors(['Une personne morale ne peut pas avoir le rôle ADMINISTRATEUR']);
                         return;
                       }
                       setMoralePersonData({ ...moralePersonData, role: newRole });
@@ -2376,7 +2420,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   required
                 >
                   <option value="">Sélectionnez un type de pièce</option>
-                  <option value="CNI">Carte Nationale d'Identité</option>
+                  <option value="CNI">Carte d'Identité Nationale</option>
                   <option value="PASSEPORT">Passeport</option>
                   <option value="CARTE_CONSULAIRE">Carte consulaire</option>
                   <option value="CARTE_ELECTEUR">Carte électorale</option>
@@ -2424,7 +2468,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    ✅ {formData.documentFile.name}
+                    {formData.documentFile.name}
                   </div>
                 )}
                 <p className="text-sm text-gray-500 mt-1">
@@ -2432,8 +2476,46 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                 </p>
               </div>
 
-              {/* Champ casier judiciaire pour les gérants ET promoteurs */}
-              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && data.personalInfo?.hasCriminalRecord && (
+              {/* Questions spécifiques aux gérants/promoteurs personnes physiques */}
+              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && (selectedPersonType === 'physique' || formData.civilite !== 'PERSONNE_MORALE') && (
+                <div className={`md:col-span-3 space-y-4 p-4 rounded-lg border ${formData.hasCriminalRecord === undefined ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200'}`}>
+                  <h5 className="text-sm font-medium text-gray-900">Questions spécifiques aux gérants</h5>
+                  
+                  {/* Question casier judiciaire */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <span className={`text-sm font-medium ${formData.hasCriminalRecord === undefined ? 'text-amber-800' : 'text-gray-700'}`}>
+                      Avez-vous un extrait de casier judiciaire ? *
+                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, hasCriminalRecord: true})}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
+                          formData.hasCriminalRecord === true 
+                            ? 'bg-[#47c559] text-white shadow-lg' 
+                            : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
+                        }`}
+                      >
+                        Oui
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, hasCriminalRecord: false})}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
+                          formData.hasCriminalRecord === false 
+                            ? 'bg-[#47c559] text-white shadow-lg' 
+                            : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
+                        }`}
+                      >
+                        Non
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Champ casier judiciaire pour les gérants ET promoteurs - affiché seulement si hasCriminalRecord === true */}
+              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && formData.hasCriminalRecord === true && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Casier judiciaire *
@@ -2462,17 +2544,17 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      ✅ {formData.casierJudiciaireFile.name}
+                      {formData.casierJudiciaireFile.name}
                     </div>
                   )}
-                  <p className="text-xm text-red-600 mt-1">
-                    📜 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
+                  <p className="text-xm text-black-600 mt-1">
+                    Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
               )}
 
-              {/* Champ acte de mariage pour les gérants ET promoteurs */}
-              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && data.personalInfo?.isMarried && (
+              {/* Champ acte de mariage pour les gérants ET promoteurs - affiché seulement si marié (depuis étape 2) */}
+              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && data.personalInfo?.isMarried === true && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Acte de mariage *
@@ -2484,11 +2566,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       const file = e.target.files?.[0];
                       setFormData({ ...formData, acteMariageFile: file });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-550"
                     required
                   />
-                  <p className="text-sm text-purple-600 mt-1">
-                    💍 Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)
+                  <p className="text-sm text-black-600 mt-1">
+                     Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
               )}
@@ -2514,11 +2596,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      ✅ {formData.extraitNaissanceFile.name}
+                      {formData.extraitNaissanceFile.name}
                     </div>
                   )}
-                  <p className="text-sm text-blue-600 mt-1">
-                    🎂 Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
+                  <p className="text-sm text-black-600 mt-1">
+                    Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
               )}
@@ -2573,14 +2655,14 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                     required
                   />
-                  <p className="text-sm text-green-600 mt-1">
+                  <p className="text-sm text-black-600 mt-1">
                     Obligatoire - Formats: PDF, JPG, JPEG, PNG (max 5MB)
                   </p>
                 </div>
               )}
 
               {/* Bouton déclaration sur l'honneur pour les gérants ET promoteurs sans casier judiciaire */}
-              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && !data.personalInfo?.hasCriminalRecord && (
+              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && formData.hasCriminalRecord === false && (
                 <div className="md:col-span-2 mt-4">
                   <div className="bg-sky-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -2619,7 +2701,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                             existingSignature={formData.signatureDataUrl}
                           />
                           <p className="text-sm text-black-600 mt-2">
-                            📋 {formData.declarationHonneurFile 
+                            {formData.declarationHonneurFile 
                               ? 'Signature optionnelle car vous avez uploadé une déclaration' 
                               : 'Signature obligatoire pour générer une déclaration sur l\'honneur'}
                           </p>
@@ -2651,8 +2733,12 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                           )}
                           <p className="text-sm text-black-600 mt-1">
                              Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)
-                            <br />
-                            💡 <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
+                          </p>
+                          <p className="text-sm text-blue-600 mt-1 flex items-center gap-1">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
                           </p>
                         </div>
                       </div>
@@ -2667,7 +2753,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-medium text-gray-900">
-                        📎 Documents supplémentaires (Optionnel)
+                        Documents supplémentaires (Optionnel)
                       </h4>
                       <button
                         type="button"
