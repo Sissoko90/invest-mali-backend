@@ -49,4 +49,6 @@ public class PersonCreateRequest {
     // Champs spécifiques aux personnes morales (optionnels)
     public String paysEmissionRccm;
     public String denominationEntreprise;
+    // Liste des conjoints (pour les personnes mariées)
+    public java.util.List<ConjointRequest> conjoints;
 }

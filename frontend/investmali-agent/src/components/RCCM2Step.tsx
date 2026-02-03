@@ -97,6 +97,15 @@ interface DemandeRCCM2 {
   divisionNom?: string;
   situationMatrimonialeStr?: string;
   domaineActiviteLabel?: string;
+  activiteSecondaire?: string;
+  conjoints?: Array<{
+    prenom: string;
+    nom: string;
+    dateMariage: string;
+    lieuMariage: string;
+    regimeMatrimonial: string;
+    clauseRestrictive: string;
+  }>;
 }
 
 interface RCCM2StepProps {
@@ -830,6 +839,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                             return finalSituation;
                           })()}
                           activites={selectedDemande.domaineActiviteLabel || selectedDemande.secteurActivite}
+                          activiteSecondaire={selectedDemande.activiteSecondaire}
                           sigleEnseigne={selectedDemande.sigle || ''}
                           nomCommercial={selectedDemande.nom}
                           adresseEtablissement={selectedDemande.adresse || ''}
@@ -837,7 +847,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                           dateDebut={selectedDemande.dateCreation}
                           civilite={selectedDemande.membres?.[0]?.civilite || ''}
                           localite={selectedDemande.localite || ''}
-                         
+                          conjoints={selectedDemande.conjoints}
                         />
                       ) : (
                         <RccmCertificate

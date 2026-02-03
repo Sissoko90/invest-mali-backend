@@ -4,7 +4,6 @@ package abdaty_technologie.API_Invest.Entity.Enum;
 public enum Civilites {
     MONSIEUR("Monsieur"),      
     MADAME("Madame"),
-    MADEMOISELLE("Mademoiselle"),
     PERSONNE_MORALE("Personne Morale");
 
     private final String value;

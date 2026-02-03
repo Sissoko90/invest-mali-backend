@@ -253,15 +253,6 @@ public class Entreprise extends BaseEntity {
   
   public DomaineActiviteNr getDomaineActiviteNr() { return domaineActiviteNr; }
   public void setDomaineActiviteNr(DomaineActiviteNr domaineActiviteNr) { 
-    // Solution de contournement: vérifier la longueur de la valeur enum
-    if (domaineActiviteNr != null) {
-      String enumValue = domaineActiviteNr.name();
-      if (enumValue.length() > 500) {
-        System.err.println("⚠️ [ENTREPRISE] domaineActiviteNr trop long (" + enumValue.length() + " chars): " + enumValue);
-        // Pour l'instant, on accepte la valeur mais on log l'erreur
-        // La troncature sera gérée par la contrainte DB mise à jour
-      }
-    }
     this.domaineActiviteNr = domaineActiviteNr; 
   }
   

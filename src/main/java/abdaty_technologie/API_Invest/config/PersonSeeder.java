@@ -151,8 +151,8 @@ public class PersonSeeder implements CommandLineRunner {
         Persons savedAdmin = personsRepository.save(admin);
         
         // Créer un utilisateur associé
-        String username = "admin@example.com";
-        String rawPassword = "Admin@123"; // Mot de passe fort à changer en production
+        String username = "admin.akera@apimali.com";
+        String rawPassword = "Admin@AKERA2025"; // Mot de passe fort à changer en production
         
         // Vérifier si l'utilisateur existe déjà
         if (!utilisateursRepository.existsByUtilisateur(username)) {

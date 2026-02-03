@@ -188,10 +188,6 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       'MME': 'MADAME',
       'Madame': 'MADAME',
       'MADAME': 'MADAME',
-      'Mlle': 'MADEMOISELLE',
-      'MLLE': 'MADEMOISELLE',
-      'Mademoiselle': 'MADEMOISELLE',
-      'MADEMOISELLE': 'MADEMOISELLE',
       // Ajout pour les personnes morales
       'PERSONNE_MORALE': 'PERSONNE_MORALE'
     };
@@ -788,7 +784,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       }
     }
 
-    if (requiresManagerDocuments && data.personalInfo?.isMarried && !formData.acteMariageFile) {
+    // Vérifier si l'acte de mariage a déjà été uploadé dans la section conjoints
+    const hasActeMariageInConjoints = data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0 && 
+                                       data.personalInfo.conjoints.some(c => c.acteMariageFile || c.acteMariageFilename);
+    
+    if (requiresManagerDocuments && data.personalInfo?.isMarried && !formData.acteMariageFile && !hasActeMariageInConjoints) {
       setErrors(['L\'acte de mariage est obligatoire (si marié)']);
       return;
     }
@@ -2254,7 +2254,6 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                   <option value="">Sélectionnez une civilité</option>
                   <option value="MONSIEUR">Monsieur</option>
                   <option value="MADAME">Madame</option>
-                  <option value="MADEMOISELLE">Mademoiselle</option>
                 </select>
               </div>
 
@@ -2479,7 +2478,7 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
               {/* Questions spécifiques aux gérants/promoteurs personnes physiques */}
               {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && (selectedPersonType === 'physique' || formData.civilite !== 'PERSONNE_MORALE') && (
                 <div className={`md:col-span-3 space-y-4 p-4 rounded-lg border ${formData.hasCriminalRecord === undefined ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200'}`}>
-                  <h5 className="text-sm font-medium text-gray-900">Questions spécifiques aux gérants</h5>
+                  <h5 className="text-sm font-medium text-gray-900">Questions spécifiques aux promoteurs</h5>
                   
                   {/* Question casier judiciaire */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -2553,8 +2552,11 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                 </div>
               )}
 
-              {/* Champ acte de mariage pour les gérants ET promoteurs - affiché seulement si marié (depuis étape 2) */}
-              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && data.personalInfo?.isMarried === true && (
+              {/* Champ acte de mariage pour les gérants ET promoteurs - affiché seulement si marié ET n'a pas déjà uploadé dans la section conjoints */}
+              {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && 
+               data.personalInfo?.isMarried === true && 
+               (!data.personalInfo?.conjoints || data.personalInfo.conjoints.length === 0 || 
+                !data.personalInfo.conjoints.some(c => c.acteMariageFile || c.acteMariageFilename)) && (
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Acte de mariage *

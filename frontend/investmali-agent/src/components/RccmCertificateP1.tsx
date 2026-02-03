@@ -2,6 +2,15 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+interface Conjoint {
+  prenom: string;
+  nom: string;
+  dateMariage: string;
+  lieuMariage: string;
+  regimeMatrimonial: string;
+  clauseRestrictive: string;
+}
+
 interface RccmCertificateP1Props {
   rccmNumber: string;
   nom: string;
@@ -14,13 +23,15 @@ interface RccmCertificateP1Props {
   quartier: string;
   situationMatrimoniale: string;
   activites: string;
+  activiteSecondaire?: string;
   sigleEnseigne: string;
   nomCommercial: string;
   adresseEtablissement: string;
   registrationDate: string;
   dateDebut: string;
-  civilite?: string; // M., Mme, Mlle
+  civilite?: string; // M., Mme
   localite?: string;
+  conjoints?: Conjoint[];
 }
 
 const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
@@ -35,13 +46,15 @@ const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
   quartier,
   situationMatrimoniale,
   activites,
+  activiteSecondaire,
   sigleEnseigne,
   nomCommercial,
   adresseEtablissement,
   registrationDate,
   dateDebut,
   civilite,
-  localite
+  localite,
+  conjoints
 }) => {
   const formatDate = (dateString: string) => {
     try {
@@ -54,6 +67,16 @@ const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
     } catch {
       return dateString;
     }
+  };
+
+  const formatEnumValue = (value: string) => {
+    const enumLabels: { [key: string]: string } = {
+      'MONOGAMIE': 'Monogamie',
+      'POLYGAMIE': 'Polygamie',
+      'SEPARATION_DE_BIENS': 'Séparation de biens',
+      'COMMUNAUTE_DE_BIENS': 'Communauté de biens'
+    };
+    return enumLabels[value] || value;
   };
 
   const generatePDF = async () => {
@@ -154,7 +177,7 @@ const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
             <div className="flex">
               <span className="w-4 font-bold">1</span>
               <div className="flex-1">
-                <span className="font-bold">NOM :</span> {(civilite === 'M.' || civilite === 'M' || civilite === 'MONSIEUR' || civilite === 'Monsieur') ? '☑' : '☐'} M. {(civilite === 'Mme' || civilite === 'MADAME' || civilite === 'Madame') ? '☑' : '☐'} Mme {(civilite === 'Mlle' || civilite === 'MADEMOISELLE' || civilite === 'Mademoiselle') ? '☑' : '☐'} Mlle {nom} <span className="font-bold ml-4">PRENOM(S):</span> {prenom}
+                <span className="font-bold">NOM :</span> {(civilite === 'M.' || civilite === 'M' || civilite === 'MONSIEUR' || civilite === 'Monsieur') ? '☑' : '☐'} M. {(civilite === 'Mme' || civilite === 'MADAME' || civilite === 'Madame') ? '☑' : '☐'} Mme {nom} <span className="font-bold ml-4">PRENOM(S):</span> {prenom}
                
               </div>
             </div>
@@ -200,31 +223,43 @@ const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
                   <th className="border border-black p-1 text-left">Conjoint(s)</th>
                   <th className="border border-black p-1 text-left">Nom - Prénoms</th>
                   <th className="border border-black p-1 text-left">Date et lieu du mariage</th>
-                  <th className="border border-black p-1 text-left">Option matrimoniale</th>
-                  <th className="border border-black p-1 text-left">Régime matrimoniale</th>
-                  <th className="border border-black p-1 text-left">Clauses restrictives</th>
-                  <th className="border border-black p-1 text-left">Demande en séparation de biens</th>
+                  <th className="border border-black p-1 text-left">Régime matrimonial</th>
+                  <th className="border border-black p-1 text-left">Clause restrictive</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="border border-black p-1 h-8"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                </tr>
-                <tr>
-                  <td className="border border-black p-1 h-8"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                  <td className="border border-black p-1"></td>
-                </tr>
+                {conjoints && conjoints.length > 0 ? (
+                  conjoints.map((conjoint, index) => (
+                    <tr key={index}>
+                      <td className="border border-black p-1 h-8">{index + 1}</td>
+                      <td className="border border-black p-1">{conjoint.nom} {conjoint.prenom}</td>
+                      <td className="border border-black p-1">
+                        {formatDate(conjoint.dateMariage)} à {conjoint.lieuMariage}
+                      </td>
+                      <td className="border border-black p-1">{formatEnumValue(conjoint.regimeMatrimonial)}</td>
+                      <td className="border border-black p-1">{formatEnumValue(conjoint.clauseRestrictive)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <>
+                    <tr>
+                      <td className="border border-black p-1 h-8"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                    </tr>
+                    <tr>
+                      <td className="border border-black p-1 h-8"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                      <td className="border border-black p-1"></td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -252,6 +287,12 @@ const RccmCertificateP1: React.FC<RccmCertificateP1Props> = ({
               <span className="w-4 font-bold">12</span>
               <div className="flex-1">
                 <span className="font-bold">ACTIVITE(S) EXERCEE(S) (préciser) :</span> {activites}
+                {activiteSecondaire && (
+                  <>
+                    <br />
+                    <span className="font-bold">ACTIVITE SECONDAIRE :</span> {activiteSecondaire}
+                  </>
+                )}
               </div>
             </div>
             <div className="flex">

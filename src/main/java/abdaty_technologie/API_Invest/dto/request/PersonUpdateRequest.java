@@ -30,4 +30,6 @@ public class PersonUpdateRequest {
     public String localite; // Localité précise optionnelle (rue)
     public String porte; // Numéro de porte optionnel
     public String adresseLibre; // Adresse libre optionnelle
+    // Liste des conjoints (pour les personnes mariées)
+    public java.util.List<ConjointRequest> conjoints;
 }
