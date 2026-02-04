@@ -292,7 +292,7 @@ const DeclarationHonneur: React.FC = () => {
               onClick={handleDownloadPDF}
               className="flex-1 bg-investmali-accent hover:bg-investmali-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300"
             >
-              📄 Télécharger PDF
+              Télécharger PDF
             </button>
           </div>
           
@@ -303,7 +303,7 @@ const DeclarationHonneur: React.FC = () => {
               </svg>
               <div>
                 <h4 className="text-sm font-medium text-blue-900 mb-1">
-                  📋 Instructions
+                  nstructions
                 </h4>
                 <p className="text-sm text-blue-700">
                   Téléchargez le PDF et uploadez-le dans le formulaire de création d'entreprise dans l'autre fenêtre.

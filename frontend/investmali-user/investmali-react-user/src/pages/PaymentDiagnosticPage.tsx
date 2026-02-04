@@ -365,7 +365,7 @@ const PaymentDiagnosticPage: React.FC = () => {
             {/* JSON brut */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                📄 Données brutes (JSON)
+                Données brutes (JSON)
               </h2>
               <pre className="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto">
                 {JSON.stringify(diagnostic, null, 2)}

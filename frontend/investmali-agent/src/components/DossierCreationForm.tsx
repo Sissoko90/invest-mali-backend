@@ -857,7 +857,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const allSteps = [
     { number: 1, title: 'Informations Personnelles', icon: UserIcon },
     { number: 2, title: 'Informations de l\'entreprise', icon: BuildingOfficeIcon },
-    { number: 3, title: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'Promoteur' : 'Participants', icon: BriefcaseIcon },
+    { number: 3, title: 'Promoteur', icon: BriefcaseIcon },
     { number: 4, title: 'Documents', icon: DocumentIcon },
     { number: 5, title: 'Récapitulatif', icon: CheckCircleIcon }
   ];
@@ -1784,9 +1784,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             errors.push(`${participantLabel}: La pièce de nationalité est obligatoire pour les entreprises individuelles`);
           }
           
-          // Acte de mariage obligatoire si marié
-          if (participant.situationMatrimoniale === 'MARIE' && !participant.acteMariageFile) {
-            errors.push(`${participantLabel}: L'acte de mariage est obligatoire pour les personnes mariées`);
+          // Acte de mariage obligatoire pour chaque conjoint si marié
+          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
+            formData.conjoints.forEach((conjoint, index) => {
+              if (!conjoint.acteMariageFile) {
+                errors.push(`${participantLabel}: L'acte de mariage est obligatoire pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+              }
+            });
           }
           
           // Validation casier judiciaire OU déclaration sur l'honneur avec signature
@@ -3353,12 +3357,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
       };
 
-      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
+      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string, conjointId?: string) => {
         const fd = new FormData();
         fd.append('personneId', personId);
         fd.append('entrepriseId', entrepriseId);
         fd.append('typeDocument', typeDocument);
         if (numero) fd.append('numero', numero);
+        if (conjointId) fd.append('conjointId', conjointId);
         fd.append('file', file);
         
         try {
@@ -3503,13 +3508,23 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             }
           }
           
-          // Upload acte de mariage si marié
-          if (participant.acteMariageFile) {
-            try {
-              await uploadDocumentFor(participant.id, 'ACTE_MARIAGE', participant.acteMariageFile, `AM-${participant.prenom}-${participant.nom}`);
-              console.log(`✅ Acte de mariage uploadé pour ${participant.prenom} ${participant.nom}`);
-            } catch (e) {
-              console.error('❌ Upload acte de mariage échoué:', e);
+          // Upload actes de mariage pour chaque conjoint si marié
+          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
+            for (const conjoint of formData.conjoints) {
+              if (conjoint.acteMariageFile && conjoint.id) {
+                try {
+                  await uploadDocumentFor(
+                    participant.id, 
+                    'ACTE_MARIAGE', 
+                    conjoint.acteMariageFile, 
+                    `AM-${conjoint.prenom}-${conjoint.nom}`,
+                    conjoint.id
+                  );
+                  console.log(`✅ Acte de mariage uploadé pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
+                } catch (e) {
+                  console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
+                }
+              }
             }
           }
           
@@ -4774,7 +4789,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 italic">
-                  📄 L'acte de mariage sera uploadé dans l'étape "Promoteur/Documents"
+                  L'acte de mariage sera uploadé dans l'étape "Promoteur/Documents"
                 </p>
               </div>
             ))}
@@ -6548,18 +6563,37 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     </div>
                   )}
 
-                  {/* Acte de mariage conditionnel */}
-                  {newParticipant.situationMatrimoniale === 'MARIE' && (
+                  {/* Actes de mariage par conjoint */}
+                  {newParticipant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0 && (
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Acte de mariage *</label>
-                      <input
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2d85c9] file:text-white hover:file:bg-[#2d85c9]/90"
-                        required
-                        type="file"
-                        onChange={(e) => setNewParticipant({...newParticipant, acteMariageFile: e.target.files?.[0]})}
-                      />
-                      <p className="text-xs text-black-600 mt-1">Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                      <label className="block text-sm font-bold text-slate-700 mb-3">Actes de mariage *</label>
+                      <div className="space-y-3">
+                        {formData.conjoints.map((conjoint, index) => (
+                          <div key={conjoint.id || index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Conjoint(e) {index + 1}: {conjoint.prenom} {conjoint.nom}
+                            </p>
+                            <input
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2d85c9] file:text-white hover:file:bg-[#2d85c9]/90"
+                              required
+                              type="file"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const newConjoints = [...(formData.conjoints || [])];
+                                  newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
+                                  setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                                }
+                              }}
+                            />
+                            {conjoint.acteMariageFile && (
+                              <p className="text-xs text-green-600 mt-1">✓ {conjoint.acteMariageFile.name}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-2">Un acte de mariage par conjoint - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                     </div>
                   )}
 

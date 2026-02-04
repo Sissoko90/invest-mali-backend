@@ -989,8 +989,8 @@ const AutorisationExercicePage: React.FC = () => {
                           <div>
                             <p className="font-semibold text-gray-900">
                               {entreprise.telechargementAutorise 
-                                ? '📄 Agrément signé disponible au téléchargement' 
-                                : '🔒 Téléchargement non autorisé'}
+                                ? 'Agrément signé disponible au téléchargement' 
+                                : 'Téléchargement non autorisé'}
                             </p>
                             <p className="text-sm text-gray-600">
                               {entreprise.telechargementAutorise 

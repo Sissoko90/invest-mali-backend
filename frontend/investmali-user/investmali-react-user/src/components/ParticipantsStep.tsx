@@ -608,6 +608,15 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
             validationErrors.push(`${label}: certificat de résidence requis (nationalité non malienne)`);
           }
         }
+        
+        // Validation des actes de mariage pour chaque conjoint
+        if ((p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+          data.personalInfo.conjoints.forEach((conjoint, conjointIndex) => {
+            if (!conjoint.acteMariageFile) {
+              validationErrors.push(`${label}: Acte de mariage manquant pour le conjoint ${conjointIndex + 1} (${conjoint.prenom} ${conjoint.nom})`);
+            }
+          });
+        }
       });
 
       return validationErrors;
@@ -656,6 +665,15 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       }
       // Documents optionnels pour tous les participants - suppression des validations obligatoires
       // (Les documents peuvent être ajoutés plus tard si nécessaire)
+      
+      // Validation des actes de mariage pour chaque conjoint si le participant est marié
+      if ((p.role === 'GERANT' || p.role === 'PROMOTEUR') && p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+        data.personalInfo.conjoints.forEach((conjoint, conjointIndex) => {
+          if (!conjoint.acteMariageFile) {
+            validationErrors.push(`${label}: Acte de mariage manquant pour le conjoint ${conjointIndex + 1} (${conjoint.prenom} ${conjoint.nom})`);
+          }
+        });
+      }
     });
 
     return validationErrors;
@@ -784,13 +802,19 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       }
     }
 
-    // Vérifier si l'acte de mariage a déjà été uploadé dans la section conjoints
-    const hasActeMariageInConjoints = data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0 && 
-                                       data.personalInfo.conjoints.some(c => c.acteMariageFile || c.acteMariageFilename);
-    
-    if (requiresManagerDocuments && data.personalInfo?.isMarried && !formData.acteMariageFile && !hasActeMariageInConjoints) {
-      setErrors(['L\'acte de mariage est obligatoire (si marié)']);
-      return;
+    // Validation des actes de mariage - obligatoire pour chaque conjoint si marié
+    if (requiresManagerDocuments && data.personalInfo?.isMarried && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+      const missingActes: string[] = [];
+      data.personalInfo.conjoints.forEach((conjoint, index) => {
+        if (!conjoint.acteMariageFile) {
+          missingActes.push(`Conjoint(e) ${index + 1}: ${conjoint.prenom} ${conjoint.nom}`);
+        }
+      });
+      
+      if (missingActes.length > 0) {
+        setErrors([`Acte(s) de mariage manquant(s) pour: ${missingActes.join(', ')}`]);
+        return;
+      }
     }
 
     // Validation du certificat de résidence pour les gérants et promoteurs
@@ -1631,8 +1655,8 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                           {(participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && !data.personalInfo?.hasCriminalRecord && (
                             <p><strong>Déclaration d'honneur:</strong> {participant.declarationHonneurFile?.name || participant.signatureDataUrl ? 'Générée avec signature' : 'Non téléchargée'}</p>
                           )}
-                          {(participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && data.personalInfo?.isMarried && (
-                            <p><strong>Acte de mariage:</strong> {participant.acteMariageFile?.name || 'Non téléchargé'}</p>
+                          {(participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && data.personalInfo?.isMarried && data.personalInfo?.conjoints && (data.personalInfo?.conjoints?.length || 0) > 0 && (
+                            <p><strong>Actes de mariage:</strong> {data.personalInfo?.conjoints?.length || 0} acte{(data.personalInfo?.conjoints?.length || 0) > 1 ? 's' : ''} à uploader à l'étape Documents</p>
                           )}
                           {(participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && (
                             <p><strong>Extrait de naissance:</strong> {participant.extraitNaissanceFile?.name || 'Non téléchargé'}</p>
@@ -2552,28 +2576,51 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                 </div>
               )}
 
-              {/* Champ acte de mariage pour les gérants ET promoteurs - affiché seulement si marié ET n'a pas déjà uploadé dans la section conjoints */}
+              {/* Champs d'upload des actes de mariage - un pour chaque conjoint */}
               {(formData.role === 'GERANT' || formData.role === 'PROMOTEUR') && 
                data.personalInfo?.isMarried === true && 
-               (!data.personalInfo?.conjoints || data.personalInfo.conjoints.length === 0 || 
-                !data.personalInfo.conjoints.some(c => c.acteMariageFile || c.acteMariageFilename)) && (
+               data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0 && (
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Acte de mariage *
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Actes de mariage *
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      setFormData({ ...formData, acteMariageFile: file });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-550"
-                    required
-                  />
-                  <p className="text-sm text-black-600 mt-1">
-                     Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)
-                  </p>
+                  <div className="space-y-4">
+                    {data.personalInfo.conjoints.map((conjoint, index) => (
+                      <div key={conjoint.id || index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">
+                          Conjoint(e) {index + 1}: {conjoint.prenom} {conjoint.nom}
+                        </p>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                              newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
+                              // Mettre à jour les conjoints dans data.personalInfo
+                              const updatedData = {
+                                ...data,
+                                personalInfo: {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                }
+                              };
+                              // Appeler updateData pour mettre à jour businessData
+                              updateData('personalInfo', updatedData.personalInfo);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47c559] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#47c559] file:text-white hover:file:bg-[#47c559]/90"
+                        />
+                        {conjoint.acteMariageFile && (
+                          <p className="text-sm text-green-600 mt-2">✓ {conjoint.acteMariageFile.name}</p>
+                        )}
+                        <p className="text-sm text-gray-500 mt-1">
+                          Formats acceptés: PDF, JPG, PNG (max 5MB)
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

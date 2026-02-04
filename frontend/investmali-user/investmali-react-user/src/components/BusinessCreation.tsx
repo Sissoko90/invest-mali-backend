@@ -3591,7 +3591,7 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 mt-2 italic">
-                          📄 L'acte de mariage sera uploadé dans l'étape "Documents"
+                          L'acte de mariage sera uploadé dans l'étape "Documents"
                         </p>
                       </div>
                     ))}
@@ -5711,6 +5711,78 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
         </div>
       )}
 
+      {/* Section actes de mariage par conjoint */}
+      {(() => {
+        const hasConjoints = data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0;
+        console.log('🔍 [ACTES MARIAGE] Debug:', {
+          isMarried: data.personalInfo?.isMarried,
+          conjoints: data.personalInfo?.conjoints,
+          conjointsLength: data.personalInfo?.conjoints?.length,
+          hasConjoints
+        });
+        return hasConjoints;
+      })() && (
+        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up mt-6" style={{animationDelay: '0.6s'}}>
+          <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+            <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">💍</span>
+            Actes de Mariage
+          </h3>
+          <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-sm">
+            Téléchargez un acte de mariage pour chaque conjoint déclaré.
+          </p>
+          
+          <div className="space-y-4">
+            {(data.personalInfo?.conjoints || []).map((conjoint, index) => (
+              <div key={conjoint.id || index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-semibold text-slate-700 mb-3">
+                  Conjoint(e) {index + 1}: {conjoint.prenom} {conjoint.nom}
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                      newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
+                      updateData('personalInfo', {
+                        ...data.personalInfo,
+                        conjoints: newConjoints
+                      });
+                    }
+                  }}
+                  className="hidden"
+                  id={`acte-mariage-${index}`}
+                />
+                <label
+                  htmlFor={`acte-mariage-${index}`}
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-lg sm:rounded-xl hover:border-investmali-accent transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 bg-white hover:bg-investmali-accent/5"
+                >
+                  {conjoint.acteMariageFile ? (
+                    <>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-investmali-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-investmali-accent font-medium text-sm sm:text-sm text-center">{conjoint.acteMariageFile.name}</span>
+                      <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="text-sm sm:text-sm text-gray-600 text-center">Télécharger l'acte de mariage</span>
+                    </>
+                  )}
+                </label>
+                <p className="text-sm text-gray-500 mt-2">
+                  Formats acceptés : PDF, JPG, PNG (max 5MB)
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
@@ -5879,9 +5951,13 @@ const SummaryAndSubmissionStep: React.FC<{
               participantErrors.push(`${participantLabel}: Déclaration sur l'honneur manquante (vous avez indiqué ne pas avoir de casier judiciaire)`);
             }
             
-            // Acte de mariage obligatoire si marié
-            if (p.isMarried === true && !p.acteMariageFile) {
-              participantErrors.push(`${participantLabel}: Acte de mariage manquant (vous avez indiqué être marié(e))`);
+            // Acte de mariage obligatoire pour chaque conjoint si marié
+            if (p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+              data.personalInfo.conjoints.forEach((conjoint, index) => {
+                if (!conjoint.acteMariageFile) {
+                  participantErrors.push(`${participantLabel}: Acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+                }
+              });
             }
           }
         }
@@ -5889,7 +5965,7 @@ const SummaryAndSubmissionStep: React.FC<{
     }
     
     if (participantErrors.length > 0) {
-      allErrors.push({ step: 4, title: 'Participants', errors: participantErrors });
+      allErrors.push({ step: 4, title: 'Promoteur', errors: participantErrors });
     }
 
     return allErrors;
@@ -6179,9 +6255,13 @@ const SummaryAndSubmissionStep: React.FC<{
         if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
           missingDocs.push(`${label}: déclaration d'honneur manquante (sans casier judiciaire) - uploadez une déclaration ou signez pour en générer une`);
         }
-        // Acte de mariage obligatoire si marié
-        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
-          missingDocs.push(`${label}: acte de mariage manquant`);
+        // Actes de mariage obligatoires pour chaque conjoint si marié
+        if (requiresManagerDocuments && p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+          data.personalInfo.conjoints.forEach((conjoint, index) => {
+            if (!conjoint.acteMariageFile) {
+              missingDocs.push(`${label}: acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+            }
+          });
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
           missingDocs.push(`${label}: extrait de naissance manquant`);
@@ -6524,12 +6604,13 @@ const SummaryAndSubmissionStep: React.FC<{
         if (!res.ok) { const err = await safeJson(res); throw new Error(err?.message || 'Upload pièce échoué'); }
       };
 
-      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
+      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string, conjointId?: string) => {
         console.log(`🔄 [UPLOAD DEBUG] Tentative upload document:`, {
           personId,
           entrepriseId,
           typeDocument,
           numero,
+          conjointId,
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type
@@ -6540,6 +6621,7 @@ const SummaryAndSubmissionStep: React.FC<{
         fd.append('entrepriseId', entrepriseId);
         fd.append('typeDocument', typeDocument);
         if (numero) fd.append('numero', numero);
+        if (conjointId) fd.append('conjointId', conjointId);
         fd.append('file', file);
         
         const res = await fetch('/api/v1/documents/document', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
@@ -6713,9 +6795,25 @@ const SummaryAndSubmissionStep: React.FC<{
           } catch (e) {
           }
           
-          try { 
-            await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`); 
-          } catch (e) { }
+          // Upload actes de mariage pour chaque conjoint si marié
+          if (data.personalInfo?.isMarried && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+            for (const conjoint of data.personalInfo.conjoints) {
+              if (conjoint.acteMariageFile && conjoint.id) {
+                try {
+                  await uploadDocumentFor(
+                    gerantId, 
+                    'ACTE_MARIAGE', 
+                    conjoint.acteMariageFile, 
+                    `AM-${conjoint.prenom}-${conjoint.nom}`,
+                    conjoint.id
+                  );
+                  console.log(`✅ Acte de mariage uploadé pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
+                } catch (e) {
+                  console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
+                }
+              }
+            }
+          }
         }
         if (!data.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
           try { 
@@ -7433,7 +7531,7 @@ const BusinessCreation: React.FC = () => {
     { number: 1, title: 'Identification', icon: '👤' },
     { number: 2, title: 'Informations Personnelles', icon: '📝' },
     { number: 3, title: 'Informations Société', icon: '🏢' },
-    { number: 4, title: 'Participants', icon: '👥' },
+    { number: 4, title: 'Promoteur', icon: '👥' },
     { number: 5, title: 'Documents', icon: '📄' },
     { number: 6, title: 'Récapitulatif', icon: '✅' }
   ];
@@ -7813,9 +7911,13 @@ const BusinessCreation: React.FC = () => {
         if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
           documentErrors.push("Déclaration d'honneur ou signature requise (sans casier judiciaire)");
         }
-        // Acte de mariage obligatoire si marié
-        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
-          documentErrors.push("Acte de mariage requis");
+        // Actes de mariage obligatoires pour chaque conjoint si marié
+        if (requiresManagerDocuments && p.isMarried === true && businessData.personalInfo?.conjoints && businessData.personalInfo.conjoints.length > 0) {
+          businessData.personalInfo.conjoints.forEach((conjoint: any, index: number) => {
+            if (!conjoint.acteMariageFile) {
+              documentErrors.push(`Acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+            }
+          });
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
           documentErrors.push("Extrait de naissance requis");
@@ -9363,7 +9465,7 @@ const BusinessCreation: React.FC = () => {
                 { number: 1, name: 'Identification' },
                 { number: 2, name: 'Informations personnelles' },
                 { number: 3, name: 'Informations entreprise' },
-                { number: 4, name: 'Participants' },
+                { number: 4, name: 'Promoteur' },
                 ...(isEntrepriseIndividuelle ? [] : [{ number: 5, name: 'Documents' }]),
                 { number: isEntrepriseIndividuelle ? 5 : 6, name: 'Récapitulatif', actualStep: 6 }
               ];

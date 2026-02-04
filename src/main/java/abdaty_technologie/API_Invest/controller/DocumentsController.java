@@ -69,9 +69,10 @@ public class DocumentsController {
             @RequestParam("entrepriseId") String entrepriseId,
             @RequestParam("typeDocument") TypeDocuments typeDocument,
             @RequestParam(value = "numero", required = false) String numero,
+            @RequestParam(value = "conjointId", required = false) String conjointId,
             @RequestParam("file") MultipartFile file
     ) {
-        Documents saved = documentsService.uploadDocument(personneId, entrepriseId, typeDocument, numero, file);
+        Documents saved = documentsService.uploadDocument(personneId, entrepriseId, typeDocument, numero, conjointId, file);
         return ResponseEntity.ok(toResponse(saved));
     }
 

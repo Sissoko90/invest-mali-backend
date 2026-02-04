@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import abdaty_technologie.API_Invest.Entity.Conjoint;
 import abdaty_technologie.API_Invest.Entity.Documents;
 import abdaty_technologie.API_Invest.Entity.Entreprise;
 import abdaty_technologie.API_Invest.Entity.EntrepriseMembre;
@@ -23,6 +24,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
 import abdaty_technologie.API_Invest.exception.BadRequestException;
 import abdaty_technologie.API_Invest.exception.NotFoundException;
+import abdaty_technologie.API_Invest.repository.ConjointRepository;
 import abdaty_technologie.API_Invest.repository.DocumentsRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
@@ -39,6 +41,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     @Autowired private PersonsRepository personsRepository;
     @Autowired private EntrepriseRepository entrepriseRepository;
     @Autowired private EntrepriseMembreRepository entrepriseMembreRepository;
+    @Autowired private ConjointRepository conjointRepository;
     @Autowired private FileStorageService fileStorageService;
 
     @Override
@@ -81,7 +84,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     @Override
-    public Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, MultipartFile file) {
+    public Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, String conjointId, MultipartFile file) {
         if (personneId == null || personneId.isBlank()) throw new BadRequestException(Messages.PERSONNE_ID_OBLIGATOIRE);
         if (entrepriseId == null || entrepriseId.isBlank()) throw new BadRequestException(Messages.ENTREPRISE_ID_OBLIGATOIRE);
         if (typeDocument == null) throw new BadRequestException(Messages.TYPE_DOCUMENT_OBLIGATOIRE);
@@ -140,6 +143,14 @@ public class DocumentsServiceImpl implements DocumentsService {
         String safeNumero = (numero != null && !numero.isBlank()) ? numero.trim() : generateNumeroFallback(typeDocument);
         d.setNumero(safeNumero);
         d.setPhotoPiece(toBlob(file));
+        
+        // Lier au conjoint si conjointId est fourni (pour les actes de mariage)
+        if (conjointId != null && !conjointId.isBlank()) {
+            Conjoint conjoint = conjointRepository.findById(conjointId)
+                .orElseThrow(() -> new NotFoundException("Conjoint introuvable avec l'ID: " + conjointId));
+            d.setConjoint(conjoint);
+        }
+        
         return documentsRepository.save(d);
     }
 
