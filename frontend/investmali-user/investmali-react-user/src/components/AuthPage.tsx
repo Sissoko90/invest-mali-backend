@@ -67,7 +67,7 @@ const AuthPage: React.FC = () => {
     // Logique de cohérence automatique civilité/sexe
     if (civilityValue === 'MONSIEUR') {
       autoSexe = 'MASCULIN';
-    } else if (civilityValue === 'MADAME' || civilityValue === 'MADEMOISELLE') {
+    } else if (civilityValue === 'MADAME') {
       autoSexe = 'FEMININ';
     }
     
@@ -86,7 +86,7 @@ const AuthPage: React.FC = () => {
     if (sexeValue === 'MASCULIN') {
       autoCivility = 'MONSIEUR';
     } else if (sexeValue === 'FEMININ') {
-      // Par défaut Madame pour féminin, l'utilisateur peut changer vers Mademoiselle
+      // Par défaut Madame pour féminin
       autoCivility = 'MADAME';
     }
     
@@ -376,7 +376,6 @@ const AuthPage: React.FC = () => {
                       <option value="">Sélectionnez votre civilité</option>
                       <option value="MONSIEUR">Monsieur</option>
                       <option value="MADAME">Madame</option>
-                      <option value="MADEMOISELLE">Mademoiselle</option>
                     </select>
                   </div>
                   

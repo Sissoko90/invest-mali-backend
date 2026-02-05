@@ -505,8 +505,8 @@ export const apiUtils = {
       const requiresAuthorization = applicationData.requiresExerciseAuthorization;
       const willImportExport = applicationData.willImportExport;
       
-      // 180 FCFA si autorisation d'exercice OU import/export, sinon 100 FCFA
-      const total = (requiresAuthorization || willImportExport) ? 180 : 100;
+      // 28000 FCFA si autorisation d'exercice OU import/export, sinon 10000 FCFA
+      const total = (requiresAuthorization || willImportExport) ? 28000 : 10000;
       
       return {
         immatriculation: total,

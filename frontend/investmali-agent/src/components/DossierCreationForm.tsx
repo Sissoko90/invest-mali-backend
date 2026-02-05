@@ -34,7 +34,7 @@ export type DomaineActivites = 'ADMINISTRATEURS_ET_AGENTS_IMMOBILIERS' | 'ARCHIT
 export type TypeEntreprise = 'SOCIETE' | 'ENTREPRISE_INDIVIDUELLE';
 export type FormeJuridique = 'SARL' | 'SARL_UNI' | 'SUC_SARL' | 'FIL_SARL' | 'SA' | 'SUC_SA' | 'FIL_SA' | 'SASU' | 'SAS' | 'BR' | 'FIL_SAS' | 'SUC_SAS' | 'SNC' | 'SCS' | 'SCI' | 'SCP' | 'GIE' | 'E_I';
 
-export type Civilites = 'MONSIEUR' | 'MADAME' | 'MADEMOISELLE' | 'PERSONNE_MORALE';
+export type Civilites = 'MONSIEUR' | 'MADAME' | 'PERSONNE_MORALE';
 export type Sexes = 'MASCULIN' | 'FEMININ';
 export type SituationMatrimoniales = 'CELIBATAIRE' | 'MARIE' | 'DIVORCE' | 'VEUF';
 export type TypePieces = 'CNI' | 'PASSEPORT' | 'CARTE_CONSULAIRE' | 'CARTE_ELECTEUR';
@@ -415,6 +415,19 @@ interface FormData {
   requiresExerciseAuthorization: boolean;
   willImportExport: boolean;
   hasDifferentAddress: boolean;
+  // Conjoints (pour les personnes mariées)
+  nombreConjoints?: number;
+  conjoints?: Array<{
+    id: string; // Identifiant unique pour éviter les problèmes de re-render
+    prenom: string;
+    nom: string;
+    dateMariage: string;
+    lieuMariage: string;
+    regimeMatrimonial: string;
+    clauseRestrictive: string;
+    acteMariageFile?: File;
+    acteMariageFilename?: string;
+  }>;
   // Informations Société
   nomEntreprise: string;
   sigleEntreprise: string;
@@ -494,6 +507,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const [paysEmissionRccm, setPaysEmissionRccm] = useState<PaysEmissionRccm[]>([]);
   // état pour les domaines d'activité non réglementés
   const [domaineActiviteNrOptions, setDomaineActiviteNrOptions] = useState<any[]>([]);
+  const [domaineSearchTerm, setDomaineSearchTerm] = useState('');
+  const [showDomaineDropdown, setShowDomaineDropdown] = useState(false);
+  const domaineDropdownRef = useRef<HTMLDivElement>(null);
+  const domaineInputRef = useRef<HTMLInputElement>(null);
   
   // états pour le sélecteur de pays téléphone personnel
   const [personalSelectedCountry, setPersonalSelectedCountry] = useState(countries[0]); // Mali par défaut
@@ -632,6 +649,44 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }, 0);
       
       return updated;
+    });
+  }, []);
+
+  // Fonction pour mettre à jour un conjoint spécifique sans recréer tout le tableau
+  const updateConjoint = useCallback((index: number, field: string, value: any) => {
+    setFormData(prev => {
+      if (!prev.conjoints) return prev;
+      
+      const conjoint = prev.conjoints[index];
+      if (!conjoint) return prev;
+      
+      // Vérifier si la valeur a vraiment changé pour éviter les re-renders inutiles
+      if ((conjoint as any)[field] === value) {
+        return prev;
+      }
+      
+      // Créer une copie du tableau
+      const newConjoints = [...prev.conjoints];
+      // Mettre à jour uniquement l'élément à l'index spécifié
+      newConjoints[index] = { ...newConjoints[index], [field]: value };
+      
+      return { ...prev, conjoints: newConjoints };
+    });
+  }, []);
+
+  // Fonction pour gérer l'upload de fichier pour un conjoint
+  const handleConjointFileChange = useCallback((index: number, file: File) => {
+    setFormData(prev => {
+      if (!prev.conjoints) return prev;
+      
+      const newConjoints = [...prev.conjoints];
+      newConjoints[index] = { 
+        ...newConjoints[index], 
+        acteMariageFile: file,
+        acteMariageFilename: file.name
+      };
+      
+      return { ...prev, conjoints: newConjoints };
     });
   }, []);
 
@@ -829,7 +884,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const allSteps = [
     { number: 1, title: 'Informations Personnelles', icon: UserIcon },
     { number: 2, title: 'Informations de l\'entreprise', icon: BuildingOfficeIcon },
-    { number: 3, title: 'Participants', icon: BriefcaseIcon },
+    { number: 3, title: 'Promoteur', icon: BriefcaseIcon },
     { number: 4, title: 'Documents', icon: DocumentIcon },
     { number: 5, title: 'Récapitulatif', icon: CheckCircleIcon }
   ];
@@ -1050,17 +1105,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const loadDomaineActivitesNr = async () => {
       try {
         const response = await enumsAPI.getDomaineActivitesNr();
+        console.log('✅ Domaines d\'activité chargés:', response.data.length, 'options');
         setDomaineActiviteNrOptions(response.data);
       } catch (error) {
         console.error('❌ Erreur lors du chargement des domaines d\'activité NR:', error);
-        console.error('❌ Détails de l\'erreur:', error);
-        // Fallback avec options par défaut en cas d'erreur
-        setDomaineActiviteNrOptions([
-          { key: 'AGRICULTURE_ELEVAGE_PECHE', value: 'Agriculture, élevage et Pêche' },
-          { key: 'MINES_ET_MINERAIS', value: 'Mines et Minerais' },
-          { key: 'INDUSTRIE_ET_TRANSFORMATION', value: 'Industrie et Transformation' }
-        ]);
-        
         // Essayer un appel direct pour diagnostiquer
         console.log('🔍 Test direct de l\'endpoint...');
         try {
@@ -1068,7 +1116,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           console.log('🔍 Réponse directe status:', directResponse.status);
           if (directResponse.ok) {
             const directData = await directResponse.json();
-            console.log('🔍 Données directes reçues:', directData.length, 'options');
+            console.log('✅ Données directes reçues:', directData.length, 'options');
             setDomaineActiviteNrOptions(directData);
           }
         } catch (directError) {
@@ -1079,6 +1127,23 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
     loadDomaineActivitesNr();
   }, []);
+
+  // Gestionnaire de clic extérieur pour fermer la liste déroulante du domaine
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (domaineDropdownRef.current && !domaineDropdownRef.current.contains(event.target as Node)) {
+        setShowDomaineDropdown(false);
+      }
+    };
+
+    if (showDomaineDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDomaineDropdown]);
 
   // Fonction pour détecter si c'est Bamako District
   const isBamakoDistrict = (regionId: string, regions: any[]) => {
@@ -1668,6 +1733,27 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
     if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
     
+    // Validation des conjoints si marié(e)
+    if (formData.isMarried === true) {
+      if (!formData.nombreConjoints || formData.nombreConjoints < 1) {
+        errors.push('Le nombre de conjoints doit être renseigné');
+      }
+      
+      if (!formData.conjoints || formData.conjoints.length === 0) {
+        errors.push('Les informations des conjoints doivent être renseignées');
+      } else {
+        formData.conjoints.forEach((conjoint, index) => {
+          const conjointLabel = `Conjoint(e) ${index + 1}`;
+          if (!conjoint.prenom) errors.push(`${conjointLabel}: Prénom obligatoire`);
+          if (!conjoint.nom) errors.push(`${conjointLabel}: Nom obligatoire`);
+          if (!conjoint.dateMariage) errors.push(`${conjointLabel}: Date de mariage obligatoire`);
+          if (!conjoint.lieuMariage) errors.push(`${conjointLabel}: Lieu de mariage obligatoire`);
+          if (!conjoint.regimeMatrimonial) errors.push(`${conjointLabel}: Régime matrimonial obligatoire`);
+          if (!conjoint.clauseRestrictive) errors.push(`${conjointLabel}: Clause restrictive obligatoire`);
+        });
+      }
+    }
+    
     return errors;
   };
   
@@ -1818,9 +1904,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             errors.push(`${participantLabel}: La pièce de nationalité est obligatoire pour les entreprises individuelles`);
           }
           
-          // Acte de mariage obligatoire si marié
-          if (participant.situationMatrimoniale === 'MARIE' && !participant.acteMariageFile) {
-            errors.push(`${participantLabel}: L'acte de mariage est obligatoire pour les personnes mariées`);
+          // Acte de mariage obligatoire pour chaque conjoint si marié
+          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
+            formData.conjoints.forEach((conjoint, index) => {
+              if (!conjoint.acteMariageFile) {
+                errors.push(`${participantLabel}: L'acte de mariage est obligatoire pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+              }
+            });
           }
           
           // Validation casier judiciaire OU déclaration sur l'honneur avec signature
@@ -2815,7 +2905,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           division_id: participantDivisionId,
           divisionCode: participantDivisionCode,
           localite: participantLocalite,
-          porte: isCreatorParticipant ? formData.porte : undefined
+          porte: isCreatorParticipant ? formData.porte : undefined,
+          // Conjoints (seulement pour le créateur marié)
+          conjoints: isCreatorParticipant && formData.isMarried && formData.conjoints ? 
+            formData.conjoints.map(c => ({
+              prenom: c.prenom,
+              nom: c.nom,
+              dateMariage: c.dateMariage,
+              lieuMariage: c.lieuMariage,
+              regimeMatrimonial: c.regimeMatrimonial,
+              clauseRestrictive: c.clauseRestrictive
+            })) : []
         };
 
         console.log(`?? Données participant ${participant.role}:`, personRequest);
@@ -3398,12 +3498,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
       };
 
-      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
+      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string, conjointId?: string) => {
         const fd = new FormData();
         fd.append('personneId', personId);
         fd.append('entrepriseId', entrepriseId);
         fd.append('typeDocument', typeDocument);
         if (numero) fd.append('numero', numero);
+        if (conjointId) fd.append('conjointId', conjointId);
         fd.append('file', file);
         
         try {
@@ -3578,13 +3679,23 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             }
           }
           
-          // Upload acte de mariage si marié
-          if (participant.acteMariageFile) {
-            try {
-              await uploadDocumentFor(participant.id, 'ACTE_MARIAGE', participant.acteMariageFile, `AM-${participant.prenom}-${participant.nom}`);
-              console.log(`✅ Acte de mariage uploadé pour ${participant.prenom} ${participant.nom}`);
-            } catch (e) {
-              console.error('❌ Upload acte de mariage échoué:', e);
+          // Upload actes de mariage pour chaque conjoint si marié
+          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
+            for (const conjoint of formData.conjoints) {
+              if (conjoint.acteMariageFile && conjoint.id) {
+                try {
+                  await uploadDocumentFor(
+                    participant.id, 
+                    'ACTE_MARIAGE', 
+                    conjoint.acteMariageFile, 
+                    `AM-${conjoint.prenom}-${conjoint.nom}`,
+                    conjoint.id
+                  );
+                  console.log(`✅ Acte de mariage uploadé pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
+                } catch (e) {
+                  console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
+                }
+              }
             }
           }
           
@@ -3674,8 +3785,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
       // Pour les entreprises individuelles, appliquer la logique spécifique
       if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
-        // 180 FCFA si autorisation d'exercice OU import/export, sinon 100 FCFA
-        totalAmount = (formData.requiresExerciseAuthorization || formData.willImportExport) ? 180 : 100;
+        // 28000 FCFA si autorisation d'exercice OU import/export, sinon 10000 FCFA
+        totalAmount = (formData.requiresExerciseAuthorization || formData.willImportExport) ? 28000 : 10000;
       }
       
       // Récupérer les informations de localisation depuis le formulaire
@@ -4290,8 +4401,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           >
             <option value="MONSIEUR">Monsieur</option>
             <option value="MADAME">Madame</option>
-            <option value="MADEMOISELLE">Mademoiselle</option>
-            <option value="PERSONNE_MORALE">Personne Morale</option>
+            {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
+              <option value="PERSONNE_MORALE">Personne Morale</option>
+            )}
           </select>
         </div>
 
@@ -4905,7 +5017,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
+        {/* <div className="flex items-center justify-between mt-4">
           <span className="text-sm font-medium text-gray-700">Avez-vous un extrait de casier judiciaire ?</span>
           <div className="flex space-x-2">
             <button 
@@ -4931,7 +5043,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               Non
             </button>
           </div>
-        </div>
+        </div> */}
 
 
         <div className="flex items-center justify-between mt-4">
@@ -4939,7 +5051,27 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           <div className="flex space-x-2">
             <button 
               type="button" 
-              onClick={() => updateFormData('isMarried', true)}
+              onClick={() => {
+                setFormData(prev => {
+                  if (!prev.conjoints || prev.conjoints.length === 0) {
+                    return {
+                      ...prev,
+                      isMarried: true,
+                      nombreConjoints: 1,
+                      conjoints: [{
+                        id: `conjoint-${Date.now()}-0`,
+                        prenom: '',
+                        nom: '',
+                        dateMariage: '',
+                        lieuMariage: '',
+                        regimeMatrimonial: '',
+                        clauseRestrictive: ''
+                      }]
+                    };
+                  }
+                  return { ...prev, isMarried: true };
+                });
+              }}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
                 formData.isMarried 
                   ? 'bg-[#2d85c9] text-white shadow-lg' 
@@ -4950,7 +5082,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             </button>
             <button 
               type="button" 
-              onClick={() => updateFormData('isMarried', false)}
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  isMarried: false,
+                  nombreConjoints: 0,
+                  conjoints: []
+                }));
+              }}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
                 !formData.isMarried 
                   ? 'bg-[#2d85c9] text-white shadow-lg' 
@@ -4961,6 +5100,169 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             </button>
           </div>
         </div>
+
+        {/* Section conjoints - affichée seulement si marié(e) */}
+        {formData.isMarried && (
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Informations du/des conjoint(s)</h4>
+            
+            {/* Sélection du nombre de conjoints */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre de conjoint(s) *
+              </label>
+              <select
+                value={formData.nombreConjoints || 1}
+                onChange={(e) => {
+                  const count = parseInt(e.target.value);
+                  setFormData(prev => {
+                    const currentConjoints = prev.conjoints || [];
+                    const newConjoints = Array.from({ length: count }, (_, i) => {
+                      if (currentConjoints[i]) {
+                        return currentConjoints[i];
+                      }
+                      return {
+                        id: `conjoint-${Date.now()}-${i}`,
+                        prenom: '',
+                        nom: '',
+                        dateMariage: '',
+                        lieuMariage: '',
+                        regimeMatrimonial: '',
+                        clauseRestrictive: ''
+                      };
+                    });
+                    return {
+                      ...prev,
+                      nombreConjoints: count,
+                      conjoints: newConjoints
+                    };
+                  });
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                <option value="1">1 conjoint(e)</option>
+                <option value="2">2 conjoint(e)s</option>
+                <option value="3">3 conjoint(e)s</option>
+                <option value="4">4 conjoint(e)s</option>
+              </select>
+            </div>
+
+            {/* Formulaires pour chaque conjoint */}
+            {(formData.conjoints || []).map((conjoint, index) => (
+              <div key={conjoint.id || index} className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <h5 className="text-md font-semibold text-gray-700 mb-3">Conjoint(e) {index + 1}</h5>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Prénom */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                    <input
+                      type="text"
+                      defaultValue={conjoint.prenom}
+                      onBlur={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], prenom: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Nom */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <input
+                      type="text"
+                      defaultValue={conjoint.nom}
+                      onBlur={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], nom: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Date de mariage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date de mariage *</label>
+                    <input
+                      type="date"
+                      value={conjoint.dateMariage}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], dateMariage: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Lieu de mariage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de mariage *</label>
+                    <input
+                      type="text"
+                      defaultValue={conjoint.lieuMariage}
+                      onBlur={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], lieuMariage: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Régime matrimonial */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Régime matrimonial *</label>
+                    <select
+                      value={conjoint.regimeMatrimonial}
+                      onChange={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], regimeMatrimonial: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    >
+                      <option value="">Sélectionnez un régime</option>
+                      <option value="SEPARATION_DE_BIENS">Séparation de biens</option>
+                      <option value="COMMUNAUTE_DE_BIENS">Communauté de biens</option>
+                    </select>
+                  </div>
+
+                  {/* Clause restrictive */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Clause restrictive *</label>
+                    <select
+                      value={conjoint.clauseRestrictive}
+                      onChange={(e) => {
+                        const newConjoints = [...(formData.conjoints || [])];
+                        newConjoints[index] = { ...newConjoints[index], clauseRestrictive: e.target.value };
+                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      required
+                    >
+                      <option value="">Sélectionnez une clause</option>
+                      <option value="MONOGAMIE">Monogamie</option>
+                      <option value="POLYGAMIE">Polygamie</option>
+                    </select>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  L'acte de mariage sera uploadé dans l'étape "Promoteur/Documents"
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-4">
           <span className="text-sm font-medium text-gray-700">Votre activité est-elle soumise é une autorisation d'exercice ?</span>
@@ -5187,40 +5489,72 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Activité de l'entreprise</h3>
         
         <div className="space-y-6">
-          {/* Domaine d'activité non réglementé */}
-          <div>
+          {/* Domaine d'activité non réglementé avec autocomplétion personnalisée */}
+          <div className="relative" ref={domaineDropdownRef}>
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Domaine d'activité 
             </label>
-            <select
-              value={formData.domaineActiviteNr || ''}
+            <input
+              ref={domaineInputRef}
+              type="text"
+              value={domaineSearchTerm}
               onChange={(e) => {
-                const selectedNr = e.target.value as DomaineActiviteNr;
-                
-                // Mettre é jour le domaine non réglementé
-                let updatedFormData = { 
-                  ...formData, 
-                  domaineActiviteNr: selectedNr || undefined 
-                };
-                
-                // Si ce domaine non réglementé a une correspondance réglementée, sélectionner automatiquement
-                if (selectedNr && DOMAINE_MAPPING[selectedNr] && DOMAINE_MAPPING[selectedNr].length > 0) {
-                  updatedFormData.domaineActivite = DOMAINE_MAPPING[selectedNr][0];
-                  console.log('?? Sélection automatique du domaine réglementé:', DOMAINE_MAPPING[selectedNr][0]);
-                } else {
-                  // Réinitialiser le domaine réglementé si pas de correspondance
-                  updatedFormData.domaineActivite = undefined;
-                }
-                
-                setFormData(updatedFormData);
+                const searchValue = e.target.value;
+                setDomaineSearchTerm(searchValue);
+                setShowDomaineDropdown(true);
+                // Restaurer le focus après le re-render
+                setTimeout(() => {
+                  if (domaineInputRef.current) {
+                    domaineInputRef.current.focus();
+                  }
+                }, 0);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-            >
-              <option value="">Sélectionner...</option>
-              {domaineActiviteNrOptions.map((option) => (
-                <option key={option.key} value={option.key}>{option.value}</option>
-              ))}
-            </select>
+              onFocus={() => setShowDomaineDropdown(true)}
+              placeholder="Saisir ou sélectionner le domaine d'activité..."
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              autoComplete="off"
+            />
+            
+            {/* Liste déroulante filtrée */}
+            {showDomaineDropdown && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {domaineActiviteNrOptions
+                  .filter(option => 
+                    option.value.toLowerCase().includes(domaineSearchTerm.toLowerCase()) ||
+                    option.key.toLowerCase().includes(domaineSearchTerm.toLowerCase())
+                  )
+                  .map((option) => (
+                    <div
+                      key={option.key}
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Empêche la perte de focus
+                        setDomaineSearchTerm(option.value);
+                        setFormData({ 
+                          ...formData, 
+                          domaineActiviteNr: option.key as DomaineActiviteNr
+                        });
+                        setShowDomaineDropdown(false);
+                      }}
+                      className="px-4 py-3 text-base hover:bg-sky-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      {option.value}
+                    </div>
+                  ))}
+                {domaineActiviteNrOptions.filter(option => 
+                  option.value.toLowerCase().includes(domaineSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <div className="px-4 py-3 text-base text-gray-500">
+                    Aucun résultat trouvé
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <p className="text-xs text-gray-500 mt-1">
+              Commencez à taper pour filtrer les suggestions ({domaineActiviteNrOptions.filter(opt => 
+                opt.value.toLowerCase().includes(domaineSearchTerm.toLowerCase())
+              ).length} résultats)
+            </p>
           </div>
 
           {/* Domaine d'activité réglementé - Masqué complètement */}
@@ -5889,14 +6223,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         {/* Formulaire détaillé pour le créateur */}
         {showDetailedForm && (
-          <div className="bg-gradient-to-r from-white/95   border border-white/60 rounded-lg p-6 mb-6 shadow-sm" style={{ 
-          contain: 'layout style paint',
-          transform: 'translate3d(0, 0, 0)',
-          backfaceVisibility: 'hidden',
-          willChange: 'auto',
-          isolation: 'isolate',
-          position: 'relative'
-        }}>
+          <div className="bg-gradient-to-r from-white/95 border border-white/60 rounded-lg p-6 mb-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-slate-800">
                 {isCreatorFlow 
@@ -6389,7 +6716,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     let sexe = newParticipant.sexe;
                     if (civilite === 'MONSIEUR') {
                       sexe = 'MASCULIN';
-                    } else if (civilite === 'MADAME' || civilite === 'MADEMOISELLE') {
+                    } else if (civilite === 'MADAME') {
                       sexe = 'FEMININ';
                     }
                     
@@ -6400,7 +6727,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <option value="">Sélectionnez une civilité</option>
                   <option value="MONSIEUR">Monsieur</option>
                   <option value="MADAME">Madame</option>
-                  <option value="MADEMOISELLE">Mademoiselle</option>
                 </select>
               </div>
 
@@ -6593,7 +6919,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               {/* Questions spécifiques aux gérants/promoteurs personnes physiques */}
               {(newParticipant.role === 'GERANT' || newParticipant.role === 'PROMOTEUR') && selectedPersonType === 'PHYSIQUE' && (
                 <div className="md:col-span-3 space-y-4 p-4 bg-gray-50 rounded-lg border">
-                  <h5 className="text-sm font-medium text-gray-900">Questions spécifiques aux gérants</h5>
+                  <h5 className="text-sm font-medium text-gray-900">
+                    {formData.typeEntreprise === 'SOCIETE' ? 'Questions spécifiques aux gérants' : 'Questions spécifiques aux promoteurs'}
+                  </h5>
                   
                   {/* Question casier judiciaire */}
                   <div className="flex items-center justify-between">
@@ -6705,18 +7033,37 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     </div>
                   )}
 
-                  {/* Acte de mariage conditionnel */}
-                  {newParticipant.situationMatrimoniale === 'MARIE' && (
+                  {/* Actes de mariage par conjoint */}
+                  {newParticipant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0 && (
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Acte de mariage *</label>
-                      <input
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2d85c9] file:text-white hover:file:bg-[#2d85c9]/90"
-                        required
-                        type="file"
-                        onChange={(e) => setNewParticipant({...newParticipant, acteMariageFile: e.target.files?.[0]})}
-                      />
-                      <p className="text-xs text-black-600 mt-1">Obligatoire si marié(e) - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
+                      <label className="block text-sm font-bold text-slate-700 mb-3">Actes de mariage *</label>
+                      <div className="space-y-3">
+                        {formData.conjoints.map((conjoint, index) => (
+                          <div key={conjoint.id || index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Conjoint(e) {index + 1}: {conjoint.prenom} {conjoint.nom}
+                            </p>
+                            <input
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2d85c9] file:text-white hover:file:bg-[#2d85c9]/90"
+                              required
+                              type="file"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const newConjoints = [...(formData.conjoints || [])];
+                                  newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
+                                  setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                                }
+                              }}
+                            />
+                            {conjoint.acteMariageFile && (
+                              <p className="text-xs text-green-600 mt-1">✓ {conjoint.acteMariageFile.name}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-2">Un acte de mariage par conjoint - Formats: PDF, JPG, JPEG, PNG (max 5MB)</p>
                     </div>
                   )}
 
@@ -7484,6 +7831,44 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               <span className="font-bold text-slate-700">Marié(e) :</span>
               <span className="font-medium text-slate-600">{formData.isMarried ? 'Oui' : 'Non'}</span>
             </div>
+              
+              {/* Informations des conjoints si marié */}
+              {formData.isMarried && formData.conjoints && formData.conjoints.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-bold text-slate-700 mb-2 flex items-center">
+                    {/* <span className="mr-2">💍</span> */}
+                    Conjoint(s) ({formData.conjoints.length})
+                  </h4>
+                  {formData.conjoints.map((conjoint, index) => (
+                    <div key={conjoint.id || index} className="mb-3 last:mb-0 p-2 bg-white rounded-lg border border-blue-100">
+                      <p className="font-semibold text-sm text-slate-700 mb-1">Conjoint(e) {index + 1}</p>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Nom complet:</span>
+                          <span className="font-medium text-slate-700">{conjoint.prenom} {conjoint.nom}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Date de mariage:</span>
+                          <span className="font-medium text-slate-700">{conjoint.dateMariage}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Lieu:</span>
+                          <span className="font-medium text-slate-700">{conjoint.lieuMariage}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Régime:</span>
+                          <span className="font-medium text-slate-700">{conjoint.regimeMatrimonial}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Clause:</span>
+                          <span className="font-medium text-slate-700">{conjoint.clauseRestrictive}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
               <span className="font-bold text-slate-700">Autres responsables :</span>
               <span className="font-medium text-slate-600">{formData.allowsOthersResponsible ? 'Oui' : 'Non'}</span>
@@ -7511,7 +7896,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
               <span className="font-bold text-slate-700">Nom :</span>
-              <span className="font-medium text-slate-600">{formData.nomEntreprise}</span>
+              <span className="font-medium text-slate-600">
+                {(formData.nomEntreprise && formData.nomEntreprise.trim() !== '') 
+                  ? formData.nomEntreprise 
+                  : `${formData.prenom || ''} ${formData.nom || ''}`.trim() || 'Non renseigné'}
+              </span>
             </div>
             <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
               <span className="font-bold text-slate-700">Sigle :</span>
@@ -7588,7 +7977,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-green-800">Montant à payer :</span>
                   <span className="text-lg font-bold text-green-800">
-                    {(formData.requiresExerciseAuthorization || formData.willImportExport) ? '180' : '100'} F CFA
+                    {(formData.requiresExerciseAuthorization || formData.willImportExport) ? '28000' : '10000'} F CFA
                   </span>
                 </div>
                 {(formData.requiresExerciseAuthorization || formData.willImportExport) && (
@@ -8037,17 +8426,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       )}
 
       {/* Step Content */}
-      <div className="bg-white rounded-lg shadow-lg p-8" style={{ 
-        transform: 'translate3d(0, 0, 0)',
-        backfaceVisibility: 'hidden',
-        perspective: '1000px',
-        scrollMarginTop: '5rem',
-        position: 'relative',
-        zIndex: 1,
-        isolation: 'isolate',
-        contain: 'layout style paint',
-        pointerEvents: 'auto'
-      }}>
+      <div className="bg-white rounded-lg shadow-lg p-8">
         {renderCurrentStep()}
       </div>
 
@@ -8096,7 +8475,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             ) : (
               <>
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
-                Créer le dossier
+                Valider le dossier
               </>
             )}
           </button>

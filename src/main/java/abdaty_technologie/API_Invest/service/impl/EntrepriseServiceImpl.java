@@ -825,16 +825,16 @@ public class EntrepriseServiceImpl implements EntrepriseService {
     private BigDecimal calculateTotalAmount(EntrepriseRequest req) {
         // Pour les entreprises individuelles : logique spécifique
         if (req.typeEntreprise == TypeEntreprise.ENTREPRISE_INDIVIDUELLE) {
-            // Base : 100 FCFA
-            BigDecimal baseAmount = new BigDecimal("100");
+            // Base : 10000 FCFA
+            BigDecimal baseAmount = new BigDecimal("10000");
             
-            // Si autorisation d'exercice OU import/export : 180 FCFA
+            // Si autorisation d'exercice OU import/export : 28000 FCFA
             if (Boolean.TRUE.equals(req.autorisationExercice) || Boolean.TRUE.equals(req.importExport)) {
-                return new BigDecimal("180");
+                return new BigDecimal("28000");
             }
             
             // Retourner le montant de base sans frais supplémentaires
-            return baseAmount; // 100 FCFA
+            return baseAmount; // 10000 FCFA
         }
         
         // Pour les sociétés : logique existante

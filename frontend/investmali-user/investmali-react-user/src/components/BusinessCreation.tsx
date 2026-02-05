@@ -48,6 +48,19 @@ export type DomaineActiviteNr =
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Interface pour les conjoints
+export interface Conjoint {
+  id?: string; // Identifiant unique pour éviter les problèmes de re-render
+  prenom: string;
+  nom: string;
+  dateMariage: string; // Format YYYY-MM-DD
+  lieuMariage: string;
+  regimeMatrimonial: string;
+  clauseRestrictive: string;
+  acteMariageFile?: File;
+  acteMariageFilename?: string;
+}
+
 // Fonction pour formater les dates pour le backend
 const formatDateForBackend = (dateString: string | null | undefined): string | null => {
   if (!dateString || dateString.trim() === '') {
@@ -148,10 +161,6 @@ const mapCivilityToBackend = (frontendCivility: string): string => {
     'MME': 'MADAME',
     'Madame': 'MADAME',
     'MADAME': 'MADAME',
-    'Mlle': 'MADEMOISELLE',
-    'MLLE': 'MADEMOISELLE',
-    'Mademoiselle': 'MADEMOISELLE',
-    'MADEMOISELLE': 'MADEMOISELLE',
     // Ajout pour les personnes morales
     'PERSONNE_MORALE': 'PERSONNE_MORALE'
   };
@@ -167,7 +176,7 @@ const deduceSexeFromCivilite = (civilite: string): string | null => {
   let result;
   if (backendCivilite === 'PERSONNE_MORALE') {
     result = null; // Les personnes morales n'ont pas de sexe
-  } else if (backendCivilite === 'MADAME' || backendCivilite === 'MADEMOISELLE') {
+  } else if (backendCivilite === 'MADAME') {
     result = 'FEMININ';
   } else {
     result = 'MASCULIN';
@@ -194,7 +203,7 @@ const getConsistentSexe = (existingSexe: string | undefined, civilite: string): 
   const backendCivilite = mapCivilityToBackend(civilite);
   const isConsistent = 
     (backendCivilite === 'MONSIEUR' && existingSexe === 'MASCULIN') ||
-    ((backendCivilite === 'MADAME' || backendCivilite === 'MADEMOISELLE') && existingSexe === 'FEMININ');
+    (backendCivilite === 'MADAME' && existingSexe === 'FEMININ');
   
   if (isConsistent) {
     return existingSexe;
@@ -285,7 +294,6 @@ const countries = [
 export const CIVILITE_LABELS: Record<string, string> = {
   MR: 'Monsieur',
   Mme: 'Madame',
-  Melle: 'Mademoiselle',
 };
 export const SEXE_LABELS: Record<string, string> = {
   MASCULIN: 'Masculin',
@@ -954,6 +962,9 @@ export interface Participant {
     file: File | null;
     description: string;
   }>;
+  // Conjoints (pour les personnes mariées)
+  nombreConjoints?: number;
+  conjoints?: Conjoint[];
 }
 
 // Structure pour la requête de création d'entreprise selon l'API backend
@@ -1021,6 +1032,9 @@ interface PersonalInfo {
   allowsMultipleManagers?: boolean;
   requiresExerciseAuthorization?: boolean;
   hasDifferentAddress?: boolean;
+  // Conjoints (pour les personnes mariées)
+  nombreConjoints?: number;
+  conjoints?: Conjoint[];
 }
 
 // Structure pour les informations de l'entreprise (étape 2)
@@ -3378,7 +3392,17 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       type="button"
                       onClick={() => updateData('personalInfo', {
                         ...data.personalInfo,
-                        isMarried: true
+                        isMarried: true,
+                        nombreConjoints: 1,
+                        conjoints: data.personalInfo?.conjoints || [{
+                          id: Date.now().toString() + Math.random(),
+                          prenom: '',
+                          nom: '',
+                          dateMariage: '',
+                          lieuMariage: '',
+                          regimeMatrimonial: '',
+                          clauseRestrictive: ''
+                        }]
                       })}
                       className={`px-4 py-2 rounded-lg text-sm font-medium ${data.personalInfo?.isMarried === true ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
@@ -3388,7 +3412,9 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                       type="button"
                       onClick={() => updateData('personalInfo', {
                         ...data.personalInfo,
-                        isMarried: false
+                        isMarried: false,
+                        nombreConjoints: 0,
+                        conjoints: []
                       })}
                       className={`px-4 py-2 rounded-lg text-sm font-medium ${(data.personalInfo?.isMarried === false || data.personalInfo?.isMarried === undefined) ? 'bg-investmali-accent text-white' : 'bg-gray-100 text-gray-700'}`}
                     >
@@ -3397,6 +3423,181 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
                   </div>
                 </div>
 
+                {/* Section conjoints - affichée seulement si marié(e) */}
+                {data.personalInfo?.isMarried === true && (
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Informations du/des conjoint(s)</h4>
+                    
+                    {/* Sélection du nombre de conjoints */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre de conjoint(s) *
+                      </label>
+                      <select
+                        value={data.personalInfo?.nombreConjoints || 1}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value);
+                          const currentConjoints = data.personalInfo?.conjoints || [];
+                          const newConjoints = Array.from({ length: count }, (_, i) => 
+                            currentConjoints[i] || {
+                              id: Date.now().toString() + Math.random() + i,
+                              prenom: '',
+                              nom: '',
+                              dateMariage: '',
+                              lieuMariage: '',
+                              regimeMatrimonial: '',
+                              clauseRestrictive: ''
+                            }
+                          );
+                          updateData('personalInfo', {
+                            ...data.personalInfo,
+                            nombreConjoints: count,
+                            conjoints: newConjoints
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent"
+                      >
+                        <option value="1">1 conjoint(e)</option>
+                        <option value="2">2 conjoint(e)s</option>
+                        <option value="3">3 conjoint(e)s</option>
+                        <option value="4">4 conjoint(e)s</option>
+                      </select>
+                    </div>
+
+                    {/* Formulaires pour chaque conjoint */}
+                    {(data.personalInfo?.conjoints || []).map((conjoint, index) => (
+                      <div key={conjoint.id || index} className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                        <h5 className="text-md font-semibold text-gray-700 mb-3">Conjoint(e) {index + 1}</h5>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Prénom */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                            <input
+                              type="text"
+                              value={conjoint.prenom}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], prenom: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            />
+                          </div>
+
+                          {/* Nom */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                            <input
+                              type="text"
+                              value={conjoint.nom}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], nom: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            />
+                          </div>
+
+                          {/* Date de mariage */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date de mariage *</label>
+                            <input
+                              type="date"
+                              value={conjoint.dateMariage}
+                              max={new Date().toISOString().split('T')[0]}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], dateMariage: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            />
+                          </div>
+
+                          {/* Lieu de mariage */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de mariage *</label>
+                            <input
+                              type="text"
+                              value={conjoint.lieuMariage}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], lieuMariage: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            />
+                          </div>
+
+                          {/* Régime matrimonial */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Régime matrimonial *</label>
+                            <select
+                              value={conjoint.regimeMatrimonial}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], regimeMatrimonial: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            >
+                              <option value="">Sélectionnez un régime</option>
+                              <option value="SEPARATION_DE_BIENS">Séparation de biens</option>
+                              <option value="COMMUNAUTE_DE_BIENS">Communauté de biens</option>
+                            </select>
+                          </div>
+
+                          {/* Clause restrictive */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Clause restrictive *</label>
+                            <select
+                              value={conjoint.clauseRestrictive}
+                              onChange={(e) => {
+                                const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                                newConjoints[index] = { ...newConjoints[index], clauseRestrictive: e.target.value };
+                                updateData('personalInfo', {
+                                  ...data.personalInfo,
+                                  conjoints: newConjoints
+                                });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-investmali-accent"
+                              required
+                            >
+                              <option value="">Sélectionnez une clause</option>
+                              <option value="MONOGAMIE">Monogamie</option>
+                              <option value="POLYGAMIE">Polygamie</option>
+                            </select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2 italic">
+                          L'acte de mariage sera uploadé dans l'étape "Documents"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Responsables supplémentaires */}
                 <div className="flex items-center justify-between mt-4">
@@ -5511,6 +5712,78 @@ const DocumentsStep: React.FC<{data: BusinessCreationData, updateData: (field: k
         </div>
       )}
 
+      {/* Section actes de mariage par conjoint */}
+      {(() => {
+        const hasConjoints = data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0;
+        console.log('🔍 [ACTES MARIAGE] Debug:', {
+          isMarried: data.personalInfo?.isMarried,
+          conjoints: data.personalInfo?.conjoints,
+          conjointsLength: data.personalInfo?.conjoints?.length,
+          hasConjoints
+        });
+        return hasConjoints;
+      })() && (
+        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 animate-slide-up mt-6" style={{animationDelay: '0.6s'}}>
+          <h3 className="text-base sm:text-lg font-semibold text-investmali-neutral-dark mb-3 sm:mb-4 flex items-center">
+            <span className="bg-investmali-accent text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-sm mr-2 sm:mr-3">💍</span>
+            Actes de Mariage
+          </h3>
+          <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-sm">
+            Téléchargez un acte de mariage pour chaque conjoint déclaré.
+          </p>
+          
+          <div className="space-y-4">
+            {(data.personalInfo?.conjoints || []).map((conjoint, index) => (
+              <div key={conjoint.id || index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-semibold text-slate-700 mb-3">
+                  Conjoint(e) {index + 1}: {conjoint.prenom} {conjoint.nom}
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const newConjoints = [...(data.personalInfo?.conjoints || [])];
+                      newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
+                      updateData('personalInfo', {
+                        ...data.personalInfo,
+                        conjoints: newConjoints
+                      });
+                    }
+                  }}
+                  className="hidden"
+                  id={`acte-mariage-${index}`}
+                />
+                <label
+                  htmlFor={`acte-mariage-${index}`}
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-dashed border-gray-300 rounded-lg sm:rounded-xl hover:border-investmali-accent transition-all duration-500 transform hover:-translate-y-1 hover:shadow-lg cursor-pointer flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 bg-white hover:bg-investmali-accent/5"
+                >
+                  {conjoint.acteMariageFile ? (
+                    <>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-investmali-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-investmali-accent font-medium text-sm sm:text-sm text-center">{conjoint.acteMariageFile.name}</span>
+                      <span className="text-sm text-gray-500">(Cliquez pour changer)</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="text-sm sm:text-sm text-gray-600 text-center">Télécharger l'acte de mariage</span>
+                    </>
+                  )}
+                </label>
+                <p className="text-sm text-gray-500 mt-2">
+                  Formats acceptés : PDF, JPG, PNG (max 5MB)
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
@@ -5579,6 +5852,27 @@ const SummaryAndSubmissionStep: React.FC<{
       }
       if (age < 18) {
         personalErrors.push('L\'utilisateur doit avoir au moins 18 ans');
+      }
+    }
+    
+    // Validation des conjoints si marié(e)
+    if (personal?.isMarried === true) {
+      if (!personal.nombreConjoints || personal.nombreConjoints < 1) {
+        personalErrors.push('Le nombre de conjoints doit être renseigné');
+      }
+      
+      if (!personal.conjoints || personal.conjoints.length === 0) {
+        personalErrors.push('Les informations des conjoints doivent être renseignées');
+      } else if (personal.conjoints) {
+        personal.conjoints.forEach((conjoint, index) => {
+          const conjointLabel = `Conjoint(e) ${index + 1}`;
+          if (!conjoint.prenom) personalErrors.push(`${conjointLabel}: Prénom obligatoire`);
+          if (!conjoint.nom) personalErrors.push(`${conjointLabel}: Nom obligatoire`);
+          if (!conjoint.dateMariage) personalErrors.push(`${conjointLabel}: Date de mariage obligatoire`);
+          if (!conjoint.lieuMariage) personalErrors.push(`${conjointLabel}: Lieu de mariage obligatoire`);
+          if (!conjoint.regimeMatrimonial) personalErrors.push(`${conjointLabel}: Régime matrimonial obligatoire`);
+          if (!conjoint.clauseRestrictive) personalErrors.push(`${conjointLabel}: Clause restrictive obligatoire`);
+        });
       }
     }
     
@@ -5658,8 +5952,13 @@ const SummaryAndSubmissionStep: React.FC<{
               participantErrors.push(`${participantLabel}: Déclaration sur l'honneur manquante (vous avez indiqué ne pas avoir de casier judiciaire)`);
             }
             
-            if (p.isMarried === true && !p.acteMariageFile) {
-              participantErrors.push(`${participantLabel}: Acte de mariage manquant (vous avez indiqué être marié(e))`);
+            // Acte de mariage obligatoire pour chaque conjoint si marié
+            if (p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+              data.personalInfo.conjoints.forEach((conjoint, index) => {
+                if (!conjoint.acteMariageFile) {
+                  participantErrors.push(`${participantLabel}: Acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+                }
+              });
             }
           }
         }
@@ -5667,7 +5966,7 @@ const SummaryAndSubmissionStep: React.FC<{
     }
     
     if (participantErrors.length > 0) {
-      allErrors.push({ step: 4, title: 'Participants', errors: participantErrors });
+      allErrors.push({ step: 4, title: 'Promoteur', errors: participantErrors });
     }
 
     return allErrors;
@@ -5882,11 +6181,21 @@ const SummaryAndSubmissionStep: React.FC<{
               // Mapper la nationalité vers l'enum backend avec valeur par défaut
               nationnalite: data.personalInfo.nationality || 'MALIENNE',
               sexe: data.personalInfo.sexe === 'MASCULIN' ? 'MASCULIN' : data.personalInfo.sexe,
-              situationMatrimoniale: data.personalInfo.situationMatrimoniale || 'CELIBATAIRE',
+              situationMatrimoniale: data.personalInfo.isMarried ? 'MARIE' : 'CELIBATAIRE',
               civilite: data.personalInfo.civility === 'MONSIEUR' ? 'MONSIEUR' : data.personalInfo.civility,
               division_id: data.personalInfo.divisionId,
               localite: data.personalInfo.localite,
-              porte: data.personalInfo.porte
+              porte: data.personalInfo.porte,
+              // Ajouter les conjoints si la personne est mariée
+              conjoints: data.personalInfo.isMarried && data.personalInfo.conjoints ? 
+                data.personalInfo.conjoints.map(c => ({
+                  prenom: c.prenom,
+                  nom: c.nom,
+                  dateMariage: c.dateMariage,
+                  lieuMariage: c.lieuMariage,
+                  regimeMatrimonial: c.regimeMatrimonial,
+                  clauseRestrictive: c.clauseRestrictive
+                })) : []
             };
             
             console.log('🔍 [SUBMIT] Requête de mise à jour:', personUpdateRequest);
@@ -5947,8 +6256,13 @@ const SummaryAndSubmissionStep: React.FC<{
         if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
           missingDocs.push(`${label}: déclaration d'honneur manquante (sans casier judiciaire) - uploadez une déclaration ou signez pour en générer une`);
         }
-        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
-          missingDocs.push(`${label}: acte de mariage manquant`);
+        // Actes de mariage obligatoires pour chaque conjoint si marié
+        if (requiresManagerDocuments && p.isMarried === true && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+          data.personalInfo.conjoints.forEach((conjoint, index) => {
+            if (!conjoint.acteMariageFile) {
+              missingDocs.push(`${label}: acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+            }
+          });
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
           missingDocs.push(`${label}: extrait de naissance manquant`);
@@ -6291,12 +6605,13 @@ const SummaryAndSubmissionStep: React.FC<{
         if (!res.ok) { const err = await safeJson(res); throw new Error(err?.message || 'Upload pièce échoué'); }
       };
 
-      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string) => {
+      const uploadDocumentFor = async (personId: string, typeDocument: string, file: File, numero?: string, conjointId?: string) => {
         console.log(`🔄 [UPLOAD DEBUG] Tentative upload document:`, {
           personId,
           entrepriseId,
           typeDocument,
           numero,
+          conjointId,
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type
@@ -6307,6 +6622,7 @@ const SummaryAndSubmissionStep: React.FC<{
         fd.append('entrepriseId', entrepriseId);
         fd.append('typeDocument', typeDocument);
         if (numero) fd.append('numero', numero);
+        if (conjointId) fd.append('conjointId', conjointId);
         fd.append('file', file);
         
         const res = await fetch('/api/v1/documents/document', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
@@ -6480,9 +6796,25 @@ const SummaryAndSubmissionStep: React.FC<{
           } catch (e) {
           }
           
-          try { 
-            await uploadDocumentFor(gerantId, 'ACTE_MARIAGE', gerant.acteMariageFile, `AM-${entrepriseReference}`); 
-          } catch (e) { }
+          // Upload actes de mariage pour chaque conjoint si marié
+          if (data.personalInfo?.isMarried && data.personalInfo?.conjoints && data.personalInfo.conjoints.length > 0) {
+            for (const conjoint of data.personalInfo.conjoints) {
+              if (conjoint.acteMariageFile && conjoint.id) {
+                try {
+                  await uploadDocumentFor(
+                    gerantId, 
+                    'ACTE_MARIAGE', 
+                    conjoint.acteMariageFile, 
+                    `AM-${conjoint.prenom}-${conjoint.nom}`,
+                    conjoint.id
+                  );
+                  console.log(`✅ Acte de mariage uploadé pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
+                } catch (e) {
+                  console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
+                }
+              }
+            }
+          }
         }
         if (!data.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
           try { 
@@ -6611,7 +6943,11 @@ const SummaryAndSubmissionStep: React.FC<{
             <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm sm:text-sm text-gray-600">Nom de l'entreprise :</span>
-                <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">{data.companyInfo?.nom}</span>
+                <span className="text-sm sm:text-sm font-medium text-investmali-neutral-dark">
+                  {(data.companyInfo?.nom && data.companyInfo.nom.trim() !== '') 
+                    ? data.companyInfo.nom 
+                    : `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim() || 'Non renseigné'}
+                </span>
               </div>
               {data.companyInfo?.sigle && (
                 <div className="flex justify-between">
@@ -6696,6 +7032,43 @@ const SummaryAndSubmissionStep: React.FC<{
                   <div className="flex justify-between">
                     <span className="text-xs sm:text-sm text-gray-600">Porte :</span>
                     <span className="text-xs sm:text-sm font-medium text-investmali-neutral-dark">{data.personalInfo.porte}</span>
+                  </div>
+                )}
+                
+                {/* Informations des conjoints si marié */}
+                {data.personalInfo.isMarried && data.personalInfo.conjoints && data.personalInfo.conjoints.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-bold text-sm text-slate-700 mb-2 flex items-center">
+                      <span className="mr-2">💍</span>
+                      Conjoint(s) ({data.personalInfo.conjoints.length})
+                    </h4>
+                    {data.personalInfo.conjoints.map((conjoint, index) => (
+                      <div key={conjoint.id || index} className="mb-3 last:mb-0 p-2 bg-white rounded-lg border border-blue-100">
+                        <p className="font-semibold text-xs text-slate-700 mb-1">Conjoint(e) {index + 1}</p>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Nom complet:</span>
+                            <span className="font-medium text-slate-700">{conjoint.prenom} {conjoint.nom}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Date de mariage:</span>
+                            <span className="font-medium text-slate-700">{conjoint.dateMariage}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Lieu:</span>
+                            <span className="font-medium text-slate-700">{conjoint.lieuMariage}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Régime:</span>
+                            <span className="font-medium text-slate-700">{conjoint.regimeMatrimonial}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-600">Clause:</span>
+                            <span className="font-medium text-slate-700">{conjoint.clauseRestrictive}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -7159,7 +7532,7 @@ const BusinessCreation: React.FC = () => {
     { number: 1, title: 'Identification', icon: '👤' },
     { number: 2, title: 'Informations Personnelles', icon: '📝' },
     { number: 3, title: 'Informations Société', icon: '🏢' },
-    { number: 4, title: 'Participants', icon: '👥' },
+    { number: 4, title: 'Promoteur', icon: '👥' },
     { number: 5, title: 'Documents', icon: '📄' },
     { number: 6, title: 'Récapitulatif', icon: '✅' }
   ];
@@ -7539,9 +7912,13 @@ const BusinessCreation: React.FC = () => {
         if (requiresManagerDocuments && p.hasCriminalRecord === false && !p.declarationHonneurFile && !p.signatureDataUrl) {
           documentErrors.push("Déclaration d'honneur ou signature requise (sans casier judiciaire)");
         }
-        // Utiliser isMarried pour la validation de l'acte de mariage
-        if (requiresManagerDocuments && p.isMarried === true && !p.acteMariageFile) {
-          documentErrors.push("Acte de mariage requis");
+        // Actes de mariage obligatoires pour chaque conjoint si marié
+        if (requiresManagerDocuments && p.isMarried === true && businessData.personalInfo?.conjoints && businessData.personalInfo.conjoints.length > 0) {
+          businessData.personalInfo.conjoints.forEach((conjoint: any, index: number) => {
+            if (!conjoint.acteMariageFile) {
+              documentErrors.push(`Acte de mariage manquant pour le conjoint ${index + 1} (${conjoint.prenom} ${conjoint.nom})`);
+            }
+          });
         }
         if (requiresManagerDocuments && !p.extraitNaissanceFile) {
           documentErrors.push("Extrait de naissance requis");
@@ -9089,7 +9466,7 @@ const BusinessCreation: React.FC = () => {
                 { number: 1, name: 'Identification' },
                 { number: 2, name: 'Informations personnelles' },
                 { number: 3, name: 'Informations entreprise' },
-                { number: 4, name: 'Participants' },
+                { number: 4, name: 'Promoteur' },
                 ...(isEntrepriseIndividuelle ? [] : [{ number: 5, name: 'Documents' }]),
                 { number: isEntrepriseIndividuelle ? 5 : 6, name: 'Récapitulatif', actualStep: 6 }
               ];
