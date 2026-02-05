@@ -53,41 +53,12 @@ export const generateReceiptData = async (
     // Silently handle error
   }
 
-  // Construire la localisation en essayant différentes sources
+  // Construire la localisation (Région/Cercle/Arrondissement)
   const getLocalisation = (data: any): string => {
     
-    // PRIORITÉ 1: Champs directs de l'API (structure plate)
-    if (data?.divisionNom) {
-      return data.divisionNom;
-    }
-    if (data?.quartierNom) {
-      return data.quartierNom;
-    }
-    if (data?.arrondissementNom) {
-      return data.arrondissementNom;
-    }
+    // PRIORITÉ 1: Région en premier pour la localisation
     if (data?.regionNom) {
       return data.regionNom;
-    }
-    
-    // PRIORITÉ 2: Structures d'objets (ancienne logique)
-    if (data?.division?.nom) {
-      return data.division.nom;
-    }
-    if (data?.localisation) {
-      return data.localisation;
-    }
-    if (data?.quartier?.nom) {
-      return data.quartier.nom;
-    }
-    if (data?.quartier) {
-      return data.quartier;
-    }
-    if (data?.arrondissement?.nom) {
-      return data.arrondissement.nom;
-    }
-    if (data?.arrondissement) {
-      return data.arrondissement;
     }
     if (data?.region?.nom) {
       return data.region.nom;
@@ -96,24 +67,23 @@ export const generateReceiptData = async (
       return data.region;
     }
     
-    // PRIORITÉ 3: Autres champs possibles
-    if (data?.adresse) {
-      return data.adresse;
+    // PRIORITÉ 2: Cercle/Arrondissement
+    if (data?.cercleNom) {
+      return data.cercleNom;
     }
+    if (data?.arrondissementNom) {
+      return data.arrondissementNom;
+    }
+    if (data?.arrondissement?.nom) {
+      return data.arrondissement.nom;
+    }
+    if (data?.arrondissement) {
+      return data.arrondissement;
+    }
+    
+    // PRIORITÉ 3: Autres champs possibles
     if (data?.ville) {
       return data.ville;
-    }
-    if (data?.lieu) {
-      return data.lieu;
-    }
-    if (data?.emplacement) {
-      return data.emplacement;
-    }
-    if (data?.secteur) {
-      return data.secteur;
-    }
-    if (data?.zone) {
-      return data.zone;
     }
     if (data?.pays) {
       return data.pays;
@@ -122,34 +92,42 @@ export const generateReceiptData = async (
     return 'Non spécifiée';
   };
 
+  // Commune = Quartier (le plus précis)
   const getCommune = (data: any): string => {
     
-    // PRIORITÉ 1: Champs directs de l'API (structure plate) - RÉGION EN PREMIER
-    if (data?.regionNom) {
-      return data.regionNom;
+    // PRIORITÉ 1: Quartier en premier (le plus précis)
+    if (data?.quartierNom) {
+      return data.quartierNom;
     }
-    if (data?.communeNom) {
-      return data.communeNom;
+    if (data?.quartier?.nom) {
+      return data.quartier.nom;
     }
-    if (data?.arrondissementNom) {
-      return data.arrondissementNom;
-    }
-    if (data?.cercleNom) {
-      return data.cercleNom;
+    if (data?.quartier) {
+      return data.quartier;
     }
     
-    // PRIORITÉ 2: Structures d'objets (ancienne logique) - RÉGION EN PREMIER
-    if (data?.region?.nom) {
-      return data.region.nom;
+    // PRIORITÉ 2: Division si c'est un nom (pas un code)
+    if (data?.divisionNom && !data.divisionNom.match(/^\d+$/)) {
+      return data.divisionNom;
     }
-    if (data?.region) {
-      return data.region;
+    if (data?.division?.nom && !data.division.nom.match(/^\d+$/)) {
+      return data.division.nom;
+    }
+    
+    // PRIORITÉ 3: Commune
+    if (data?.communeNom) {
+      return data.communeNom;
     }
     if (data?.commune?.nom) {
       return data.commune.nom;
     }
     if (data?.commune) {
       return data.commune;
+    }
+    
+    // PRIORITÉ 4: Arrondissement
+    if (data?.arrondissementNom) {
+      return data.arrondissementNom;
     }
     if (data?.arrondissement?.nom) {
       return data.arrondissement.nom;
@@ -158,27 +136,15 @@ export const generateReceiptData = async (
       return data.arrondissement;
     }
     
-    // PRIORITÉ 3: Autres champs possibles
+    // PRIORITÉ 5: Autres champs
+    if (data?.localisation && !data.localisation.match(/^\d+$/)) {
+      return data.localisation;
+    }
+    if (data?.adresse) {
+      return data.adresse;
+    }
     if (data?.ville) {
       return data.ville;
-    }
-    if (data?.codePostal) {
-      return data.codePostal;
-    }
-    if (data?.secteur) {
-      return data.secteur;
-    }
-    if (data?.zone) {
-      return data.zone;
-    }
-    if (data?.region?.nom) {
-      return data.region.nom;
-    }
-    if (data?.region) {
-      return data.region;
-    }
-    if (data?.pays) {
-      return data.pays;
     }
     
     return 'Non spécifiée';
@@ -311,11 +277,20 @@ export const generateUnpaidReceiptData = (
 
   // Construire les données du reçu temporaire NON PAYÉ
   // Utiliser nom entreprise ou nom+prénom si entrepriseName est vide
-  const entrepriseName = entrepriseData?.nom || entrepriseData?.companyName;
+  // Essayer plusieurs champs possibles pour le nom de l'entreprise
+  const entrepriseName = entrepriseData?.nom || 
+                         entrepriseData?.companyName || 
+                         entrepriseData?.nomEntreprise ||
+                         entrepriseData?.denominationSociale ||
+                         entrepriseData?.raisonSociale;
+  
+  // Si pas de nom d'entreprise, utiliser prénom+nom du participant
   const displayName = entrepriseName || 
     (entrepriseData?.prenom && entrepriseData?.nomParticipant 
       ? `${entrepriseData.prenom} ${entrepriseData.nomParticipant}`
-      : 'Entreprise');
+      : (entrepriseData?.prenom && entrepriseData?.nom
+        ? `${entrepriseData.prenom} ${entrepriseData.nom}`
+        : 'Entreprise'));
   
   const receiptData: PaymentReceiptData = {
     entrepriseId: entrepriseData?.id || 'temp-' + Date.now(),

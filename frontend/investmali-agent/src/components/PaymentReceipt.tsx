@@ -386,7 +386,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ paymentData, onClose })
                 </h3>
                 <div className="space-y-2">
                   <div>
-                    <span className="font-medium text-gray-700">Nom:</span>
+                    <span className="font-medium text-gray-700">Nom Commerciale:</span>
                     <p className="text-xl font-bold text-gray-900">
                       {paymentData.entrepriseName || 
                         (paymentData.prenom && paymentData.nom ? `${paymentData.prenom} ${paymentData.nom}` : 'N/A')}

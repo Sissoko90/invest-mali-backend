@@ -34,6 +34,7 @@ public class PersonCreateRequest {
     public SituationMatrimoniales situationMatrimoniale;
     @NotNull
     public Civilites civilite;
+    
     // Optionnel: par défaut USER si null
     public Roles role;
     // Division code optionnel

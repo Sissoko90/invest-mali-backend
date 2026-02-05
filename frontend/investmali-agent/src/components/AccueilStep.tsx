@@ -1860,10 +1860,6 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                             className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             {paiementStatusByEntreprise[demande.id] ? 'Valider → Révision' : 'Valider → Régisseur'}
                           </button>
-                          <button onClick={() => handleUnassign(demande.id)} disabled={isLoading}
-                            className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
-                            Désassigner
-                          </button>
                           <button onClick={() => handleViewDetails(demande.id)}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             Détails

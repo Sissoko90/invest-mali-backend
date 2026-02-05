@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "conjoints")
@@ -41,4 +43,8 @@ public class Conjoint extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "clause_restrictive", nullable = false, length = 255)
     private ClauseRestrictive clauseRestrictive;
+
+    // Relation vers les documents (actes de mariage) liés à ce conjoint
+    @OneToMany(mappedBy = "conjoint", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Documents> documents = new ArrayList<>();
 }

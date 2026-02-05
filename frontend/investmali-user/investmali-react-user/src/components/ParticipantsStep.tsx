@@ -841,17 +841,27 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       (participantPhone2.startsWith('+') ? participantPhone2 : `${selectedCountry.code}${participantPhone2.replace(/\s/g, '')}`) : '';
 
     const newParticipant: Participant = { 
-      ...formData,
-      // Convertir les téléphones au format E.164
-      telephone: fullPhoneForParticipant,
-      telephone2: fullPhoneForParticipant2,
-      // Pour les gérants et promoteurs d'entreprise individuelle, définir automatiquement la situation matrimoniale
-      situationMatrimoniale: (formData.role === 'GERANT' || formData.role === 'PROMOTEUR')
-        ? (data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE')
-        : formData.situationMatrimoniale,
-      // Les administrateurs n'ont pas de parts
-      pourcentageParts: roleRequiresParts(formData.role) ? formData.pourcentageParts : 0
+      ...formData
     };
+    // Assigner directement les fichiers pour éviter la sérialisation
+    newParticipant.casierJudiciaireFile = formData.casierJudiciaireFile;
+    newParticipant.declarationHonneurFile = formData.declarationHonneurFile;
+    newParticipant.certificatResidenceFile = formData.certificatResidenceFile;
+    newParticipant.extraitNaissanceFile = formData.extraitNaissanceFile;
+    newParticipant.acteMariageFile = formData.acteMariageFile;
+    newParticipant.documentFile = formData.documentFile;
+    newParticipant.rccmFile = formData.rccmFile;
+    newParticipant.pieceNationaliteFile = formData.pieceNationaliteFile;
+    newParticipant.certificatNationaliteFile = formData.certificatNationaliteFile;
+    // Convertir les téléphones au format E.164
+    newParticipant.telephone = fullPhoneForParticipant;
+    newParticipant.telephone2 = fullPhoneForParticipant2;
+    // Pour les gérants et promoteurs d'entreprise individuelle, définir automatiquement la situation matrimoniale
+    newParticipant.situationMatrimoniale = (formData.role === 'GERANT' || formData.role === 'PROMOTEUR')
+      ? (data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE')
+      : formData.situationMatrimoniale;
+    // Les administrateurs n'ont pas de parts
+    newParticipant.pourcentageParts = roleRequiresParts(formData.role) ? formData.pourcentageParts : 0;
     const updatedParticipants = [...(data.participants || []), newParticipant];
     
     updateData('participants', updatedParticipants);
@@ -1056,16 +1066,26 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
       const updatedParticipants = [...data.participants];
       const isEntrepriseIndividuelle = data.companyInfo?.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE';
       const updatedParticipant = { 
-        ...formData,
-        // Convertir le téléphone au format E.164
-        telephone: fullPhoneForParticipant,
-        // Pour les gérants et promoteurs, définir automatiquement la situation matrimoniale
-        situationMatrimoniale: (formData.role === 'GERANT' || formData.role === 'PROMOTEUR')
-          ? (data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE')
-          : formData.situationMatrimoniale,
-        // Les administrateurs n'ont pas de parts
-        pourcentageParts: roleRequiresParts(formData.role) ? formData.pourcentageParts : 0
+        ...formData
       };
+      // Assigner directement les fichiers pour éviter la sérialisation
+      updatedParticipant.casierJudiciaireFile = formData.casierJudiciaireFile;
+      updatedParticipant.declarationHonneurFile = formData.declarationHonneurFile;
+      updatedParticipant.certificatResidenceFile = formData.certificatResidenceFile;
+      updatedParticipant.extraitNaissanceFile = formData.extraitNaissanceFile;
+      updatedParticipant.acteMariageFile = formData.acteMariageFile;
+      updatedParticipant.documentFile = formData.documentFile;
+      updatedParticipant.rccmFile = formData.rccmFile;
+      updatedParticipant.pieceNationaliteFile = formData.pieceNationaliteFile;
+      updatedParticipant.certificatNationaliteFile = formData.certificatNationaliteFile;
+      // Convertir le téléphone au format E.164
+      updatedParticipant.telephone = fullPhoneForParticipant;
+      // Pour les gérants et promoteurs, définir automatiquement la situation matrimoniale
+      updatedParticipant.situationMatrimoniale = (formData.role === 'GERANT' || formData.role === 'PROMOTEUR')
+        ? (data.personalInfo?.isMarried ? 'MARIE' : 'CELIBATAIRE')
+        : formData.situationMatrimoniale;
+      // Les administrateurs n'ont pas de parts
+      updatedParticipant.pourcentageParts = roleRequiresParts(formData.role) ? formData.pourcentageParts : 0;
       updatedParticipants[editingIndex] = updatedParticipant;
       updateData('participants', updatedParticipants);
       setEditingIndex(null);
@@ -2551,12 +2571,18 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       if (file) {
                         const processedFile = await validateAndCompressFile(file, e.target);
                         if (processedFile) {
-                          setFormData({ ...formData, casierJudiciaireFile: processedFile });
+                          const updatedFormData = { ...formData };
+                          updatedFormData.casierJudiciaireFile = processedFile;
+                          setFormData(updatedFormData);
                         } else {
-                          setFormData({ ...formData, casierJudiciaireFile: undefined });
+                          const updatedFormData = { ...formData };
+                          updatedFormData.casierJudiciaireFile = undefined;
+                          setFormData(updatedFormData);
                         }
                       } else {
-                        setFormData({ ...formData, casierJudiciaireFile: undefined });
+                        const updatedFormData = { ...formData };
+                        updatedFormData.casierJudiciaireFile = undefined;
+                        setFormData(updatedFormData);
                       }
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47c559] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#47c559] file:text-white hover:file:bg-[#47c559]/90"
@@ -2635,7 +2661,9 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      setFormData({ ...formData, extraitNaissanceFile: file });
+                      const updatedFormData = { ...formData };
+                      updatedFormData.extraitNaissanceFile = file;
+                      setFormData(updatedFormData);
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47c559] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#47c559] file:text-white hover:file:bg-[#47c559]/90"
                     required
@@ -2669,7 +2697,9 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        setFormData({ ...formData, certificatResidenceFile: file });
+                        const updatedFormData = { ...formData };
+                        updatedFormData.certificatResidenceFile = file;
+                        setFormData(updatedFormData);
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                       required={isRequired}
@@ -2766,7 +2796,9 @@ const ParticipantsStep: React.FC<ParticipantsStepProps> = ({ data, updateData, o
                             accept=".pdf,.jpg,.jpeg,.png"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
-                              setFormData({ ...formData, declarationHonneurFile: file });
+                              const updatedFormData = { ...formData };
+                              updatedFormData.declarationHonneurFile = file;
+                              setFormData(updatedFormData);
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47c559] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#47c559] file:text-white hover:file:bg-[#47c559]/90"
                           />
