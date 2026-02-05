@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package abdaty_technologie.API_Invest.dto.response;
 
 import abdaty_technologie.API_Invest.Entity.Enum.*;
@@ -31,37 +30,3 @@ public class PersonResponse {
     public PaysEmissionRccM paysEmissionRccm;
     public String denominationEntreprise;
 }
-=======
-package abdaty_technologie.API_Invest.dto.response;
-
-import abdaty_technologie.API_Invest.Entity.Enum.*;
-import java.util.Date;
-
-public class PersonResponse {
-    public String id;
-    public String nom;
-    public String prenom;
-    public String email;
-    public String telephone1;
-    public String telephone2;
-    public Date dateNaissance;
-    public String lieuNaissance;
-    public Boolean estAutoriser;
-    public Nationalites nationnalite;
-    public EntrepriseRole entrepriseRole;
-    public AntenneAgents antenneAgent;
-    public Sexes sexe;
-    public SituationMatrimoniales situationMatrimoniale;
-    public Civilites civilite;
-    public Roles role;
-    public String divisionCode;
-    public String divisionNom;
-    public String division_id;
-    public String localite;
-    public String porte;
-    public String adresseLibre;
-    // Champs spécifiques aux personnes morales
-    public PaysEmissionRccM paysEmissionRccm;
-    public String denominationEntreprise;
-}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

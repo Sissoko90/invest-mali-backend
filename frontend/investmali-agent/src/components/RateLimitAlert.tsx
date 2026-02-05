@@ -79,7 +79,6 @@ const RateLimitAlert: React.FC = () => {
 };
 
 export default RateLimitAlert;
-<<<<<<< HEAD
 
 
 
@@ -104,29 +103,3 @@ export default RateLimitAlert;
 
 
 
-=======
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

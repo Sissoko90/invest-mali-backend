@@ -88,7 +88,6 @@ public class PersonServiceImpl implements PersonService {
         // (unicité vérifiée uniquement si fourni)
         // Rôle par défaut USER
         Roles role = (req.role == null) ? Roles.USER : req.role;
-<<<<<<< HEAD
         
         // Nettoyer l'email s'il ressemble à un numéro de téléphone
         String cleanedEmail = req.email;
@@ -98,9 +97,6 @@ public class PersonServiceImpl implements PersonService {
         }
         
         if (!isPersonneMorale && role != Roles.USER && (cleanedEmail == null || cleanedEmail.isBlank())) {
-=======
-        if (!isPersonneMorale && role != Roles.USER && (req.email == null || req.email.isBlank())) {
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
             throw new BadRequestException(Messages.PERSON_EMAIL_OBLIGATOIRE_SI_NON_USER);
         } else if (isPersonneMorale) {
             System.out.println("🏢 [PersonService] Personne morale - email optionnel même pour rôles non-USER");

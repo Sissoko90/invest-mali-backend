@@ -47,11 +47,7 @@ const DemandePage: React.FC = () => {
       <Header />
       
       {/* Hero Section */}
-<<<<<<< HEAD
       <div className="bg-gradient-to-r from-investmali-primary to-investmali-accent text-white py-20 pt-20 sm:pt-24 lg:pt-28">
-=======
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20 pt-20 sm:pt-24 lg:pt-28">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 lg:mb-6">
             Faire une demande
@@ -76,11 +72,7 @@ const DemandePage: React.FC = () => {
             plateforme sécurisée.
           </p>
           <div className="flex justify-center">
-<<<<<<< HEAD
             <div className="w-24 h-1 bg-gradient-to-r from-investmali-primary to-investmali-accent rounded-full"></div>
-=======
-            <div className="w-24 h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
           </div>
         </div>
         
@@ -108,11 +100,7 @@ const DemandePage: React.FC = () => {
 
         {/* Section d'aide */}
         <div className="mt-20">
-<<<<<<< HEAD
           <div className="bg-gradient-to-r from-investmali-primary/5 to-investmali-accent/5 rounded-3xl p-12 text-center border border-investmali-primary/20">
-=======
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 text-center border border-blue-100">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               Besoin d'aide pour choisir ?
             </h3>
@@ -123,11 +111,7 @@ const DemandePage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
                 onClick={() => navigate('/contact')}
-<<<<<<< HEAD
                 className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-investmali-primary to-investmali-accent text-white rounded-xl hover:from-investmali-primary/90 hover:to-investmali-accent/90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
-=======
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -135,11 +119,7 @@ const DemandePage: React.FC = () => {
               </motion.button>
               <motion.button
                 onClick={() => navigate('/activites-reglementees')}
-<<<<<<< HEAD
                 className="inline-flex items-center px-8 py-4 border-2 border-investmali-primary text-investmali-primary rounded-xl hover:bg-investmali-primary hover:text-white transition-all duration-300 transform hover:scale-105 font-semibold"
-=======
-                className="inline-flex items-center px-8 py-4 border-2 border-blue-600 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:scale-105 font-semibold"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >

@@ -67,7 +67,6 @@ const BusinessCreationModal: React.FC<BusinessCreationModalProps> = ({ open, onC
 };
 
 export default BusinessCreationModal;
-<<<<<<< HEAD
 
 
 
@@ -92,29 +91,3 @@ export default BusinessCreationModal;
 
 
 
-=======
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

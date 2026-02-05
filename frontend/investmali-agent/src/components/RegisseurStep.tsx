@@ -8,7 +8,6 @@ import {
   ArrowLeftIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-<<<<<<< HEAD
   XCircleIcon,
   BuildingOffice2Icon,
   UserIcon,
@@ -18,18 +17,12 @@ import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon
-=======
-  XCircleIcon
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { DemandeEntreprise } from '../types';
 import { API_CONFIG } from '../config/api.config';
 import PaymentMethodModal from './PaymentMethodModal';
-<<<<<<< HEAD
 import PaymentReceipt from './PaymentReceipt';
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
 interface Paiement {
   id: string;
@@ -54,7 +47,6 @@ interface PaiementResponse {
   numeroTelephone?: string;
   numeroCompte?: string;
   personneId?: string;
-<<<<<<< HEAD
   personneNom?: string; // Nom de l'agent qui a traité
   personnePrenom?: string; // Prénom de l'agent qui a traité
   entrepriseId?: string;
@@ -62,12 +54,6 @@ interface PaiementResponse {
   entrepriseReference?: string; // Référence de l'entreprise (ENT-...)
   gerantNom?: string; // Nom du gérant/propriétaire de l'entreprise
   gerantPrenom?: string; // Prénom du gérant/propriétaire de l'entreprise
-=======
-  personneNom?: string;
-  personnePrenom?: string;
-  entrepriseId?: string;
-  entrepriseNom?: string;
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 }
 
 interface Frais {
@@ -94,10 +80,7 @@ interface RegisseurStepProps {
 }
 
 const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate }) => {
-<<<<<<< HEAD
   console.log('🚀 [RegisseurStep] Composant chargé');
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   const { agent, canEditStep } = useAgentAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<'demandes' | 'paiements'>('demandes');
@@ -108,7 +91,6 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
   const [paiementMethod, setPaiementMethod] = useState<'CASH' | 'MOOV_MONEY' |  'ORANGE_MONEY' | 'STRIPE'>('CASH');
   const [fraisCalcules, setFraisCalcules] = useState<any>(null);
   const [paiementsConfirmes, setPaiementsConfirmes] = useState<PaiementResponse[]>([]);
-<<<<<<< HEAD
   const [paiementsPage, setPaiementsPage] = useState(0);
   const [paiementsTotalPages, setPaiementsTotalPages] = useState(0);
   const [paiementsTotalElements, setPaiementsTotalElements] = useState(0);
@@ -117,8 +99,6 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
   // États pour la pagination des demandes à traiter
   const [demandesPage, setDemandesPage] = useState(0);
   const DEMANDES_PER_PAGE = 5;
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
   // États pour le modal de paiement
   const [paiementModalOpen, setPaiementModalOpen] = useState(false);
@@ -127,13 +107,10 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
     nom: string;
     totalAmount?: number;
   } | null>(null);
-<<<<<<< HEAD
 
   // États pour le reçu de paiement
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
   const canEdit = canEditStep('REGISSEUR');
 
@@ -160,16 +137,11 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
     syncFromDatabase();
     
     // Charger les paiements confirmés
-<<<<<<< HEAD
     loadPaiementsConfirmes(0, '').then(paiements => {
-=======
-    loadPaiementsConfirmes().then(paiements => {
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
       setPaiementsConfirmes(paiements);
     });
   }, []);
 
-<<<<<<< HEAD
   // Recharger les paiements quand on change d'onglet, de page ou de recherche
   useEffect(() => {
     console.log('🔄 [RegisseurStep useEffect] Déclenché - activeTab:', activeTab, 'Page:', paiementsPage, 'Search:', paiementsSearch);
@@ -187,16 +159,6 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
       console.log('⏭️ [RegisseurStep] Onglet actif n\'est pas paiements:', activeTab);
     }
   }, [activeTab, paiementsPage, paiementsSearch]);
-=======
-  // Recharger les paiements quand on change d'onglet vers "paiements"
-  useEffect(() => {
-    if (activeTab === 'paiements') {
-      loadPaiementsConfirmes().then(paiements => {
-        setPaiementsConfirmes(paiements);
-      });
-    }
-  }, [activeTab]);
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
   const loadRegisseurDemandes = () => {
     try {
@@ -342,12 +304,8 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
             agentAccueilNom: agentAccueilNom,
             agentAccueilEmail: agentAccueilEmail,
             agentAccueilId: agentAccueilId,
-<<<<<<< HEAD
             totalAmount: entreprise.totalAmount || 0,
             statutPaiement: entreprise.statutPaiement || (entreprise.statutCreation === 'PAIEMENT_VALIDE' ? 'REUSSI' : null)
-=======
-            totalAmount: entreprise.totalAmount || 0
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
           };
           
           return demandeData;
@@ -598,7 +556,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
     alert('🖨️ Reçu imprimé avec succès!\n\n' + recu);
   };
 
-<<<<<<< HEAD
   // Récupérer les paiements confirmés depuis la base de données avec pagination et recherche
   const loadPaiementsConfirmes = async (page: number = 0, search: string = ''): Promise<PaiementResponse[]> => {
     console.log('🌐 [loadPaiementsConfirmes] DEBUT - page:', page, 'search:', search);
@@ -613,13 +570,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       console.log('🌐 [loadPaiementsConfirmes] URL:', url);
       
       const response = await fetch(url, {
-=======
-  // Récupérer les paiements confirmés depuis la base de données
-  const loadPaiementsConfirmes = async (): Promise<PaiementResponse[]> => {
-    try {
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}/paiements/confirmes`, {
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
           'Content-Type': 'application/json'
@@ -630,7 +580,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-<<<<<<< HEAD
       const data = await response.json();
       
       console.log('📦 [RegisseurStep] Données reçues du backend:', {
@@ -646,16 +595,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       setPaiementsTotalElements(data.totalElements);
       
       return data.content || [];
-=======
-      const paiements = await response.json();
-      
-      // Debug détaillé de chaque paiement
-      paiements.forEach((paiement: PaiementResponse, index: number) => {
-        // Log removed for production
-      });
-      
-      return paiements;
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
     } catch (error) {
       console.error('❌ [RegisseurStep] Erreur lors du chargement des paiements:', error);
       return [];
@@ -774,46 +713,9 @@ Agent: ${agent?.firstName} ${agent?.lastName}
     }
   };
 
-  // Fonction pour ouvrir le modal de paiement
-  const handlePasserAuPaiement = (demandeId: string) => {
-    // Trouver la demande dans les demandes du régisseur
-    const demande = regisseurDemandes.find(d => d.id === demandeId);
-    if (!demande) {
-      alert('Erreur: Demande non trouvée');
-      return;
-    }
-    
-    console.log(`💳 Ouverture du modal de paiement pour: ${demande.nom}`);
-    
-    // Préparer les données pour le modal
-    setPaiementEntreprise({
-      id: demande.id,
-      nom: demande.nom,
-      totalAmount: (demande as any).totalAmount || 14500 // Montant par défaut en FCFA
-    });
-    
-    // Ouvrir le modal
-    setPaiementModalOpen(true);
-  };
-
-  // Fonction appelée après validation/annulation du paiement
-  const handlePaiementComplete = async () => {
-    try {
-      // Recharger les données depuis la base de données
-      await new Promise(resolve => setTimeout(resolve, 300));
-      await syncFromDatabase();
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      console.log('✅ Données rechargées après paiement');
-    } catch (error) {
-      console.error('❌ Erreur lors du rechargement après paiement:', error);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* En-tête */}
-<<<<<<< HEAD
       <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div>
@@ -824,18 +726,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
               <div>
                 <h2 className="text-2xl font-black text-slate-800">Étape RÉGISSEUR</h2>
                 <p className="text-lg text-slate-600 font-medium mt-1">
-=======
-      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
-                <span className="text-2xl">💰</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-slate-800">Étape RÉGISSEUR</h2>
-                <p className="text-slate-600 font-medium mt-1">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   Calcul des frais, gestion des paiements et validation - Agent: {agent?.firstName} {agent?.lastName}
                 </p>
               </div>
@@ -844,32 +734,18 @@ Agent: ${agent?.firstName} ${agent?.lastName}
             {/* Statistiques des paiements */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
-<<<<<<< HEAD
                 <div className="p-1 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
                   <CheckCircleIcon className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-lg text-green-600 font-bold">
-=======
-                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
-                  <CheckCircleIcon className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-sm text-primary-600 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   {paiementsConfirmes.filter(p => p.statut === 'VALIDE').length} Payés
                 </span>
               </div>
               <div className="flex items-center space-x-2 bg-white/50 rounded-xl px-3 py-2 border border-white/40 shadow-lg">
-<<<<<<< HEAD
                 <div className="p-1 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
                   <ClockIcon className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-lg text-amber-600 font-bold">
-=======
-                <div className="p-1 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-lg">
-                  <ClockIcon className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-sm text-primary-600 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   {regisseurDemandes.filter(d => (d as any).statutPaiement === 'EN_COURS').length} En cours
                 </span>
               </div>
@@ -880,16 +756,11 @@ Agent: ${agent?.firstName} ${agent?.lastName}
       </div>
 
       {/* Navigation des onglets */}
-<<<<<<< HEAD
       <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
-=======
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
         <div className="border-b border-white/40">
           <nav className="-mb-px flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('demandes')}
-<<<<<<< HEAD
               className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 flex items-center gap-2 ${
                 activeTab === 'demandes'
                   ? 'border-sky-600 text-sky-600 shadow-lg'
@@ -909,25 +780,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
             >
               <CreditCardIcon className="h-5 w-5" />
               Suivi des paiements
-=======
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
-                activeTab === 'demandes'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              📋 Demandes à traiter ({regisseurDemandes.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('paiements')}
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
-                activeTab === 'paiements'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              💳 Suivi des paiements
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
             </button>
           </nav>
         </div>
@@ -944,7 +796,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                   </p>
                 </div>
               ) : (
-<<<<<<< HEAD
                 <>
                 {regisseurDemandes
                   .slice(demandesPage * DEMANDES_PER_PAGE, (demandesPage + 1) * DEMANDES_PER_PAGE)
@@ -970,39 +821,11 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               <p className="text-lg text-slate-800 font-semibold">
                                 <span className="text-sky-700 font-bold">Validé par:</span> 
                                 <span className="ml-2 px-2 py-1 bg-sky-100 rounded-lg text-sky-800 font-bold">
-=======
-                regisseurDemandes.map((demande) => (
-                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                            <span className="text-lg">🏢</span>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
-                            <p className="text-sm text-slate-600 font-medium">{demande.formeJuridique} - {demande.typeEntreprise}</p>
-                          </div>
-                        </div>
-                        <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-4 border border-primary-200 mb-3 shadow-sm">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-gradient-to-r from-primary-500 to-[#2d6aa0] rounded-lg shadow-md">
-                              <span className="text-white text-sm">👤</span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-slate-800 font-semibold">
-                                <span className="text-primary-700 font-bold">Validé par:</span> 
-                                <span className="ml-2 px-2 py-1 bg-primary-100 rounded-lg text-primary-800 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                   {(demande as any).agentAccueil || 'Agent non spécifié'}
                                 </span>
                               </p>
                               {(demande as any).agentAccueilEmail && (
-<<<<<<< HEAD
                                 <p className="text-sm text-slate-500 mt-1">
-=======
-                                <p className="text-xs text-slate-500 mt-1">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                   <span className="font-medium">Contact:</span> 
                                   <span className="ml-1">{(demande as any).agentAccueilEmail}</span>
                                 </p>
@@ -1011,49 +834,29 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           </div>
                         </div>
                         {demande.frais && (
-<<<<<<< HEAD
                           <div className="bg-gradient-to-r from-green-50 to-green-50 rounded-xl p-3 border border-green-200 flex items-center gap-2">
                             <BanknotesIcon className="h-5 w-5 text-green-600" />
                             <span className="text-lg font-bold text-green-700">Frais calculés: {demande.frais.fraisTotal} FCFA</span>
-=======
-                          <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl p-3 border border-primary-200">
-                            <span className="text-sm font-bold text-primary-700">💰 Frais calculés: {demande.frais.fraisTotal} FCFA</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                           </div>
                         )}
                       </div>
                       
                       <div className="flex flex-col space-y-2 ml-6">
                         {/* Statut des paiements */}
-<<<<<<< HEAD
                         <div className="bg-sky-50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
                           <h4 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
                             <CreditCardIcon className="h-5 w-5 text-sky-600" />
-=======
-                        <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-lg">
-                          <h4 className="text-sm font-black text-slate-800 mb-3 flex items-center">
-                            <span className="mr-2">💳</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             Statut Paiement
                           </h4>
                           
                           {!demande.frais ? (
                             <div className="flex flex-col space-y-2">
-<<<<<<< HEAD
                               <span className="inline-flex items-center px-3 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800 shadow-lg">
                                 <ClockIcon className="h-4 w-4 mr-2" />
                                 En attente
                               </span>
                               <span className="text-sm text-slate-600 font-medium">
                                 Montant à payer: <span className="font-bold text-sky-700">
-=======
-                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800 shadow-lg">
-                                <ClockIcon className="h-3 w-3 mr-2" />
-                                En attente
-                              </span>
-                              <span className="text-xs text-slate-600 font-medium">
-                                Montant à payer: <span className="font-bold text-primary-700">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                   {demande.totalAmount !== undefined && demande.totalAmount !== null ? `${demande.totalAmount.toLocaleString('fr-FR')} FCFA` : 'Non calculé'}
                                 </span>
                               </span>
@@ -1062,11 +865,7 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               <button
                                 onClick={() => handlePasserAuPaiement(demande.id)}
                                 disabled={isLoading}
-<<<<<<< HEAD
                                 className="inline-flex items-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-sky-600 hover:from-sky-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
-=======
-                                className="inline-flex items-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] hover:from-[#1e5987]/90 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#412A5C] disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-300 mt-2"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               >
                                 <CreditCardIcon className="h-4 w-4 mr-1" />
                                 Passer au paiement
@@ -1074,7 +873,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             </div>
                           ) : !((demande as any).statutPaiement) ? (
                             <div className="flex flex-col space-y-2">
-<<<<<<< HEAD
                               <span className="inline-flex items-center px-3 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 shadow-lg">
                                 <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
                                 Frais calculés
@@ -1097,50 +895,20 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                                 {(demande as any).statutPaiement === 'REUSSI' ? (
                                   <>
                                     <CheckCircleIcon className="h-4 w-4 mr-2" />
-=======
-                              <span className="inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-primary-100 to-amber-200 text-primary-800 shadow-lg">
-                                <ExclamationTriangleIcon className="h-3 w-3 mr-2" />
-                                Frais calculés
-                              </span>
-                              <span className="text-xs text-slate-700 font-bold">{demande.frais.fraisTotal} FCFA</span>
-                              <span className="text-xs text-primary-600 font-medium">⏳ En attente de paiement</span>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col space-y-2">
-                              <span className={`inline-flex items-center px-3 py-2 text-xs font-bold rounded-xl shadow-lg ${
-                                (demande as any).statutPaiement === 'REUSSI' 
-                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
-                                  : (demande as any).statutPaiement === 'EN_COURS'
-                                  ? 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800'
-                                  : 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800'
-                              }`}>
-                                {(demande as any).statutPaiement === 'REUSSI' ? (
-                                  <>
-                                    <CheckCircleIcon className="h-3 w-3 mr-2" />
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                     Payé
                                   </>
                                 ) : (demande as any).statutPaiement === 'EN_COURS' ? (
                                   <>
-<<<<<<< HEAD
                                     <ClockIcon className="h-4 w-4 mr-2" />
-=======
-                                    <ClockIcon className="h-3 w-3 mr-2" />
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                     En cours
                                   </>
                                 ) : (
                                   <>
-<<<<<<< HEAD
                                     <XCircleIcon className="h-4 w-4 mr-2" />
-=======
-                                    <XCircleIcon className="h-3 w-3 mr-2" />
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                     Échec
                                   </>
                                 )}
                               </span>
-<<<<<<< HEAD
                               <span className="text-sm text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
                               {(demande as any).statutPaiement === 'REUSSI' && (
                                 <>
@@ -1156,11 +924,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                                     Télécharger reçu
                                   </button>
                                 </>
-=======
-                              <span className="text-xs text-slate-700 font-bold">{demande.frais?.fraisTotal} FCFA</span>
-                              {(demande as any).statutPaiement === 'REUSSI' && (
-                                <span className="text-xs text-primary-600 font-bold">✓ Paiement confirmé</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               )}
                             </div>
                           )}
@@ -1171,32 +934,18 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             <select
                               value={paiementMethod}
                               onChange={(e) => setPaiementMethod(e.target.value as any)}
-<<<<<<< HEAD
                               className="block w-full px-4 py-3 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-lg hover:shadow-xl transition-all duration-300 text-lg font-medium"
                             >
                               <option value="CASH">Cash</option>
                               <option value="MOOV_MONEY">Moov Money</option>
                               <option value="STRIPE">Carte bancaire</option>
-=======
-                              className="block w-full px-4 py-3 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-[#412A5C] focus:border-transparent shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium"
-                            >
-                              <option value="CASH">💵 Cash</option>
-                              <option value="MOOV_MONEY">🔵 Moov Money</option>
-                              <option value="STRIPE">💳 Carte bancaire</option>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             </select>
                             <button
                               onClick={() => initierPaiement(demande.id, paiementMethod)}
                               disabled={isLoading}
-<<<<<<< HEAD
                               className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-lg font-bold rounded-xl text-white bg-sky-600 hover:from-sky-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
                               <CreditCardIcon className="h-5 w-5 mr-2" />
-=======
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <CreditCardIcon className="h-4 w-4 mr-2" />
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               Initier Paiement
                             </button>
                           </div>
@@ -1206,7 +955,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           <div className="space-y-3">
                             <button
                               onClick={() => imprimerRecu(demande)}
-<<<<<<< HEAD
                               className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-lg font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
                             >
                               <PrinterIcon className="h-5 w-5 mr-2" />
@@ -1222,23 +970,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                             <button
                               onClick={() => retournerVersAccueil(demande.id)}
                               className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-lg font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
-=======
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              <PrinterIcon className="h-4 w-4 mr-2" />
-                              🖨️ Imprimer Reçu
-                            </button>
-                            <button
-                              onClick={() => validerVersRevision(demande.id)}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary-500 to-[#2d6aa0] hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                            >
-                              <CheckCircleIcon className="h-4 w-4 mr-2" />
-                              🎯 Passer chez le RÉGISSEUR
-                            </button>
-                            <button
-                              onClick={() => retournerVersAccueil(demande.id)}
-                              className="w-full inline-flex items-center justify-center px-4 py-3 border border-white/60 text-sm font-bold rounded-xl text-slate-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             >
                               <ArrowLeftIcon className="h-4 w-4 mr-2" />
                               ↩️ Retour ACCUEIL
@@ -1279,7 +1010,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-<<<<<<< HEAD
                   <div className="p-2 bg-gradient-to-br from-green-600 to-green-700 rounded-xl shadow-lg">
                     <CreditCardIcon className="h-6 w-6 text-white" />
                   </div>
@@ -1322,39 +1052,12 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                   <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
                   <h4 className="mt-2 text-lg font-medium text-gray-900">Aucun paiement confirmé</h4>
                   <p className="mt-1 text-lg text-gray-500">
-=======
-                  <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                    <span className="text-lg">💳</span>
-                  </div>
-                  <h3 className="text-lg font-black text-slate-800">Paiements confirmés</h3>
-                </div>
-                <button
-                  onClick={async () => {
-                    const paiements = await loadPaiementsConfirmes();
-                    setPaiementsConfirmes(paiements);
-                  }}
-                  className="bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-4 py-2 rounded-xl text-sm font-bold hover:from-primary-600 hover:to-primary-700 shadow-lg hover:shadow-xl transition-all duration-300"
-                  title="Recharger les paiements confirmés"
-                >
-                  🔄 Actualiser
-                </button>
-              </div>
-              {paiementsConfirmes.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h4 className="mt-2 text-sm font-medium text-gray-900">Aucun paiement confirmé</h4>
-                  <p className="mt-1 text-sm text-gray-500">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     Les paiements confirmés depuis la base de données apparaîtront ici.
                   </p>
                 </div>
               ) : (
                 paiementsConfirmes.map((paiement: PaiementResponse) => (
-<<<<<<< HEAD
                 <div key={paiement.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
-=======
-                <div key={paiement.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-4">
@@ -1366,43 +1069,26 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                           
                           if (isAgreement) {
                             return (
-<<<<<<< HEAD
                               <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
                                 <CheckCircleIcon className="h-6 w-6 text-white" />
-=======
-                              <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
-                                <span className="text-lg">🏆</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               </div>
                             );
                           } else {
                             return (
-<<<<<<< HEAD
                               <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                                 <BuildingOffice2Icon className="h-6 w-6 text-white" />
-=======
-                              <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                                <span className="text-lg">🏢</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               </div>
                             );
                           }
                         })()}
                         <div>
                           <div className="flex items-center space-x-2">
-<<<<<<< HEAD
                             <h4 className="text-lg font-black text-slate-800">
                               {paiement.entrepriseNom || 
                                (paiement.gerantPrenom && paiement.gerantNom 
                                  ? `${paiement.gerantPrenom} ${paiement.gerantNom}` 
                                  : paiement.gerantNom) || 
                                'Non spécifié'}
-=======
-                            <h4 className="font-black text-slate-800">
-                              {paiement.entrepriseNom || 
-                               paiement.description?.match(/(?:pour|-)?\s*([A-Za-zÀ-ÿ\s]+?)(?:\s*-|\s*\(|$)/)?.[1]?.trim() || 
-                               'Entreprise'}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             </h4>
                             {/* Badge pour identifier le type */}
                             {(() => {
@@ -1412,100 +1098,63 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                               
                               if (isAgreement) {
                                 return (
-<<<<<<< HEAD
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 gap-1">
                                     <CheckCircleIcon className="h-4 w-4" />
                                     Agrément
-=======
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
-                                    🏆 Agrément
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                   </span>
                                 );
                               } else {
                                 return (
-<<<<<<< HEAD
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-bold bg-sky-100 text-sky-800 gap-1">
                                     <BuildingOffice2Icon className="h-4 w-4" />
                                     Entreprise
-=======
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                                    🏢 Entreprise
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                   </span>
                                 );
                               }
                             })()}
                           </div>
-<<<<<<< HEAD
                           <p className="text-lg text-slate-600 font-medium">
                             Référence: {paiement.entrepriseReference || paiement.entrepriseNom || 'N/A'}
-=======
-                          <p className="text-sm text-slate-600 font-medium">
-                            Référence: {paiement.referenceTransaction || 'N/A'}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                           </p>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-<<<<<<< HEAD
                           <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
                             <BanknotesIcon className="h-4 w-4" />
                             Montant
                           </p>
                           <p className="text-lg text-slate-700 font-bold">
-=======
-                          <p className="text-xs text-slate-500 font-medium">Montant</p>
-                          <p className="text-sm text-slate-700 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             {paiement.montant ? Number(paiement.montant).toLocaleString('fr-FR') : 'N/A'} FCFA
                           </p>
                         </div>
                         <div className="bg-white/50 rounded-xl p-3 border border-white/40">
-<<<<<<< HEAD
                           <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
                             <CreditCardIcon className="h-4 w-4" />
                             Méthode
                           </p>
                           <p className="text-lg text-slate-700 font-bold">{paiement.typePaiement || 'N/A'}</p>
-=======
-                          <p className="text-xs text-slate-500 font-medium">Méthode</p>
-                          <p className="text-sm text-slate-700 font-bold">{paiement.typePaiement || 'N/A'}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </div>
                       </div>
                       
                       {paiement.datePaiement && (
                         <div className="mt-3 bg-white/50 rounded-xl p-3 border border-white/40">
-<<<<<<< HEAD
                           <p className="text-sm text-slate-500 font-medium flex items-center gap-1">
                             <ClockIcon className="h-4 w-4" />
                             Date de confirmation
                           </p>
                           <p className="text-lg text-slate-700 font-bold">
-=======
-                          <p className="text-xs text-slate-500 font-medium">Date de confirmation</p>
-                          <p className="text-sm text-slate-700 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             {new Date(paiement.datePaiement).toLocaleDateString()}
                           </p>
                         </div>
                       )}
                     </div>
                     
-<<<<<<< HEAD
                     <div className="text-right ml-6 flex flex-col space-y-3">
                       <span className="inline-flex items-center px-4 py-2 text-lg font-bold rounded-xl bg-gradient-to-r from-green-100 to-green-200 text-green-800 shadow-lg">
                         <CheckCircleIcon className="h-5 w-5 mr-2" />
                         Confirmé
-=======
-                    <div className="text-right ml-6">
-                      <span className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 shadow-lg">
-                        <CheckCircleIcon className="h-4 w-4 mr-2" />
-                        ✅ Confirmé
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </span>
                       <button
                         onClick={() => handleVoirRecuPaiement(paiement)}
@@ -1519,7 +1168,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                 </div>
                 ))
               )}
-<<<<<<< HEAD
               
               {/* Pagination */}
               {paiementsTotalPages > 0 && (
@@ -1574,8 +1222,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
                   </div>
                 </div>
               )}
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
             </div>
           )}
         </div>
@@ -1590,7 +1236,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
           onPaiementComplete={handlePaiementComplete}
         />
       )}
-<<<<<<< HEAD
 
       {/* Reçu de paiement */}
       {showReceipt && receiptData && (
@@ -1599,8 +1244,6 @@ Agent: ${agent?.firstName} ${agent?.lastName}
           onClose={() => setShowReceipt(false)}
         />
       )}
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
     </div>
   );
 };

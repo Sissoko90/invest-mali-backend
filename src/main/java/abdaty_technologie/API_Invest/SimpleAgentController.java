@@ -19,10 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
-<<<<<<< HEAD
-=======
-import java.time.Instant;
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
 import java.util.*;
 import java.util.stream.Collectors;

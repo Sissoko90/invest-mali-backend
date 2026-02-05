@@ -56,12 +56,9 @@ const AuthPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-<<<<<<< HEAD
   
   // État pour détecter le type d'input de connexion (phone ou email)
   const [loginInputType, setLoginInputType] = useState<'phone' | 'email'>('email');
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
   const handleCivilityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const civilityValue = e.target.value;
@@ -197,19 +194,12 @@ const AuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center animate-slide-up">
             <div className="flex justify-center mb-6">
-<<<<<<< HEAD
               <div className="bg-white p-4 rounded-2xl shadow-lg">
                 <img 
                   src={apiLogo} 
                   alt="API Mali Logo" 
                   className="w-24 h-24 object-contain"
                 />
-=======
-              <div className="bg-gradient-to-r from-investmali-accent to-investmali-warning p-3 rounded-2xl shadow-lg">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </div>
             </div>
             <h2 className="text-3xl font-bold text-investmali-neutral-dark">
@@ -302,11 +292,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={loginData.password}
                       onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-<<<<<<< HEAD
                       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
-=======
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       placeholder="••••••••"
                     />
                     <button
@@ -328,11 +314,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-<<<<<<< HEAD
                   className="w-full bg-gradient-to-r from-investmali-primary to-investmali-accent text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-=======
-                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -450,11 +432,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.password}
                       onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-<<<<<<< HEAD
                       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
-=======
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       placeholder="••••••••"
                     />
                     <button
@@ -483,11 +461,7 @@ const AuthPage: React.FC = () => {
                       required
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-<<<<<<< HEAD
                       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300"
-=======
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       placeholder="••••••••"
                     />
                     <button
@@ -509,11 +483,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-<<<<<<< HEAD
                   className="w-full bg-gradient-to-r from-investmali-primary to-investmali-accent text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-=======
-                  className="w-full bg-gradient-to-r from-investmali-accent to-investmali-warning text-white py-3 px-4 rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center space-x-2">

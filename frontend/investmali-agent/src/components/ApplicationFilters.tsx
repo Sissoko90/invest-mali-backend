@@ -80,7 +80,6 @@ const ApplicationFilters: React.FC<Props> = ({ value, onChange, onReset, loading
 };
 
 export default ApplicationFilters;
-<<<<<<< HEAD
 
 
 
@@ -105,7 +104,6 @@ export default ApplicationFilters;
 
 
 
-=======
 
 
 
@@ -130,4 +128,6 @@ export default ApplicationFilters;
 
 
 
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
+
+
+

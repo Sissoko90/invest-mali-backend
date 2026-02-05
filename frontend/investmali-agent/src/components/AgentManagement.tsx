@@ -1,6 +1,5 @@
 ﻿// Redirection vers le composant corrigé
 export { default } from './AgentManagementFixed';
-<<<<<<< HEAD
 
 
 
@@ -25,29 +24,3 @@ export { default } from './AgentManagementFixed';
 
 
 
-=======
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

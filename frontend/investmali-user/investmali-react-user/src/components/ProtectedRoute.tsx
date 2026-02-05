@@ -34,8 +34,3 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export default ProtectedRoute;
-<<<<<<< HEAD
-
-=======
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

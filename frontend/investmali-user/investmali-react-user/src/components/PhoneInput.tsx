@@ -240,11 +240,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           value={phoneNumber}
           onChange={handlePhoneNumberChange}
           placeholder={placeholder}
-<<<<<<< HEAD
           className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-investmali-accent focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
-=======
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
         />
       </div>
 

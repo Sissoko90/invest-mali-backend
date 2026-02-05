@@ -382,7 +382,6 @@ const AgentDashboard: React.FC = () => {
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-5">
               <div className="flex items-center">
-<<<<<<< HEAD
                 <img 
                   src="/api-favicon.png" 
                   alt="API-MALI Logo" 
@@ -394,24 +393,12 @@ const AgentDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4 flex items-center space-x-2">
                   <div className="bg-investmali-accent text-white px-4 py-2 rounded-full text-base font-semibold flex items-center space-x-2 shadow-md">
-=======
-                <div className="w-10 h-10 bg-white/90 text-primary-700 rounded-xl flex items-center justify-center mr-4 shadow-sm">
-                  <span className="text-sm font-extrabold">IM</span>
-                </div>
-                <div className="ml-2">
-                  <h1 className="text-xl font-bold tracking-tight">API-MALI</h1>
-                  <p className="text-white/80 text-sm">Agent Création d'Entreprise - Agent d'Enregistrement</p>
-                </div>
-                <div className="ml-4 flex items-center space-x-2">
-                  <div className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     <span>📝</span>
                     <span>Étape REGISTER</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-<<<<<<< HEAD
                 <button className="group flex items-center gap-3 rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 px-3 py-2" aria-label="Ouvrir le profil" title="Modifier le profil">
                   <div className="text-right">
                     <p className="text-base font-semibold group-hover:underline">{agent?.firstName || 'Agent'}</p>
@@ -419,15 +406,6 @@ const AgentDashboard: React.FC = () => {
                   </div>
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/20 backdrop-blur flex items-center justify-center">
                     <span className="text-base font-bold">{(agent?.firstName?.[0] || 'A') + (agent?.lastName?.[0] || 'AG')}</span>
-=======
-                <button className="group flex items-center gap-3 rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 px-2 py-1" aria-label="Ouvrir le profil" title="Modifier le profil">
-                  <div className="text-right">
-                    <p className="text-sm font-medium group-hover:underline">{agent?.firstName || 'Agent'}</p>
-                    <p className="text-xs text-white/80">{agent?.department || 'AGENT_REGISTER'}</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/20 backdrop-blur flex items-center justify-center">
-                    <span className="text-sm font-bold">{(agent?.firstName?.[0] || 'A') + (agent?.lastName?.[0] || 'G')}</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </div>
                 </button>
                 <div className="relative">
@@ -438,23 +416,14 @@ const AgentDashboard: React.FC = () => {
                     <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full bg-investmali-warning text-white shadow">2</span>
                   </button>
                 </div>
-<<<<<<< HEAD
                 <button className="p-2.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition-colors" aria-label="Basculer le thème" title="Mode sombre">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" className="h-6 w-6">
-=======
-                <button className="p-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur transition-colors" aria-label="Basculer le thème" title="Mode sombre">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" className="h-5 w-5">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"></path>
                   </svg>
                 </button>
                 <button 
                   onClick={logout}
-<<<<<<< HEAD
                   className="bg-white/20 hover:bg-white/30 backdrop-blur px-5 py-2.5 rounded-lg transition-colors font-semibold text-base"
-=======
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-lg transition-colors font-medium"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 >
                   Déconnexion
                 </button>
@@ -478,11 +447,7 @@ const AgentDashboard: React.FC = () => {
                   className={`py-4 px-3 border-b-3 font-semibold text-base transition-colors duration-300 ${
                     activeTab === tab.id
                       ? 'border-investmali-accent text-investmali-accent'
-<<<<<<< HEAD
                       : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
-=======
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   }`}
                 >
                   <span className="mr-2 text-lg">{tab.icon}</span>
@@ -510,13 +475,8 @@ const AgentDashboard: React.FC = () => {
                         {stat.icon}
                       </div>
                       <div>
-<<<<<<< HEAD
                         <p className="text-base font-semibold text-gray-600">{stat.title}</p>
                         <p className="text-3xl font-bold text-investmali-neutral-dark">{stat.value}</p>
-=======
-                        <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                        <p className="text-2xl font-bold text-investmali-neutral-dark">{stat.value}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </div>
                     </div>
                   </div>
@@ -525,22 +485,13 @@ const AgentDashboard: React.FC = () => {
 
               {/* Recent Applications */}
               <div className="bg-white rounded-xl shadow-lg p-6">
-<<<<<<< HEAD
                 <h3 className="text-xl font-bold text-investmali-neutral-dark mb-4">Demandes récentes</h3>
-=======
-                <h3 className="text-lg font-bold text-investmali-neutral-dark mb-4">Demandes récentes</h3>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <div className="space-y-4">
                   {applications.slice(0, 5).map((app) => (
                     <div key={app.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-300">
                       <div className="flex-1">
-<<<<<<< HEAD
                         <h4 className="font-semibold text-base text-investmali-neutral-dark">{app.companyName}</h4>
                         <p className="text-base text-gray-600">{app.applicantName} • {new Date(app.submissionDate).toLocaleDateString('fr-FR')}</p>
-=======
-                        <h4 className="font-medium text-investmali-neutral-dark">{app.companyName}</h4>
-                        <p className="text-sm text-gray-600">{app.applicantName} • {new Date(app.submissionDate).toLocaleDateString('fr-FR')}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(app.status)}`}>
@@ -553,11 +504,7 @@ const AgentDashboard: React.FC = () => {
                             setSelectedApplication(app);
                             setActiveTab('applications');
                           }}
-<<<<<<< HEAD
                           className="text-investmali-accent hover:text-investmali-warning transition-colors duration-300 text-base font-semibold"
-=======
-                          className="text-investmali-accent hover:text-investmali-warning transition-colors duration-300 text-sm font-medium"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         >
                           Voir →
                         </button>
@@ -621,11 +568,7 @@ const AgentDashboard: React.FC = () => {
                         type="checkbox"
                         checked={filters.assignedToMe}
                         onChange={(e) => setFilters({...filters, assignedToMe: e.target.checked})}
-<<<<<<< HEAD
                         className="rounded border-gray-300 text-investmali-accent focus:ring-investmali-accent w-5 h-5"
-=======
-                        className="rounded border-gray-300 text-investmali-accent focus:ring-mali-emerald"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       />
                       <span className="ml-2 text-base font-medium text-gray-700">Mes dossiers uniquement</span>
                     </label>
@@ -636,11 +579,7 @@ const AgentDashboard: React.FC = () => {
               {/* Applications List */}
               <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-<<<<<<< HEAD
                   <h3 className="text-xl font-bold text-investmali-neutral-dark">
-=======
-                  <h3 className="text-lg font-bold text-investmali-neutral-dark">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     Demandes de création d'entreprise ({filteredApplications.length})
                   </h3>
                 </div>
@@ -662,13 +601,8 @@ const AgentDashboard: React.FC = () => {
                         <tr key={app.id} className="hover:bg-gray-50 transition-colors duration-300">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-<<<<<<< HEAD
                               <div className="text-base font-semibold text-investmali-neutral-dark">{app.companyName}</div>
                               <div className="text-base text-gray-500">{app.legalForm}</div>
-=======
-                              <div className="text-sm font-medium text-investmali-neutral-dark">{app.companyName}</div>
-                              <div className="text-sm text-gray-500">{app.legalForm}</div>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -721,13 +655,8 @@ const AgentDashboard: React.FC = () => {
 
           {activeTab === 'reports' && (
             <div className="bg-white rounded-xl shadow-lg p-6">
-<<<<<<< HEAD
               <h3 className="text-xl font-bold text-investmali-neutral-dark mb-6">Rapports et Statistiques</h3>
               <p className="text-base text-gray-600 mb-8">Analyse des performances et métriques du système</p>
-=======
-              <h3 className="text-lg font-bold text-investmali-neutral-dark mb-6">Rapports et Statistiques</h3>
-              <p className="text-gray-600 mb-8">Analyse des performances et métriques du système</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               
               {/* Section Statistiques de Création */}
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 mb-8">
@@ -739,11 +668,7 @@ const AgentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-slate-800">Statistiques de Création</h3>
-<<<<<<< HEAD
                     <p className="text-base text-slate-600 font-medium">Analyse détaillée des créations d'entreprises</p>
-=======
-                    <p className="text-slate-600 font-medium">Analyse détaillée des créations d'entreprises</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </div>
                 </div>
 
@@ -751,11 +676,7 @@ const AgentDashboard: React.FC = () => {
                   <div className="group bg-gradient-to-br from-blue-50 to-cyan-100 rounded-2xl shadow-xl border border-blue-200/50 p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-<<<<<<< HEAD
                         <p className="text-base font-bold text-blue-700 uppercase tracking-wide">Aujourd'hui</p>
-=======
-                        <p className="text-sm font-bold text-blue-700 uppercase tracking-wide">Aujourd'hui</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <p className="text-4xl font-black text-blue-900 mt-2">{creationStats.today || 0}</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
@@ -769,22 +690,14 @@ const AgentDashboard: React.FC = () => {
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                       </svg>
-<<<<<<< HEAD
                       <span className="text-blue-700 font-semibold text-base">Créations du jour</span>
-=======
-                      <span className="text-blue-700 font-bold">Créations du jour</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </div>
                   </div>
 
                   <div className="group bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl shadow-xl border border-emerald-200/50 p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-<<<<<<< HEAD
                         <p className="text-base font-bold text-emerald-700 uppercase tracking-wide">Ce mois</p>
-=======
-                        <p className="text-sm font-bold text-emerald-700 uppercase tracking-wide">Ce mois</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <p className="text-4xl font-black text-emerald-900 mt-2">{creationStats.thisMonth || 0}</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
@@ -797,22 +710,14 @@ const AgentDashboard: React.FC = () => {
                       <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                       </svg>
-<<<<<<< HEAD
                       <span className="text-emerald-700 font-semibold text-base">Créations mensuelles</span>
-=======
-                      <span className="text-emerald-700 font-bold">Créations mensuelles</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </div>
                   </div>
 
                   <div className="group bg-gradient-to-br from-purple-50 to-violet-100 rounded-2xl shadow-xl border border-purple-200/50 p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-<<<<<<< HEAD
                         <p className="text-base font-bold text-purple-700 uppercase tracking-wide">Semestre</p>
-=======
-                        <p className="text-sm font-bold text-purple-700 uppercase tracking-wide">Semestre</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <p className="text-4xl font-black text-purple-900 mt-2">{creationStats.semester || 0}</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
@@ -825,22 +730,14 @@ const AgentDashboard: React.FC = () => {
                       <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                       </svg>
-<<<<<<< HEAD
                       <span className="text-purple-700 font-semibold text-base">6 derniers mois</span>
-=======
-                      <span className="text-purple-700 font-bold">6 derniers mois</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </div>
                   </div>
 
                   <div className="group bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl shadow-xl border border-amber-200/50 p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-<<<<<<< HEAD
                         <p className="text-base font-bold text-amber-700 uppercase tracking-wide">Cette année</p>
-=======
-                        <p className="text-sm font-bold text-amber-700 uppercase tracking-wide">Cette année</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         <p className="text-4xl font-black text-amber-900 mt-2">{creationStats.thisYear || 0}</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg group-hover:rotate-12 transition-transform duration-300">
@@ -853,11 +750,7 @@ const AgentDashboard: React.FC = () => {
                       <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                       </svg>
-<<<<<<< HEAD
                       <span className="text-amber-700 font-semibold text-base">Créations annuelles</span>
-=======
-                      <span className="text-amber-700 font-bold">Créations annuelles</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </div>
                   </div>
                 </div>

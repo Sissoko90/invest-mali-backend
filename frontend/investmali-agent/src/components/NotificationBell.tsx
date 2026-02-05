@@ -174,7 +174,6 @@ const NotificationBell: React.FC<Props> = ({ items, onChangeItems }) => {
 };
 
 export default NotificationBell;
-<<<<<<< HEAD
 
 
 
@@ -199,29 +198,3 @@ export default NotificationBell;
 
 
 
-=======
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

@@ -63,10 +63,7 @@ export interface DemandeEntreprise {
   antenne?: string;
   etapeActuelle: string;
   motifRejet?: string;
-<<<<<<< HEAD
   paiementEffectue?: boolean;
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 }
 
 export interface Agent {

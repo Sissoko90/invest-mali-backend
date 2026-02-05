@@ -94,7 +94,6 @@ const KpiCards: React.FC<Props> = ({ stats, loading }) => {
 };
 
 export default KpiCards;
-<<<<<<< HEAD
 
 
 
@@ -119,29 +118,10 @@ export default KpiCards;
 
 
 
-=======
+
+  
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

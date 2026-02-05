@@ -99,7 +99,6 @@ public class JwtUtil {
     public List<String> getRolesFromToken(String token) {
         return getClaimFromToken(token, claims -> (List<String>) claims.get("roles"));
     }
-<<<<<<< HEAD
 
     // Générer un refresh token
     public String generateRefreshToken(String username) {
@@ -133,6 +132,4 @@ public class JwtUtil {
         String username = getUsernameFromToken(refreshToken);
         return generateTokenWithRoles(username, role, allRoles);
     }
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 }

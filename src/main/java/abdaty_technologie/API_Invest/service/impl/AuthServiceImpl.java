@@ -175,12 +175,9 @@ public class AuthServiceImpl implements IAuthService {
         
         // Générer le token avec le rôle principal et tous les rôles
         String token = jwtUtil.generateTokenWithRoles(utilisateur.getUtilisateur(), mainRole, allRoles);
-<<<<<<< HEAD
         
         // Générer le refresh token
         String refreshToken = jwtUtil.generateRefreshToken(utilisateur.getUtilisateur());
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
 
         // Récupérer la civilité depuis la table persons - si null, utiliser le sexe comme fallback
         System.out.println("DEBUG - Person object: " + person);
@@ -218,13 +215,9 @@ public class AuthServiceImpl implements IAuthService {
         
         System.out.println("DEBUG - Civilité finale: " + civiliteStr);
         
-<<<<<<< HEAD
         LoginResponse response = new LoginResponse(token, utilisateur.getUtilisateur(), mainRole, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
         response.setRefreshToken(refreshToken);
         return response;
-=======
-        return new LoginResponse(token, utilisateur.getUtilisateur(), mainRole, person.getNom(), person.getPrenom(), person.getEmail(), person.getId(), civiliteStr, person.getTelephone1());
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
     }
 
     @Override

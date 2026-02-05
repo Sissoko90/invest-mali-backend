@@ -13,12 +13,9 @@ import {
   EyeSlashIcon,
   DocumentMagnifyingGlassIcon,
   ChevronDownIcon,
-<<<<<<< HEAD
   ChevronLeftIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
@@ -67,7 +64,6 @@ interface RevisionStepProps {
 const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const { agent, canEditStep } = useAgentAuth();
   const [isScrolled, setIsScrolled] = useState(false);
-<<<<<<< HEAD
 
   // Fonction utilitaire pour obtenir le nom d'affichage d'une entreprise
   // Utilise prénom+nom du gérant/promoteur si le nom d'entreprise est null
@@ -97,16 +93,11 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
     
     return 'Entreprise sans nom';
   };
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   const [activeTab, setActiveTab] = useState<'demandes' | 'documents'>('demandes');
   const [isLoading, setIsLoading] = useState(false);
   const [demandes, setDemandes] = useState<DemandeRevision[]>([]);
   const [entreprisesPostRevision, setEntreprisesPostRevision] = useState<DemandeRevision[]>([]);
-<<<<<<< HEAD
   const [filteredEntreprises, setFilteredEntreprises] = useState<DemandeRevision[]>([]);
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   const [selectedDemande, setSelectedDemande] = useState<DemandeRevision | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -116,7 +107,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const [selectedRejectReason, setSelectedRejectReason] = useState('');
   const [customRejectReason, setCustomRejectReason] = useState('');
 
-<<<<<<< HEAD
   // États pour la pagination et la recherche des documents révisés
   const [documentsSearch, setDocumentsSearch] = useState('');
   const [documentsPage, setDocumentsPage] = useState(0);
@@ -128,8 +118,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const [demandesPage, setDemandesPage] = useState(0);
   const DEMANDES_PER_PAGE = 5;
 
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   // Motifs de rejet prédéfinis pour le retour à RÉVISION
   const rejectReasons = [
     'Document est illisible',
@@ -209,7 +197,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
     }
   }, [activeTab]);
 
-<<<<<<< HEAD
   // Filtrer et paginer les entreprises post-révision
   useEffect(() => {
     let filtered = entreprisesPostRevision;
@@ -236,8 +223,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
     setFilteredEntreprises(paginatedEntreprises);
   }, [entreprisesPostRevision, documentsSearch, documentsPage]);
 
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
   const loadDemandesRevision = async () => {
     setIsLoading(true);
     try {
@@ -251,11 +236,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       const demandesRevision: DemandeRevision[] = await Promise.all(
         entreprises.map(async (entreprise: any) => ({
           id: entreprise.id,
-<<<<<<< HEAD
           nom: getDisplayName(entreprise),
-=======
-          nom: entreprise.nom,
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
           typeEntreprise: entreprise.typeEntreprise || 'SARL',
           formeJuridique: entreprise.formeJuridique || entreprise.typeEntreprise || 'SARL',
           secteurActivite: entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr?.label || entreprise.secteurActivite || 'Non spécifié',
@@ -364,12 +345,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           // Mapper les données pour chaque entreprise
           const entreprisesMappees = entreprises.map((entreprise: any) => ({
             id: entreprise.id,
-<<<<<<< HEAD
             nom: getDisplayName(entreprise),
             reference: entreprise.reference || entreprise.numeroReference || '',
-=======
-            nom: entreprise.nom,
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
             typeEntreprise: entreprise.typeEntreprise || 'SARL',
             formeJuridique: entreprise.formeJuridique || entreprise.typeEntreprise || 'SARL',
             secteurActivite: entreprise.secteurActivite || 'Non spécifié',
@@ -378,13 +355,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             etapeActuelle: etape,
             statut: 'approuve', // Ces entreprises ont dépassé la révision donc sont approuvées
             demandeur: {
-<<<<<<< HEAD
               nom: entreprise.createdBy?.personne?.nom || entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR')?.personne?.nom || 'Utilisateur',
               prenom: entreprise.createdBy?.personne?.prenom || entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR')?.personne?.prenom || 'Inconnu',
-=======
-              nom: entreprise.createdBy?.personne?.nom || 'Utilisateur',
-              prenom: entreprise.createdBy?.personne?.prenom || 'Inconnu',
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               email: entreprise.createdBy?.email || 'email@example.com',
               telephone: entreprise.createdBy?.personne?.telephone1 || '+223 00 00 00 00'
             },
@@ -461,7 +433,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   const handleFinaliserRevision = async (demandeId: string, decision: 'approuve' | 'rejete', commentaire?: string) => {
     try {
       
-<<<<<<< HEAD
       // Si on approuve, approuver automatiquement tous les documents d'abord
       if (decision === 'approuve' && selectedDemande?.documents) {
         // Approuver tous les documents localement
@@ -485,8 +456,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
         console.log(`✅ Tous les documents (${updatedDocuments.length}) ont été approuvés automatiquement`);
       }
       
-=======
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
       // Appel API pour finaliser la révision et passer à l'étape suivante
       const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${demandeId}/finaliser-revision`, {
         method: 'PUT',
@@ -514,12 +483,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           etapeValidation: decision === 'approuve' ? 'TCOM' : 'ACCUEIL' 
         });
       }
-<<<<<<< HEAD
-=======
-
-      // Afficher un message de succès
-      alert(`Révision finalisée avec succès. ${decision === 'approuve' ? 'Entreprise transférée au RCCM Phase 1.' : 'Entreprise retournée à l\'étape l\'accueil.'}`);
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
       
     } catch (error) {
       console.error('❌ [RevisionStep] Erreur lors de la finalisation:', error);
@@ -557,13 +520,8 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
   const getStatutColor = (statut: string) => {
     switch (statut) {
-<<<<<<< HEAD
       case 'en_cours': return 'bg-sky-50 text-black-800';
       case 'complete': return 'bg-sky-600 text-primary-800';
-=======
-      case 'en_cours': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
-      case 'complete': return 'bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800';
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
       case 'rejete': return 'bg-gradient-to-r from-red-100 to-primary-200 text-red-800';
       default: return 'bg-gradient-to-r from-gray-100 to-slate-200 text-gray-800';
     }
@@ -585,17 +543,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-<<<<<<< HEAD
       <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
-=======
-      <div className={`${isScrolled ? 'fixed top-0 left-0 right-0 z-50 shadow-2xl' : 'relative'} bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-6 transition-all duration-300`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               <DocumentCheckIcon className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -604,7 +555,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-<<<<<<< HEAD
             <span className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
               <DocumentMagnifyingGlassIcon className="h-5 w-5" />
               Étape REVISION
@@ -613,14 +563,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
               <span className="bg-gradient-to-r from-gray-500 to-slate-600 text-white px-4 py-2 rounded-xl text-lg font-bold shadow-lg flex items-center gap-2">
                 <EyeSlashIcon className="h-5 w-5" />
                 Lecture seule
-=======
-            <span className="bg-gradient-to-r from-primary-500 to-[#2d6aa0] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              🔍 Étape REVISION
-            </span>
-            {!canEdit && (
-              <span className="bg-gradient-to-r from-gray-500 to-slate-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-                👁️ Lecture seule
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </span>
             )}
           </div>
@@ -629,57 +571,33 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
 
       {/* Tabs */}
-<<<<<<< HEAD
       <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
-=======
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
         <div className="border-b border-white/40">
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('demandes')}
-<<<<<<< HEAD
               className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 ${
                 activeTab === 'demandes'
                   ? 'border-sky-600 text-sky-700 shadow-lg'
-=======
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
-                activeTab === 'demandes'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <BuildingOfficeIcon className="h-5 w-5" />
-<<<<<<< HEAD
                 <span>Demandes à Réviser ({demandes.length})</span>
-=======
-                <span>📋 Demandes à Réviser ({demandes.length})</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </div>
             </button>
             <button
               onClick={() => setActiveTab('documents')}
-<<<<<<< HEAD
               className={`py-4 px-1 border-b-2 font-bold text-lg transition-all duration-300 ${
                 activeTab === 'documents'
                   ? 'border-sky-600 text-sky-700 shadow-lg'
-=======
-              className={`py-4 px-1 border-b-2 font-bold text-sm transition-all duration-300 ${
-                activeTab === 'documents'
-                  ? 'border-[#412A5C] text-[#412A5C] shadow-lg'
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <DocumentTextIcon className="h-5 w-5" />
-<<<<<<< HEAD
                 <span>Documents Révisés</span>
-=======
-                <span>📄 Documents Révisés</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </div>
             </button>
           </nav>
@@ -691,7 +609,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="space-y-4">
               {isLoading ? (
                 <div className="text-center py-12">
-<<<<<<< HEAD
                   <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
                     <ClockIcon className="h-8 w-8 text-white mx-auto" />
                   </div>
@@ -719,51 +636,16 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <div className="flex-1">
                           <h3 className="text-xl font-black text-slate-800">{demande.nom}</h3>
                           <p className="text-lg text-slate-600 font-medium">
-=======
-                  <div className="p-4 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit animate-pulse">
-                    <ClockIcon className="h-8 w-8 text-white mx-auto" />
-                  </div>
-                  <p className="text-slate-600 font-medium">Chargement des demandes...</p>
-                </div>
-              ) : demandes.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="p-4 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg mx-auto mb-6 w-fit">
-                    <DocumentCheckIcon className="h-12 w-12 text-white mx-auto" />
-                  </div>
-                  <h3 className="text-lg font-black text-slate-800 mb-3">Aucune demande à réviser</h3>
-                  <p className="text-slate-600 font-medium max-w-md mx-auto">Toutes les demandes ont été traitées ou aucune n'est encore arrivée à l'étape de révision.</p>
-                </div>
-              ) : (
-                demandes.map((demande) => (
-                  <div key={demande.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
-                          <BuildingOfficeIcon className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-black text-slate-800">{demande.nom}</h3>
-                          <p className="text-sm text-slate-600 font-medium">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                             {demande.typeEntreprise} • {demande.secteurActivite}
                           </p>
                           <div className="flex items-center space-x-4 mt-2">
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
-<<<<<<< HEAD
                               <span className="text-sm text-slate-600 font-bold">
                                 Réf: {demande.reference || 'N/A'}
                               </span>
                             </div>
                             <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
                               <span className="text-sm text-slate-600 font-bold">
-=======
-                              <span className="text-xs text-slate-600 font-bold">
-                                ID: {demande.id}
-                              </span>
-                            </div>
-                            <div className="bg-white/50 rounded-lg px-3 py-1 border border-white/40">
-                              <span className="text-xs text-slate-600 font-bold">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                 Transféré le: {demande.dateTransitionRevision ? new Date(demande.dateTransitionRevision).toLocaleDateString('fr-FR') : 'N/A'}
                               </span>
                             </div>
@@ -771,41 +653,26 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end space-y-3">
-<<<<<<< HEAD
                         <span className={`px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${getStatutColor(demande.statutRevision || 'en_cours')}`}>
                           {demande.statutRevision === 'en_cours' ? 'En cours de révision' : 
                            demande.statutRevision === 'complete' ? 'Révision terminée' : 
                            demande.statutRevision === 'rejete' ? 'Rejeté' : 'En attente'}
-=======
-                        <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-lg ${getStatutColor(demande.statutRevision || 'en_cours')}`}>
-                          {demande.statutRevision === 'en_cours' ? '🔍 En cours de révision' : 
-                           demande.statutRevision === 'complete' ? '✅ Révision terminée' : 
-                           demande.statutRevision === 'rejete' ? '❌ Rejeté' : '⏳ En attente'}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </span>
                         <button
                           onClick={() => {
                             setSelectedDemande(demande);
                             setShowDetails(true);
                           }}
-<<<<<<< HEAD
                           className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-sky-700 hover:to-blue-700 transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold text-lg"
                         >
                           <EyeIcon className="h-5 w-5" />
                           <span>Réviser</span>
-=======
-                          className="bg-gradient-to-r from-[#1e5987] to-[#2d6aa0] text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-[#412A5C] transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl font-bold"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          <span>👁️ Réviser</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </button>
                       </div>
                     </div>
                     
                     {/* Affichage du motif de rejet en priorité, sinon note du régisseur */}
                     {demande.motifRejet ? (
-<<<<<<< HEAD
                       <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-red-50 rounded-xl border border-red-200 shadow-lg flex items-start gap-2">
                         <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                         <p className="text-lg text-red-800 font-medium">
@@ -817,22 +684,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <DocumentTextIcon className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
                         <p className="text-lg text-sky-800 font-medium">
                           <span className="font-black">Note du régisseur:</span> {demande.noteRegisseur}
-=======
-                      <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-red-50 rounded-xl border border-red-200 shadow-lg">
-                        <p className="text-sm text-red-800 font-medium">
-                          <span className="font-black">⚠️ Motif de rejet:</span> {demande.motifRejet}
-                        </p>
-                      </div>
-                    ) : demande.noteRegisseur && (
-                      <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl border border-primary-200 shadow-lg">
-                        <p className="text-sm text-primary-800 font-medium">
-                          <span className="font-black">💬 Note du régisseur:</span> {demande.noteRegisseur}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </p>
                       </div>
                     )}
                   </div>
-<<<<<<< HEAD
                 ))}
                 
                 {/* Pagination des demandes à réviser - toujours affichée */}
@@ -856,9 +711,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     </button>
                   </div>
                 </>
-=======
-                ))
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               )}
             </div>
           )}
@@ -866,7 +718,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           {/* Tab Documents */}
           {activeTab === 'documents' && (
             <div className="space-y-4">
-<<<<<<< HEAD
               <div className="bg-gradient-to-r from-sky-50/50 to-blue-50/50 rounded-2xl p-6 border border-sky-200">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
@@ -908,22 +759,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     placeholder="Rechercher par nom d'entreprise, nom, prénom ou référence..."
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-base"
                   />
-=======
-              <div className="bg-gradient-to-r from-[#1e5987]/10 to-primary-50/50 rounded-2xl p-6 border border-[#412A5C]/20">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                    <DocumentTextIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Entreprises Post-Révision</h3>
-                    <p className="text-slate-600 font-medium">Entreprises ayant dépassé l'étape de révision</p>
-                  </div>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </div>
 
                 {/* Liste des entreprises */}
                 <div className="space-y-3">
-<<<<<<< HEAD
                   {filteredEntreprises.length === 0 ? (
                     <div className="text-center py-8">
                       <DocumentMagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -934,9 +773,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     </div>
                   ) : (
                     filteredEntreprises.map((entreprise) => (
-=======
-                  {entreprisesPostRevision.map((entreprise, index) => (
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       <div 
                         key={entreprise.id} 
                         className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/60 shadow-sm hover:shadow-md transition-all duration-300 hover:bg-white/90"
@@ -944,28 +780,16 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="flex-shrink-0">
-<<<<<<< HEAD
                               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-=======
-                              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl flex items-center justify-center shadow-lg">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                 <BuildingOfficeIcon className="h-6 w-6 text-white" />
                               </div>
                             </div>
                             <div className="flex-1">
-<<<<<<< HEAD
                               <h4 className="text-xl font-bold text-slate-800">{entreprise.nom}</h4>
                               <div className="flex items-center space-x-4 text-lg text-slate-600">
                                 <span className="flex items-center space-x-1">
                                   <UserIcon className="h-4 w-4" />
                                   <span>Réf: {entreprise.reference || 'N/A'}</span>
-=======
-                              <h4 className="text-lg font-bold text-slate-800">{entreprise.nom}</h4>
-                              <div className="flex items-center space-x-4 text-sm text-slate-600">
-                                <span className="flex items-center space-x-1">
-                                  <UserIcon className="h-4 w-4" />
-                                  <span>ID: {entreprise.id}</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                 </span>
                                 <span className="flex items-center space-x-1">
                                   <ClockIcon className="h-4 w-4" />
@@ -976,21 +800,14 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                           </div>
                           
                           <div className="flex items-center space-x-3">
-<<<<<<< HEAD
                             <div className="px-3 py-1 bg-gradient-to-r from-green-50 to-green-50 rounded-lg border border-green-200">
                               <span className="text-lg font-bold text-green-700">
-=======
-                            {/* Juste un badge simple avec l'étape actuelle */}
-                            <div className="px-3 py-1 bg-gradient-to-r from-primary-50 to-primary-50 rounded-lg border border-primary-200">
-                              <span className="text-sm font-bold text-primary-700">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                                 Étape: {entreprise.etapeActuelle || 'TERMINÉ'}
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
-<<<<<<< HEAD
                     ))
                   )}
                 </div>
@@ -1046,18 +863,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <ChevronRightIcon className="h-5 w-5" />
                       </button>
                     </div>
-=======
-                    ))}
-                  
-                  {/* Message si aucune entreprise */}
-                  {entreprisesPostRevision.length === 0 && (
-                    <div className="text-center py-8">
-                      <DocumentMagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium text-gray-700 mb-2">Aucune entreprise trouvée</h4>
-                      <p className="text-gray-500">Aucune entreprise n'a encore dépassé l'étape de révision.</p>
-                    </div>
-                  )}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 </div>
               </div>
             </div>
@@ -1068,28 +873,16 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
       {/* Modal de détails */}
       {showDetails && selectedDemande && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-<<<<<<< HEAD
           <div className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-8xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-white/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="p-3 bg-sky-600 rounded-2xl shadow-lg">
-=======
-          <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-primary-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-white/40">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-2xl shadow-lg">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     <DocumentCheckIcon className="h-6 w-6 text-white" />
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-slate-800">Révision: {selectedDemande.nom}</h2>
-<<<<<<< HEAD
                     <p className="text-slate-600 font-medium">{selectedDemande.typeEntreprise} • RE: {selectedDemande.reference}</p>
-=======
-                    <p className="text-slate-600 font-medium">{selectedDemande.typeEntreprise} • ID: {selectedDemande.id}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </div>
                 </div>
                 <button
@@ -1104,7 +897,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             <div className="p-6">
               {/* Section Informations de l'Entreprise */}
               <div className="flex items-center space-x-3 mb-6">
-<<<<<<< HEAD
                 <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                   <BuildingOfficeIcon className="h-6 w-6 text-white" />
                 </div>
@@ -1112,21 +904,11 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
               </div>
               
               <div className="bg-sky-50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl mb-8">
-=======
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                  <span className="text-lg">🏢</span>
-                </div>
-                <h3 className="text-lg font-black text-slate-800">Informations de l'Entreprise</h3>
-              </div>
-              
-              <div className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl mb-8">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Colonne gauche */}
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Nom de l'entreprise</label>
-<<<<<<< HEAD
                       <p className="text-xl font-black text-slate-800">{selectedDemande.nom}</p>
                     </div>
                     <div>
@@ -1140,21 +922,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Secteur d'activité</label>
                       <p className="text-lg font-medium text-slate-700">{selectedDemande.secteurActivite}</p>
-=======
-                      <p className="text-lg font-black text-slate-800">{selectedDemande.nom}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Type d'entreprise</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.typeEntreprise}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Forme juridique</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.formeJuridique}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Secteur d'activité</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.secteurActivite}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </div>
                   </div>
                   
@@ -1162,7 +929,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Référence</label>
-<<<<<<< HEAD
                       <p className="text-lg font-mono font-medium text-slate-700">{selectedDemande.reference}</p>
                     </div>
                     <div>
@@ -1172,29 +938,13 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Créé par</label>
                       <p className="text-lg font-medium text-slate-700">{selectedDemande.createur?.nom} {selectedDemande.createur?.prenom}</p>
-=======
-                      <p className="text-base font-mono font-medium text-slate-700">{selectedDemande.reference}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Date de création</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.dateCreation}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Créé par</label>
-                      <p className="text-base font-medium text-slate-700">{selectedDemande.createur?.nom} {selectedDemande.createur?.prenom}</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       <p className="text-sm text-slate-500">{selectedDemande.createur?.email}</p>
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-600 uppercase tracking-wide">Statut</label>
-<<<<<<< HEAD
                       <span className="inline-flex items-center gap-2 px-3 py-1 rounded-lg text-lg font-bold bg-gradient-to-r from-sky-100 to-sky-200 text-sky-800">
                         <DocumentMagnifyingGlassIcon className="h-5 w-5" />
                         {selectedDemande.statutRevision}
-=======
-                      <span className="inline-block px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800">
-                        🔍 {selectedDemande.statutRevision}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </span>
                     </div>
                   </div>
@@ -1208,7 +958,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {selectedDemande.participants.map((participant: any, index: number) => (
                         <div key={index} className="bg-white/60 rounded-xl p-4 border border-white/40">
                           <div className="flex items-center space-x-3">
-<<<<<<< HEAD
                             <div className="p-2 bg-sky-600 rounded-lg">
                               <UserIcon className="h-5 w-5 text-white" />
                             </div>
@@ -1217,16 +966,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                               <p className="text-sm text-slate-600">{participant.role}</p>
                               {participant.pourcentageParts && selectedDemande.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
                                 <p className="text-sm text-slate-500">{participant.pourcentageParts}% des parts</p>
-=======
-                            <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-lg">
-                              <span className="text-white text-sm">👤</span>
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-800">{participant.nom} {participant.prenom}</p>
-                              <p className="text-sm text-slate-600">{participant.role}</p>
-                              {participant.pourcentageParts && selectedDemande.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
-                                <p className="text-xs text-slate-500">{participant.pourcentageParts}% des parts</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                               )}
                             </div>
                           </div>
@@ -1239,23 +978,15 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
 
               {/* Section Documents */}
               <div className="flex items-center space-x-3 mb-6">
-<<<<<<< HEAD
                 <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                   <DocumentTextIcon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-black text-slate-800">Documents à Réviser</h3>
-=======
-                <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                  <span className="text-lg">📄</span>
-                </div>
-                <h3 className="text-lg font-black text-slate-800">Documents à Réviser</h3>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
               </div>
               
               <div className="space-y-4">
                 {selectedDemande.documents && selectedDemande.documents.length > 0 ? (
                   selectedDemande.documents.map((document) => (
-<<<<<<< HEAD
                   <div key={document.id} className="bg-gradient-to-r from-white/90 via-slate-50/70 to-sky-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -1270,35 +1001,13 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       <span className={`px-4 py-2 rounded-xl text-sm font-bold shadow-lg ${getStatutColor(document.statut)}`}>
                         {document.statut === 'en_attente' ? 'En attente' :
                          document.statut === 'approuve' ? 'Approuvé' : 'Rejeté'}
-=======
-                  <div key={document.id} className="bg-gradient-to-r from-white/90 via-slate-50/70 to-primary-50/50 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-br from-[#1e5987] to-[#2d6aa0] rounded-xl shadow-lg">
-                          <DocumentTextIcon className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-black text-slate-800">{document.nom}</h4>
-                          <p className="text-sm text-slate-600 font-medium">Type: {document.type}</p>
-                        </div>
-                      </div>
-                      <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-lg ${getStatutColor(document.statut)}`}>
-                        {document.statut === 'en_attente' ? '⏳ En attente' :
-                         document.statut === 'approuve' ? '✅ Approuvé' : '❌ Rejeté'}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </span>
                     </div>
 
                     {document.commentaire && (
-<<<<<<< HEAD
                       <div className="mb-4 p-4 bg-gradient-to-r from-sky-50 to-sky-50 rounded-xl border border-sky-200 shadow-lg">
                         <p className="text-lg text-sky-800 font-medium">
                           <span className="font-black">Commentaire:</span> {document.commentaire}
-=======
-                      <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-primary-50 rounded-xl border border-primary-200 shadow-lg">
-                        <p className="text-sm text-primary-800 font-medium">
-                          <span className="font-black">💬 Commentaire:</span> {document.commentaire}
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                         </p>
                       </div>
                     )}
@@ -1307,17 +1016,10 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       {/* Bouton Visualiser - toujours disponible */}
                       <button
                         onClick={() => handleViewDocument(document, selectedDemande.id)}
-<<<<<<< HEAD
                         className="bg-sky-600 text-white px-4 py-2 rounded-xl text-lg hover:from-sky-700 hover:to-blue-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                       >
                         <EyeIcon className="h-5 w-5" />
                         <span>Visualiser</span>
-=======
-                        className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                        <span>👁️ Visualiser</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </button>
                       
                       {/* Boutons d'action - seulement si éditable et en attente */}
@@ -1325,34 +1027,20 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                         <>
                           <button
                             onClick={() => handleRevisionDocument(selectedDemande.id, document.id, 'approuve')}
-<<<<<<< HEAD
                             className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-xl text-lg hover:from-green-700 hover:to-green-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                           >
                             <CheckCircleIcon className="h-5 w-5" />
                             <span>Approuver</span>
-=======
-                            className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
-                          >
-                            <CheckCircleIcon className="h-4 w-4" />
-                            <span>✅ Approuver</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                           </button>
                           <button
                             onClick={() => {
                               const commentaire = prompt('Commentaire de rejet (optionnel):');
                               handleRevisionDocument(selectedDemande.id, document.id, 'rejete', commentaire || undefined);
                             }}
-<<<<<<< HEAD
                             className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-xl text-lg hover:from-red-700 hover:to-red-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                           >
                             <XCircleIcon className="h-5 w-5" />
                             <span>Rejeter</span>
-=======
-                            className="bg-[#1e5987] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#2563a3] flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
-                          >
-                            <XCircleIcon className="h-4 w-4" />
-                            <span>❌ Rejeter</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                           </button>
                         </>
                       )}
@@ -1362,7 +1050,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                 ) : (
                   <div className="text-center py-16">
                     <div className="relative inline-block mb-8">
-<<<<<<< HEAD
                       <div className="p-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full shadow-2xl animate-pulse">
                         <DocumentTextIcon className="w-16 h-16 text-amber-600" />
                       </div>
@@ -1372,17 +1059,6 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       Aucun document disponible
                     </h3>
                     <p className="text-slate-500 text-xl">Les documents de l'entreprise apparaîtront ici une fois chargés</p>
-=======
-                      <div className="p-8 bg-gradient-to-br from-primary-100 to-red-200 rounded-full shadow-2xl animate-pulse">
-                        <DocumentTextIcon className="w-16 h-16 text-primary-600" />
-                      </div>
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-primary-400 to-red-500 rounded-full animate-ping"></div>
-                    </div>
-                    <h3 className="text-2xl font-black bg-gradient-to-r from-primary-600 to-red-600 bg-clip-text text-transparent mb-4">
-                      Aucun document disponible
-                    </h3>
-                    <p className="text-slate-500 text-lg">Les documents de l'entreprise apparaîtront ici une fois chargés</p>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </div>
                 )}
               </div>
@@ -1390,49 +1066,28 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
               {canEdit && (
                 <div className="mt-8 pt-6 border-t border-white/40">
                   <div className="flex items-center space-x-3 mb-6">
-<<<<<<< HEAD
                     <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                       <CheckCircleIcon className="h-6 w-6 text-white" />
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Finaliser la Révision</h4>
-=======
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-[#2d6aa0] rounded-xl shadow-lg">
-                      <span className="text-lg">⚡</span>
-                    </div>
-                    <h4 className="font-black text-slate-800">Finaliser la Révision</h4>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => handleFinaliserRevision(selectedDemande.id, 'approuve')}
-<<<<<<< HEAD
                       className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-xl hover:from-green-700 hover:to-green-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
                       <CheckCircleIcon className="h-5 w-5" />
                       <span>Approuver et Transférer au TCOM</span>
-=======
-                      className="flex-1 bg-[#1e5987] text-white px-6 py-4 rounded-xl hover:bg-[#2563a3] flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
-                    >
-                      <CheckCircleIcon className="h-5 w-5" />
-                      <span>✅ Approuver et Transférer au TCOM</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     </button>
                     {/* Bouton de retour d'étape avec menu déroulant */}
                     <div className="relative flex-1">
                       <button
                         onClick={() => setShowRejectModal(true)}
                         disabled={isLoading}
-<<<<<<< HEAD
                         className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-4 rounded-xl hover:from-red-700 hover:to-red-800 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg disabled:opacity-50"
                       >
                         <XMarkIcon className="h-5 w-5" />
                         <span>Rejeter et Retourner à l'ACCUEIL</span>
-=======
-                        className="w-full bg-[#1e5987] text-white px-6 py-4 rounded-xl hover:bg-[#2563a3] flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transition-all duration-300 font-bold disabled:opacity-50"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                        <span>❌ Rejeter et Retourner à l'ACCUEIL</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                       </button>
                       
                     </div>
@@ -1450,11 +1105,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-<<<<<<< HEAD
                 <h3 className="text-xl font-bold text-gray-800">Motif de rejet</h3>
-=======
-                <h3 className="text-lg font-bold text-gray-800">Motif de rejet</h3>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 <button
                   onClick={() => {
                     setShowRejectModal(false);
@@ -1469,11 +1120,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
             </div>
             
             <div className="p-6">
-<<<<<<< HEAD
               <p className="text-lg text-gray-600 mb-4">
-=======
-              <p className="text-sm text-gray-600 mb-4">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 Sélectionnez le motif de retour à l'étape RÉVISION :
               </p>
               
@@ -1486,37 +1133,23 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                       value={reason}
                       checked={selectedRejectReason === reason}
                       onChange={(e) => setSelectedRejectReason(e.target.value)}
-<<<<<<< HEAD
                       className="text-sky-600 focus:ring-sky-500"
                     />
                     <span className="text-lg text-gray-700">{reason}</span>
-=======
-                      className="text-[#1e5987] focus:ring-[#1e5987]"
-                    />
-                    <span className="text-sm text-gray-700">{reason}</span>
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                   </label>
                 ))}
               </div>
               
               {selectedRejectReason === 'Autres' && (
                 <div className="mb-4">
-<<<<<<< HEAD
                   <label className="block text-lg font-medium text-gray-700 mb-2">
-=======
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     Précisez le motif :
                   </label>
                   <textarea
                     value={customRejectReason}
                     onChange={(e) => setCustomRejectReason(e.target.value)}
                     placeholder="Saisissez le motif de rejet..."
-<<<<<<< HEAD
                     className="w-full px-3 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 resize-none"
-=======
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e5987] focus:border-[#1e5987] resize-none"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                     rows={3}
                   />
                 </div>
@@ -1529,11 +1162,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     setSelectedRejectReason('');
                     setCustomRejectReason('');
                   }}
-<<<<<<< HEAD
                   className="flex-1 px-4 py-2 text-lg border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-=======
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 >
                   Annuler
                 </button>
@@ -1548,11 +1177,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     }
                   }}
                   disabled={!selectedRejectReason || (selectedRejectReason === 'Autres' && !customRejectReason.trim())}
-<<<<<<< HEAD
                   className="flex-1 px-4 py-2 text-lg bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold"
-=======
-                  className="flex-1 px-4 py-2 bg-[#1e5987] text-white rounded-lg hover:bg-[#2563a3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 >
                   Confirmer le rejet
                 </button>

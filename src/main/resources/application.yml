@@ -177,15 +177,9 @@ spring:
     activate:
       on-profile: dev
   datasource:
-<<<<<<< HEAD
-    url: jdbc:mysql://localhost:8889/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864&zeroDateTimeBehavior=convertToNull
-    username: root
-    password: root
-=======
     url: jdbc:mysql://localhost:3306/apimaliNew?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa%2FBamako&createDatabaseIfNotExist=true&max_allowed_packet=67108864&zeroDateTimeBehavior=convertToNull
     username: root
     password: 
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

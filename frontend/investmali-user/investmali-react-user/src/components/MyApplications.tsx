@@ -123,8 +123,3 @@ const MyApplications: React.FC = () => {
 };
 
 export default MyApplications;
-<<<<<<< HEAD
-
-=======
-
->>>>>>> 060c2b6fa (WIP: local changes before rebase)

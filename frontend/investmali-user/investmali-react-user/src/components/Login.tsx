@@ -95,11 +95,7 @@ const Login: React.FC = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full px-4 py-4 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-investmali-accent/50 text-lg"
-<<<<<<< HEAD
                   placeholder="email@exemple.com ou +223 70000000"
-=======
-                  placeholder="votre@email.com"
->>>>>>> 060c2b6fa (WIP: local changes before rebase)
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
