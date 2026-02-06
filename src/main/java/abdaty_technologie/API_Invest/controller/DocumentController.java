@@ -11,10 +11,12 @@ import java.io.IOException;
 
 /**
  * Contrôleur pour la gestion des documents
+ * DÉSACTIVÉ: Crée un conflit avec DocumentsController
+ * DocumentsController gère déjà /documents qui devient /api/v1/documents avec le context-path
  */
-@RestController
-@RequestMapping("/api/v1/documents")
-@CrossOrigin(origins = "*")
+// @RestController
+// @RequestMapping("/api/v1/documents")
+// @CrossOrigin(origins = "*")
 public class DocumentController {
 
     /**
