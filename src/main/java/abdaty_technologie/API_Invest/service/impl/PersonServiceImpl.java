@@ -352,24 +352,6 @@ public class PersonServiceImpl implements PersonService {
 
         Persons saved = personsRepository.save(p);
         
-        // Gérer les conjoints si la personne est mariée
-        if (req.conjoints != null && !req.conjoints.isEmpty()) {
-            System.out.println("💑 [PersonService] Ajout de " + req.conjoints.size() + " conjoint(s)");
-            for (ConjointRequest conjointReq : req.conjoints) {
-                Conjoint conjoint = new Conjoint();
-                conjoint.setPerson(saved);
-                conjoint.setPrenom(conjointReq.prenom);
-                conjoint.setNom(conjointReq.nom);
-                conjoint.setDateMariage(conjointReq.dateMariage);
-                conjoint.setLieuMariage(conjointReq.lieuMariage);
-                conjoint.setRegimeMatrimonial(conjointReq.regimeMatrimonial);
-                conjoint.setClauseRestrictive(conjointReq.clauseRestrictive);
-                saved.getConjoints().add(conjoint);
-            }
-            saved = personsRepository.save(saved);
-            System.out.println("✅ [PersonService] Conjoints ajoutés avec succès");
-        }
-        
         return toResponse(saved);
     }
 
@@ -554,29 +536,6 @@ public class PersonServiceImpl implements PersonService {
         }
 
         Persons saved = personsRepository.save(p);
-        
-        // Gérer les conjoints si la liste est fournie
-        if (req.conjoints != null) {
-            System.out.println("💑 [PersonService UPDATE] Mise à jour des conjoints");
-            // Supprimer les anciens conjoints
-            saved.getConjoints().clear();
-            // Ajouter les nouveaux conjoints
-            if (!req.conjoints.isEmpty()) {
-                for (ConjointRequest conjointReq : req.conjoints) {
-                    Conjoint conjoint = new Conjoint();
-                    conjoint.setPerson(saved);
-                    conjoint.setPrenom(conjointReq.prenom);
-                    conjoint.setNom(conjointReq.nom);
-                    conjoint.setDateMariage(conjointReq.dateMariage);
-                    conjoint.setLieuMariage(conjointReq.lieuMariage);
-                    conjoint.setRegimeMatrimonial(conjointReq.regimeMatrimonial);
-                    conjoint.setClauseRestrictive(conjointReq.clauseRestrictive);
-                    saved.getConjoints().add(conjoint);
-                }
-            }
-            saved = personsRepository.save(saved);
-            System.out.println("✅ [PersonService UPDATE] Conjoints mis à jour avec succès");
-        }
         
         return toResponse(saved);
     }

@@ -107,6 +107,12 @@ interface EntrepriseDetail {
   banni: boolean;
   motifBannissement: string | null;
   dateBannissement: string | null;
+  // Informations du déposant
+  nomDeposant?: string;
+  prenomDeposant?: string;
+  telephoneDeposant?: string;
+  emailDeposant?: string;
+  nomCabinet?: string;
 }
 
 const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({ 
@@ -311,7 +317,7 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
     return typeNames[type.toUpperCase() as keyof typeof typeNames] || type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  // Fonction pour grouper les documents par type
+  // Fonction pour grouper les documents par type et filtrer les doublons
   const groupDocumentsByType = (docs: Document[]) => {
     const grouped = docs.reduce((acc, doc) => {
       const docType = (doc.typeDocument || doc.type_document) || (doc.typePiece || doc.type_piece) || 'AUTRES';
@@ -326,7 +332,42 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
       return acc;
     }, {} as Record<string, Document[]>);
 
-    return grouped;
+    // Filtrer les doublons : garder uniquement les documents avec numéros longs (EXTRAIT-, DECLARATION-, CASIER-, etc.)
+    // et ignorer ceux avec numéros courts (EN-, DH-, CJ-)
+    const filtered: Record<string, Document[]> = {};
+    
+    for (const [typeName, docList] of Object.entries(grouped)) {
+      // Si un seul document, le garder
+      if (docList.length === 1) {
+        filtered[typeName] = docList;
+        continue;
+      }
+      
+      // S'il y a plusieurs documents du même type, garder uniquement ceux avec numéros longs
+      const longFormatDocs = docList.filter(doc => {
+        const numero = doc.numero || doc.num_piece || '';
+        // Garder les documents qui commencent par des préfixes longs (contiennent un tiret suivi d'un prénom/nom)
+        return numero.includes('-') && (
+          numero.startsWith('EXTRAIT-') || 
+          numero.startsWith('DECLARATION-') || 
+          numero.startsWith('CASIER-') ||
+          numero.startsWith('MARIAGE-') ||
+          numero.startsWith('RCCM-') ||
+          numero.startsWith('STATUTS-') ||
+          numero.startsWith('RC-') ||
+          numero.startsWith('PV-') ||
+          numero.startsWith('DN-') ||
+          numero.startsWith('AB-') ||
+          numero.startsWith('CR-') ||
+          numero.startsWith('PN-')
+        );
+      });
+      
+      // Si on a trouvé des documents avec format long, les utiliser, sinon garder tous
+      filtered[typeName] = longFormatDocs.length > 0 ? longFormatDocs : docList;
+    }
+
+    return filtered;
   };
 
   const getPieceTypeName = (type: string) => {
@@ -569,6 +610,72 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
               </div>
             </div>
 
+            {/* Informations du déposant (uniquement pour les sociétés) */}
+            {entreprise.typeEntreprise === 'SOCIETE' && (entreprise.nomDeposant || entreprise.prenomDeposant || entreprise.telephoneDeposant || entreprise.emailDeposant || entreprise.nomCabinet) && (
+              <div className="bg-white rounded-2xl shadow-lg border p-4">
+                <div className="flex items-center mb-4">
+                  <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
+                    <UserCircleIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#2d85c9]">
+                    Informations du déposant
+                  </h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {entreprise.nomDeposant && (
+                    <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                      <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                        <UserCircleIcon className="w-4 h-4" />
+                        <span>Nom</span>
+                      </label>
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.nomDeposant}</p>
+                    </div>
+                  )}
+                  
+                  {entreprise.prenomDeposant && (
+                    <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                      <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                        <UserCircleIcon className="w-4 h-4" />
+                        <span>Prénom</span>
+                      </label>
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.prenomDeposant}</p>
+                    </div>
+                  )}
+                  
+                  {entreprise.telephoneDeposant && (
+                    <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                      <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                        <PhoneIcon className="w-4 h-4" />
+                        <span>Téléphone</span>
+                      </label>
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.telephoneDeposant}</p>
+                    </div>
+                  )}
+                  
+                  {entreprise.emailDeposant && (
+                    <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                      <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                        <EnvelopeIcon className="w-4 h-4" />
+                        <span>Email</span>
+                      </label>
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.emailDeposant}</p>
+                    </div>
+                  )}
+                  
+                  {entreprise.nomCabinet && (
+                    <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                      <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
+                        <BuildingOfficeIcon className="w-4 h-4" />
+                        <span>Nom du cabinet</span>
+                      </label>
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.nomCabinet}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Localisation modernisée */}
             <div className="bg-white rounded-2xl shadow-lg border p-4">
               <div className="flex items-center mb-4">
@@ -675,13 +782,16 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-3">
-                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
-                        <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
-                          <ChartBarIcon className="w-3 h-3" />
-                          <span>Parts</span>
-                        </label>
-                        <p className="text-sm font-bold text-slate-800">{membre.pourcentageParts}%</p>
-                      </div>
+                      {/* Masquer les parts pour les GIE */}
+                      {entreprise.formeJuridique !== 'GIE' && (
+                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                          <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                            <ChartBarIcon className="w-3 h-3" />
+                            <span>Parts</span>
+                          </label>
+                          <p className="text-sm font-bold text-slate-800">{membre.pourcentageParts}%</p>
+                        </div>
+                      )}
                       
                       {isPersonneMorale(membre) ? (
                         <>
@@ -823,7 +933,12 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                                     <div>
                                       <span className="font-medium">Numéro : </span> 
                                       <span className={(doc.numero || doc.num_piece) ? 'text-gray-900' : 'text-red-500 italic'}>
-                                        {doc.numero || doc.num_piece || 'Numéro manquant'}
+                                        {(() => {
+                                          const fullNumero = doc.numero || doc.num_piece || 'Numéro manquant';
+                                          // Tronquer la partie après le nom (enlever -CE-YYYY-MM-DD-XXXXX)
+                                          const match = fullNumero.match(/^([A-Z]+-[^-]+-[^-]+)/);
+                                          return match ? match[1] : fullNumero;
+                                        })()}
                                       </span>
                                     </div>
                                     <div>
@@ -1035,17 +1150,20 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                   </div>
                 </div>
                 
-                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
-                      <ChartBarIcon className="w-3 h-3" />
-                      <span>Parts</span>
-                    </span>
-                    <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
-                      {entreprise.membres.reduce((sum, m) => sum + m.pourcentageParts, 0)}%
-                    </span>
+                {/* Masquer le total des parts pour les GIE */}
+                {entreprise.formeJuridique !== 'GIE' && (
+                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center space-x-2 text-xs font-bold text-[#2d85c9] min-w-0">
+                        <ChartBarIcon className="w-3 h-3" />
+                        <span>Parts</span>
+                      </span>
+                      <span className="px-2 py-1 bg-[#2d85c9] text-white font-bold rounded-lg text-xs">
+                        {entreprise.membres.reduce((sum, m) => sum + m.pourcentageParts, 0)}%
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

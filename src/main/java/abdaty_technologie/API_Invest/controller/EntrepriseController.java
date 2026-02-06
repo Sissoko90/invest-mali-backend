@@ -204,7 +204,7 @@ public class EntrepriseController {
                 String founderId = findFounderId(created);
                 if (founderId != null) {
                     documentsService.uploadDocument(founderId, created.getId(), 
-                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), null, statuts);
+                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), statuts);
                 }
             }
             
@@ -212,7 +212,7 @@ public class EntrepriseController {
                 String founderId = findFounderId(created);
                 if (founderId != null) {
                     documentsService.uploadDocument(founderId, created.getId(), 
-                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), null, registreCommerce);
+                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), registreCommerce);
                 }
             }
             
@@ -220,7 +220,7 @@ public class EntrepriseController {
                 String gerantId = findGerantId(created);
                 if (gerantId != null) {
                     documentsService.uploadDocument(gerantId, created.getId(), 
-                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), null, certificatResidence);
+                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), certificatResidence);
                 }
             }
             
@@ -1416,6 +1416,13 @@ public class EntrepriseController {
         r.agrementSignePath = e.getAgrementSignePath();
         r.telechargementAutorise = e.getTelechargementAutorise() != null ? e.getTelechargementAutorise() : false;
         
+        // === INFORMATIONS DU DÉPOSANT ===
+        r.nomDeposant = e.getNomDeposant();
+        r.prenomDeposant = e.getPrenomDeposant();
+        r.telephoneDeposant = e.getTelephoneDeposant();
+        r.emailDeposant = e.getEmailDeposant();
+        r.nomCabinet = e.getNomCabinet();
+        
         return r;
     }
 
@@ -1718,7 +1725,7 @@ public class EntrepriseController {
                         
                         if (personId != null) {
                             documentsService.uploadDocument(personId, entreprise.getId(), 
-                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, null, file);
+                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, file);
                         }
                     }
                 } else if (key.startsWith("participant_") && key.endsWith("_acteMariage") && value instanceof MultipartFile) {
@@ -1729,7 +1736,7 @@ public class EntrepriseController {
                         
                         if (personId != null) {
                             documentsService.uploadDocument(personId, entreprise.getId(), 
-                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, null, file);
+                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, file);
                         }
                     }
                 }

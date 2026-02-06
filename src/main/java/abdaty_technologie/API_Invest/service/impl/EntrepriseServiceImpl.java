@@ -245,6 +245,13 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         // Champs de localisation spécifique de l'entreprise
         e.setRue(req.rue);
         e.setPorte(req.porte);
+        
+        // Informations du déposant (pour les sociétés)
+        e.setNomDeposant(req.nomDeposant);
+        e.setPrenomDeposant(req.prenomDeposant);
+        e.setTelephoneDeposant(req.telephoneDeposant);
+        e.setEmailDeposant(req.emailDeposant);
+        e.setNomCabinet(req.nomCabinet);
 
         // Calculer le montant total
         BigDecimal totalAmount = calculateTotalAmount(req);
@@ -502,6 +509,13 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         e.setDivision(null); // Division en base = NULL
         e.setDivisionCode(targetDivisionCode); // Code INSTAT
         System.out.println("🔧 [INSTAT] Entreprise alternative - Division: NULL, Code: " + targetDivisionCode);
+        
+        // Informations du déposant (pour les sociétés)
+        e.setNomDeposant(req.nomDeposant);
+        e.setPrenomDeposant(req.prenomDeposant);
+        e.setTelephoneDeposant(req.telephoneDeposant);
+        e.setEmailDeposant(req.emailDeposant);
+        e.setNomCabinet(req.nomCabinet);
 
         // Calculer le montant total
         BigDecimal totalAmount = calculateTotalAmount(req);

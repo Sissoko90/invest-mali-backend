@@ -165,4 +165,21 @@ public class EntrepriseResponse {
     
     /** Motif de rejet lors du retour d'une étape précédente */
     public String motifRejet;
+    
+    // === INFORMATIONS DU DÉPOSANT (pour les sociétés) ===
+    
+    /** Nom du déposant */
+    public String nomDeposant;
+    
+    /** Prénom du déposant */
+    public String prenomDeposant;
+    
+    /** Téléphone du déposant */
+    public String telephoneDeposant;
+    
+    /** Email du déposant */
+    public String emailDeposant;
+    
+    /** Nom du cabinet (si déposé par un cabinet) */
+    public String nomCabinet;
 }

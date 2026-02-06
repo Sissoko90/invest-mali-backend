@@ -193,6 +193,22 @@ public class Entreprise extends BaseEntity {
   @Enumerated(EnumType.STRING)
   private abdaty_technologie.API_Invest.Entity.Enum.TypeDemandeAgrement typeDemandeAgrement;
   
+  // Informations du déposant (pour les sociétés)
+  @Column(name="nom_deposant", nullable = true, length = 100)
+  private String nomDeposant;
+  
+  @Column(name="prenom_deposant", nullable = true, length = 100)
+  private String prenomDeposant;
+  
+  @Column(name="telephone_deposant", nullable = true, length = 20)
+  private String telephoneDeposant;
+  
+  @Column(name="email_deposant", nullable = true, length = 150)
+  private String emailDeposant;
+  
+  @Column(name="nom_cabinet", nullable = true, length = 200)
+  private String nomCabinet;
+  
   @Column(name="montant_frais_depot", nullable = true)
   private Integer montantFraisDepot;
   
@@ -430,5 +446,21 @@ public class Entreprise extends BaseEntity {
   
   public String getPorte() { return porte; }
   public void setPorte(String porte) { this.porte = porte; }
+  
+  // Getters/setters pour les informations du déposant
+  public String getNomDeposant() { return nomDeposant; }
+  public void setNomDeposant(String nomDeposant) { this.nomDeposant = nomDeposant; }
+  
+  public String getPrenomDeposant() { return prenomDeposant; }
+  public void setPrenomDeposant(String prenomDeposant) { this.prenomDeposant = prenomDeposant; }
+  
+  public String getTelephoneDeposant() { return telephoneDeposant; }
+  public void setTelephoneDeposant(String telephoneDeposant) { this.telephoneDeposant = telephoneDeposant; }
+  
+  public String getEmailDeposant() { return emailDeposant; }
+  public void setEmailDeposant(String emailDeposant) { this.emailDeposant = emailDeposant; }
+  
+  public String getNomCabinet() { return nomCabinet; }
+  public void setNomCabinet(String nomCabinet) { this.nomCabinet = nomCabinet; }
 }
 

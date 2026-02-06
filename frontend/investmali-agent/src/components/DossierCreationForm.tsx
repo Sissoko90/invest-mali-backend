@@ -443,6 +443,7 @@ interface FormData {
   nomDeposant: string;
   prenomDeposant: string;
   telephoneDeposant: string;
+  emailDeposant: string;
   nomCabinet: string;
   // Activité (intégrée dans Informations Société)
   domaineActiviteNr?: DomaineActiviteNr; // Domaine non réglementé
@@ -459,6 +460,7 @@ interface FormData {
     pvAssemblee: File | null;
     declarationNotariee: File | null;
     attestationBancaire: File | null;
+    rccmSocieteMere: File | null;
   };
   // Localisation
   division: string;
@@ -567,6 +569,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     nomDeposant: '',
     prenomDeposant: '',
     telephoneDeposant: '',
+    emailDeposant: '',
     nomCabinet: '',
     // Activité
     activitePrincipale: '',
@@ -581,6 +584,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       pvAssemblee: null,
       declarationNotariee: null,
       attestationBancaire: null,
+      rccmSocieteMere: null,
     },
     // Localisation - champs vides par défaut
     division: '',
@@ -745,6 +749,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       nomDeposant: '',
       prenomDeposant: '',
       telephoneDeposant: '',
+      emailDeposant: '',
       nomCabinet: '',
       activitePrincipale: '',
       activiteSecondaire: '',
@@ -756,6 +761,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         pvAssemblee: null,
         declarationNotariee: null,
         attestationBancaire: null,
+        rccmSocieteMere: null,
       },
       division: '',
       antenne: '',
@@ -898,9 +904,73 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     return true;
   });
 
-  // Fonction pour déterminer si un réle nécessite des parts
+  // Fonction pour déterminer si un rôle nécessite des parts
   const roleRequiresParts = (role: 'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR'): boolean => {
+    // Les GIE n'ont pas de parts sociales
+    if (formData.formeJuridique === 'GIE') {
+      return false;
+    }
     return role !== 'ADMINISTRATEUR';
+  };
+
+  // Fonction pour obtenir la liste des pièces à joindre selon la forme juridique
+  const getRequiredPiecesInfo = (formeJuridique: FormeJuridique): string[] => {
+    switch (formeJuridique) {
+      // SA, SARL, SAS, SNC, SCS - Sociétés classiques
+      case 'SA':
+      case 'SARL':
+      case 'SARL_UNI':
+      case 'SAS':
+      case 'SASU':
+      case 'SNC':
+      case 'SCS':
+        return [
+          'Copie de la pièce d\'identité ou du passeport',
+          'Un certificat de résidence pour les étrangers',
+          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance',
+          'Justificatif de la libération d\'un capital selon le type de société'
+        ];
+      
+      // GIE - Groupement d'Intérêt Économique
+      case 'GIE':
+        return [
+          'Copie de la pièce d\'identité ou du passeport',
+          'Certificat de résidence pour les étrangers',
+          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité 2 mois avec un extrait d\'acte de naissance'
+        ];
+      
+      // Succursales et Filiales
+      case 'SUC_SARL':
+      case 'FIL_SARL':
+      case 'SUC_SA':
+      case 'FIL_SA':
+      case 'SUC_SAS':
+      case 'FIL_SAS':
+        return [
+          'Copie de la pièce d\'identité ou du passeport',
+          'Certificat de résidence pour les étrangers',
+          'Casier judiciaire ou déclaration sur l\'honneur avec un extrait d\'acte de naissance',
+          'Statuts de la société mère',
+          'RCCM de la société mère',
+          'PV de l\'assemblée générale avec la décision de l\'ouverture de la succursale / filiale',
+          'PV de l\'assemblée générale ou assemblée générale ordinaire sur lequel figure la désignation du gérant au Mali'
+        ];
+      
+      // Entreprise Individuelle (E_I) - Liste séparée
+      case 'E_I':
+        return [
+          'Copie de la pièce d\'identité ou du passeport',
+          'Un certificat de résidence pour les étrangers',
+          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance',
+          'Justificatif de la libération d\'un capital selon le type de société'
+        ];
+      default:
+        return [
+          'Copie de la pièce d\'identité ou du passeport',
+          'Un certificat de résidence pour les étrangers',
+          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance'
+        ];
+    }
   };
 
   // Fonction pour déterminer les documents requis selon la forme juridique
@@ -910,6 +980,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     pvAssemblee: boolean;
     declarationNotariee: boolean;
     attestationBancaire: boolean;
+    rccmSocieteMere: boolean;
   } => {
     // Documents de base requis pour toutes les sociétés
     const baseDocuments = {
@@ -918,6 +989,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       pvAssemblee: false,
       declarationNotariee: false,
       attestationBancaire: false,
+      rccmSocieteMere: false,
     };
 
     switch (formeJuridique) {
@@ -927,7 +999,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         // SA, SAS, SASU nécessitent des documents supplémentaires
         return {
           ...baseDocuments,
-          pvAssemblee: true,
           declarationNotariee: true,
           attestationBancaire: true,
         };
@@ -936,20 +1007,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         // SARL et SARL Unipersonnelle
         return {
           ...baseDocuments,
-          pvAssemblee: true,
+          attestationBancaire: true, // Justificatif de libération du capital
         };
       case 'GIE':
         // GIE - Groupement d'Intérêt Économique
         return {
           ...baseDocuments,
-          pvAssemblee: true,
         };
       case 'SNC':
       case 'SCS':
         // Sociétés en nom collectif et commandite simple
         return {
           ...baseDocuments,
-          pvAssemblee: true,
+          attestationBancaire: true, // Justificatif de libération du capital
         };
       case 'SCI':
       case 'SCP':
@@ -968,6 +1038,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           ...baseDocuments,
           pvAssemblee: true,
           declarationNotariee: true,
+          rccmSocieteMere: true,
         };
       case 'BR':
         // Bureau de représentation
@@ -977,6 +1048,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           pvAssemblee: false,
           declarationNotariee: true,
           attestationBancaire: false,
+          rccmSocieteMere: false,
         };
       default:
         return baseDocuments;
@@ -1308,15 +1380,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         const isBamako = isBamakoDistrict(companySelectedRegionId, personalRegions);
         setIsCompanyBamako(isBamako);
         
-        if (isBamako) {
-          const arrondissements = await loadBamakoArrondissements(companySelectedRegionId);
-          setCompanyArrondissements(arrondissements || []);
-          setCompanyCercles([]);
-        } else {
-          const cercles = await divisionService.getCerclesByRegion(companySelectedRegionId);
-          setCompanyCercles(cercles || []);
-          setCompanyArrondissements([]);
-        }
+        // Structure INSTAT moderne : Bamako a aussi des cercles maintenant
+        const cercles = await divisionService.getCerclesByRegion(companySelectedRegionId);
+        setCompanyCercles(cercles || []);
+        setCompanyArrondissements([]);
       }
     };
     
@@ -1508,11 +1575,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 1: Appliquer la région
       if (hierarchy.region) {
         console.log('?? étape 1: Application région:', hierarchy.region.nom);
-        setPersonalSelectedRegionId(hierarchy.region.id);
+        setPersonalSelectedRegionId(hierarchy.region.code);
         
         // Charger manuellement les cercles depuis la région
         try {
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setPersonalCercles(cercles || []);
           console.log('? étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés');
         } catch (error) {
@@ -1524,11 +1591,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 2: Appliquer le cercle
       if (hierarchy.cercle) {
         console.log('?? étape 2: Application cercle:', hierarchy.cercle.nom);
-        setPersonalSelectedCercleId(hierarchy.cercle.id);
+        setPersonalSelectedCercleId(hierarchy.cercle.code);
         
         // Charger manuellement les communes depuis le cercle
         try {
-          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
+          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
           setPersonalCommunes(communes || []);
           console.log('? étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées');
         } catch (error) {
@@ -1540,11 +1607,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 3: Appliquer la commune (structure INSTAT moderne)
       if (hierarchy.commune) {
         console.log('?? étape 3: Application commune:', hierarchy.commune.nom);
-        setPersonalSelectedCommuneId(hierarchy.commune.id);
+        setPersonalSelectedCommuneId(hierarchy.commune.code);
         
         // Charger manuellement les quartiers depuis la commune
         try {
-          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
+          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
           setPersonalQuartiers(quartiers || []);
           console.log('? étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés');
         } catch (error) {
@@ -1556,7 +1623,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 4: Appliquer le quartier
       if (hierarchy.quartier) {
         console.log('?? étape 4: Application quartier:', hierarchy.quartier.nom);
-        setPersonalSelectedQuartierId(hierarchy.quartier.id);
+        setPersonalSelectedQuartierId(hierarchy.quartier.code);
         console.log('? étape 4 terminée - quartier appliqué');
       } else {
         console.log('?? étape 5: Aucun quartier dans la hiérarchie');
@@ -1639,11 +1706,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 1: Appliquer la région
       if (hierarchy.region) {
         console.log('?? étape 1: Application région (entreprise):', hierarchy.region.nom);
-        setCompanySelectedRegionId(hierarchy.region.id);
+        setCompanySelectedRegionId(hierarchy.region.code);
         
         // Charger manuellement les cercles depuis la région
         try {
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
+          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setCompanyCercles(cercles || []);
           console.log('? étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés (entreprise)');
         } catch (error) {
@@ -1655,11 +1722,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 2: Appliquer le cercle
       if (hierarchy.cercle) {
         console.log('?? étape 2: Application cercle (entreprise):', hierarchy.cercle.nom);
-        setCompanySelectedCercleId(hierarchy.cercle.id);
+        setCompanySelectedCercleId(hierarchy.cercle.code);
         
         // Charger manuellement les communes depuis le cercle
         try {
-          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
+          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
           setCompanyCommunes(communes || []);
           console.log('? étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées (entreprise)');
         } catch (error) {
@@ -1671,11 +1738,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 3: Appliquer la commune (structure INSTAT moderne)
       if (hierarchy.commune) {
         console.log('?? étape 3: Application commune (entreprise):', hierarchy.commune.nom);
-        setCompanySelectedCommuneId(hierarchy.commune.id);
+        setCompanySelectedCommuneId(hierarchy.commune.code);
         
         // Charger manuellement les quartiers depuis la commune
         try {
-          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
+          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
           setCompanyQuartiers(quartiers || []);
           console.log('? étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés (entreprise)');
         } catch (error) {
@@ -1687,7 +1754,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 4: Appliquer le quartier
       if (hierarchy.quartier) {
         console.log('?? étape 4: Application quartier (entreprise):', hierarchy.quartier.nom);
-        setCompanySelectedQuartierId(hierarchy.quartier.id);
+        setCompanySelectedQuartierId(hierarchy.quartier.code);
         console.log('? étape 4 terminée - quartier appliqué (entreprise)');
       }
       
@@ -1707,7 +1774,21 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const validateStep1 = (): string[] => {
     const errors: string[] = [];
     
-    // Informations personnelles obligatoires
+    // Pour les sociétés, valider uniquement les informations du déposant à l'étape 1
+    if (formData.typeEntreprise === 'SOCIETE') {
+      if (!formData.nomDeposant?.trim()) {
+        errors.push('Le nom du déposant est obligatoire');
+      }
+      if (!formData.prenomDeposant?.trim()) {
+        errors.push('Le prénom du déposant est obligatoire');
+      }
+      if (!formData.telephoneDeposant?.trim()) {
+        errors.push('Le téléphone du déposant est obligatoire');
+      }
+      return errors;
+    }
+    
+    // Informations personnelles obligatoires (uniquement pour les entreprises individuelles)
     if (!formData.prenom?.trim()) errors.push('Le prénom est obligatoire');
     if (!formData.nom?.trim()) errors.push('Le nom est obligatoire');
     if (!formData.civilite) errors.push('La civilité est obligatoire');
@@ -1727,7 +1808,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       errors.push('L\'email personnel n\'est pas valide');
     }
     
-    // Validation de la localisation personnelle (obligatoire)
+    // Validation de la localisation personnelle (obligatoire uniquement pour les entreprises individuelles)
     if (!personalSelectedRegionId) errors.push('La région est obligatoire');
     if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
     if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
@@ -1773,37 +1854,34 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       errors.push('Le capital est obligatoire pour les sociétés');
     }
     
-    // Validation des informations du déposant (obligatoire pour les sociétés)
-    if (formData.typeEntreprise === 'SOCIETE') {
-      if (!formData.nomDeposant?.trim()) {
-        errors.push('Le nom du déposant est obligatoire');
-      }
-      if (!formData.prenomDeposant?.trim()) {
-        errors.push('Le prénom du déposant est obligatoire');
-      }
-      if (!formData.telephoneDeposant?.trim()) {
-        errors.push('Le téléphone du déposant est obligatoire');
-      }
-    }
+    // Les informations du déposant sont validées à l'étape 1 pour les sociétés
     
     // Validation optionnelle de l'email (seulement si fourni)
     if (formData.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.push('L\'email de l\'entreprise n\'est pas valide');
     }
     
-    // Validation de la localisation de l'entreprise (obligatoire)
-    // Si l'adresse est différente, utiliser companySelected*, sinon utiliser personalSelected*
-    if (formData.hasDifferentAddress) {
-      if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
-      if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
-      if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
-      if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
+    // Validation de la localisation du siège social (obligatoire pour tous)
+    // Pour les sociétés, toujours utiliser companySelected*
+    // Pour les entreprises individuelles, utiliser personalSelected* si l'adresse n'est pas différente
+    if (formData.typeEntreprise === 'SOCIETE') {
+      if (!companySelectedRegionId) errors.push('La région du siège social est obligatoire');
+      if (!companySelectedCercleId) errors.push('Le cercle du siège social est obligatoire');
+      if (!companySelectedCommuneId) errors.push('La commune du siège social est obligatoire');
+      if (!companySelectedQuartierId) errors.push('Le quartier du siège social est obligatoire');
     } else {
-      // Si l'adresse n'est pas différente, vérifier que la localisation personnelle est complète
-      if (!personalSelectedRegionId) errors.push('La région est obligatoire');
-      if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
-      if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
-      if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+      // Pour les entreprises individuelles
+      if (formData.hasDifferentAddress) {
+        if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
+        if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
+        if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
+        if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
+      } else {
+        if (!personalSelectedRegionId) errors.push('La région est obligatoire');
+        if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
+        if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
+        if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+      }
     }
     
     // Validation du domaine d'activité non réglementé (obligatoire)
@@ -2648,6 +2726,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       if (requiredDocs.attestationBancaire && !formData.documents.attestationBancaire) {
         missingDocs.push('Attestation bancaire manquante');
       }
+      if (requiredDocs.rccmSocieteMere && !formData.documents.rccmSocieteMere) {
+        missingDocs.push('RCCM de la société mère manquant');
+      }
 
       // Vérifier les champs requis par le serveur
       // Utiliser le code du quartier sélectionné ou fallback
@@ -3143,7 +3224,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         telephone: formData.telephone || formData.telephonePersonnel || '',
         email: formData.email || formData.emailPersonnel || '',
         adresseDifferentIdentite: formData.hasDifferentAddress || false,
-        extraitJudiciaire: formData.hasCriminalRecord || false,
+        extraitJudiciaire: formData.hasCriminalRecord || formData.participants.some(p => p.hasCriminalRecord === true) || false,
         autorisationGerant: formData.allowsOthersResponsible || false,
         autorisationExercice: formData.requiresExerciseAuthorization || false,
         importExport: formData.willImportExport || false,
@@ -3160,6 +3241,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         nomDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.nomDeposant || null : null,
         prenomDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.prenomDeposant || null : null,
         telephoneDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.telephoneDeposant || null : null,
+        emailDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.emailDeposant || null : null,
         nomCabinet: formData.typeEntreprise === 'SOCIETE' ? formData.nomCabinet || null : null,
         capitale: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
           ? 0 // Capital é 0 pour les entreprises individuelles
@@ -3515,12 +3597,20 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             body: fd
           });
           if (!response.ok) {
-            throw new Error(`Upload failed: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ Erreur upload document:', {
+              status: response.status,
+              statusText: response.statusText,
+              errorDetails: errorText,
+              typeDocument,
+              personId,
+              entrepriseId
+            });
+            throw new Error(`Upload failed: ${response.status} - ${errorText}`);
           }
         } catch (error) {
-          console.warn('?? Endpoint documents/document non implémenté, simulation de l\'upload');
-          // Simuler un délai d'upload
-          await new Promise(resolve => setTimeout(resolve, 500));
+          console.error('❌ Exception lors de l\'upload:', error);
+          throw error;
         }
       };
 
@@ -3560,6 +3650,50 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             } catch (e) {
               console.error('? Upload piéce échoué:', e);
               throw new Error(`Erreur upload document ${participant.prenom} ${participant.nom}: ${e}`);
+            }
+          }
+          
+          // Upload des documents supplémentaires pour les gérants/promoteurs
+          if (participant.id && (participant.role === 'GERANT' || participant.role === 'PROMOTEUR')) {
+            // Upload extrait de naissance
+            if (participant.extraitNaissanceFile) {
+              try {
+                console.log(`?? Upload extrait de naissance pour ${participant.prenom} ${participant.nom}`);
+                await uploadDocumentFor(participant.id, 'EXTRAIT_NAISSANCE', participant.extraitNaissanceFile, `EXTRAIT-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
+                console.log('✅ Extrait de naissance uploadé');
+              } catch (e) {
+                console.error('❌ Upload extrait de naissance échoué:', e);
+              }
+            }
+            
+            // Upload casier judiciaire ou déclaration sur l'honneur
+            if (participant.hasCriminalRecord === true && participant.casierJudiciaireFile) {
+              try {
+                console.log(`?? Upload casier judiciaire pour ${participant.prenom} ${participant.nom}`);
+                await uploadDocumentFor(participant.id, 'CASIER_JUDICIAIRE', participant.casierJudiciaireFile, `CASIER-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
+                console.log('✅ Casier judiciaire uploadé');
+              } catch (e) {
+                console.error('❌ Upload casier judiciaire échoué:', e);
+              }
+            } else if (participant.hasCriminalRecord === false && participant.declarationHonneurFile) {
+              try {
+                console.log(`?? Upload déclaration sur l'honneur pour ${participant.prenom} ${participant.nom}`);
+                await uploadDocumentFor(participant.id, 'DECLARATION_HONNEUR', participant.declarationHonneurFile, `DECLARATION-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
+                console.log('✅ Déclaration sur l\'honneur uploadée');
+              } catch (e) {
+                console.error('❌ Upload déclaration sur l\'honneur échoué:', e);
+              }
+            }
+            
+            // Upload acte de mariage si marié
+            if (participant.situationMatrimoniale === 'MARIE' && participant.acteMariageFile) {
+              try {
+                console.log(`?? Upload acte de mariage pour ${participant.prenom} ${participant.nom}`);
+                await uploadDocumentFor(participant.id, 'ACTE_MARIAGE', participant.acteMariageFile, `MARIAGE-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
+                console.log('✅ Acte de mariage uploadé');
+              } catch (e) {
+                console.error('❌ Upload acte de mariage échoué:', e);
+              }
             }
           }
         }
@@ -3617,6 +3751,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
       }
 
+      // Upload RCCM de la société mère (conditionnel pour succursales/filiales)
+      if (formData.documents.rccmSocieteMere && gerantId) {
+        try { 
+          await uploadDocumentFor(gerantId, 'RCCM', formData.documents.rccmSocieteMere, `RCCM-MERE-${entrepriseReference}`); 
+          console.log('✅ RCCM de la société mère uploadé');
+        } catch (e) { 
+          console.error('❌ Upload RCCM société mère échoué:', e); 
+        }
+      }
+
       // Certificat de résidence depuis l'étape 3 (Participants)
       const gerantParticipant = formData.participants.find(p => p.role === 'GERANT' || p.role === 'PROMOTEUR');
       const certificatResidence = gerantParticipant?.certificatResidenceFile;
@@ -3644,93 +3788,21 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
       }
 
-      // Upload des documents spécifiques aux gérants
-      for (const participant of formData.participants) {
-        if ((participant.role === 'GERANT' || participant.role === 'PROMOTEUR') && participant.typePersonne === 'PHYSIQUE' && participant.id) {
-          console.log(`🔄 Upload documents spécifiques gérant pour ${participant.prenom} ${participant.nom}`);
-          
-          // Upload extrait de naissance
-          if (participant.extraitNaissanceFile) {
-            try {
-              await uploadDocumentFor(participant.id, 'EXTRAIT_NAISSANCE', participant.extraitNaissanceFile, `EN-${participant.prenom}-${participant.nom}`);
-              console.log(`✅ Extrait de naissance uploadé pour ${participant.prenom} ${participant.nom}`);
-            } catch (e) {
-              console.error('❌ Upload extrait de naissance échoué:', e);
-            }
-          }
-          
-          // Upload casier judiciaire si disponible
-          if (participant.casierJudiciaireFile) {
-            try {
-              await uploadDocumentFor(participant.id, 'CASIER_JUDICIAIRE', participant.casierJudiciaireFile, `CJ-${participant.prenom}-${participant.nom}`);
-              console.log(`✅ Casier judiciaire uploadé pour ${participant.prenom} ${participant.nom}`);
-            } catch (e) {
-              console.error('❌ Upload casier judiciaire échoué:', e);
-            }
-          }
-          
-          // Upload déclaration sur l'honneur si pas de casier
-          if (participant.declarationHonneurFile) {
-            try {
-              await uploadDocumentFor(participant.id, 'DECLARATION_HONNEUR', participant.declarationHonneurFile, `DH-${participant.prenom}-${participant.nom}`);
-              console.log(`✅ Déclaration sur l'honneur uploadée pour ${participant.prenom} ${participant.nom}`);
-            } catch (e) {
-              console.error("❌ Upload déclaration sur l'honneur échoué:", e);
-            }
-          }
-          
-          // Upload actes de mariage pour chaque conjoint si marié
-          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
-            for (const conjoint of formData.conjoints) {
-              if (conjoint.acteMariageFile && conjoint.id) {
-                try {
-                  await uploadDocumentFor(
-                    participant.id, 
-                    'ACTE_MARIAGE', 
-                    conjoint.acteMariageFile, 
-                    `AM-${conjoint.prenom}-${conjoint.nom}`,
-                    conjoint.id
-                  );
-                  console.log(`✅ Acte de mariage uploadé pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
-                } catch (e) {
-                  console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
-                }
-              }
-            }
-          }
-          
-          // Upload des documents supplémentaires (autresDocuments)
-          if (participant.autresDocuments && participant.autresDocuments.length > 0) {
-            console.log(`🔄 Upload ${participant.autresDocuments.length} document(s) supplémentaire(s) pour ${participant.prenom} ${participant.nom}`);
-            
-            for (const doc of participant.autresDocuments) {
-              if (doc.file && doc.name) {
-                try {
-                  const docNumber = doc.name;
-                  await uploadDocumentFor(participant.id, 'AUTRES', doc.file, docNumber);
-                  console.log(`✅ Document supplémentaire "${doc.name}" uploadé pour ${participant.prenom} ${participant.nom}`);
-                } catch (e) {
-                  console.error(`❌ Upload document supplémentaire "${doc.name}" échoué:`, e);
-                }
-              } else {
-                console.warn(`⚠️ Document supplémentaire ignoré (fichier ou nom manquant): ${doc.name}`);
-              }
-            }
-          }
-        }
-      }
       
-      // Upload des documents supplémentaires pour tous les participants (pas seulement gérants)
+      // Upload des documents supplémentaires pour tous les participants
       for (const participant of formData.participants) {
-        if (participant.autresDocuments && participant.autresDocuments.length > 0 && participant.id && participant.typePersonne !== 'PHYSIQUE') {
-          console.log(`🔄 Upload documents supplémentaires pour participant non-gérant: ${participant.prenom || participant.denominationEntreprise}`);
+        if (participant.autresDocuments && participant.autresDocuments.length > 0 && participant.id) {
+          const participantName = participant.civilite === 'PERSONNE_MORALE' 
+            ? participant.denominationEntreprise 
+            : `${participant.prenom} ${participant.nom}`;
+          console.log(`🔄 Upload ${participant.autresDocuments.length} document(s) supplémentaire(s) pour ${participantName}`);
           
           for (const doc of participant.autresDocuments) {
             if (doc.file && doc.name) {
               try {
                 const docNumber = doc.name;
                 await uploadDocumentFor(participant.id, 'AUTRES', doc.file, docNumber);
-                console.log(`✅ Document supplémentaire "${doc.name}" uploadé pour ${participant.prenom || participant.denominationEntreprise}`);
+                console.log(`✅ Document supplémentaire "${doc.name}" uploadé pour ${participantName}`);
               } catch (e) {
                 console.error(`❌ Upload document supplémentaire "${doc.name}" échoué:`, e);
               }
@@ -4061,8 +4133,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               <input
                 type="text"
                 required
-                defaultValue={formData.nom}
-                onBlur={(e) => updateFormData('nom', e.target.value)}
+                defaultValue={formData.nomDeposant}
+                onBlur={(e) => updateFormData('nomDeposant', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                 placeholder="Nom de famille"
               />
@@ -4075,8 +4147,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               <input
                 type="text"
                 required
-                defaultValue={formData.prenom}
-                onBlur={(e) => updateFormData('prenom', e.target.value)}
+                defaultValue={formData.prenomDeposant}
+                onBlur={(e) => updateFormData('prenomDeposant', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                 placeholder="Prénom"
               />
@@ -4094,7 +4166,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               >
                 <option value="MONSIEUR">Monsieur</option>
                 <option value="MADAME">Madame</option>
-                <option value="MADEMOISELLE">Mademoiselle</option>
+               
               </select>
             </div>
 
@@ -4147,9 +4219,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   </div>
                   <input
                     type="tel"
-                    defaultValue={formData.telephonePersonnel}
+                    defaultValue={formData.telephoneDeposant}
                     onChange={(e) => handlePersonalPhoneChange(e.target.value, e.target)}
-                    onBlur={(e) => updateFormData('telephonePersonnel', e.target.value)}
+                    onBlur={(e) => updateFormData('telephoneDeposant', e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
                     placeholder={personalPhonePlaceholder}
                     maxLength={personalPhoneMaxLength}
@@ -4165,8 +4237,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </label>
               <input
                 type="email"
-                defaultValue={formData.emailPersonnel}
-                onBlur={(e) => updateFormData('emailPersonnel', e.target.value)}
+                defaultValue={formData.emailDeposant}
+                onBlur={(e) => updateFormData('emailDeposant', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                 placeholder="email@exemple.com"
               />
@@ -4188,34 +4260,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           {/* Questions Oui/Non pour les sociétés */}
           <div className="col-span-2 space-y-6 pt-6 border-t border-white/40">
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm font-medium text-gray-700">Votre adresse est-elle différente de celle de votre entreprise ?</span>
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('hasDifferentAddress', true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    formData.hasDifferentAddress 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Oui
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('hasDifferentAddress', false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    !formData.hasDifferentAddress 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </div>
-
             <div className="flex items-center justify-between mt-4">
               <span className="text-sm font-medium text-gray-700">Avez-vous un extrait de casier judiciaire ?</span>
               <div className="flex space-x-2">
@@ -4989,34 +5033,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       {/* Questions Oui/Non */}
       <div className="col-span-2 space-y-6 pt-6 border-t border-white/40">
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-sm font-medium text-gray-700">Votre adresse est-elle différente de celle de votre entreprise ?</span>
-          <div className="flex space-x-2">
-            <button 
-              type="button" 
-              onClick={() => updateFormData('hasDifferentAddress', true)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                formData.hasDifferentAddress 
-                  ? 'bg-[#2d85c9] text-white shadow-lg' 
-                  : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-              }`}
-            >
-              Oui
-            </button>
-            <button 
-              type="button" 
-              onClick={() => updateFormData('hasDifferentAddress', false)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                !formData.hasDifferentAddress 
-                  ? 'bg-[#2d85c9] text-white shadow-lg' 
-                  : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-              }`}
-            >
-              Non
-            </button>
-          </div>
-        </div>
-
         {/* <div className="flex items-center justify-between mt-4">
           <span className="text-sm font-medium text-gray-700">Avez-vous un extrait de casier judiciaire ?</span>
           <div className="flex space-x-2">
@@ -5427,7 +5443,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           <select
             required
             value={formData.formeJuridique}
-            onChange={(e) => updateFormData('formeJuridique', e.target.value as FormeJuridique)}
+            onChange={(e) => {
+              const selectedForme = e.target.value as FormeJuridique;
+              // Mettre à jour la forme juridique
+              updateFormData('formeJuridique', selectedForme);
+              // Si une forme de société est sélectionnée, mettre automatiquement typeEntreprise à SOCIETE
+              if (selectedForme !== 'E_I') {
+                updateFormData('typeEntreprise', 'SOCIETE');
+              } else {
+                updateFormData('typeEntreprise', 'ENTREPRISE_INDIVIDUELLE');
+              }
+            }}
             disabled={formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE'}
             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-500 ${
               formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE'
@@ -5583,35 +5609,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </h4>
 
         <div className="space-y-6">
-            <div className={`border rounded-xl p-4 ${
-              !formData.hasDifferentAddress 
-                ? 'bg-gray-50 border-gray-200' 
-                : 'bg-sky-50 border-primary-200'
-            }`}>
-              <h3 className={`text-lg font-semibold mb-3 flex items-center ${
-                !formData.hasDifferentAddress 
-                  ? 'text-gray-600' 
-                  : 'text-primary-800'
-              }`}>
+            <div className="border rounded-xl p-4 bg-sky-50 border-primary-200">
+              <h3 className="text-lg font-semibold mb-3 flex items-center text-primary-800">
                  Recherche rapide de localisation
               </h3>
-              {!formData.hasDifferentAddress ? (
-                <p className="text-sm text-gray-600 mb-4">
-                   La localisation du siége social est automatiquement synchronisée avec votre localisation personnelle
-                </p>
-              ) : (
-                <p className="text-sm text-primary-600 mb-4">
-                  Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative
-                </p>
-              )}
+              <p className="text-sm text-primary-600 mb-4">
+                Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative du siège social
+              </p>
               <DivisionSearchInput
-                placeholder={
-                  !formData.hasDifferentAddress 
-                    ? "Localisation synchronisée avec vos informations personnelles..." 
-                    : "Rechercher une région, cercle, arrondissement, commune ou quartier..."
-                }
+                placeholder="Rechercher une région, cercle, arrondissement, commune ou quartier..."
                 onSelect={handleCompanyDivisionSearch}
-                disabled={!formData.hasDifferentAddress}
+                disabled={false}
                 className="w-full"
               />
             </div>
@@ -5622,10 +5630,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <select
                   required
                   value={companySelectedRegionId}
-                  disabled={!formData.hasDifferentAddress}
+                  disabled={false}
                   onChange={async (e) => {
-                    const regionId = e.target.value;
-                    setCompanySelectedRegionId(regionId);
+                    const regionCode = e.target.value;
+                    setCompanySelectedRegionId(regionCode);
                     
                     // Reset des niveaux inférieurs (structure INSTAT moderne)
                     setCompanySelectedCercleId('');
@@ -5635,14 +5643,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     setCompanyCommunes([]);
                     setCompanyQuartiers([]);
                     
-                    if (regionId) {
-                      console.log('?? Chargement cercles pour région entreprise:', regionId);
+                    if (regionCode) {
+                      console.log('🔄 Chargement cercles pour région entreprise (code):', regionCode);
                       try {
-                        const cercles = await divisionService.getCerclesByRegion(regionId);
-                        console.log('? Cercles entreprise chargés:', cercles?.length || 0);
+                        const cercles = await divisionService.getCerclesByRegion(regionCode);
+                        console.log('✅ Cercles entreprise chargés:', cercles?.length || 0, cercles);
                         setCompanyCercles(cercles || []);
                       } catch (error) {
-                        console.error('? Erreur chargement cercles entreprise:', error);
+                        console.error('❌ Erreur chargement cercles entreprise:', error);
                         setCompanyCercles([]);
                       }
                     }
@@ -5651,7 +5659,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 >
                   <option value="">Sélectionnez une région</option>
                   {companyRegions.map((region: any) => (
-                    <option key={region.id} value={region.id}>{region.nom}</option>
+                    <option key={region.code} value={region.code}>{region.nom}</option>
                   ))}
                 </select>
               </div>
@@ -5661,8 +5669,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <select
                     value={companySelectedCercleId}
                     onChange={async (e) => {
-                      const cercleId = e.target.value;
-                      setCompanySelectedCercleId(cercleId);
+                      const cercleCode = e.target.value;
+                      setCompanySelectedCercleId(cercleCode);
                       
                       // Reset des niveaux inférieurs (structure INSTAT moderne)
                       setCompanySelectedCommuneId('');
@@ -5670,24 +5678,24 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       setCompanyCommunes([]);
                       setCompanyQuartiers([]);
                       
-                      if (cercleId) {
+                      if (cercleCode) {
                         // Structure INSTAT moderne : charger directement les communes depuis le cercle
                         try {
-                          const communes = await divisionService.getCommunesByCercle(cercleId);
+                          const communes = await divisionService.getCommunesByCercle(cercleCode);
                           setCompanyCommunes(communes || []);
-                          console.log('? Communes entreprise chargées depuis cercle:', communes?.length || 0);
+                          console.log('✅ Communes entreprise chargées depuis cercle:', communes?.length || 0);
                         } catch (error) {
-                          console.error('? Erreur chargement communes entreprise depuis cercle:', error);
+                          console.error('❌ Erreur chargement communes entreprise depuis cercle:', error);
                           setCompanyCommunes([]);
                         }
                       }
                     }}
-                    disabled={!formData.hasDifferentAddress || companyCercles.length === 0}
+                    disabled={!companySelectedRegionId}
                     className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Sélectionnez un cercle</option>
                     {companyCercles.map((cercle: any) => (
-                      <option key={cercle.id} value={cercle.id}>{cercle.nom}</option>
+                      <option key={cercle.code} value={cercle.code}>{cercle.nom}</option>
                     ))}
                   </select>
                 </div>
@@ -5697,24 +5705,24 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <select
                     value={companySelectedCommuneId}
                     onChange={async (e) => {
-                      const communeId = e.target.value;
-                      setCompanySelectedCommuneId(communeId);
+                      const communeCode = e.target.value;
+                      setCompanySelectedCommuneId(communeCode);
                       
                       // Reset des niveaux inférieurs
                       setCompanySelectedQuartierId('');
                       setCompanyQuartiers([]);
                       
-                      if (communeId) {
-                        const quartiers = await divisionService.getQuartiersByCommune(communeId);
+                      if (communeCode) {
+                        const quartiers = await divisionService.getQuartiersByCommune(communeCode);
                         setCompanyQuartiers(quartiers || []);
                       }
                     }}
-                    disabled={!formData.hasDifferentAddress || companyCommunes.length === 0}
+                    disabled={companyCommunes.length === 0}
                     className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Sélectionnez une commune</option>
                     {companyCommunes.map((commune: any) => (
-                      <option key={commune.id} value={commune.id}>{commune.nom}</option>
+                      <option key={commune.code} value={commune.code}>{commune.nom}</option>
                     ))}
                   </select>
                 </div>
@@ -5727,12 +5735,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   onChange={(e) => {
                     setCompanySelectedQuartierId(e.target.value);
                   }}
-                  disabled={!formData.hasDifferentAddress || companyQuartiers.length === 0}
+                  disabled={companyQuartiers.length === 0}
                   className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">Sélectionnez un quartier</option>
                   {companyQuartiers.map((quartier: any) => (
-                    <option key={quartier.id} value={quartier.id}>{quartier.nom}</option>
+                    <option key={quartier.code} value={quartier.code}>{quartier.nom}</option>
                   ))}
                 </select>
               </div>
@@ -5742,23 +5750,23 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Rue</label>
                   <input
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
                     placeholder=""
                     type="text"
                     defaultValue={formData.rueEntreprise || ''}
                     onBlur={(e) => updateFormData('rueEntreprise', e.target.value)}
-                    disabled={!formData.hasDifferentAddress}
+                    disabled={false}
                   />
                 </div>
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Porte</label>
                   <input
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
                     placeholder=""
                     type="text"
                     defaultValue={formData.porteEntreprise || ''}
                     onBlur={(e) => updateFormData('porteEntreprise', e.target.value)}
-                    disabled={!formData.hasDifferentAddress}
+                    disabled={false}
                   />
                 </div>
               </div>
@@ -5782,16 +5790,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const [selectedPersonType, setSelectedPersonType] = useState<'PHYSIQUE' | 'MORALE' | null>(null);
 
     const createEmptyParticipant = (): Participant => ({
-      civilite: selectedPersonType === 'MORALE' ? 'PERSONNE_MORALE' : (isCreatorFlow ? formData.civilite : ''),
-      prenom: isCreatorFlow ? formData.prenom : '',
-      nom: isCreatorFlow ? formData.nom : '',
-      dateNaissance: isCreatorFlow ? formData.dateNaissance : '',
-      lieuNaissance: isCreatorFlow ? formData.lieuNaissance : '',
-      nationalite: isCreatorFlow ? formData.nationalite : 'MALIENNE',
-      telephone: isCreatorFlow ? formData.telephonePersonnel : '',
-      telephone2: isCreatorFlow ? formData.telephonePersonnel2 : '',
-      email: isCreatorFlow ? formData.emailPersonnel : '',
-      adresse: isCreatorFlow ? formData.adressePersonnelle : '',
+      civilite: selectedPersonType === 'MORALE' ? 'PERSONNE_MORALE' : (isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.civilite : ''),
+      prenom: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.prenom : '',
+      nom: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.nom : '',
+      dateNaissance: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.dateNaissance : '',
+      lieuNaissance: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.lieuNaissance : '',
+      nationalite: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.nationalite : 'MALIENNE',
+      telephone: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.telephonePersonnel : '',
+      telephone2: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.telephonePersonnel2 : '',
+      email: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.emailPersonnel : '',
+      adresse: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.adressePersonnelle : '',
       role: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
         ? 'PROMOTEUR' // Pour les entreprises individuelles, toujours PROMOTEUR
         : (selectedPersonType === 'PHYSIQUE' ? 'GERANT' : 'ASSOCIE'), // Pour les sociétés, logique normale
@@ -6283,7 +6291,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 </div>
 
                 {/* Pourcentage de parts - Conditionnel pour personnes morales et masqué pour entreprises individuelles */}
-                {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' ? (
+                {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' && (
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       Pourcentage de parts *
@@ -6308,22 +6316,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       </p>
                     )}
                   </div>
-                ) : (
-                  // Afficher le message "Réle sans parts" seulement pour les sociétés avec des réles sans parts
-                  formData.typeEntreprise === 'SOCIETE' && !roleRequiresParts(newParticipant.role) && (
-                    <div className="bg-gradient-to-r from-primary-50 to-violet-100 border-2 border-primary-200 rounded-xl p-4">
-                      <div className="flex items-center mb-2">
-                        <svg className="w-5 h-5 text-primary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm font-bold text-primary-800">Réle sans parts</span>
-                      </div>
-                      <p className="text-sm text-black-600">
-                        Les administrateurs n'ont pas de pourcentage de parts dans l'entreprise. 
-                        Ils exercent uniquement des fonctions administratives.
-                      </p>
-                    </div>
-                  )
                 )}
 
                 <div className="md:col-span-2">
@@ -6806,7 +6798,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               </div>
 
               {/* Pourcentage de parts - Conditionnel et masqué pour entreprises individuelles */}
-              {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' ? (
+              {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' && (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
                     Pourcentage de parts *
@@ -6823,7 +6815,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     required
                     type="number"
                     value={newParticipant.pourcentageParts}
-                    onChange={(e) => setNewParticipant({...newParticipant, pourcentageParts: parseFloat(e.target.value)})}
+                    onChange={(e) => setNewParticipant({...newParticipant, pourcentageParts: parseFloat(e.target.value) || 0})}
                   />
                   {newParticipant.civilite === 'PERSONNE_MORALE' && (
                     <p className="text-xs text-primary-600 mt-1">
@@ -6831,22 +6823,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     </p>
                   )}
                 </div>
-              ) : (
-                // Afficher le message "Réle sans parts" seulement pour les sociétés avec des réles sans parts
-                formData.typeEntreprise === 'SOCIETE' && !roleRequiresParts(newParticipant.role) && (
-                  <div className="bg-gradient-to-r from-primary-50 to-violet-100 border-2 border-primary-200 rounded-xl p-4">
-                    <div className="flex items-center mb-2">
-                      <svg className="w-5 h-5 text-primary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm font-bold text-primary-800">Réle sans parts</span>
-                    </div>
-                    <p className="text-sm text-black-600">
-                      Les administrateurs n'ont pas de pourcentage de parts dans l'entreprise. 
-                      Ils exercent uniquement des fonctions administratives.
-                    </p>
-                  </div>
-                )
               )}
 
               {/* Date de début */}
@@ -7504,8 +7480,60 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (() => {
         const requiredDocs = getRequiredDocuments(formData.formeJuridique);
+        const requiredPieces = getRequiredPiecesInfo(formData.formeJuridique);
         return (
         <div className="space-y-6">
+          {/* Liste des pièces à joindre selon la forme juridique */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start space-x-3 mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-blue-900 mb-2">
+                  Pièces à joindre pour {(() => {
+                    const labels: Record<FormeJuridique, string> = {
+                      'SARL': 'SARL',
+                      'SARL_UNI': 'SARL Unipersonnelle',
+                      'SUC_SARL': 'Succursale SARL',
+                      'FIL_SARL': 'Filiale SARL',
+                      'SA': 'SA',
+                      'SUC_SA': 'Succursale SA',
+                      'FIL_SA': 'Filiale SA',
+                      'SASU': 'SASU',
+                      'SAS': 'SAS',
+                      'BR': 'Bureau de Représentation',
+                      'FIL_SAS': 'Filiale SAS',
+                      'SUC_SAS': 'Succursale SAS',
+                      'SNC': 'SNC',
+                      'SCS': 'SCS',
+                      'SCI': 'SCI',
+                      'SCP': 'SCP',
+                      'GIE': 'GIE',
+                      'E_I': 'Entreprise Individuelle'
+                    };
+                    return labels[formData.formeJuridique] || formData.formeJuridique;
+                  })()}
+                </h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Voici la liste des pièces requises pour cette forme juridique :
+                </p>
+                <ul className="space-y-2">
+                  {requiredPieces.map((piece, index) => (
+                    <li key={index} className="flex items-start text-sm text-blue-800">
+                      <svg className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="flex-1">{piece}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+          
           {/* Info sur les documents requis selon la forme juridique */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
@@ -7706,6 +7734,46 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <p className="text-sm font-bold text-primary-800 flex items-center">
                     <span className="text-lg mr-2">✓</span>
                     {formData.documents.attestationBancaire.name}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          )}
+
+          {/* RCCM de la société mère - Conditionnel pour succursales/filiales */}
+          {requiredDocs.rccmSocieteMere && (
+          <div className="border-2 border-dashed border-white/60 rounded-lg p-8 bg-gradient-to-r from-white/80 via-slate-50/60 to-primary-50/40  shadow-sm hover:shadow-sm transition-all duration-300 hover:border-[#412A5C]/50">
+            <div className="text-center">
+              <div className="mx-auto h-16 w-16 bg-[#2d85c9] rounded-lg flex items-center justify-center shadow-lg">
+                <DocumentIcon className="h-8 w-8 text-white" />
+              </div>
+              <div className="mt-4">
+                <label htmlFor="rccmSocieteMere" className="cursor-pointer">
+                  <span className="mt-3 block text-lg font-semibold text-slate-800">
+                    RCCM de la société mère *
+                  </span>
+                  <span className="mt-2 block text-sm font-medium text-slate-600">
+                    PDF, DOC, DOCX, JPG, PNG jusqu'à 10MB
+                  </span>
+                </label>
+                <input
+                  id="rccmSocieteMere"
+                  name="rccmSocieteMere"
+                  type="file"
+                  className="sr-only"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    updateFormData('documents', { ...formData.documents, rccmSocieteMere: file });
+                  }}
+                />
+              </div>
+              {formData.documents.rccmSocieteMere && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl">
+                  <p className="text-sm font-bold text-primary-800 flex items-center">
+                    <span className="text-lg mr-2">✓</span>
+                    {formData.documents.rccmSocieteMere.name}
                   </p>
                 </div>
               )}
@@ -8457,7 +8525,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             onClick={createNewDossier}
             className="flex items-center px-6 py-3 bg-[#2d85c9] text-white shadow-lg rounded-lg hover:bg-mali-emerald-dark"
           >
-            <span className="mr-2">?</span>
+            <span className="mr-2"></span>
             Nouveau dossier
           </button>
         ) : (

@@ -13,6 +13,9 @@ public enum TypeDocuments {
     NIF("Numéro d'Identification Fiscale"),
     RCCM("Registre de Commerce et du Crédit Mobilier"),
     NINA("Numéro d'Identification National des Entreprises et Associations"),
+    PV_ASSEMBLEE("Procès-Verbal d'Assemblée Générale"),
+    DECLARATION_NOTARIEE("Déclaration notariée de souscription et de versement"),
+    ATTESTATION_BANCAIRE("Attestation bancaire de libération du capital"),
     AUTRES("Autres documents");
     
     
