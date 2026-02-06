@@ -890,7 +890,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const allSteps = [
     { number: 1, title: 'Informations Personnelles', icon: UserIcon },
     { number: 2, title: 'Informations de l\'entreprise', icon: BuildingOfficeIcon },
-    { number: 3, title: 'Promoteur', icon: BriefcaseIcon },
+    { number: 3, title: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'Promoteur' : 'Participants', icon: BriefcaseIcon },
     { number: 4, title: 'Documents', icon: DocumentIcon },
     { number: 5, title: 'Récapitulatif', icon: CheckCircleIcon }
   ];
@@ -1339,12 +1339,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const loadPersonalQuartiersByCommune = async () => {
       // éviter les appels API si des modals sont ouverts
       if (hasOpenModals()) {
-        console.log('?? Modal ouvert, report du chargement des quartiers');
+        console.log(' Modal ouvert, report du chargement des quartiers');
         return;
       }
       
       if (personalSelectedCommuneId && !isPersonalBamako) {
-        console.log('?? Chargement quartiers pour commune:', personalSelectedCommuneId);
+        console.log(' Chargement quartiers pour commune:', personalSelectedCommuneId);
         
         // Reset des sélections suivantes
         setPersonalSelectedQuartierId('');
@@ -1364,12 +1364,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const loadCompanyArrondissements = async () => {
       // éviter les appels API si des modals sont ouverts
       if (hasOpenModals()) {
-        console.log('?? Modal ouvert, report du chargement des arrondissements (entreprise)');
+        console.log(' Modal ouvert, report du chargement des arrondissements (entreprise)');
         return;
       }
       
       if (companySelectedRegionId) {
-        console.log('?? Chargement arrondissements pour région (entreprise):', companySelectedRegionId);
+        console.log(' Chargement arrondissements pour région (entreprise):', companySelectedRegionId);
         
         // Reset des sélections suivantes
         setCompanySelectedCercleId('');
@@ -1401,12 +1401,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const loadCompanyQuartiersByCommune = async () => {
       // éviter les appels API si des modals sont ouverts
       if (hasOpenModals()) {
-        console.log('?? Modal ouvert, report du chargement des quartiers (entreprise)');
+        console.log(' Modal ouvert, report du chargement des quartiers (entreprise)');
         return;
       }
       
       if (companySelectedCommuneId && !isCompanyBamako) {
-        console.log('?? Chargement quartiers pour commune (entreprise):', companySelectedCommuneId);
+        console.log(' Chargement quartiers pour commune (entreprise):', companySelectedCommuneId);
         
         // Reset des sélections suivantes
         setCompanySelectedQuartierId('');
@@ -1487,7 +1487,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           }
         }
       } catch (error) {
-        console.error('? Erreur lors de la récupération via API:', error);
+        console.error(' Erreur lors de la récupération via API:', error);
       }
     }
     
@@ -1520,7 +1520,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         try {
           // Utiliser la logique unifiée pour charger les arrondissements
           const arrondissements = await loadBamakoArrondissements(bamakoRegion.id);
-          console.log('?? Arrondissements disponibles:', arrondissements?.length || 0);
+          console.log(' Arrondissements disponibles:', arrondissements?.length || 0);
           
           // Chercher l'arrondissement correspondant
           let arrondissement = arrondissements?.find((a: any) => a.code === arrondissementCode);
@@ -1552,87 +1552,87 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
           if (arrondissement) {
             hierarchy.arrondissement = arrondissement;
-            console.log('? Arrondissement trouvé:', arrondissement.nom);
+            console.log(' Arrondissement trouvé:', arrondissement.nom);
           } else {
-            console.log('? Arrondissement non trouvé pour le code:', arrondissementCode);
+            console.log(' Arrondissement non trouvé pour le code:', arrondissementCode);
           }
           
         } catch (error) {
-          console.error('? Erreur reconstruction arrondissement:', error);
+          console.error(' Erreur reconstruction arrondissement:', error);
         }
       }
     }
     
-    console.log('?? Hiérarchie reconstruite:', hierarchy);
+    console.log(' Hiérarchie reconstruite:', hierarchy);
     return hierarchy;
   };
 
   // Appliquer la hiérarchie aux sélecteurs de maniére séquentielle (logique utilisateur)
   const applyPersonalHierarchySequential = async (hierarchy: any) => {
-    console.log('?? Application séquentielle de la hiérarchie INSTAT moderne (personnel):', hierarchy);
+    console.log(' Application séquentielle de la hiérarchie INSTAT moderne (personnel):', hierarchy);
     
     try {
       // étape 1: Appliquer la région
       if (hierarchy.region) {
-        console.log('?? étape 1: Application région:', hierarchy.region.nom);
+        console.log(' étape 1: Application région:', hierarchy.region.nom);
         setPersonalSelectedRegionId(hierarchy.region.code);
         
         // Charger manuellement les cercles depuis la région
         try {
           const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setPersonalCercles(cercles || []);
-          console.log('? étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés');
+          console.log(' étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés');
         } catch (error) {
-          console.error('? Erreur chargement cercles depuis région:', error);
+          console.error(' Erreur chargement cercles depuis région:', error);
           setPersonalCercles([]);
         }
       }
       
       // étape 2: Appliquer le cercle
       if (hierarchy.cercle) {
-        console.log('?? étape 2: Application cercle:', hierarchy.cercle.nom);
+        console.log(' étape 2: Application cercle:', hierarchy.cercle.nom);
         setPersonalSelectedCercleId(hierarchy.cercle.code);
         
         // Charger manuellement les communes depuis le cercle
         try {
           const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
           setPersonalCommunes(communes || []);
-          console.log('? étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées');
+          console.log(' étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées');
         } catch (error) {
-          console.error('? Erreur chargement communes depuis cercle:', error);
+          console.error(' Erreur chargement communes depuis cercle:', error);
           setPersonalCommunes([]);
         }
       }
       
       // étape 3: Appliquer la commune (structure INSTAT moderne)
       if (hierarchy.commune) {
-        console.log('?? étape 3: Application commune:', hierarchy.commune.nom);
+        console.log(' étape 3: Application commune:', hierarchy.commune.nom);
         setPersonalSelectedCommuneId(hierarchy.commune.code);
         
         // Charger manuellement les quartiers depuis la commune
         try {
           const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
           setPersonalQuartiers(quartiers || []);
-          console.log('? étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés');
+          console.log(' étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés');
         } catch (error) {
-          console.error('? Erreur chargement quartiers depuis commune:', error);
+          console.error(' Erreur chargement quartiers depuis commune:', error);
           setPersonalQuartiers([]);
         }
       }
       
       // étape 4: Appliquer le quartier
       if (hierarchy.quartier) {
-        console.log('?? étape 4: Application quartier:', hierarchy.quartier.nom);
+        console.log(' étape 4: Application quartier:', hierarchy.quartier.nom);
         setPersonalSelectedQuartierId(hierarchy.quartier.code);
-        console.log('? étape 4 terminée - quartier appliqué');
+        console.log(' étape 4 terminée - quartier appliqué');
       } else {
-        console.log('?? étape 5: Aucun quartier dans la hiérarchie');
+        console.log(' étape 5: Aucun quartier dans la hiérarchie');
       }
       
-      console.log('? Application séquentielle terminée avec succés (personnel)');
+      console.log(' Application séquentielle terminée avec succés (personnel)');
       
     } catch (error) {
-      console.error('? Erreur lors de l\'application séquentielle (personnel):', error);
+      console.error(' Erreur lors de l\'application séquentielle (personnel):', error);
     }
   };
 
@@ -1653,9 +1653,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
       // Si l'adresse n'est pas différente, synchroniser automatiquement l'entreprise
       if (!formData.hasDifferentAddress) {
-        console.log('?? Synchronisation automatique de la localisation entreprise...');
+        console.log(' Synchronisation automatique de la localisation entreprise...');
         await applyCompanyHierarchySequential(hierarchy);
-        console.log('? Synchronisation localisation entreprise terminée');
+        console.log(' Synchronisation localisation entreprise terminée');
         
         // Synchroniser aussi l'adresse textuelle si elle est différente
         if (formData.adressePersonnelle !== formData.adresse) {
@@ -1664,26 +1664,26 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }
       
     } catch (error) {
-      console.error('? Erreur lors de la construction de la hiérarchie (personnel):', error);
-      console.error('? Stack trace:', (error as Error).stack);
+      console.error(' Erreur lors de la construction de la hiérarchie (personnel):', error);
+      console.error(' Stack trace:', (error as Error).stack);
     }
   };
 
   // Gestion de la recherche rapide pour l'entreprise (logique utilisateur)
   const handleCompanyDivisionSearch = async (division: any) => {
-    console.log('?? Division sélectionnée via recherche (entreprise):', division);
-    console.log('?? Type de division:', division.divisionType);
-    console.log('?? Parent de la division:', division.parent);
+    console.log(' Division sélectionnée via recherche (entreprise):', division);
+    console.log(' Type de division:', division.divisionType);
+    console.log(' Parent de la division:', division.parent);
     
     try {
       // Construire la hiérarchie compléte depuis la division sélectionnée
       console.log('? Début construction hiérarchie (entreprise)...');
       const hierarchy = await buildDivisionHierarchy(division);
-      console.log('??? Hiérarchie construite (entreprise):', hierarchy);
+      console.log(' Hiérarchie construite (entreprise):', hierarchy);
       
       // Vérifier si la hiérarchie est valide
       if (!hierarchy || Object.keys(hierarchy).length === 0) {
-        console.error('? Hiérarchie vide ou invalide (entreprise)');
+        console.error(' Hiérarchie vide ou invalide (entreprise)');
         return;
       }
       
@@ -1700,68 +1700,68 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   // Appliquer la hiérarchie aux sélecteurs de maniére séquentielle pour l'entreprise (logique utilisateur)
   const applyCompanyHierarchySequential = async (hierarchy: any) => {
-    console.log('?? Application séquentielle de la hiérarchie INSTAT moderne (entreprise):', hierarchy);
+    console.log(' Application séquentielle de la hiérarchie INSTAT moderne (entreprise):', hierarchy);
     
     try {
       // étape 1: Appliquer la région
       if (hierarchy.region) {
-        console.log('?? étape 1: Application région (entreprise):', hierarchy.region.nom);
+        console.log(' étape 1: Application région (entreprise):', hierarchy.region.nom);
         setCompanySelectedRegionId(hierarchy.region.code);
         
         // Charger manuellement les cercles depuis la région
         try {
           const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
           setCompanyCercles(cercles || []);
-          console.log('? étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés (entreprise)');
+          console.log(' étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés (entreprise)');
         } catch (error) {
-          console.error('? Erreur chargement cercles depuis région (entreprise):', error);
+          console.error(' Erreur chargement cercles depuis région (entreprise):', error);
           setCompanyCercles([]);
         }
       }
       
       // étape 2: Appliquer le cercle
       if (hierarchy.cercle) {
-        console.log('?? étape 2: Application cercle (entreprise):', hierarchy.cercle.nom);
+        console.log(' étape 2: Application cercle (entreprise):', hierarchy.cercle.nom);
         setCompanySelectedCercleId(hierarchy.cercle.code);
         
         // Charger manuellement les communes depuis le cercle
         try {
           const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
           setCompanyCommunes(communes || []);
-          console.log('? étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées (entreprise)');
+          console.log(' étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées (entreprise)');
         } catch (error) {
-          console.error('? Erreur chargement communes depuis cercle (entreprise):', error);
+          console.error(' Erreur chargement communes depuis cercle (entreprise):', error);
           setCompanyCommunes([]);
         }
       }
       
       // étape 3: Appliquer la commune (structure INSTAT moderne)
       if (hierarchy.commune) {
-        console.log('?? étape 3: Application commune (entreprise):', hierarchy.commune.nom);
+        console.log(' étape 3: Application commune (entreprise):', hierarchy.commune.nom);
         setCompanySelectedCommuneId(hierarchy.commune.code);
         
         // Charger manuellement les quartiers depuis la commune
         try {
           const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
           setCompanyQuartiers(quartiers || []);
-          console.log('? étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés (entreprise)');
+          console.log(' étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés (entreprise)');
         } catch (error) {
-          console.error('? Erreur chargement quartiers depuis commune (entreprise):', error);
+          console.error(' Erreur chargement quartiers depuis commune (entreprise):', error);
           setCompanyQuartiers([]);
         }
       }
       
       // étape 4: Appliquer le quartier
       if (hierarchy.quartier) {
-        console.log('?? étape 4: Application quartier (entreprise):', hierarchy.quartier.nom);
+        console.log(' étape 4: Application quartier (entreprise):', hierarchy.quartier.nom);
         setCompanySelectedQuartierId(hierarchy.quartier.code);
-        console.log('? étape 4 terminée - quartier appliqué (entreprise)');
+        console.log(' étape 4 terminée - quartier appliqué (entreprise)');
       }
       
-      console.log('? Application séquentielle terminée avec succés (entreprise)');
+      console.log(' Application séquentielle terminée avec succés (entreprise)');
       
     } catch (error) {
-      console.error('? Erreur lors de l\'application séquentielle (entreprise):', error);
+      console.error(' Erreur lors de l\'application séquentielle (entreprise):', error);
     }
   };
 
@@ -2355,14 +2355,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </head>
         <body>
           <div class="action-buttons no-print">
-            <button class="print-button" onclick="window.print()">??? Imprimer</button>
-            <button class="pdf-button" onclick="downloadPDF()">?? Télécharger PDF</button>
+            <button class="print-button" onclick="window.print()"> Imprimer</button>
+            <button class="pdf-button" onclick="downloadPDF()"> Télécharger PDF</button>
           </div>
           
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
           <script>
             function downloadPDF() {
-              console.log('?? Début génération PDF...');
+              console.log(' Début génération PDF...');
               
               try {
                 // Vérifier si jsPDF est disponible
@@ -2375,29 +2375,29 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 
                 // Vérifier si html2canvas est disponible
                 if (!window.html2canvas) {
-                  console.error('? html2canvas non chargé');
+                  console.error(' html2canvas non chargé');
                   alert('Erreur: Bibliotheque de capture non chargee. Utilisation de l impression.');
                   window.print();
                   return;
                 }
                 
-                console.log('? Bibliothéques chargées');
+                console.log(' Bibliothéques chargées');
                 
                 // Créer une nouvelle instance jsPDF
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 
-                console.log('? Instance jsPDF créée');
+                console.log(' Instance jsPDF créée');
                 
                 // Masquer les boutons temporairement
                 const buttons = document.querySelector('.action-buttons');
                 if (buttons) {
                   buttons.style.display = 'none';
-                  console.log('? Boutons masqués');
+                  console.log(' Boutons masqués');
                 }
                 
                 // Utiliser html2canvas pour capturer le contenu
-                console.log('?? Début capture html2canvas...');
+                console.log(' Début capture html2canvas...');
                 
                 window.html2canvas(document.body, {
                   scale: 1.5,
@@ -2406,25 +2406,25 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   backgroundColor: '#ffffff',
                   logging: true
                 }).then(canvas => {
-                  console.log('? Capture réussie, taille:', canvas.width, 'x', canvas.height);
+                  console.log(' Capture réussie, taille:', canvas.width, 'x', canvas.height);
                   
                   const imgData = canvas.toDataURL('image/png');
                   const imgWidth = 210; // A4 width in mm
                   const pageHeight = 295; // A4 height in mm
                   const imgHeight = (canvas.height * imgWidth) / canvas.width;
                   
-                  console.log('?? Ajout image au PDF...');
+                  console.log(' Ajout image au PDF...');
                   
                   // Ajouter l'image au PDF
                   pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
                   
                   // Télécharger le PDF
                   const filename = 'Declaration_Honneur.pdf';
-                  console.log('?? Téléchargement:', filename);
+                  console.log(' Téléchargement:', filename);
                   
                   pdf.save(filename);
                   
-                  console.log('? PDF téléchargé avec succés!');
+                  console.log(' PDF téléchargé avec succés!');
                   
                   // Réafficher les boutons
                   if (buttons) {
@@ -2432,14 +2432,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   }
                   
                 }).catch(error => {
-                  console.error('? Erreur html2canvas:', error);
+                  console.error(' Erreur html2canvas:', error);
                   alert('Erreur lors de la capture. Utilisation de l impression.');
                   window.print();
                   if (buttons) buttons.style.display = 'flex';
                 });
                 
               } catch (error) {
-                console.error('? Erreur génération PDF:', error);
+                console.error(' Erreur génération PDF:', error);
                 alert('Erreur lors de la génération PDF: ' + error.message);
                 window.print();
               }
@@ -2451,7 +2451,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             <div class="border-box">
               <strong>APIEx</strong>
             </div>
-            <div class="title">DéCLARATION SUR L'HONNEUR</div>
+            <div class="title">DECLARATION SUR L'HONNEUR</div>
             <div class="subtitle">(Art. 45, 47 de l'Acte Uniforme portant sur le Droit Commercial Général OHADA)</div>
           </div>
 
@@ -2501,13 +2501,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       if (newWindow) {
         newWindow.document.write(printContent);
         newWindow.document.close();
-        console.log('? Déclaration générée avec succés - Utilisez Ctrl+P pour sauvegarder en PDF');
+        console.log(' Déclaration générée avec succés - Utilisez Ctrl+P pour sauvegarder en PDF');
       } else {
         alert('Impossible d\'ouvrir une nouvelle fenétre. Veuillez autoriser les pop-ups.');
       }
       
     } catch (error) {
-      console.error('? Erreur lors de la génération du PDF:', error);
+      console.error(' Erreur lors de la génération du PDF:', error);
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
     }
   };
@@ -2516,10 +2516,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     setIsLoading(true);
 
     try {
-      console.log('?? Début de la création du dossier d\'entreprise...');
+      console.log(' Début de la création du dossier d\'entreprise...');
       
       // Validation finale de toutes les étapes
-      console.log('?? Validation finale de toutes les étapes...');
+      console.log(' Validation finale de toutes les étapes...');
       const allErrors = [];
       
       // Valider chaque étape
@@ -2550,7 +2550,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         return;
       }
       
-      console.log('? Toutes les validations sont passées avec succés');
+      console.log(' Toutes les validations sont passées avec succés');
       
       // Préparer les données pour l'API
       const applicationData = {
@@ -2630,18 +2630,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       const formDataToSend = new FormData();
       
       // Pour le moment, on teste sans fichiers pour identifier le probléme de données
-      console.log('?? Test sans fichiers pour identifier le probléme de structure des données...');
+      console.log(' Test sans fichiers pour identifier le probléme de structure des données...');
 
-      console.log('?? Envoi des données é l\'API...');
-      console.log('?? Adresse libre envoyée:', formData.adresseLibre);
-      console.log('?? Données é envoyer:', applicationData);
-      console.log('?? Participants détaillés:', formData.participants.map(p => ({
+      console.log(' Envoi des données é l\'API...');
+      console.log(' Adresse libre envoyée:', formData.adresseLibre);
+      console.log(' Données é envoyer:', applicationData);
+      console.log(' Participants détaillés:', formData.participants.map(p => ({
         nom: `${p.prenom} ${p.nom}`,
         role: p.role,
         parts: p.pourcentageParts,
         civilite: p.civilite
       })));
-      console.log('?? Fichiers é envoyer:', {
+      console.log(' Fichiers é envoyer:', {
         statuts: !!formData.documents.statuts,
         registreCommerce: !!formData.documents.registreCommerce,
         justificatifDomicile: !!formData.documents.justificatifDomicile,
@@ -2656,17 +2656,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       });
       
       // IMPLéMENTATION RéELLE : Logique de création inspirée du cété utilisateur
-      console.log('?? Début de la création réelle du dossier d\'entreprise...');
+      console.log(' Début de la création réelle du dossier d\'entreprise...');
       
       // Importer l'API configurée pour les agents
       const { axiosInstance } = await import('../services/api');
 
-      // éTAPE 1: Validation des documents requis
-      console.log('?? éTAPE 1 - Validation des documents requis...');
+      // ÉTAPE 1: Validation des documents requis
+      console.log(' ÉTAPE 1 - Validation des documents requis...');
       const missingDocs: string[] = [];
       
       // Vérifier les documents des participants
-      console.log('?? Debug participants:', formData.participants.map((p, idx) => ({
+      console.log(' Debug participants:', formData.participants.map((p, idx) => ({
         index: idx + 1,
         nom: p.nom,
         prenom: p.prenom,
@@ -2681,7 +2681,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         
         // Ignorer les participants vides (pas de nom ni prénom)
         if (!participant.nom && !participant.prenom) {
-          console.log(`?? Participant ${idx + 1} ignoré (vide)`);
+          console.log(` Participant ${idx + 1} ignoré (vide)`);
           return;
         }
         
@@ -2734,8 +2734,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // Utiliser le code du quartier sélectionné ou fallback
       const selectedQuartier = companyQuartiers.find(q => q.id === companySelectedQuartierId);
       const divisionCode = selectedQuartier?.code || formData.division || agent?.division || '10040102';
-      console.log('?? Division utilisée:', divisionCode);
-      console.log('?? Quartier sélectionné:', selectedQuartier);
+      console.log(' Division utilisée:', divisionCode);
+      console.log(' Quartier sélectionné:', selectedQuartier);
       
       // Note: Si la division n'existe pas, l'API smart essaiera différents endpoints
 
@@ -2749,11 +2749,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }
       
       if (isTestMode) {
-        console.log('?? MODE TEST - Création sans documents pour tester l\'API backend');
+        console.log(' MODE TEST - Création sans documents pour tester l\'API backend');
       }
 
-      // éTAPE 2: Validation de l'unicité des piéces d'identité
-      console.log('?? éTAPE 2 - Vérification de l\'unicité des piéces d\'identité...');
+      // ÉTAPE 2: Validation de l'unicité des piéces d'identité
+      console.log(' ÉTAPE 2 - Vérification de l\'unicité des piéces d\'identité...');
       const piecesToCheck = formData.participants
         .filter(p => p.civilite !== 'PERSONNE_MORALE' && p.numeroPiece && p.typePiece)
         .map(p => ({
@@ -2789,15 +2789,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               }
             }
           } else {
-            console.warn('?? Endpoint de validation non disponible, on continue sans validation préalable');
+            console.warn(' Endpoint de validation non disponible, on continue sans validation préalable');
           }
         } catch (e) {
-          console.warn('?? Erreur lors de la validation préalable:', e);
+          console.warn(' Erreur lors de la validation préalable:', e);
         }
       }
 
-      // éTAPE 3: Création des participants (RéACTIVéE)
-      console.log(' étape 3 - Création des participants...');
+      // ÉTAPE 3: Création des participants (RéACTIVÉE)
+      console.log(' ÉTAPE 3 - Création des participants...');
       
       // Nettoyer les IDs temporaires des participants (garder seulement les vrais IDs backend)
       formData.participants.forEach(p => {
@@ -2824,13 +2824,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         
         return false;
       });
-      console.log(`?? Participants é créer: ${participantsToCreate.length}/${formData.participants.length}`);
+      console.log(` Participants à créer: ${participantsToCreate.length}/${formData.participants.length}`);
       
       for (const participant of participantsToCreate) {
         // Adapter la structure pour le backend (enums et dates)
         const isPersonneMorale = participant.civilite === 'PERSONNE_MORALE';
         
-        console.log(`?? Création participant ${participant.role} - ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}`);
+        console.log(` Création participant ${participant.role} - ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}`);
         
         // Déterminer si ce participant correspond aux informations personnelles (créateur/gérant/promoteur)
         const isCreatorParticipant = participant.prenom === formData.prenom && 
@@ -2962,7 +2962,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Vérifier le format basique
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(correctedEmail)) {
-              console.warn(`?? Email invalide détecté: "${email}" ? générer un email valide`);
+              console.warn(` Email invalide détecté: "${email}"  générer un email valide`);
               // Générer un email valide basé sur le nom/prénom
               const safeName = (participant.prenom || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
               const safeLastName = (participant.nom || 'name').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2999,9 +2999,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             })) : []
         };
 
-        console.log(`?? Données participant ${participant.role}:`, personRequest);
-        console.log(`?? Téléphone formaté: ${participant.telephone} ? ${personRequest.telephone1}`);
-        console.log(`?? Localisation participant:`, {
+        console.log(` Données participant ${participant.role}:`, personRequest);
+        console.log(` Téléphone formaté: ${participant.telephone} ? ${personRequest.telephone1}`);
+        console.log(` Localisation participant:`, {
           isCreator: isCreatorParticipant,
           division_id: personRequest.division_id,
           divisionCode: personRequest.divisionCode,
@@ -3013,14 +3013,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         try {
           const token = localStorage.getItem('investmali_agent_token') || localStorage.getItem('agentToken') || localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('agent_token');
           
-          console.log(`?? Token pour création participant:`, {
+          console.log(` Token pour création participant:`, {
             hasToken: !!token,
             tokenLength: token?.length,
             tokenStart: token?.substring(0, 20) + '...'
           });
           
           // ÉTAPE 1: Vérifier si le participant existe déjà par téléphone
-          console.log(`?? Vérification existence participant par téléphone: ${personRequest.telephone1}`);
+          console.log(` Vérification existence participant par téléphone: ${personRequest.telephone1}`);
           
           try {
             const searchResponse = await fetch(`${getApiBaseUrl()}/persons/search?telephone=${encodeURIComponent(personRequest.telephone1)}`, {
@@ -3043,7 +3043,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           }
           
           // ÉTAPE 2: Créer un nouveau participant si non trouvé
-          console.log(`?? Envoi requéte POST /api/v1/persons pour ${participant.prenom} ${participant.nom}:`, personRequest);
+          console.log(` Envoi requéte POST /api/v1/persons pour ${participant.prenom} ${participant.nom}:`, personRequest);
           
           const response = await fetch(`${getApiBaseUrl()}/persons`, {
             method: 'POST',
@@ -3054,7 +3054,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             body: JSON.stringify(personRequest)
           });
           
-          console.log(`?? Réponse POST /api/v1/persons:`, {
+          console.log(` Réponse POST /api/v1/persons:`, {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok
@@ -3062,35 +3062,35 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`? Erreur détaillée création participant:`, errorText);
+            console.error(` Erreur détaillée création participant:`, errorText);
             throw new Error(`Erreur ${response.status}: ${response.statusText} - ${errorText}`);
           }
           
           const result = await response.json();
-          console.log(`? Participant ${participant.role} créé avec succés:`, result);
+          console.log(` Participant ${participant.role} créé avec succés:`, result);
           
           // Mettre é jour l'ID du participant
           participant.id = result.id || result.data?.id;
-          console.log(`?? ID assigné au participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
+          console.log(` ID assigné au participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
           
         } catch (error) {
-          console.error(`? ERREUR création participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}:`, error);
+          console.error(` ERREUR création participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}:`, error);
           
           // Vérifier si c'est une erreur d'email déjé utilisé
           const errorMessage = (error as Error).message || error?.toString() || '';
           if (errorMessage.includes('email est déjé utilisé') || errorMessage.includes('email already exists')) {
-            console.log(`?? Email déjé utilisé détecté pour ${personRequest.email}`);
+            console.log(` Email déjé utilisé détecté pour ${personRequest.email}`);
             
             // Pour les personnes morales, continuer automatiquement sans email
             if (isPersonneMorale) {
-              console.log(`?? Email "${personRequest.email}" déjé utilisé pour la personne morale "${participant.denominationEntreprise}" - Suppression automatique de l'email`);
+              console.log(` Email "${personRequest.email}" déjé utilisé pour la personne morale "${participant.denominationEntreprise}" - Suppression automatique de l'email`);
               
               // Retenter sans email pour personne morale
-              console.log(`?? Tentative sans email pour personne morale: ${participant.denominationEntreprise}`);
+              console.log(` Tentative sans email pour personne morale: ${participant.denominationEntreprise}`);
               personRequest.email = undefined;
             } else {
               // Pour les personnes physiques, modifier l'email automatiquement SANS demander confirmation
-              console.log(`?? Email "${personRequest.email}" déjé utilisé pour ${participant.prenom} ${participant.nom} - Modification automatique`);
+              console.log(` Email "${personRequest.email}" déjé utilisé pour ${participant.prenom} ${participant.nom} - Modification automatique`);
               
               // Modifier l'email automatiquement et réessayer
               const timestamp = Date.now();
@@ -3098,7 +3098,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               const emailParts = originalEmail.split('@');
               const newEmail = `${emailParts[0]}_${timestamp}@${emailParts[1]}`;
               
-              console.log(`?? Tentative avec nouvel email: ${originalEmail} ? ${newEmail}`);
+              console.log(` Tentative avec nouvel email: ${originalEmail} ? ${newEmail}`);
               personRequest.email = newEmail;
             }
             
@@ -3119,30 +3119,30 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               }
               
               const retryResult = await retryResponse.json();
-              console.log(`? Participant créé avec email modifié:`, retryResult);
+              console.log(` Participant créé avec email modifié:`, retryResult);
               
               participant.id = retryResult.id || retryResult.data?.id;
               if (personRequest.email) {
                 participant.email = personRequest.email; // Mettre é jour l'email dans les données
               }
-              console.log(`?? ID assigné au participant: ${participant.id}`);
+              console.log(`✅ ID assigné au participant: ${participant.id}`);
               
             } catch (retryError) {
               console.error(`? échec méme avec email modifié:`, retryError);
               // En dernier recours, simuler un ID
               participant.id = `sim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-              console.log(`?? ID simulé en dernier recours: ${participant.id}`);
+              console.log(` ID simulé en dernier recours: ${participant.id}`);
             }
           } else {
             // Pour les autres erreurs, simuler un ID
             participant.id = `sim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            console.log(`?? ID simulé pour ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
+            console.log(` ID simulé pour ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
           }
         }
       }
 
       // éTAPE 4: Créer l'entreprise
-      console.log('?? éTAPE 4 - Création de l\'entreprise...');
+      console.log(' éTAPE 4 - Création de l\'entreprise...');
       
       console.log('🔍 DEBUG - formData.participants AVANT mapping:', formData.participants.map(p => ({
         id: p.id,
@@ -3170,10 +3170,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           const participantName = p.typePersonne === 'MORALE' ? p.denominationEntreprise : `${p.prenom} ${p.nom}`;
           
           if (!validRoles.includes(cleanRole)) {
-            console.warn(`Réle invalide pour participant ${participantName}: ${p.role}, utilisation de ASSOCIE`);
+            console.warn(`Role invalide pour participant ${participantName}: ${p.role}, utilisation de ASSOCIE`);
           }
           
-          console.log(`?? Mapping participant ${participantName}:`, {
+          console.log(` Mapping participant ${participantName}:`, {
             originalId: p.id,
             isSimulated: p.id?.startsWith('sim-'),
             willBeFiltered: !p.id || p.id.startsWith('sim-')
@@ -3284,7 +3284,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             
             // TOUJOURS corriger les ADMINISTRATEUR (mettre é 0%)
             const adjustedWithoutParts = participantsWithoutParts.map(p => {
-              console.log(`?? ADMINISTRATEUR ${p.personId} - Parts forcées é 0% (était ${p.pourcentageParts}%)`);
+              console.log(` ADMINISTRATEUR ${p.personId} - Parts forcées é 0% (était ${p.pourcentageParts}%)`);
               return {
                 ...p,
                 pourcentageParts: 0
@@ -3294,7 +3294,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Ajuster les autres participants seulement si nécessaire
             let adjustedWithParts = participantsWithParts;
             if (totalPercentage !== 100 && participantsWithParts.length > 0) {
-              console.log(`?? Ajustement des pourcentages: ${totalPercentage}% ? 100% (${participantsWithParts.length} participants avec parts)`);
+              console.log(` Ajustement des pourcentages: ${totalPercentage}% ? 100% (${participantsWithParts.length} participants avec parts)`);
               
               // Si la somme n'est pas 100%, redistribuer équitablement seulement entre ceux qui ont des parts
               const equalShare = Math.floor(100 / participantsWithParts.length);
@@ -3308,14 +3308,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             
             realParticipants = [...adjustedWithParts, ...adjustedWithoutParts];
             
-            console.log(`? Pourcentages finaux:`, realParticipants.map(p => ({ 
+            console.log(` Pourcentages finaux:`, realParticipants.map(p => ({ 
               personId: p.personId, 
               role: p.role, 
               pourcentage: p.pourcentageParts 
             })));
           }
           
-          console.log(`?? Participants aprés filtrage (IDs réels seulement):`, {
+          console.log(` Participants aprés filtrage (IDs réels seulement):`, {
             total: allParticipants.length,
             real: realParticipants.length,
             simulated: allParticipants.filter(p => p.personId?.startsWith('sim-')).length,
@@ -3336,38 +3336,38 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               if (originalParticipant.dateNaissance && originalParticipant.dateNaissance !== '') {
                 // Convertir la date au format Date pour le backend
                 result.dateNaissance = new Date(originalParticipant.dateNaissance);
-                console.log(`?? [PARTICIPANT] ${participant.personId} - Date naissance ajoutée: ${originalParticipant.dateNaissance}`);
+                console.log(` [PARTICIPANT] ${participant.personId} - Date naissance ajoutée: ${originalParticipant.dateNaissance}`);
               }
               
               // Ajouter lieuNaissance si disponible
               if (originalParticipant.lieuNaissance && originalParticipant.lieuNaissance !== '') {
                 result.lieuNaissance = originalParticipant.lieuNaissance;
-                console.log(`?? [PARTICIPANT] ${participant.personId} - Lieu naissance ajouté: ${originalParticipant.lieuNaissance}`);
+                console.log(` [PARTICIPANT] ${participant.personId} - Lieu naissance ajouté: ${originalParticipant.lieuNaissance}`);
               }
             } else {
               // ?? CAS SPéCIAL: Entreprise individuelle - utiliser les données du créateur principal
               if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (participant.role === 'GERANT' || participant.role === 'PROMOTEUR')) {
-                console.log(`?? [ENTREPRISE INDIVIDUELLE] Utilisation des données du créateur pour le gérant ${participant.personId}`);
+                console.log(` [ENTREPRISE INDIVIDUELLE] Utilisation des données du créateur pour le gérant ${participant.personId}`);
                 
                 // Utiliser les données personnelles du créateur principal
                 if (formData.dateNaissance && formData.dateNaissance !== '') {
                   result.dateNaissance = new Date(formData.dateNaissance);
-                  console.log(`?? [CRéATEUR] ${participant.personId} - Date naissance du créateur ajoutée: ${formData.dateNaissance}`);
+                  console.log(` [CREATEUR] ${participant.personId} - Date naissance du créateur ajoutée: ${formData.dateNaissance}`);
                 }
                 
                 if (formData.lieuNaissance && formData.lieuNaissance !== '') {
                   result.lieuNaissance = formData.lieuNaissance;
-                  console.log(`?? [CRéATEUR] ${participant.personId} - Lieu naissance du créateur ajouté: ${formData.lieuNaissance}`);
+                  console.log(` [CREATEUR] ${participant.personId} - Lieu naissance du créateur ajouté: ${formData.lieuNaissance}`);
                 }
               } else {
-                console.warn(`?? [PARTICIPANT] ${participant.personId} - Données personnelles non trouvées dans formData.participants`);
+                console.warn(` [PARTICIPANT] ${participant.personId} - Données personnelles non trouvées dans formData.participants`);
               }
             }
             
             return result;
           });
           
-          console.log(`? Participants avec données personnelles:`, participantsWithPersonalData.map((p: any) => ({ 
+          console.log(` Participants avec données personnelles:`, participantsWithPersonalData.map((p: any) => ({ 
             personId: p.personId, 
             role: p.role, 
             pourcentage: p.pourcentageParts,
@@ -3389,13 +3389,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }
       // Validation des participants réactivée
       const realParticipants = allParticipants.filter(p => p.personId && !p.personId.startsWith('sim-'));
-      console.log(`?? Participants réels: ${realParticipants.length}, Participants simulés: ${allParticipants.length - realParticipants.length}`);
+      console.log(` Participants réels: ${realParticipants.length}, Participants simulés: ${allParticipants.length - realParticipants.length}`);
       
       if (realParticipants.length === 0) {
-        console.warn('?? Aucun participant réel trouvé - l\'entreprise sera créée sans participants');
+        console.warn(' Aucun participant réel trouvé - l\'entreprise sera créée sans participants');
       }
 
-      console.log('?? DEBUG NOM ENTREPRISE:', {
+      console.log(' DEBUG NOM ENTREPRISE:', {
         nomEntreprise: formData.nomEntreprise,
         typeEntreprise: formData.typeEntreprise,
         nomEnvoyé: entrepriseRequest.nom,
@@ -3404,18 +3404,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         estUndefined: entrepriseRequest.nom === undefined,
         estVide: entrepriseRequest.nom === ''
       });
-      console.log('?? Données entreprise é envoyer:', entrepriseRequest);
-      console.log('?? Participants formatés (AVANT correction):', allParticipants);
-      console.log('?? Participants finaux (APRéS correction):', entrepriseRequest.participants);
-      console.log('?? DEBUG - Nombre de participants dans la requête:', entrepriseRequest.participants.length);
-      console.log('?? DEBUG - Contenu détaillé des participants:', JSON.stringify(entrepriseRequest.participants, null, 2));
-      console.log('?? Code division utilisé:', {
+      console.log(' Données entreprise é envoyer:', entrepriseRequest);
+      console.log(' Participants formatés (AVANT correction):', allParticipants);
+      console.log(' Participants finaux (APRéS correction):', entrepriseRequest.participants);
+      console.log(' DEBUG - Nombre de participants dans la requête:', entrepriseRequest.participants.length);
+      console.log(' DEBUG - Contenu détaillé des participants:', JSON.stringify(entrepriseRequest.participants, null, 2));
+      console.log(' Code division utilisé:', {
         divisionCode: entrepriseRequest.divisionCode,
         selectedQuartierId: companySelectedQuartierId || personalSelectedQuartierId,
         quartierCode: selectedQuartier?.code,
         fallbackDivision: formData.division || agent?.division
       });
-      console.log('?? Validation des champs obligatoires:', {
+      console.log(' Validation des champs obligatoires:', {
         nom: !!entrepriseRequest.nom,
         capitale: !!entrepriseRequest.capitale,
         divisionCode: !!entrepriseRequest.divisionCode,
@@ -3427,7 +3427,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       });
       
       // VRAIE LOGIQUE : Utiliser directement l'endpoint /entreprises comme cété utilisateur
-      console.log('?? éTAPE 4 - POST /api/v1/entreprises (JSON)');
+      console.log('ÉTAPE 4 - POST /api/v1/entreprises (JSON)');
       
       let entRes;
       try {
@@ -3438,7 +3438,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       localStorage.getItem('authToken') ||
                       localStorage.getItem('agent_token');
         
-        console.log('?? Vérification authentification agent:', {
+        console.log(' Vérification authentification agent:', {
           hasToken: !!token,
           tokenLength: token?.length || 0,
           tokenStart: token?.substring(0, 20) + '...' || 'N/A',
@@ -3479,7 +3479,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             errorData = { message: `Erreur HTTP ${response.status}: ${response.statusText}` };
           }
           
-          console.error('? Erreur détaillée du serveur:', {
+          console.error(' Erreur détaillée du serveur:', {
             status: response.status,
             statusText: response.statusText,
             errorData: errorData,
@@ -3490,10 +3490,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
         
         entRes = { data: await response.json() };
-        console.log('? Entreprise créée avec succés via l\'endpoint réel');
-        console.log('? Réponse complète du backend:', JSON.stringify(entRes.data, null, 2));
+        console.log(' Entreprise créée avec succés via l\'endpoint réel');
+        console.log(' Réponse complète du backend:', JSON.stringify(entRes.data, null, 2));
       } catch (error) {
-        console.error('? Erreur lors de la création de l\'entreprise:', error);
+        console.error(' Erreur lors de la création de l\'entreprise:', error);
         
         // Extraire et traduire le message d'erreur pour l'utilisateur
         let userFriendlyMessage = 'Une erreur est survenue lors de la création de l\'entreprise.';
@@ -3548,10 +3548,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         throw new Error('Identifiant entreprise introuvable');
       }
 
-      console.log('? Entreprise créée:', { entrepriseId, entrepriseReference });
+      console.log(' Entreprise créée:', { entrepriseId, entrepriseReference });
 
       // éTAPE 5: Upload des documents
-      console.log('?? éTAPE 5 - Upload des documents...');
+      console.log('  ÉTAPE 5 - Upload des documents...');
 
       const uploadPieceForParticipant = async (personId: string, typePiece: string, numeroPiece: string, file: File) => {
         const fd = new FormData();
@@ -3574,7 +3574,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             throw new Error(`Upload failed: ${response.status}`);
           }
         } catch (error) {
-          console.warn('?? Endpoint documents/piece non implémenté, simulation de l\'upload');
+          console.warn(' Endpoint documents/piece non implémenté, simulation de l\'upload');
           // Simuler un délai d'upload
           await new Promise(resolve => setTimeout(resolve, 500));
         }
@@ -3622,33 +3622,33 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           : (!participant.nom?.trim() && !participant.prenom?.trim());
           
         if (isEmpty) {
-          console.log('?? Participant vide ignoré pour l\'upload');
+          console.log(' Participant vide ignoré pour l\'upload');
           continue;
         }
         
         if (participant.civilite === 'PERSONNE_MORALE') {
-          console.log('?? Personne morale détectée - upload du RCCM');
+          console.log(' Personne morale détectée - upload du RCCM');
           // Upload du document RCCM pour les personnes morales
           if (participant.rccmFile && participant.id) {
             try {
-              console.log(`?? Upload RCCM pour ${participant.denominationEntreprise}`);
+              console.log(` Upload RCCM pour ${participant.denominationEntreprise}`);
               await uploadDocumentFor(participant.id, 'RCCM', participant.rccmFile, `RCCM-${participant.denominationEntreprise}-${entrepriseReference}`);
-              console.log('? Document RCCM uploadé');
+              console.log(' Document RCCM uploadé');
             } catch (e) {
-              console.error('? Upload RCCM échoué:', e);
+              console.error(' Upload RCCM échoué:', e);
               throw new Error(`Erreur upload RCCM ${participant.denominationEntreprise}: ${e}`);
             }
           } else {
-            console.log('?? Pas de fichier RCCM ou ID manquant pour', participant.denominationEntreprise);
+            console.log(' Pas de fichier RCCM ou ID manquant pour', participant.denominationEntreprise);
           }
         } else {
           // Upload des documents pour les personnes physiques
           if (participant.id && participant.documentFile && participant.typePiece && participant.numeroPiece) {
             try {
-              console.log(`?? Upload piéce ${participant.typePiece} pour ${participant.prenom} ${participant.nom}`);
+              console.log(` Upload piéce ${participant.typePiece} pour ${participant.prenom} ${participant.nom}`);
               await uploadPieceForParticipant(participant.id, participant.typePiece, participant.numeroPiece, participant.documentFile);
             } catch (e) {
-              console.error('? Upload piéce échoué:', e);
+              console.error(' Upload piéce échoué:', e);
               throw new Error(`Erreur upload document ${participant.prenom} ${participant.nom}: ${e}`);
             }
           }
@@ -3658,7 +3658,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Upload extrait de naissance
             if (participant.extraitNaissanceFile) {
               try {
-                console.log(`?? Upload extrait de naissance pour ${participant.prenom} ${participant.nom}`);
+                console.log(` Upload extrait de naissance pour ${participant.prenom} ${participant.nom}`);
                 await uploadDocumentFor(participant.id, 'EXTRAIT_NAISSANCE', participant.extraitNaissanceFile, `EXTRAIT-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
                 console.log('✅ Extrait de naissance uploadé');
               } catch (e) {
@@ -3669,7 +3669,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Upload casier judiciaire ou déclaration sur l'honneur
             if (participant.hasCriminalRecord === true && participant.casierJudiciaireFile) {
               try {
-                console.log(`?? Upload casier judiciaire pour ${participant.prenom} ${participant.nom}`);
+                console.log(` Upload casier judiciaire pour ${participant.prenom} ${participant.nom}`);
                 await uploadDocumentFor(participant.id, 'CASIER_JUDICIAIRE', participant.casierJudiciaireFile, `CASIER-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
                 console.log('✅ Casier judiciaire uploadé');
               } catch (e) {
@@ -3677,7 +3677,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               }
             } else if (participant.hasCriminalRecord === false && participant.declarationHonneurFile) {
               try {
-                console.log(`?? Upload déclaration sur l'honneur pour ${participant.prenom} ${participant.nom}`);
+                console.log(` Upload déclaration sur l'honneur pour ${participant.prenom} ${participant.nom}`);
                 await uploadDocumentFor(participant.id, 'DECLARATION_HONNEUR', participant.declarationHonneurFile, `DECLARATION-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
                 console.log('✅ Déclaration sur l\'honneur uploadée');
               } catch (e) {
@@ -3688,7 +3688,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Upload acte de mariage si marié
             if (participant.situationMatrimoniale === 'MARIE' && participant.acteMariageFile) {
               try {
-                console.log(`?? Upload acte de mariage pour ${participant.prenom} ${participant.nom}`);
+                console.log(` Upload acte de mariage pour ${participant.prenom} ${participant.nom}`);
                 await uploadDocumentFor(participant.id, 'ACTE_MARIAGE', participant.acteMariageFile, `MARIAGE-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
                 console.log('✅ Acte de mariage uploadé');
               } catch (e) {
@@ -4927,7 +4927,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     setPersonalQuartiers([]);
                     
                     if (regionId) {
-                      console.log('??? Chargement cercles pour région:', regionId);
+                      console.log(' Chargement cercles pour région:', regionId);
                       try {
                         const cercles = await divisionService.getCerclesByRegion(regionId);
                                     setPersonalCercles(cercles || []);
@@ -6039,7 +6039,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
     const editParticipant = (index: number) => {
       const participant = formData.participants[index];
-      console.log('?? édition du participant:', participant);
+      console.log(' édition du participant:', participant);
       setEditingIndex(index);
       setSelectedPersonType(participant.typePersonne || 'PHYSIQUE');
       setNewParticipant(participant);
@@ -6312,7 +6312,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     />
                     {newParticipant.civilite === 'PERSONNE_MORALE' && (
                       <p className="text-xs text-primary-600 mt-1">
-                        ?? Les personnes morales peuvent avoir 0% de parts (participation sans capital)
+                        Les personnes morales peuvent avoir 0% de parts (participation sans capital)
                       </p>
                     )}
                   </div>
@@ -6819,7 +6819,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   />
                   {newParticipant.civilite === 'PERSONNE_MORALE' && (
                     <p className="text-xs text-primary-600 mt-1">
-                      ?? Les personnes morales peuvent avoir 0% de parts (participation sans capital)
+                       Les personnes morales peuvent avoir 0% de parts (participation sans capital)
                     </p>
                   )}
                 </div>
@@ -7062,20 +7062,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                               <button
                                 type="button"
                                 onClick={() => handleGenerateDeclaration(newParticipant)}
-                                disabled={!newParticipant.nom || !newParticipant.prenom}
-                                className="w-full py-2 px-4 bg-sky-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                className="w-full py-2 px-4 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
                               >
-                ?? Générer la déclaration PDF
+                                📄 Générer la déclaration PDF
                               </button>
                               <p className="text-xs text-black-600 mt-1">
-                                ?? Génére un PDF de déclaration sur l'honneur avec vos informations et signature
+                                📝 Génère un PDF de déclaration sur l'honneur avec vos informations et signature
                               </p>
                             </div>
                             
                             {/* Signature de la déclaration */}
                             <div className="mt-4">
                               <label className="block text-sm font-medium text-black-900 mb-3">
-                                ?? Signature de la déclaration sur l'honneur {!newParticipant.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
+                                ✍️ Signature de la déclaration sur l'honneur {!newParticipant.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
                               </label>
                               <SignatureCanvas
                                 onSignatureChange={(dataUrl) => {
@@ -7084,7 +7083,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 existingSignature={newParticipant.signatureDataUrl}
                               />
                               <p className="text-xs text-black-600 mt-2">
-                                ?? {newParticipant.declarationHonneurFile 
+                                💡 {newParticipant.declarationHonneurFile 
                                   ? 'Signature optionnelle car vous avez uploadé une déclaration' 
                                   : 'Signature obligatoire pour générer une déclaration sur l\'honneur'
                                 }
@@ -7094,7 +7093,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                             {/* Upload déclaration optionnel */}
                             <div className="mt-4">
                               <label className="block text-sm font-medium text-black-600 mb-2">
-                                ?? Uploader la déclaration sur l'honneur (optionnel)
+                                📤 Uploader la déclaration sur l'honneur (optionnel)
                               </label>
                               <input
                                 accept=".pdf,.jpg,.jpeg,.png"
@@ -7103,8 +7102,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 onChange={(e) => setNewParticipant({...newParticipant, declarationHonneurFile: e.target.files?.[0]})}
                               />
                               <p className="text-xs text-black-600 mt-1">
-                                ?? Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)<br />
-                                ?? <strong>Astuce:</strong> Si vous uploadez une déclaration déjé signée, la signature ci-dessus devient optionnelle
+                                📄 Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)<br />
+                                💡 <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
                               </p>
                             </div>
                           </div>
@@ -7471,7 +7470,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             <p className="text-slate-600 font-medium mt-1">
               {formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
                 ? 'Les documents ne sont pas requis pour les entreprises individuelles.'
-                : 'Téléchargez les documents requis pour la création de l\'entreprise.'
+                : 'Les documents ne sont pas requis pour les societes.'
               }
             </p>
           </div>
@@ -7483,64 +7482,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         const requiredPieces = getRequiredPiecesInfo(formData.formeJuridique);
         return (
         <div className="space-y-6">
-          {/* Liste des pièces à joindre selon la forme juridique */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-start space-x-3 mb-4">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-blue-900 mb-2">
-                  Pièces à joindre pour {(() => {
-                    const labels: Record<FormeJuridique, string> = {
-                      'SARL': 'SARL',
-                      'SARL_UNI': 'SARL Unipersonnelle',
-                      'SUC_SARL': 'Succursale SARL',
-                      'FIL_SARL': 'Filiale SARL',
-                      'SA': 'SA',
-                      'SUC_SA': 'Succursale SA',
-                      'FIL_SA': 'Filiale SA',
-                      'SASU': 'SASU',
-                      'SAS': 'SAS',
-                      'BR': 'Bureau de Représentation',
-                      'FIL_SAS': 'Filiale SAS',
-                      'SUC_SAS': 'Succursale SAS',
-                      'SNC': 'SNC',
-                      'SCS': 'SCS',
-                      'SCI': 'SCI',
-                      'SCP': 'SCP',
-                      'GIE': 'GIE',
-                      'E_I': 'Entreprise Individuelle'
-                    };
-                    return labels[formData.formeJuridique] || formData.formeJuridique;
-                  })()}
-                </h3>
-                <p className="text-sm text-blue-700 mb-3">
-                  Voici la liste des pièces requises pour cette forme juridique :
-                </p>
-                <ul className="space-y-2">
-                  {requiredPieces.map((piece, index) => (
-                    <li key={index} className="flex items-start text-sm text-blue-800">
-                      <svg className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="flex-1">{piece}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-          
-          {/* Info sur les documents requis selon la forme juridique */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Documents requis pour {formData.formeJuridique} :</strong> Les documents marqués d'un * sont obligatoires pour cette forme juridique.
-            </p>
-          </div>
-
           {/* Statuts de l'entreprise - Conditionnel */}
           {requiredDocs.statuts && (
           <div className="border-2 border-dashed border-white/60 rounded-lg p-8 bg-gradient-to-r from-white/80 via-slate-50/60 to-primary-50/40  shadow-sm hover:shadow-sm transition-all duration-300 hover:border-[#412A5C]/50">
@@ -8217,31 +8158,31 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-primary-600 mr-2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                   </svg>
-                  ?? DOMAINE RéGLEMENTé DéTECTé
+                  DOMAINE RÉGLEMENTÉ DéTECTÉ
                 </h3>
                 <div className="space-y-4">
                   <div className="bg-primary-100 p-4 rounded-md">
                     <p className="text-sm font-medium text-primary-900 mb-2">
-                      ?? Votre activité "{titreActivite}" nécessite une DEMANDE D'AUTORISATION D'EXERCICE.
+                      Votre activité "{titreActivite}" nécessite une DEMANDE D'AUTORISATION D'EXERCICE.
                     </p>
                     <p className="text-xs text-primary-800">
-                      Aprés la création de votre entreprise, vous devrez constituer et déposer un dossier de demande d'autorisation.
+                      Après la création de votre entreprise, vous devrez constituer et déposer un dossier de demande d'autorisation.
                     </p>
                   </div>
                   
                   <div className="bg-white p-4 rounded-md border border-primary-200">
                     <h4 className="text-sm font-semibold text-gray-900 mb-2">Prochaines étapes :</h4>
                     <ul className="text-xs text-primary-800 space-y-1">
-                      <li>é Dépét du dossier auprés de l'API-Mali</li>
-                      <li>é étude et validation par les services compétents</li>
-                      <li>é Obtention de l'autorisation d'exercice</li>
+                      <li> Dépot du dossier aupres de l'API-Mali</li>
+                      <li> Étude et validation par les services compétents</li>
+                      <li> Obtention de l'autorisation d'exercice</li>
                     </ul>
                   </div>
                   
                   <div className="bg-gray-50 p-3 rounded-md">
                     <p className="text-xs text-gray-700">
-                      ?? <strong>Contact API-Mali :</strong> +223 20 29 76 00 | info@apimali.gov.ml<br/>
-                      ?? <strong>Site web :</strong> https://www.apimali.gov.ml
+                       <strong>Contact API-Mali :</strong> +223 20 29 76 00 | info@apimali.gov.ml<br/>
+                       <strong>Site web :</strong> https://www.apimali.gov.ml
                     </p>
                   </div>
                 </div>
@@ -8319,7 +8260,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 </div>
                 {calculateTotalParts() !== 100 && (
                   <p className="text-xs text-primary-600">
-                    ?? Le total doit égaler 100% (administrateurs exclus)
+                     Le total doit égaler 100% (administrateurs exclus)
                   </p>
                 )}
               </div>
