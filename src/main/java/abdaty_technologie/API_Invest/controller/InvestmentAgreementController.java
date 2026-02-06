@@ -1,6 +1,7 @@
 package abdaty_technologie.API_Invest.controller;
 
 import abdaty_technologie.API_Invest.Entity.InvestmentAgreement;
+import abdaty_technologie.API_Invest.Entity.InvestmentAgreementDocument;
 import abdaty_technologie.API_Invest.dto.InvestmentAgreementRequest;
 import abdaty_technologie.API_Invest.dto.InvestmentAgreementDocumentDto;
 import abdaty_technologie.API_Invest.service.InvestmentAgreementService;

@@ -186,6 +186,7 @@ public class XmlBuilderService {
             return switch (person.getCivilite()) {
                 case MONSIEUR -> "M.";
                 case MADAME -> "Mme";
+                case MADEMOISELLE -> "Mlle";
                 default -> "M.";
             };
         }

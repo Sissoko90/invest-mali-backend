@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Users, Shield, AlertCircle, CheckCircle } from './icons';
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, TrashIcon, UserCircleIcon, PhoneIcon, EnvelopeIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import AgentManagementService, { 

@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useAgentAuth } from '../../contexts/AgentAuthContext';
 import { entreprisesAPI } from '../../services/api';
 import { getApiBaseUrl } from '../../utils/apiUrl';
@@ -479,9 +480,6 @@ const MinistereAgrementStep: React.FC<MinistereAgrementStepProps> = ({ onEntrepr
 };
 
 export default MinistereAgrementStep;
-
-
-
 
 
 

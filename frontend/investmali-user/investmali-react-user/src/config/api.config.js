@@ -1,3 +1,4 @@
+
 /**
  * Configuration centralisée pour l'API Utilisateur InvestMali
  * 
@@ -256,4 +257,3 @@ export const createApiRequest = () => {
   };
 };
 
-// Configuration ready for production

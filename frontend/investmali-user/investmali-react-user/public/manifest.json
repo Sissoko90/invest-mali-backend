@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
   "short_name": "AKERA",
   "name": "AKERA - Plateforme de formalisation d'entreprises",
+=======
+  "short_name": "A kera",
+  "name": "A kera - Plateforme de formalisation d'entreprises",
+>>>>>>> 060c2b6fa (WIP: local changes before rebase)
   "icons": [
     {
       "src": "favicon.ico",

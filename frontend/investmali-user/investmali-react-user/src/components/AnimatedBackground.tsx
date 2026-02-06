@@ -114,4 +114,3 @@ const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 };
 
 export default AnimatedBackground;
-

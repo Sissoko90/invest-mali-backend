@@ -1,3 +1,4 @@
+
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { API_CONFIG } from '../config/api.config';
@@ -436,8 +437,6 @@ const ChatModal: React.FC<ChatModalProps> = ({
 };
 
 export default ChatModal;
-
-
 
 
 

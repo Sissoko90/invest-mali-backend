@@ -379,4 +379,3 @@ const PaymentDiagnosticPage: React.FC = () => {
 };
 
 export default PaymentDiagnosticPage;
-

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { agentBusinessAPI } from '../services/api';
 import { generateReceiptData, formatAmount } from '../services/receiptService';

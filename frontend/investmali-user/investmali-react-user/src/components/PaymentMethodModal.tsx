@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   CreditCardIcon, 
@@ -206,4 +207,3 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
 };
 
 export default PaymentMethodModal;
-

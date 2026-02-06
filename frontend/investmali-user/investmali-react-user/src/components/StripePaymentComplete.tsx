@@ -237,4 +237,3 @@ const StripePaymentComplete: React.FC<StripePaymentCompleteProps> = ({
 };
 
 export default StripePaymentComplete;
-

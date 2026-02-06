@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useModal } from '../contexts/ModalContext';
@@ -2099,9 +2100,6 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
 };
 
 export default AccueilStep;
-
-
-
 
 
 

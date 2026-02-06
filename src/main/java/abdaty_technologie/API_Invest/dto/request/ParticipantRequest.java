@@ -39,4 +39,7 @@ public class ParticipantRequest {
     
     /** Lieu de naissance (optionnel - pour mise à jour si null en base) */
     public String lieuNaissance;
+    
+    /** Nom du cabinet (optionnel - pour les déposants) */
+    public String nomCabinet;
 }

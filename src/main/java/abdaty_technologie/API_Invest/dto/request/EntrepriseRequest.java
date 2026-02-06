@@ -89,6 +89,13 @@ public class EntrepriseRequest {
 
     /** Adresse libre du représentant/promoteur (optionnel) */
     public String representativeAdresseLibre;
+    
+    /** Informations du déposant (pour les sociétés) */
+    public String nomDeposant;
+    public String prenomDeposant;
+    public String telephoneDeposant;
+    public String emailDeposant;
+    public String nomCabinet;
 
     /**
      * Participants à l'entreprise (obligatoire): chaque entrée précise le rôle, le pourcentage de parts,

@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { API_CONFIG } from '../config/api.config';
 import { 
   XMarkIcon,
@@ -232,8 +233,6 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
 };
 
 export default DocumentViewer;
-
-
 
 
 

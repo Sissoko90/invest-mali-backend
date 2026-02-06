@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -635,4 +636,3 @@ const UserChatModal = ({ isOpen, onClose, user, entrepriseId = "" }) => {
 };
 
 export default UserChatModal;
-

@@ -318,4 +318,3 @@ const DeclarationHonneur: React.FC = () => {
 };
 
 export default DeclarationHonneur;
-

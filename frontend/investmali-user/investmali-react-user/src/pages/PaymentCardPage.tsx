@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import StripePaymentContainer from '../components/StripePaymentContainer';
@@ -202,4 +203,3 @@ const PaymentCardPage: React.FC = () => {
 };
 
 export default PaymentCardPage;
-

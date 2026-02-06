@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { entreprisesAPI, ninaAPI } from '../services/api';
 import { API_CONFIG } from '../config/api.config';

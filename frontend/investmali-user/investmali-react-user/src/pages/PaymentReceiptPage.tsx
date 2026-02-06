@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import PaymentReceipt from '../components/PaymentReceipt';
@@ -85,4 +86,3 @@ const PaymentReceiptPage: React.FC = () => {
 };
 
 export default PaymentReceiptPage;
-

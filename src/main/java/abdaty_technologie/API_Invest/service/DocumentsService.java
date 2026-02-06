@@ -9,7 +9,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.TypePieces;
 
 public interface DocumentsService {
     Documents uploadPiece(String personneId, String entrepriseId, TypePieces typePiece, String numero, LocalDate dateExpiration, MultipartFile file);
-    Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, String conjointId, MultipartFile file);
+    Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, MultipartFile file);
     
     /**
      * Met à jour uniquement le fichier d'un document existant

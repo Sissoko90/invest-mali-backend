@@ -498,4 +498,3 @@ const Homepage3D: React.FC = () => {
 };
 
 export default Homepage3D;
-

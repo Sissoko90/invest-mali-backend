@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import UserChatDemo from '../components/UserChatDemo';
 
 const ChatTestPage: React.FC = () => {

@@ -28,4 +28,3 @@ const AgentProtectedRoute: React.FC<AgentProtectedRouteProps> = ({ children }) =
 };
 
 export default AgentProtectedRoute;
-

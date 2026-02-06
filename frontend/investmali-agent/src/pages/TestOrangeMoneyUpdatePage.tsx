@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 /**
  * Page de test pour forcer la mise à jour du statut d'un paiement Orange Money V2

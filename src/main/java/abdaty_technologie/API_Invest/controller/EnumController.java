@@ -234,26 +234,4 @@ public class EnumController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
-
-    @GetMapping("/clause-restrictive")
-    public ResponseEntity<List<Map<String, String>>> getClauseRestrictive() {
-        List<Map<String, String>> result = Arrays.stream(ClauseRestrictive.values())
-                .map(clause -> Map.of(
-                        "key", clause.name(),
-                        "value", clause.getLabel()
-                ))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/regime-matrimonial")
-    public ResponseEntity<List<Map<String, String>>> getRegimeMatrimonial() {
-        List<Map<String, String>> result = Arrays.stream(RegimeMatrimonial.values())
-                .map(regime -> Map.of(
-                        "key", regime.name(),
-                        "value", regime.getLabel()
-                ))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(result);
-    }
 }

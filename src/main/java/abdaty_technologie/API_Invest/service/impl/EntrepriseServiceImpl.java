@@ -491,6 +491,13 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         e.setRue(req.rue);
 
         e.setPorte(req.porte);
+        
+        // Informations du déposant (pour les sociétés)
+        e.setNomDeposant(req.nomDeposant);
+        e.setPrenomDeposant(req.prenomDeposant);
+        e.setTelephoneDeposant(req.telephoneDeposant);
+        e.setEmailDeposant(req.emailDeposant);
+        e.setNomCabinet(req.nomCabinet);
 
 
 
@@ -573,7 +580,6 @@ public class EntrepriseServiceImpl implements EntrepriseService {
                 System.out.println("❌ [DEBUG] representativeAdresseLibre vide ou null");
 
             }
-
 
 
             EntrepriseMembre m = new EntrepriseMembre();
@@ -1027,6 +1033,13 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         e.setDivisionCode(targetDivisionCode); // Code INSTAT
 
         System.out.println("🔧 [INSTAT] Entreprise alternative - Division: NULL, Code: " + targetDivisionCode);
+        
+        // Informations du déposant (pour les sociétés)
+        e.setNomDeposant(req.nomDeposant);
+        e.setPrenomDeposant(req.prenomDeposant);
+        e.setTelephoneDeposant(req.telephoneDeposant);
+        e.setEmailDeposant(req.emailDeposant);
+        e.setNomCabinet(req.nomCabinet);
 
 
 

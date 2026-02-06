@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getApiBaseUrl } from '../utils/apiUrl';
 
 interface Message {

@@ -247,4 +247,3 @@ const PaymentStripePage: React.FC = () => {
 };
 
 export default PaymentStripePage;
-

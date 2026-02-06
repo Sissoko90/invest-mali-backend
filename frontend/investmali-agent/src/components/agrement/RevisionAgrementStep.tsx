@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   DocumentTextIcon,
   DocumentCheckIcon,
@@ -477,8 +478,6 @@ const RevisionAgrementStep: React.FC<RevisionAgrementStepProps> = ({ onEntrepris
 };
 
 export default RevisionAgrementStep;
-
-
 
 
 

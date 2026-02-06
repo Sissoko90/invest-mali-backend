@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useAgentAuth, AgentRole } from '../contexts/AgentAuthContext';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 // Composant pour générer le contenu d'email de notification
 const EmailNotificationTemplate = () => {

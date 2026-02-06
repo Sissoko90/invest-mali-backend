@@ -1,3 +1,4 @@
+
 /**
  * Configuration centralisée pour l'API Agent InvestMali
  * 
@@ -276,4 +277,3 @@ export const createApiRequest = () => {
     }
   };
 };
-

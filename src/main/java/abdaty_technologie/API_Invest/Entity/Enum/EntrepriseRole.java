@@ -7,5 +7,6 @@ public enum EntrepriseRole {
     GERANT,
     PROMOTEUR,
     ASSOCIE,
-    ADMINISTRATEUR
+    ADMINISTRATEUR,
+    DEPOSANT
 }

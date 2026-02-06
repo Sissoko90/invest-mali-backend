@@ -44,11 +44,6 @@ public class Documents extends BaseEntity {
     @JoinColumn(name = "entreprise_id")
     private Entreprise entreprise;
     
-    // Relation optionnelle vers Conjoint pour les actes de mariage
-    @ManyToOne(optional = true)
-    @JoinColumn(name = "conjoint_id")
-    private Conjoint conjoint;
-    
     // Getters and Setters
     public TypePieces getTypePiece() { return typePiece; }
     public void setTypePiece(TypePieces typePiece) { this.typePiece = typePiece; }
@@ -73,8 +68,5 @@ public class Documents extends BaseEntity {
     
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    
-    public Conjoint getConjoint() { return conjoint; }
-    public void setConjoint(Conjoint conjoint) { this.conjoint = conjoint; }
 }
 

@@ -306,4 +306,3 @@ const BusinessTracking: React.FC = () => {
 };
 
 export default BusinessTracking;
-

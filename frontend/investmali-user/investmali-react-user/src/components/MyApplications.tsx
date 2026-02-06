@@ -123,4 +123,3 @@ const MyApplications: React.FC = () => {
 };
 
 export default MyApplications;
-

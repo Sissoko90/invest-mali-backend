@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import UserChatModal from './UserChatModal';
 
 const UserChatDemo: React.FC = () => {

@@ -307,6 +307,7 @@ public class PaiementServiceImpl implements IPaiementService {
         return paiementRepository.existsByReferenceTransaction(reference);
     }
 
+
     /**
      * Met à jour le statut de l'entreprise après un paiement validé
      */
@@ -482,5 +483,4 @@ public class PaiementServiceImpl implements IPaiementService {
                 return StatutPaiement.EN_ATTENTE;
         }
     }
-
 }

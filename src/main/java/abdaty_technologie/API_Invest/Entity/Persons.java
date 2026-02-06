@@ -107,6 +107,9 @@ public class Persons extends BaseEntity {
     @Column(name="denomination_entreprise", nullable = true, length = 255)
     private String denominationEntreprise;
 
+    @Column(name="nom_cabinet", nullable = true, length = 255)
+    private String nomCabinet;
+
     @JsonIgnore
     @OneToMany(mappedBy = "personne", cascade = CascadeType.ALL) 
     private List<Documents> documents = new ArrayList<>();
@@ -122,11 +125,6 @@ public class Persons extends BaseEntity {
     // Liens d'appartenance à des entreprises via la table de jointure
     @OneToMany(mappedBy = "personne", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EntrepriseMembre> entreprises = new ArrayList<>();
-
-    // Conjoints (pour les personnes mariées)
-    @JsonIgnore
-    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Conjoint> conjoints = new ArrayList<>();
 
     // Getters and Setters
     public String getNom() { return nom; }
@@ -195,6 +193,9 @@ public class Persons extends BaseEntity {
     public String getDenominationEntreprise() { return denominationEntreprise; }
     public void setDenominationEntreprise(String denominationEntreprise) { this.denominationEntreprise = denominationEntreprise; }
     
+    public String getNomCabinet() { return nomCabinet; }
+    public void setNomCabinet(String nomCabinet) { this.nomCabinet = nomCabinet; }
+    
     public List<Documents> getDocuments() { return documents; }
     public void setDocuments(List<Documents> documents) { this.documents = documents; }
     
@@ -206,8 +207,5 @@ public class Persons extends BaseEntity {
     
     public List<EntrepriseMembre> getEntreprises() { return entreprises; }
     public void setEntreprises(List<EntrepriseMembre> entreprises) { this.entreprises = entreprises; }
-    
-    public List<Conjoint> getConjoints() { return conjoints; }
-    public void setConjoints(List<Conjoint> conjoints) { this.conjoints = conjoints; }
 }
 

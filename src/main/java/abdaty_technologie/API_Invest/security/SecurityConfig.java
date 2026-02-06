@@ -17,6 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.beans.factory.annotation.Value;
 
 
+import java.util.Arrays;
 import java.util.List;
 
 // src/main/java/abdaty_technologie/API_Invest/security/SecurityConfig.java
@@ -93,6 +94,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
+
         // 🔥 SOLUTION D'URGENCE CORS - Configuration forcée pour production
         List<String> origins = List.of(
             // Nouveau domaine formalisation.ml
@@ -138,6 +140,8 @@ public class SecurityConfig {
         );
         
         config.setAllowedOrigins(origins);
+
+
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
