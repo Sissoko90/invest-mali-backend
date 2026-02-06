@@ -19,7 +19,7 @@ public interface EntrepriseMembreRepository extends JpaRepository<EntrepriseMemb
             String entrepriseId, EntrepriseRole role, LocalDate from, LocalDate to);
 
     // Batch fetch for list endpoints to avoid N+1 and LazyInitializationException
-    @Query("SELECT em FROM EntrepriseMembre em JOIN FETCH em.personne JOIN FETCH em.entreprise WHERE em.entreprise.id IN :ids")
+    @Query("SELECT em FROM EntrepriseMembre em JOIN FETCH em.personne JOIN FETCH em.entreprise e WHERE e.id IN :ids")
     List<EntrepriseMembre> findByEntrepriseIdsWithPersonne(@Param("ids") List<String> entrepriseIds);
 
     // Single entreprise fetch join

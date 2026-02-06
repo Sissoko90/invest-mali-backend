@@ -39,6 +39,70 @@ public class ConjointServiceImpl implements ConjointService {
             throw new BadRequestException("La personne doit être mariée pour ajouter un conjoint");
         }
 
+        // Vérifier si un conjoint avec le même prénom et nom existe déjà
+        List<Conjoint> conjointsExistants = conjointRepository.findByPersonId(personId);
+        for (Conjoint existant : conjointsExistants) {
+            if (existant.getPrenom().equalsIgnoreCase(request.prenom) && 
+                existant.getNom().equalsIgnoreCase(request.nom)) {
+                System.out.println("⚠️ [CONJOINT] Conjoint existant trouvé: " + request.prenom + " " + request.nom);
+                
+                // Vérifier si les informations correspondent
+                boolean infosDifferentes = false;
+                StringBuilder differences = new StringBuilder();
+                
+                if (!existant.getDateMariage().equals(request.dateMariage)) {
+                    infosDifferentes = true;
+                    differences.append("Date de mariage différente (existant: ")
+                              .append(existant.getDateMariage())
+                              .append(", nouveau: ")
+                              .append(request.dateMariage)
+                              .append("). ");
+                }
+                
+                if (!existant.getLieuMariage().equalsIgnoreCase(request.lieuMariage)) {
+                    infosDifferentes = true;
+                    differences.append("Lieu de mariage différent (existant: ")
+                              .append(existant.getLieuMariage())
+                              .append(", nouveau: ")
+                              .append(request.lieuMariage)
+                              .append("). ");
+                }
+                
+                if (existant.getRegimeMatrimonial() != request.regimeMatrimonial) {
+                    infosDifferentes = true;
+                    differences.append("Régime matrimonial différent (existant: ")
+                              .append(existant.getRegimeMatrimonial())
+                              .append(", nouveau: ")
+                              .append(request.regimeMatrimonial)
+                              .append("). ");
+                }
+                
+                if (existant.getClauseRestrictive() != request.clauseRestrictive) {
+                    infosDifferentes = true;
+                    differences.append("Clause restrictive différente (existant: ")
+                              .append(existant.getClauseRestrictive())
+                              .append(", nouveau: ")
+                              .append(request.clauseRestrictive)
+                              .append("). ");
+                }
+                
+                if (infosDifferentes) {
+                    throw new BadRequestException(
+                        "Un conjoint avec le nom '" + request.prenom + " " + request.nom + 
+                        "' existe déjà pour cette personne avec des informations différentes: " + 
+                        differences.toString() + 
+                        "Veuillez vérifier les informations ou utiliser le conjoint existant."
+                    );
+                }
+                
+                // Si toutes les infos correspondent, retourner le conjoint existant
+                System.out.println("✅ [CONJOINT] Réutilisation du conjoint existant: " + request.prenom + " " + request.nom);
+                return toResponse(existant);
+            }
+        }
+
+        // Créer un nouveau conjoint seulement s'il n'existe pas
+        System.out.println("✅ [CONJOINT] Création d'un nouveau conjoint: " + request.prenom + " " + request.nom);
         Conjoint conjoint = new Conjoint();
         conjoint.setPerson(person);
         conjoint.setPrenom(request.prenom);
@@ -106,6 +170,13 @@ public class ConjointServiceImpl implements ConjointService {
     public void deleteActeMariage(String conjointId) {
         // L'acte de mariage n'est plus géré au niveau du conjoint
         throw new BadRequestException("L'acte de mariage doit être géré dans les documents de la personne");
+    }
+
+    @Override
+    @Transactional
+    public ConjointResponse findOrCreate(String personId, ConjointRequest request) {
+        // Cette méthode utilise la même logique que create() qui vérifie déjà les doublons
+        return create(personId, request);
     }
 
     private ConjointResponse toResponse(Conjoint conjoint) {

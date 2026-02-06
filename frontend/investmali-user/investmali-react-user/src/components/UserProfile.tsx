@@ -288,10 +288,10 @@ const UserProfile: React.FC = () => {
           const currentStep = normalizeStage(backendStage);
           const overallProgress = stageProgressMap[currentStep] ?? stageProgressMap.ACCUEIL;
           
-          // Déterminer le status basé sur l'étape agent actuelle
+          // Déterminer le status basé sur l'étape agent actuelle et le statutCreation
           const status: BusinessApplication['status'] = 
             currentStep === 'RETRAIT' ? 'completed' :
-            statusRaw.includes('reject') ? 'rejected' :
+            statusRaw.includes('reject') || statusRaw.includes('refus') || (a.statutCreation && a.statutCreation.toString().toUpperCase() === 'REFUSEE') ? 'rejected' :
             'in-progress';
           return {
             id: String(a.id ?? a.applicationId ?? ''),
@@ -1906,6 +1906,38 @@ const UserProfile: React.FC = () => {
                               <p className="text-black text-sm">
                                 <strong>Étape actuelle :</strong> {app.steps.find(step => step.status === 'in-progress')?.title || 'En cours...'}
                               </p>
+                            </div>
+                          )}
+
+                          {/* Afficher le motif de rejet si la demande est rejetée */}
+                          {app.status === 'rejected' && appDetails[app.id]?.motifRejet && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-start space-x-3">
+                                <svg className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div className="flex-1">
+                                  <h4 className="text-base font-semibold text-red-800 mb-1">Demande rejetée</h4>
+                                  <p className="text-sm text-red-700 mb-2">
+                                    <strong>Motif :</strong> {appDetails[app.id].motifRejet}
+                                  </p>
+                                  <p className="text-xs text-red-600 mb-3">
+                                    Veuillez corriger les informations mentionnées et resoumettre votre demande.
+                                  </p>
+                                  <button
+                                    onClick={() => {
+                                      // Rediriger vers la page de création avec l'ID de l'entreprise pour modification
+                                      window.location.href = `/business-creation?edit=${app.id}`;
+                                    }}
+                                    className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                  >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Corriger et resoumettre
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           )}
 

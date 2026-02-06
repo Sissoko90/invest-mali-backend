@@ -24,7 +24,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/conversations")
-@CrossOrigin(origins = "*")
 public class NewChatController {
 
     private static final Logger logger = LoggerFactory.getLogger(NewChatController.class);

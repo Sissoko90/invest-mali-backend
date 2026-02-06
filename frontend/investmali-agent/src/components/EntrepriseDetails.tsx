@@ -42,6 +42,7 @@ interface EntrepriseDetailsProps {
 }
 
 interface Membre {
+  id?: string; // ID du EntrepriseMembre (relation)
   personId: string;
   nom: string;
   prenom: string;
@@ -59,6 +60,16 @@ interface Membre {
   // Champs spécifiques aux personnes morales
   paysEmissionRccm?: string;
   denominationEntreprise?: string;
+  // Champs des conjoints (peut avoir plusieurs conjoints)
+  conjoints?: Array<{
+    id: string;
+    prenom: string;
+    nom: string;
+    dateMariage: string;
+    lieuMariage: string;
+    regimeMatrimonial: string;
+    clauseRestrictive: string;
+  }>;
 }
 
 interface Document {
@@ -119,6 +130,10 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [selectedDocumentName, setSelectedDocumentName] = useState<string>('');
+  const [editingGeneral, setEditingGeneral] = useState(false);
+  const [editedEntreprise, setEditedEntreprise] = useState<any>(null);
+  const [editingMembres, setEditingMembres] = useState(false);
+  const [editedMembres, setEditedMembres] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -211,6 +226,33 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
     } catch (error) {
       console.error('❌ Erreur lors du téléchargement:', error);
       alert('Erreur lors du téléchargement du document');
+    }
+  };
+
+  const handleReplaceDocument = async (documentId: string, file: File, documentName: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/documents/${documentId}/file`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      alert(`✅ Document "${documentName}" modifié avec succès!`);
+      
+      // Recharger les documents
+      loadData();
+    } catch (error) {
+      console.error('❌ Erreur lors de la modification du document:', error);
+      alert('Erreur lors de la modification du document');
     }
   };
 
@@ -473,13 +515,67 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
             
             {/* Informations générales modernisées */}
             <div className="bg-white rounded-2xl shadow-lg border p-4">
-              <div className="flex items-center mb-4">
-                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
-                  <BuildingOfficeIcon className="w-6 h-6 text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
+                    <BuildingOfficeIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#2d85c9]">
+                    Informations générales
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-[#2d85c9]">
-                  Informations générales
-                </h2>
+                {!editingGeneral ? (
+                  <button
+                    onClick={() => {
+                      setEditedEntreprise({...entreprise});
+                      setEditingGeneral(true);
+                    }}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shadow transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Modifier</span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingGeneral(false)}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow transition-colors"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${entrepriseId}`, {
+                            method: 'PUT',
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(editedEntreprise)
+                          });
+                          if (response.ok) {
+                            alert('✅ Informations modifiées avec succès!');
+                            setEditingGeneral(false);
+                            loadData();
+                          } else {
+                            alert('❌ Erreur lors de la modification');
+                          }
+                        } catch (error) {
+                          console.error('Erreur:', error);
+                          alert('❌ Erreur lors de la modification');
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors"
+                    >
+                      Sauvegarder
+                    </button>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -488,12 +584,21 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                     <BuildingOfficeIcon className="w-4 h-4" />
                     <span>{entreprise.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'Nom du gérant' : 'Nom de l\'entreprise'}</span>
                   </label>
-                  <p className="text-base font-semibold text-slate-800 break-words">
-                    {entreprise.nom || (() => {
-                      const gerant = entreprise.membres?.find(m => m.role === 'GERANT' || m.role === 'PROMOTEUR');
-                      return gerant ? `${gerant.prenom} ${gerant.nom}` : 'Non renseigné';
-                    })()}
-                  </p>
+                  {editingGeneral ? (
+                    <input
+                      type="text"
+                      value={editedEntreprise?.nom || ''}
+                      onChange={(e) => setEditedEntreprise({...editedEntreprise, nom: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                    />
+                  ) : (
+                    <p className="text-base font-semibold text-slate-800 break-words">
+                      {entreprise.nom || (() => {
+                        const gerant = entreprise.membres?.find(m => m.role === 'GERANT' || m.role === 'PROMOTEUR');
+                        return gerant ? `${gerant.prenom} ${gerant.nom}` : 'Non renseigné';
+                      })()}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
@@ -501,7 +606,16 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                     <TagIcon className="w-4 h-4" />
                     <span>Sigle</span>
                   </label>
-                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.sigle || 'Non spécifié'}</p>
+                  {editingGeneral ? (
+                    <input
+                      type="text"
+                      value={editedEntreprise?.sigle || ''}
+                      onChange={(e) => setEditedEntreprise({...editedEntreprise, sigle: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                    />
+                  ) : (
+                    <p className="text-base font-semibold text-slate-800 break-words">{entreprise.sigle || 'Non spécifié'}</p>
+                  )}
                 </div>
                 
                 <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
@@ -525,16 +639,35 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                     <BriefcaseIcon className="w-4 h-4" />
                     <span>Activité principale</span>
                   </label>
-                  <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr || 'Non spécifié'}</p>
+                  {editingGeneral ? (
+                    <input
+                      type="text"
+                      value={editedEntreprise?.domaineActiviteLabel || editedEntreprise?.domaineActiviteNr || ''}
+                      onChange={(e) => setEditedEntreprise({...editedEntreprise, domaineActiviteLabel: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                    />
+                  ) : (
+                    <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteLabel || entreprise.domaineActiviteNr || 'Non spécifié'}</p>
+                  )}
                 </div>
                 
-                {(entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr) && (
+                {(editingGeneral || entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr) && (
                   <div className="group p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
                     <label className="flex items-center space-x-2 text-sm font-bold text-[#2d85c9] mb-2">
                       <BriefcaseIcon className="w-4 h-4" />
                       <span>Activité secondaire</span>
                     </label>
-                    <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr}</p>
+                    {editingGeneral ? (
+                      <input
+                        type="text"
+                        value={editedEntreprise?.domaineActiviteSecondaireLabel || editedEntreprise?.domaineActiviteSecondaireNr || ''}
+                        onChange={(e) => setEditedEntreprise({...editedEntreprise, domaineActiviteSecondaireLabel: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                        placeholder="Optionnel"
+                      />
+                    ) : (
+                      <p className="text-base font-semibold text-slate-800 break-words">{entreprise.domaineActiviteSecondaireLabel || entreprise.domaineActiviteSecondaireNr}</p>
+                    )}
                   </div>
                 )}
                 
@@ -624,17 +757,147 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
 
             {/* Membres modernisés */}
             <div className="bg-white rounded-2xl shadow-lg border p-4">
-              <div className="flex items-center mb-4">
-                <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
-                  <UserGroupIcon className="w-6 h-6 text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="p-2 bg-[#2d85c9] rounded-xl shadow-lg mr-3">
+                    <UserGroupIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#2d85c9]">
+                    Membres ({entreprise.membres.length})
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-[#2d85c9]">
-                  Membres ({entreprise.membres.length})
-                </h2>
+                {!editingMembres ? (
+                  <button
+                    onClick={() => {
+                      setEditedMembres([...entreprise.membres]);
+                      setEditingMembres(true);
+                    }}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg shadow transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Modifier</span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingMembres(false)}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg shadow transition-colors"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${entrepriseId}/membres`, {
+                            method: 'PUT',
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('investmali_agent_token')}`,
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ membres: editedMembres })
+                          });
+                          
+                          const data = await response.json();
+                          
+                          if (response.ok && data.success) {
+                            // Notification professionnelle de succès
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-lg z-50 animate-slide-in';
+                            notification.innerHTML = `
+                              <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                  <svg class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <div class="ml-3">
+                                  <h3 class="text-sm font-bold text-green-800">Mise à jour réussie</h3>
+                                  <p class="mt-1 text-sm text-green-700">
+                                    ${data.membresUpdated} membre(s) et ${data.conjointsUpdated} conjoint(s) mis à jour
+                                  </p>
+                                </div>
+                                <button onclick="this.parentElement.parentElement.remove()" class="ml-auto flex-shrink-0 text-green-500 hover:text-green-700">
+                                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            `;
+                            document.body.appendChild(notification);
+                            setTimeout(() => notification.remove(), 5000);
+                            
+                            setEditingMembres(false);
+                            loadData();
+                          } else {
+                            // Notification professionnelle d'erreur
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-lg z-50 animate-slide-in';
+                            notification.innerHTML = `
+                              <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                  <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <div class="ml-3">
+                                  <h3 class="text-sm font-bold text-red-800">Échec de la mise à jour</h3>
+                                  <p class="mt-1 text-sm text-red-700">
+                                    ${data.message || 'Une erreur est survenue'}
+                                  </p>
+                                </div>
+                                <button onclick="this.parentElement.parentElement.remove()" class="ml-auto flex-shrink-0 text-red-500 hover:text-red-700">
+                                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            `;
+                            document.body.appendChild(notification);
+                            setTimeout(() => notification.remove(), 5000);
+                          }
+                        } catch (error) {
+                          console.error('Erreur:', error);
+                          // Notification professionnelle d'erreur technique
+                          const notification = document.createElement('div');
+                          notification.className = 'fixed top-4 right-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-lg z-50 animate-slide-in';
+                          notification.innerHTML = `
+                            <div class="flex items-start">
+                              <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                              <div class="ml-3">
+                                <h3 class="text-sm font-bold text-red-800">Erreur de connexion</h3>
+                                <p class="mt-1 text-sm text-red-700">
+                                  Impossible de communiquer avec le serveur
+                                </p>
+                              </div>
+                              <button onclick="this.parentElement.parentElement.remove()" class="ml-auto flex-shrink-0 text-red-500 hover:text-red-700">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          `;
+                          document.body.appendChild(notification);
+                          setTimeout(() => notification.remove(), 5000);
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition-colors"
+                    >
+                      Sauvegarder
+                    </button>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-3">
-                {entreprise.membres.map((membre, index) => (
+                {(editingMembres ? editedMembres : entreprise.membres).map((membre, index) => (
                   <div key={index} className="bg-white rounded-xl border border-slate-200 p-4 shadow-md hover:shadow-lg transition-all duration-200">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3">
                       <div className="flex items-center space-x-3 mb-3 lg:mb-0">
@@ -645,20 +908,92 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                             <UserCircleIcon className="w-8 h-8 text-white" />
                           )}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           {isPersonneMorale(membre) ? (
                             <div>
-                              <h3 className="text-lg font-bold text-slate-800">
-                                {membre.denominationEntreprise}
-                              </h3>
-                              <p className="text-sm text-slate-600 font-medium">
-                                Représentant légal: {membre.prenom} {membre.nom}
-                              </p>
+                              {editingMembres ? (
+                                <input
+                                  type="text"
+                                  value={membre.denominationEntreprise || ''}
+                                  onChange={(e) => {
+                                    const newMembres = [...editedMembres];
+                                    newMembres[index] = {...newMembres[index], denominationEntreprise: e.target.value};
+                                    setEditedMembres(newMembres);
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9] mb-2"
+                                  placeholder="Dénomination entreprise"
+                                />
+                              ) : (
+                                <h3 className="text-lg font-bold text-slate-800">
+                                  {membre.denominationEntreprise}
+                                </h3>
+                              )}
+                              <div className="flex gap-2">
+                                {editingMembres ? (
+                                  <>
+                                    <input
+                                      type="text"
+                                      value={membre.prenom || ''}
+                                      onChange={(e) => {
+                                        const newMembres = [...editedMembres];
+                                        newMembres[index] = {...newMembres[index], prenom: e.target.value};
+                                        setEditedMembres(newMembres);
+                                      }}
+                                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                                      placeholder="Prénom représentant"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={membre.nom || ''}
+                                      onChange={(e) => {
+                                        const newMembres = [...editedMembres];
+                                        newMembres[index] = {...newMembres[index], nom: e.target.value};
+                                        setEditedMembres(newMembres);
+                                      }}
+                                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                                      placeholder="Nom représentant"
+                                    />
+                                  </>
+                                ) : (
+                                  <p className="text-sm text-slate-600 font-medium">
+                                    Représentant légal: {membre.prenom} {membre.nom}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           ) : (
-                            <h3 className="text-lg font-bold text-slate-800">
-                              {membre.prenom} {membre.nom}
-                            </h3>
+                            <div className="flex gap-2">
+                              {editingMembres ? (
+                                <>
+                                  <input
+                                    type="text"
+                                    value={membre.prenom || ''}
+                                    onChange={(e) => {
+                                      const newMembres = [...editedMembres];
+                                      newMembres[index] = {...newMembres[index], prenom: e.target.value};
+                                      setEditedMembres(newMembres);
+                                    }}
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                                    placeholder="Prénom"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={membre.nom || ''}
+                                    onChange={(e) => {
+                                      const newMembres = [...editedMembres];
+                                      newMembres[index] = {...newMembres[index], nom: e.target.value};
+                                      setEditedMembres(newMembres);
+                                    }}
+                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2d85c9]"
+                                    placeholder="Nom"
+                                  />
+                                </>
+                              ) : (
+                                <h3 className="text-lg font-bold text-slate-800">
+                                  {membre.prenom} {membre.nom}
+                                </h3>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -717,7 +1052,21 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                               <EnvelopeIcon className="w-3 h-3" />
                               <span>Email</span>
                             </label>
-                            <p className="text-sm font-semibold text-slate-800 break-words">{membre.email || 'Non renseigné'}</p>
+                            {editingMembres ? (
+                              <input
+                                type="email"
+                                value={membre.email || ''}
+                                onChange={(e) => {
+                                  const newMembres = [...editedMembres];
+                                  newMembres[index] = {...newMembres[index], email: e.target.value};
+                                  setEditedMembres(newMembres);
+                                }}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                placeholder="Email"
+                              />
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800 break-words">{membre.email || 'Non renseigné'}</p>
+                            )}
                           </div>
                           
                           <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
@@ -725,7 +1074,21 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                               <PhoneIcon className="w-3 h-3" />
                               <span>Téléphone</span>
                             </label>
-                            <p className="text-sm font-semibold text-slate-800 break-words">{membre.telephone || 'Non renseigné'}</p>
+                            {editingMembres ? (
+                              <input
+                                type="tel"
+                                value={membre.telephone || ''}
+                                onChange={(e) => {
+                                  const newMembres = [...editedMembres];
+                                  newMembres[index] = {...newMembres[index], telephone: e.target.value};
+                                  setEditedMembres(newMembres);
+                                }}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                placeholder="Téléphone"
+                              />
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800 break-words">{membre.telephone || 'Non renseigné'}</p>
+                            )}
                           </div>
                           
                           {membre.telephone2 && (
@@ -743,7 +1106,20 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                               <CakeIcon className="w-3 h-3" />
                               <span>Naissance</span>
                             </label>
-                            <p className="text-sm font-semibold text-slate-800 break-words">{formatDate(membre.dateNaissance)}</p>
+                            {editingMembres ? (
+                              <input
+                                type="date"
+                                value={membre.dateNaissance || ''}
+                                onChange={(e) => {
+                                  const newMembres = [...editedMembres];
+                                  newMembres[index] = {...newMembres[index], dateNaissance: e.target.value};
+                                  setEditedMembres(newMembres);
+                                }}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                              />
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800 break-words">{formatDate(membre.dateNaissance)}</p>
+                            )}
                           </div>
                           
                           <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
@@ -751,14 +1127,212 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                               <HeartIcon className="w-3 h-3" />
                               <span>Situation</span>
                             </label>
-                            <p className="text-sm font-semibold text-slate-800 break-words">
-                              {membre.situationMatrimonialeStr === 'MARIE' ? 'Marié(e)' : 
-                               membre.situationMatrimonialeStr === 'CELIBATAIRE' ? 'Célibataire' : 
-                               membre.situationMatrimonialeStr === 'DIVORCE' ? 'Divorcé(e)' : 
-                               membre.situationMatrimonialeStr === 'VEUF' ? 'Veuf/Veuve' : 
-                               membre.situationMatrimonialeStr || 'Non renseigné'}
-                            </p>
+                            {editingMembres ? (
+                              <select
+                                value={membre.situationMatrimonialeStr || ''}
+                                onChange={(e) => {
+                                  const newMembres = [...editedMembres];
+                                  newMembres[index] = {...newMembres[index], situationMatrimonialeStr: e.target.value};
+                                  setEditedMembres(newMembres);
+                                }}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                              >
+                                <option value="CELIBATAIRE">Célibataire</option>
+                                <option value="MARIE">Marié(e)</option>
+                                <option value="DIVORCE">Divorcé(e)</option>
+                                <option value="VEUF">Veuf/Veuve</option>
+                              </select>
+                            ) : (
+                              <p className="text-sm font-semibold text-slate-800 break-words">
+                                {membre.situationMatrimonialeStr === 'MARIE' ? 'Marié(e)' : 
+                                 membre.situationMatrimonialeStr === 'CELIBATAIRE' ? 'Célibataire' : 
+                                 membre.situationMatrimonialeStr === 'DIVORCE' ? 'Divorcé(e)' : 
+                                 membre.situationMatrimonialeStr === 'VEUF' ? 'Veuf/Veuve' : 
+                                 membre.situationMatrimonialeStr || 'Non renseigné'}
+                              </p>
+                            )}
                           </div>
+                          
+                          {/* Informations des conjoints si marié */}
+                          {membre.situationMatrimonialeStr === 'MARIE' && membre.conjoints && membre.conjoints.length > 0 && (
+                            <>
+                              <div className="col-span-full mt-3 mb-2">
+                                <h4 className="text-sm font-bold text-[#2d85c9] border-b border-[#2d85c9] pb-1">
+                                  Informations des conjoint(s) ({membre.conjoints.length})
+                                </h4>
+                              </div>
+                              
+                              {membre.conjoints.map((conjoint: any, conjointIndex: number) => (
+                                <React.Fragment key={conjoint.id || conjointIndex}>
+                                  {conjointIndex > 0 && (
+                                    <div className="col-span-full my-2 border-t border-gray-300"></div>
+                                  )}
+                                  
+                                  {membre.conjoints.length > 1 && (
+                                    <div className="col-span-full">
+                                      <p className="text-xs font-semibold text-gray-600">Conjoint {conjointIndex + 1}</p>
+                                    </div>
+                                  )}
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <UserCircleIcon className="w-3 h-3" />
+                                      <span>Prénom</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <input
+                                        type="text"
+                                        value={conjoint.prenom || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], prenom: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                        placeholder="Prénom"
+                                      />
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">{conjoint.prenom || 'Non renseigné'}</p>
+                                    )}
+                                  </div>
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <UserCircleIcon className="w-3 h-3" />
+                                      <span>Nom</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <input
+                                        type="text"
+                                        value={conjoint.nom || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], nom: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                        placeholder="Nom"
+                                      />
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">{conjoint.nom || 'Non renseigné'}</p>
+                                    )}
+                                  </div>
+                              
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <HeartIcon className="w-3 h-3" />
+                                      <span>Date mariage</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <input
+                                        type="date"
+                                        value={conjoint.dateMariage || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], dateMariage: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                      />
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">{formatDate(conjoint.dateMariage) || 'Non renseigné'}</p>
+                                    )}
+                                  </div>
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <MapPinIcon className="w-3 h-3" />
+                                      <span>Lieu mariage</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <input
+                                        type="text"
+                                        value={conjoint.lieuMariage || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], lieuMariage: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                        placeholder="Lieu de mariage"
+                                      />
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">{conjoint.lieuMariage || 'Non renseigné'}</p>
+                                    )}
+                                  </div>
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <ScaleIcon className="w-3 h-3" />
+                                      <span>Régime matrimonial *</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <select
+                                        value={conjoint.regimeMatrimonial || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], regimeMatrimonial: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                      >
+                                        <option value="">Sélectionner...</option>
+                                        <option value="SEPARATION_DE_BIENS">Séparation de biens</option>
+                                        <option value="COMMUNAUTE_DE_BIENS">Communauté de biens</option>
+                                      </select>
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">
+                                        {conjoint.regimeMatrimonial === 'SEPARATION_DE_BIENS' ? 'Séparation de biens' :
+                                         conjoint.regimeMatrimonial === 'COMMUNAUTE_DE_BIENS' ? 'Communauté de biens' :
+                                         conjoint.regimeMatrimonial || 'Non renseigné'}
+                                      </p>
+                                    )}
+                                  </div>
+                              
+                                  <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-[#2d85c9] transition-all duration-200">
+                                    <label className="flex items-center space-x-1 text-xs font-bold text-[#2d85c9] mb-1">
+                                      <ShieldCheckIcon className="w-3 h-3" />
+                                      <span>Clause restrictive *</span>
+                                    </label>
+                                    {editingMembres ? (
+                                      <select
+                                        value={conjoint.clauseRestrictive || ''}
+                                        onChange={(e) => {
+                                          const newMembres = [...editedMembres];
+                                          const newConjoints = [...(newMembres[index].conjoints || [])];
+                                          newConjoints[conjointIndex] = {...newConjoints[conjointIndex], clauseRestrictive: e.target.value};
+                                          newMembres[index] = {...newMembres[index], conjoints: newConjoints};
+                                          setEditedMembres(newMembres);
+                                        }}
+                                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-[#2d85c9]"
+                                      >
+                                        <option value="">Sélectionner...</option>
+                                        <option value="MONOGAMIE">Monogamie</option>
+                                        <option value="POLYGAMIE">Polygamie</option>
+                                      </select>
+                                    ) : (
+                                      <p className="text-sm font-semibold text-slate-800 break-words">
+                                        {conjoint.clauseRestrictive === 'MONOGAMIE' ? 'Monogamie' :
+                                         conjoint.clauseRestrictive === 'POLYGAMIE' ? 'Polygamie' :
+                                         conjoint.clauseRestrictive || 'Non renseigné'}
+                                      </p>
+                                    )}
+                                  </div>
+                                </React.Fragment>
+                              ))}
+                            </>
+                          )}
                         </>
                       )}
                       
@@ -864,6 +1438,25 @@ const EntrepriseDetails: React.FC<EntrepriseDetailsProps> = ({
                                       <span>Télécharger</span>
                                     </div>
                                   </button>
+                                  <label className="group px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-base font-bold rounded-lg shadow hover:shadow-lg transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          handleReplaceDocument(doc.id, file, typeName);
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex items-center space-x-2">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      <span>Modifier</span>
+                                    </div>
+                                  </label>
                                 </div>
                               </div>
                             ))}

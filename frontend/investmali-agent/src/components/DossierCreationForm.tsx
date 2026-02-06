@@ -521,54 +521,92 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   const [companySelectedCommuneId, setCompanySelectedCommuneId] = useState('');
   const [companySelectedQuartierId, setCompanySelectedQuartierId] = useState('');
 
-  // État principal du formulaire
-  const [formData, setFormData] = useState<FormData>({
-    // Informations Personnelles - champs vides par défaut
-    civilite: 'MONSIEUR',
-    prenom: '',
-    nom: '',
-    dateNaissance: '',
-    lieuNaissance: '',
-    nationalite: 'MALIENNE',
-    telephonePersonnel: '',
-    telephonePersonnel2: '',
-    emailPersonnel: '',
-    adressePersonnelle: '',
-    localite: '',
-    porte: '',
-    adresseLibre: '',
-    // Questions Oui/Non
-    hasCriminalRecord: false,
-    isMarried: false,
-    allowsOthersResponsible: false,
-    requiresExerciseAuthorization: false,
-    willImportExport: false,
-    hasDifferentAddress: false,
-    // Informations Société
-    nomEntreprise: '',
-    sigleEntreprise: '',
-    typeEntreprise: 'ENTREPRISE_INDIVIDUELLE',
-    formeJuridique: 'E_I',
-    capital: '',
-    adresse: '',
-    telephone: '',
-    email: '',
-    rueEntreprise: '',
-    porteEntreprise: '',
-    // Activité
-    activitePrincipale: '',
-    activiteSecondaire: '',
-    // Participants
-    participants: [],
-    // Documents
-    documents: {
-      statuts: null,
-      registreCommerce: null,
-      justificatifDomicile: null,
-    },
-    // Localisation - champs vides par défaut
-    division: '',
-    antenne: '',
+  // État principal du formulaire avec restauration depuis localStorage
+  const [formData, setFormData] = useState<FormData>(() => {
+    try {
+      const savedData = localStorage.getItem('dossier_creation_cache');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        console.log('✅ Données restaurées depuis localStorage');
+        return {
+          ...parsed.formData,
+          // Réinitialiser les fichiers car ils ne peuvent pas être sérialisés
+          documents: {
+            statuts: null,
+            registreCommerce: null,
+            justificatifDomicile: null,
+          },
+          participants: (parsed.formData.participants || []).map((p: any) => ({
+            ...p,
+            documentFile: undefined,
+            extraitNaissanceFile: undefined,
+            casierJudiciaireFile: undefined,
+            declarationHonneurFile: undefined,
+            acteMariageFile: undefined,
+            rccmFile: undefined,
+            certificatResidenceFile: undefined,
+            pieceNationaliteFile: undefined,
+            autresDocuments: []
+          })),
+          conjoints: (parsed.formData.conjoints || []).map((c: any) => ({
+            ...c,
+            acteMariageFile: undefined
+          }))
+        };
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la restauration des données:', error);
+    }
+    
+    // Valeurs par défaut si pas de données sauvegardées
+    return {
+      // Informations Personnelles - champs vides par défaut
+      civilite: 'MONSIEUR',
+      prenom: '',
+      nom: '',
+      dateNaissance: '',
+      lieuNaissance: '',
+      nationalite: 'MALIENNE',
+      telephonePersonnel: '',
+      telephonePersonnel2: '',
+      emailPersonnel: '',
+      adressePersonnelle: '',
+      localite: '',
+      porte: '',
+      adresseLibre: '',
+      // Questions Oui/Non
+      hasCriminalRecord: false,
+      isMarried: false,
+      allowsOthersResponsible: false,
+      requiresExerciseAuthorization: false,
+      willImportExport: false,
+      hasDifferentAddress: false,
+      // Informations Société
+      nomEntreprise: '',
+      sigleEntreprise: '',
+      typeEntreprise: 'ENTREPRISE_INDIVIDUELLE',
+      formeJuridique: 'E_I',
+      capital: '',
+      adresse: '',
+      telephone: '',
+      email: '',
+      rueEntreprise: '',
+      porteEntreprise: '',
+      // Activité
+      activitePrincipale: '',
+      activiteSecondaire: '',
+      // Participants
+      participants: [],
+      // Documents
+      documents: {
+        statuts: null,
+        registreCommerce: null,
+        justificatifDomicile: null,
+      },
+      // Localisation - champs vides par défaut
+      division: '',
+      antenne: '',
+    };
   });
 
   // Refs pour stocker les valeurs actuelles sans causer de re-renders
@@ -588,6 +626,35 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   useEffect(() => {
     companySelectedQuartierIdRef.current = companySelectedQuartierId;
   }, [companySelectedQuartierId]);
+
+  // Restaurer les IDs de localisation depuis localStorage au chargement
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('dossier_creation_cache');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        
+        // Restaurer les IDs de localisation personnelle
+        if (parsed.personalSelectedRegionId) setPersonalSelectedRegionId(parsed.personalSelectedRegionId);
+        if (parsed.personalSelectedCercleId) setPersonalSelectedCercleId(parsed.personalSelectedCercleId);
+        if (parsed.personalSelectedCommuneId) setPersonalSelectedCommuneId(parsed.personalSelectedCommuneId);
+        if (parsed.personalSelectedQuartierId) setPersonalSelectedQuartierId(parsed.personalSelectedQuartierId);
+        
+        // Restaurer les IDs de localisation entreprise
+        if (parsed.companySelectedRegionId) setCompanySelectedRegionId(parsed.companySelectedRegionId);
+        if (parsed.companySelectedCercleId) setCompanySelectedCercleId(parsed.companySelectedCercleId);
+        if (parsed.companySelectedCommuneId) setCompanySelectedCommuneId(parsed.companySelectedCommuneId);
+        if (parsed.companySelectedQuartierId) setCompanySelectedQuartierId(parsed.companySelectedQuartierId);
+        
+        // Restaurer le step actuel
+        if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+        
+        console.log('✅ IDs de localisation restaurés depuis localStorage');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la restauration des IDs de localisation:', error);
+    }
+  }, []); // Exécuter une seule fois au montage du composant
 
   // Fonction pour mettre à jour les données du formulaire
   const updateFormData = useCallback((field: keyof FormData, value: any) => {
@@ -619,7 +686,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               }))
             },
             currentStep: currentStepRef.current,
+            // Sauvegarder tous les IDs de localisation personnelle
+            personalSelectedRegionId: personalSelectedRegionId,
+            personalSelectedCercleId: personalSelectedCercleId,
+            personalSelectedCommuneId: personalSelectedCommuneId,
             personalSelectedQuartierId: personalSelectedQuartierIdRef.current,
+            // Sauvegarder tous les IDs de localisation entreprise
+            companySelectedRegionId: companySelectedRegionId,
+            companySelectedCercleId: companySelectedCercleId,
+            companySelectedCommuneId: companySelectedCommuneId,
             companySelectedQuartierId: companySelectedQuartierIdRef.current,
             timestamp: new Date().toISOString()
           };
@@ -651,7 +726,55 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // Mettre à jour uniquement l'élément à l'index spécifié
       newConjoints[index] = { ...newConjoints[index], [field]: value };
       
-      return { ...prev, conjoints: newConjoints };
+      const updated = { ...prev, conjoints: newConjoints };
+      
+      // Sauvegarder automatiquement dans localStorage
+      setTimeout(() => {
+        try {
+          const cacheData = {
+            formData: {
+              ...updated,
+              documents: {
+                statuts: null,
+                registreCommerce: null,
+                justificatifDomicile: null,
+              },
+              participants: updated.participants.map(p => ({
+                ...p,
+                documentFile: undefined,
+                extraitNaissanceFile: undefined,
+                pieceNationaliteFile: undefined,
+                casierJudiciaireFile: undefined,
+                declarationHonneurFile: undefined,
+                acteMariageFile: undefined,
+                certificatResidenceFile: undefined,
+                rccmFile: undefined,
+              })),
+              conjoints: (updated.conjoints || []).map(c => ({
+                ...c,
+                acteMariageFile: undefined
+              }))
+            },
+            currentStep: currentStepRef.current,
+            // Sauvegarder tous les IDs de localisation personnelle
+            personalSelectedRegionId: personalSelectedRegionId,
+            personalSelectedCercleId: personalSelectedCercleId,
+            personalSelectedCommuneId: personalSelectedCommuneId,
+            personalSelectedQuartierId: personalSelectedQuartierIdRef.current,
+            // Sauvegarder tous les IDs de localisation entreprise
+            companySelectedRegionId: companySelectedRegionId,
+            companySelectedCercleId: companySelectedCercleId,
+            companySelectedCommuneId: companySelectedCommuneId,
+            companySelectedQuartierId: companySelectedQuartierIdRef.current,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('dossier_creation_cache', JSON.stringify(cacheData));
+        } catch (error) {
+          console.error('Erreur sauvegarde cache:', error);
+        }
+      }, 0);
+      
+      return updated;
     });
   }, []);
 
@@ -690,7 +813,20 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   };
 
 
+  // Fonction pour effacer les données sauvegardées
+  const clearSavedData = () => {
+    try {
+      localStorage.removeItem('dossier_creation_cache');
+      console.log('🗑️ Cache localStorage effacé');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'effacement du cache:', error);
+    }
+  };
+
   const createNewDossier = () => {
+    // Effacer le cache localStorage
+    clearSavedData();
+    
     // Reset form data and states
     setFormData({
       civilite: 'MONSIEUR',
@@ -1621,10 +1757,27 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
     
     // Validation de la localisation personnelle (obligatoire)
-    if (!personalSelectedRegionId) errors.push('La région est obligatoire');
-    if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
-    if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
-    if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+    // Lire depuis localStorage pour éviter les problèmes de state
+    try {
+      const savedData = localStorage.getItem('dossier_creation_cache');
+      const parsed = savedData ? JSON.parse(savedData) : null;
+      
+      const regionId = personalSelectedRegionId || parsed?.personalSelectedRegionId;
+      const cercleId = personalSelectedCercleId || parsed?.personalSelectedCercleId;
+      const communeId = personalSelectedCommuneId || parsed?.personalSelectedCommuneId;
+      const quartierId = personalSelectedQuartierId || parsed?.personalSelectedQuartierId;
+      
+      if (!regionId) errors.push('La région est obligatoire');
+      if (!cercleId) errors.push('Le cercle est obligatoire');
+      if (!communeId) errors.push('La commune est obligatoire');
+      if (!quartierId) errors.push('Le quartier est obligatoire');
+    } catch (error) {
+      // Fallback sur les variables d'état si erreur localStorage
+      if (!personalSelectedRegionId) errors.push('La région est obligatoire');
+      if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
+      if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
+      if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+    }
     
     // Validation des conjoints si marié(e)
     if (formData.isMarried === true) {
@@ -1672,18 +1825,46 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
     
     // Validation de la localisation de l'entreprise (obligatoire)
-    // Si l'adresse est différente, utiliser companySelected*, sinon utiliser personalSelected*
-    if (formData.hasDifferentAddress) {
-      if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
-      if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
-      if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
-      if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
-    } else {
-      // Si l'adresse n'est pas différente, vérifier que la localisation personnelle est complète
-      if (!personalSelectedRegionId) errors.push('La région est obligatoire');
-      if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
-      if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
-      if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+    // Lire depuis localStorage pour éviter les problèmes de state
+    try {
+      const savedData = localStorage.getItem('dossier_creation_cache');
+      const parsed = savedData ? JSON.parse(savedData) : null;
+      
+      if (formData.hasDifferentAddress) {
+        const companyRegionId = companySelectedRegionId || parsed?.companySelectedRegionId;
+        const companyCercleId = companySelectedCercleId || parsed?.companySelectedCercleId;
+        const companyCommuneId = companySelectedCommuneId || parsed?.companySelectedCommuneId;
+        const companyQuartierId = companySelectedQuartierId || parsed?.companySelectedQuartierId;
+        
+        if (!companyRegionId) errors.push('La région de l\'entreprise est obligatoire');
+        if (!companyCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
+        if (!companyCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
+        if (!companyQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
+      } else {
+        // Si l'adresse n'est pas différente, vérifier que la localisation personnelle est complète
+        const regionId = personalSelectedRegionId || parsed?.personalSelectedRegionId;
+        const cercleId = personalSelectedCercleId || parsed?.personalSelectedCercleId;
+        const communeId = personalSelectedCommuneId || parsed?.personalSelectedCommuneId;
+        const quartierId = personalSelectedQuartierId || parsed?.personalSelectedQuartierId;
+        
+        if (!regionId) errors.push('La région est obligatoire');
+        if (!cercleId) errors.push('Le cercle est obligatoire');
+        if (!communeId) errors.push('La commune est obligatoire');
+        if (!quartierId) errors.push('Le quartier est obligatoire');
+      }
+    } catch (error) {
+      // Fallback sur les variables d'état si erreur localStorage
+      if (formData.hasDifferentAddress) {
+        if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
+        if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
+        if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
+        if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
+      } else {
+        if (!personalSelectedRegionId) errors.push('La région est obligatoire');
+        if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
+        if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
+        if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
+      }
     }
     
     // Validation du domaine d'activité non réglementé (obligatoire)
@@ -3508,10 +3689,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             }
           }
           
-          // Upload actes de mariage pour chaque conjoint si marié
-          if (participant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0) {
+          // Upload actes de mariage pour chaque conjoint si le promoteur est marié
+          if (formData.isMarried && formData.conjoints && formData.conjoints.length > 0) {
+            console.log(`🔄 Upload ${formData.conjoints.length} acte(s) de mariage pour le promoteur ${participant.prenom} ${participant.nom}`);
             for (const conjoint of formData.conjoints) {
-              if (conjoint.acteMariageFile && conjoint.id) {
+              if (conjoint.acteMariageFile) {
                 try {
                   await uploadDocumentFor(
                     participant.id, 
@@ -3524,6 +3706,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 } catch (e) {
                   console.error(`❌ Upload acte de mariage échoué pour ${conjoint.prenom} ${conjoint.nom}:`, e);
                 }
+              } else {
+                console.warn(`⚠️ Acte de mariage manquant pour le conjoint ${conjoint.prenom} ${conjoint.nom}`);
               }
             }
           }
@@ -4691,11 +4875,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <input
                       type="text"
                       defaultValue={conjoint.prenom}
-                      onBlur={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], prenom: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onBlur={(e) => updateConjoint(index, 'prenom', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     />
@@ -4707,11 +4887,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <input
                       type="text"
                       defaultValue={conjoint.nom}
-                      onBlur={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], nom: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onBlur={(e) => updateConjoint(index, 'nom', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     />
@@ -4722,13 +4898,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date de mariage *</label>
                     <input
                       type="date"
-                      value={conjoint.dateMariage}
+                      defaultValue={conjoint.dateMariage}
+                      min="1900-01-01"
                       max={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], dateMariage: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onBlur={(e) => updateConjoint(index, 'dateMariage', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     />
@@ -4740,11 +4913,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <input
                       type="text"
                       defaultValue={conjoint.lieuMariage}
-                      onBlur={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], lieuMariage: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onBlur={(e) => updateConjoint(index, 'lieuMariage', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     />
@@ -4755,11 +4924,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <label className="block text-sm font-medium text-gray-700 mb-1">Régime matrimonial *</label>
                     <select
                       value={conjoint.regimeMatrimonial}
-                      onChange={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], regimeMatrimonial: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onChange={(e) => updateConjoint(index, 'regimeMatrimonial', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     >
@@ -4774,11 +4939,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <label className="block text-sm font-medium text-gray-700 mb-1">Clause restrictive *</label>
                     <select
                       value={conjoint.clauseRestrictive}
-                      onChange={(e) => {
-                        const newConjoints = [...(formData.conjoints || [])];
-                        newConjoints[index] = { ...newConjoints[index], clauseRestrictive: e.target.value };
-                        setFormData(prev => ({ ...prev, conjoints: newConjoints }));
-                      }}
+                      onChange={(e) => updateConjoint(index, 'clauseRestrictive', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                       required
                     >
@@ -6581,9 +6742,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const newConjoints = [...(formData.conjoints || [])];
-                                  newConjoints[index] = { ...newConjoints[index], acteMariageFile: file };
-                                  setFormData(prev => ({ ...prev, conjoints: newConjoints }));
+                                  updateConjoint(index, 'acteMariageFile', file);
                                 }
                               }}
                             />

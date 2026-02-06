@@ -21,4 +21,10 @@ public interface ConjointService {
     String uploadActeMariage(String conjointId, MultipartFile file);
     
     void deleteActeMariage(String conjointId);
+    
+    /**
+     * Trouve un conjoint existant ou en crée un nouveau.
+     * Empêche les doublons et valide la cohérence des informations.
+     */
+    ConjointResponse findOrCreate(String personId, ConjointRequest request);
 }

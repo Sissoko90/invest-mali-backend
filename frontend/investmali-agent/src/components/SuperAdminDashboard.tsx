@@ -946,6 +946,24 @@ const SuperAdminDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Deuxième ligne de statistiques */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Entreprises rejetées */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-lg font-medium text-gray-500 uppercase">Rejetées</p>
+              <div className="p-2 bg-red-600 rounded-lg">
+                <XCircle className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <p className="text-5xl font-bold text-gray-900 text-center">{formatNumber(stats.rejectedApplications)}</p>
+            <div className="flex items-center gap-1 mt-2 text-sm text-red-600">
+              <AlertCircle className="w-3 h-3" />
+              <span className="font-medium">Demandes refusées</span>
+            </div>
+          </div>
+        </div>
+
         {/* Graphiques agents et activité */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Agents par Antenne - Histogramme */}

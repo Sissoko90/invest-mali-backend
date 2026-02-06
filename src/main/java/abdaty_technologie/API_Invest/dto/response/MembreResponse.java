@@ -2,11 +2,15 @@ package abdaty_technologie.API_Invest.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole;
 import abdaty_technologie.API_Invest.Entity.Enum.PaysEmissionRccM;
 
 public class MembreResponse {
+
+    //L'ID de la relation EntrepriseMembre (pour les mises à jour)
+    public String id;
 
     //L'ID du personne membre de l'entreprsie
     public String personId;
@@ -65,4 +69,7 @@ public class MembreResponse {
 
     //La dénomination de l'entreprise pour les personnes morales
     public String denominationEntreprise;
+    
+    // Champs des conjoints (si marié - peut avoir plusieurs conjoints)
+    public List<ConjointResponse> conjoints;
 }

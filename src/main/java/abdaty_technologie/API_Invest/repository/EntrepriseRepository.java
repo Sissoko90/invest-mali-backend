@@ -77,8 +77,8 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembres(@Param("id") String id);
 
-    // Chargement avec fetch join des membres et personnes (paiements chargés séparément pour éviter MultipleBagFetchException)
-    @Query("SELECT e FROM Entreprise e " +
+    // Chargement avec fetch join des membres et personnes (conjoints chargés séparément pour éviter MultipleBagFetchException)
+    @Query("SELECT DISTINCT e FROM Entreprise e " +
            "LEFT JOIN FETCH e.membres em " +
            "LEFT JOIN FETCH em.personne " +
            "WHERE e.id = :id")

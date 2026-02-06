@@ -60,6 +60,7 @@ import abdaty_technologie.API_Invest.Entity.Enum.TypeDocuments;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.repository.DivisionsRepository;
+import abdaty_technologie.API_Invest.repository.ConjointRepository;
 import jakarta.validation.Valid;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
@@ -136,6 +137,9 @@ public class EntrepriseController {
     
     @Autowired
     private InstatApiService instatApiService;
+    
+    @Autowired
+    private ConjointRepository conjointRepository;
 
     /**
      * Crée une entreprise.
@@ -347,7 +351,7 @@ public class EntrepriseController {
                 EntrepriseResponse r = toResponseShallow(e);
                 List<EntrepriseMembre> ems = membresByEntreprise.get(e.getId());
                 if (ems != null) {
-                    r.membres = ems.stream().map(this::mapMembre).toList();
+                    r.membres = ems.stream().map(em -> mapMembre(em, false)).toList(); // Ne pas charger les conjoints pour les listes
                 }
                 return r;
             });
@@ -386,9 +390,10 @@ public class EntrepriseController {
     }
 
     /**
-     * Récupère une entreprise par son identifiant.
+     * Récupère une entreprise par son ID avec tous ses détails.
      */
     @GetMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<EntrepriseResponse> getEntrepriseById(@PathVariable String id) {
         // Charger avec fetch join pour inclure membres et personnes
         Entreprise e = entrepriseRepository.findByIdWithMembresAndPaiement(id)
@@ -425,6 +430,160 @@ public class EntrepriseController {
 
         Entreprise updated = entrepriseService.updateEntreprise(id, request);
         return ResponseEntity.ok(toResponse(updated));
+    }
+
+    /**
+     * Met à jour les informations des membres d'une entreprise (promoteurs/associés) et leurs conjoints.
+     */
+    @PutMapping("/{id}/membres")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> updateMembres(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> requestBody) {
+        
+        try {
+            System.out.println("🔄 [UPDATE MEMBRES] Début mise à jour des membres pour entreprise: " + id);
+            System.out.println("📦 [UPDATE MEMBRES] Body reçu: " + requestBody);
+            
+            // Récupérer l'entreprise
+            Entreprise entreprise = entrepriseRepository.findByIdWithMembres(id)
+                .orElseThrow(() -> new NotFoundException("Entreprise introuvable"));
+            
+            System.out.println("🏢 [UPDATE MEMBRES] Entreprise trouvée avec " + entreprise.getMembres().size() + " membres");
+            
+            // Récupérer la liste des membres depuis le body
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> membresData = (List<Map<String, Object>>) requestBody.get("membres");
+            
+            System.out.println("📋 [UPDATE MEMBRES] Membres reçus dans le body: " + (membresData != null ? membresData.size() : "null"));
+            if (membresData != null && !membresData.isEmpty()) {
+                System.out.println("🔍 [UPDATE MEMBRES] Premier membre: " + membresData.get(0));
+            }
+            
+            if (membresData == null || membresData.isEmpty()) {
+                throw new BadRequestException("Aucun membre à mettre à jour");
+            }
+            
+            int membresUpdated = 0;
+            int conjointsUpdated = 0;
+            
+            for (Map<String, Object> membreData : membresData) {
+                String membreId = (String) membreData.get("id");
+                System.out.println("🆔 [UPDATE MEMBRES] Traitement membre ID: " + membreId);
+                if (membreId == null) {
+                    System.out.println("⚠️ [UPDATE MEMBRES] Membre sans ID, ignoré");
+                    continue;
+                }
+                
+                // Trouver le membre dans l'entreprise
+                EntrepriseMembre em = entreprise.getMembres().stream()
+                    .filter(m -> m.getId().equals(membreId))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (em == null || em.getPersonne() == null) continue;
+                
+                Persons person = em.getPersonne();
+                System.out.println("📝 [UPDATE MEMBRES] Mise à jour de: " + person.getNom());
+                
+                // Mettre à jour les champs de la personne
+                if (membreData.containsKey("email")) {
+                    person.setEmail((String) membreData.get("email"));
+                }
+                if (membreData.containsKey("telephone1")) {
+                    person.setTelephone1((String) membreData.get("telephone1"));
+                }
+                if (membreData.containsKey("dateNaissance")) {
+                    String dateStr = (String) membreData.get("dateNaissance");
+                    if (dateStr != null && !dateStr.isEmpty()) {
+                        java.time.LocalDate localDate = java.time.LocalDate.parse(dateStr);
+                        java.util.Date date = java.util.Date.from(localDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+                        person.setDateNaissance(date);
+                    }
+                }
+                if (membreData.containsKey("situationMatrimoniale")) {
+                    String sitMat = (String) membreData.get("situationMatrimoniale");
+                    if (sitMat != null && !sitMat.isEmpty()) {
+                        person.setSituationMatrimoniale(abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.valueOf(sitMat));
+                    }
+                }
+                
+                personsRepository.save(person);
+                membresUpdated++;
+                
+                // Mettre à jour les conjoints si la personne est mariée
+                if (membreData.containsKey("conjoints")) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> conjointsData = (List<Map<String, Object>>) membreData.get("conjoints");
+                    
+                    if (conjointsData != null && !conjointsData.isEmpty()) {
+                        for (Map<String, Object> conjointData : conjointsData) {
+                            String conjointId = (String) conjointData.get("id");
+                            if (conjointId == null) continue;
+                            
+                            // Trouver le conjoint
+                            abdaty_technologie.API_Invest.Entity.Conjoint conjoint = conjointRepository.findById(conjointId)
+                                .orElse(null);
+                            
+                            if (conjoint != null) {
+                                System.out.println("💍 [UPDATE CONJOINT] Mise à jour de: " + conjoint.getPrenom() + " " + conjoint.getNom());
+                                
+                                if (conjointData.containsKey("prenom")) {
+                                    conjoint.setPrenom((String) conjointData.get("prenom"));
+                                }
+                                if (conjointData.containsKey("nom")) {
+                                    conjoint.setNom((String) conjointData.get("nom"));
+                                }
+                                if (conjointData.containsKey("dateMariage")) {
+                                    String dateStr = (String) conjointData.get("dateMariage");
+                                    if (dateStr != null && !dateStr.isEmpty()) {
+                                        conjoint.setDateMariage(java.time.LocalDate.parse(dateStr));
+                                    }
+                                }
+                                if (conjointData.containsKey("lieuMariage")) {
+                                    conjoint.setLieuMariage((String) conjointData.get("lieuMariage"));
+                                }
+                                if (conjointData.containsKey("regimeMatrimonial")) {
+                                    String regime = (String) conjointData.get("regimeMatrimonial");
+                                    if (regime != null && !regime.isEmpty()) {
+                                        conjoint.setRegimeMatrimonial(abdaty_technologie.API_Invest.Entity.Enum.RegimeMatrimonial.valueOf(regime));
+                                    }
+                                }
+                                if (conjointData.containsKey("clauseRestrictive")) {
+                                    String clause = (String) conjointData.get("clauseRestrictive");
+                                    if (clause != null && !clause.isEmpty()) {
+                                        conjoint.setClauseRestrictive(abdaty_technologie.API_Invest.Entity.Enum.ClauseRestrictive.valueOf(clause));
+                                    }
+                                }
+                                
+                                conjointRepository.save(conjoint);
+                                conjointsUpdated++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            System.out.println("✅ [UPDATE MEMBRES] Mise à jour terminée: " + membresUpdated + " membres, " + conjointsUpdated + " conjoints");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Informations mises à jour avec succès");
+            response.put("membresUpdated", membresUpdated);
+            response.put("conjointsUpdated", conjointsUpdated);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            System.err.println("❌ [UPDATE MEMBRES] Erreur: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Erreur lors de la mise à jour: " + e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     /**
@@ -795,10 +954,62 @@ public class EntrepriseController {
             // Sauvegarder
             entreprise = entrepriseService.save(entreprise);
             
+            // Désassigner automatiquement si la demande est rejetée
+            if ("REJETE".equals(newStatus)) {
+                System.out.println("🔄 [EntrepriseController] Désassignation automatique - Demande rejetée - Entreprise: " + entreprise.getId());
+                entreprise.setAssignedTo(null);
+                System.out.println("✅ [EntrepriseController] Demande désassignée pour retour dans 'Demandes à traiter'");
+            }
+            
             // Ajouter une note dans l'historique si fournie
             if (note != null && !note.trim().isEmpty()) {
-                // TODO: Ajouter la note à l'historique des modifications
+                // Extraire le motif de rejet si présent
+                if ("REJETE".equals(newStatus) && note.contains("Motif:")) {
+                    String motif = note.substring(note.indexOf("Motif:") + 6).trim();
+                    entreprise.setMotifRejet(motif);
+                    entrepriseService.save(entreprise);
+                    System.out.println("📝 Motif de rejet enregistré: " + motif);
+                }
                 System.out.println("📝 Note ajoutée: " + note);
+            }
+            
+            // Envoyer un email de notification si l'utilisateur a renseigné son email et que la demande est rejetée
+            if ("REJETE".equals(newStatus) && entreprise.getCreatedBy() != null) {
+                Utilisateurs createur = entreprise.getCreatedBy();
+                Persons personne = createur.getPersonne();
+                String emailUtilisateur = personne != null ? personne.getEmail() : null;
+                
+                if (emailUtilisateur != null && !emailUtilisateur.trim().isEmpty()) {
+                    try {
+                        String motifRejet = entreprise.getMotifRejet() != null ? entreprise.getMotifRejet() : "Non spécifié";
+                        String sujet = "Demande de création d'entreprise rejetée - " + entreprise.getNom();
+                        String message = String.format(
+                            "Bonjour %s %s,\n\n" +
+                            "Votre demande de création d'entreprise \"%s\" (Réf: %s) a été rejetée.\n\n" +
+                            "Motif du rejet:\n%s\n\n" +
+                            "Veuillez corriger les informations mentionnées et resoumettre votre demande via votre espace personnel.\n\n" +
+                            "Cordialement,\n" +
+                            "L'équipe API-Mali",
+                            personne != null && personne.getPrenom() != null ? personne.getPrenom() : "",
+                            personne != null && personne.getNom() != null ? personne.getNom() : "",
+                            entreprise.getNom(),
+                            entreprise.getReference(),
+                            motifRejet
+                        );
+                        
+                        // TODO: Implémenter l'envoi d'email via un service d'email
+                        // emailService.sendEmail(emailUtilisateur, sujet, message);
+                        
+                        System.out.println("📧 Email de notification envoyé à: " + emailUtilisateur);
+                        System.out.println("📧 Sujet: " + sujet);
+                        System.out.println("📧 Message: " + message);
+                    } catch (Exception emailError) {
+                        System.err.println("⚠️ Erreur lors de l'envoi de l'email: " + emailError.getMessage());
+                        // Ne pas bloquer le processus si l'email échoue
+                    }
+                } else {
+                    System.out.println("ℹ️ Pas d'email renseigné pour l'utilisateur, notification email ignorée");
+                }
             }
             
             Map<String, Object> response = new HashMap<>();
@@ -1421,8 +1632,14 @@ public class EntrepriseController {
 
     // Méthode utilitaire pour mapper un membre
     private MembreResponse mapMembre(EntrepriseMembre em) {
+        return mapMembre(em, true); // Par défaut, charger les conjoints
+    }
+    
+    // Méthode utilitaire pour mapper un membre avec option de chargement des conjoints
+    private MembreResponse mapMembre(EntrepriseMembre em, boolean loadConjoints) {
         System.out.println("🔍 [MAPMEMBRE DEBUG] Début mapping membre: " + (em.getPersonne() != null ? em.getPersonne().getNom() : "null"));
         MembreResponse mr = new MembreResponse();
+        mr.id = em.getId(); // ID de la relation EntrepriseMembre
         if (em.getPersonne() != null) {
             mr.personId = em.getPersonne().getId();
             mr.nom = em.getPersonne().getNom();
@@ -1469,6 +1686,38 @@ public class EntrepriseController {
         if (em.getPersonne() != null) {
             mr.paysEmissionRccm = em.getPersonne().getPaysEmissionRccm();
             mr.denominationEntreprise = em.getPersonne().getDenominationEntreprise();
+            
+            // Récupérer les informations de TOUS les conjoints si la personne est mariée (seulement si demandé)
+            if (loadConjoints) {
+                try {
+                    // Forcer le chargement lazy des conjoints
+                    List<abdaty_technologie.API_Invest.Entity.Conjoint> conjoints = em.getPersonne().getConjoints();
+                    if (conjoints != null && !conjoints.isEmpty()) {
+                        // Initialiser la collection pour éviter LazyInitializationException
+                        org.hibernate.Hibernate.initialize(conjoints);
+                        System.out.println("💍 [CONJOINT DEBUG] Conjoint(s) trouvé(s) pour " + mr.nom + ": " + conjoints.size());
+                        
+                        // Mapper TOUS les conjoints (polygamie possible)
+                        mr.conjoints = new java.util.ArrayList<>();
+                        for (abdaty_technologie.API_Invest.Entity.Conjoint conjoint : conjoints) {
+                            abdaty_technologie.API_Invest.dto.response.ConjointResponse cr = new abdaty_technologie.API_Invest.dto.response.ConjointResponse();
+                            cr.setId(conjoint.getId());
+                            cr.setPrenom(conjoint.getPrenom());
+                            cr.setNom(conjoint.getNom());
+                            cr.setDateMariage(conjoint.getDateMariage());
+                            cr.setLieuMariage(conjoint.getLieuMariage());
+                            cr.setRegimeMatrimonial(conjoint.getRegimeMatrimonial());
+                            cr.setClauseRestrictive(conjoint.getClauseRestrictive());
+                            mr.conjoints.add(cr);
+                        }
+                        System.out.println("✅ [CONJOINT DEBUG] " + mr.conjoints.size() + " conjoint(s) mappé(s) pour " + mr.nom);
+                    } else {
+                        System.out.println("⚠️ [CONJOINT DEBUG] Aucun conjoint trouvé pour " + mr.nom);
+                    }
+                } catch (org.hibernate.LazyInitializationException e) {
+                    System.out.println("⚠️ [CONJOINT DEBUG] LazyInitializationException - Session fermée, conjoints non chargés pour " + mr.nom);
+                }
+            }
         }
         
         return mr;

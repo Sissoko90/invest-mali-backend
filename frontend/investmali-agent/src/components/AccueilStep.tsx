@@ -75,6 +75,11 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
 
+  // États pour le modal de rejet
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectDemandeId, setRejectDemandeId] = useState<string | null>(null);
+  const [rejectMotif, setRejectMotif] = useState('');
+
   // Hook pour les notifications
   const { unreadCount, resetUnreadCount } = useAgentNotifications();
 
@@ -341,6 +346,12 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           const statutCreation = entreprise.statutCreation;
           const isNotValidated = statutCreation !== 'VALIDEE' && statutCreation !== 'VALIDE';
           
+          // Condition spéciale: Les demandes rejetées doivent TOUJOURS apparaître dans "Demandes à traiter"
+          const isRejected = statutCreation === 'REJETE' || statutCreation === 'REFUSEE';
+          if (isRejected && isAccueilStep) {
+            return true; // Inclure les demandes rejetées même si assignées
+          }
+          
           // Condition 2: NE PAS être assignée (ULTRA STRICT)
           // Vérifier TOUTES les possibilités d'assignation
           let isAssigned = false;
@@ -571,12 +582,19 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
         }
       });
       
-      // Filtrer pour exclure les demandes validées (transférées au régisseur)
+      // Filtrer pour exclure les demandes validées (transférées au régisseur) ET les demandes rejetées
       const filteredEntreprises = assignedEntreprises.filter((entreprise: any) => {
         const statutCreation = entreprise.statutCreation;
         const etapeValidation = entreprise.etapeValidation;
         
         console.log(`🔍 [DEBUG] Enterprise ${entreprise.nom}: etape=${etapeValidation}, statut=${statutCreation}, assigned_to=${entreprise.assignedTo || entreprise.assigned_to}`);
+        
+        // Exclure les demandes rejetées (elles doivent retourner dans "Demandes à traiter")
+        const isRejected = statutCreation === 'REJETE' || statutCreation === 'REFUSEE';
+        if (isRejected) {
+          console.log(`❌ [DEBUG] Excluding ${entreprise.nom} - rejected (REJETE/REFUSEE)`);
+          return false;
+        }
         
         // Inclure les demandes à l'étape ACCUEIL (y compris celles rejetées de REVISION avec statut EN_COURS)
         if (etapeValidation === 'ACCUEIL') {
@@ -669,12 +687,84 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
     setSelectedEntrepriseId(selectedDossier.entrepriseId || selectedDossier.id);
   };
 
+  const handleRevalidate = async (demandeId: string) => {
+    try {
+      setIsLoading(true);
+      
+      const demande = assignedDemandes.find(d => d.id === demandeId) || demandes.find(d => d.id === demandeId);
+      if (!demande) {
+        console.error('Erreur: Demande non trouvée');
+        return;
+      }
+
+      const newStatus = 'VALIDE';
+      const newEtape = 'ACCUEIL';
+      const note = 'Demande revalidée par l\'agent d\'accueil après correction';
+
+      await entreprisesAPI.updateStatus(demandeId, newStatus, note, newEtape);
+      
+      console.log(`✅ Demande "${demande.nom}" revalidée avec succès!`);
+      
+      // Recharger les données
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadAssignedDemandes();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadDemandes();
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la revalidation:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectDemandeId || !rejectMotif.trim()) {
+      console.error('Erreur: Motif de rejet requis');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const demande = assignedDemandes.find(d => d.id === rejectDemandeId) || demandes.find(d => d.id === rejectDemandeId);
+      if (!demande) {
+        console.error('Erreur: Demande non trouvée');
+        return;
+      }
+
+      const newStatus = 'REJETE';
+      const newEtape = 'ACCUEIL';
+      const note = `Demande rejetée par l'agent d'accueil. Motif: ${rejectMotif}`;
+
+      await entreprisesAPI.updateStatus(rejectDemandeId, newStatus, note, newEtape);
+      
+      console.log(`✅ Demande "${demande.nom}" rejetée avec succès!`);
+      
+      // Fermer le modal et réinitialiser
+      setRejectModalOpen(false);
+      setRejectDemandeId(null);
+      setRejectMotif('');
+      
+      // Recharger les données
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadAssignedDemandes();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadDemandes();
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors du rejet:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDemandeAction = async (demandeId: string, action: 'accept' | 'reject' | 'request_info') => {
     try {
       setIsLoading(true);
       
-      // Trouver la demande dans les demandes assignées
-      const demande = assignedDemandes.find(d => d.id === demandeId);
+      // Trouver la demande dans les demandes assignées OU non assignées
+      const demande = assignedDemandes.find(d => d.id === demandeId) || demandes.find(d => d.id === demandeId);
       if (!demande) {
         console.error('Erreur: Demande non trouvée');
         return;
@@ -728,10 +818,11 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           }
           break;
         case 'reject':
-          newStatus = 'REJETE';
-          newEtape = 'ACCUEIL';
-          note = 'Demande rejetée par l\'agent d\'accueil';
-          break;
+          // Ouvrir le modal pour saisir le motif de rejet
+          setRejectDemandeId(demandeId);
+          setRejectModalOpen(true);
+          setIsLoading(false);
+          return; // Arrêter ici, la suite se fera dans handleConfirmReject
         case 'request_info':
           newStatus = 'INCOMPLET';
           newEtape = 'ACCUEIL';
@@ -747,8 +838,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
         // Validation réussie
         const destination = newEtape === 'REVISION' ? 'la révision (paiement déjà effectué)' : 'le régisseur';
         console.log(`✅ Demande "${demande.nom}" validée et transférée à ${destination} avec succès!`);
-      } else {
-        console.log(`✅ Demande "${demande.nom}" ${action === 'reject' ? 'rejetée' : 'marquée comme incomplète'} avec succès!`);
+      } else if (action === 'request_info') {
+        console.log(`✅ Demande "${demande.nom}" marquée comme incomplète avec succès!`);
       }
       
       // Recharger les données depuis la base de données avec des délais pour éviter le rate limiting
@@ -1757,14 +1848,25 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                             <DocumentTextIcon className="h-5 w-5" />
                             Voir le reçu
                           </button>
-                          <button onClick={() => handleAssignToMe(demande.id)} disabled={isLoading}
-                            className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
-                            Assigner
-                          </button>
-                          <button onClick={() => handleDemandeAction(demande.id, 'reject')} disabled={isLoading}
-                            className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
-                            Rejeter
-                          </button>
+                          {/* Cacher le bouton Assigner pour les demandes rejetées */}
+                          {demande.statut !== 'REJETE' && demande.statut !== 'REFUSEE' && (
+                            <button onClick={() => handleAssignToMe(demande.id)} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
+                              Assigner
+                            </button>
+                          )}
+                          {/* Pour les demandes rejetées, afficher Valider au lieu de Rejeter */}
+                          {(demande.statut === 'REJETE' || demande.statut === 'REFUSEE') ? (
+                            <button onClick={() => handleRevalidate(demande.id)} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50 bg-green-600 hover:bg-green-700">
+                              Valider
+                            </button>
+                          ) : (
+                            <button onClick={() => handleDemandeAction(demande.id, 'reject')} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
+                              Rejeter
+                            </button>
+                          )}
                           <button onClick={() => handleViewDetails(demande.id)}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             Détails
@@ -1808,7 +1910,8 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {assignedDemandes.map((demande) => (
+                  {/* Filtrer automatiquement les demandes rejetées */}
+                  {assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').map((demande) => (
                     <div key={demande.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1856,10 +1959,23 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                               </span>
                             )}
                           </button>
-                          <button onClick={() => handleDemandeAction(demande.id, 'accept')} disabled={isLoading}
-                            className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
-                            {paiementStatusByEntreprise[demande.id] ? 'Valider → Révision' : 'Valider → Régisseur'}
-                          </button>
+                          {demande.statut !== 'REJETE' && demande.statut !== 'REFUSEE' && (
+                            <button onClick={() => handleDemandeAction(demande.id, 'accept')} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
+                              {paiementStatusByEntreprise[demande.id] ? 'Valider → Révision' : 'Valider → Régisseur'}
+                            </button>
+                          )}
+                          {(demande.statut === 'REJETE' || demande.statut === 'REFUSEE') ? (
+                            <button onClick={() => handleRevalidate(demande.id)} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50 bg-green-600 hover:bg-green-700">
+                              Revalider
+                            </button>
+                          ) : (
+                            <button onClick={() => handleDemandeAction(demande.id, 'reject')} disabled={isLoading}
+                              className="px-6 py-3 text-base font-medium rounded-lg text-white disabled:opacity-50" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
+                              Rejeter
+                            </button>
+                          )}
                           <button onClick={() => handleViewDetails(demande.id)}
                             className="px-6 py-3 text-base font-medium rounded-lg text-white" style={{backgroundColor: '#2d85c9'}} onMouseEnter={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2563a3'} onMouseLeave={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#2d85c9'}>
                             Détails
@@ -1920,6 +2036,62 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
           paymentData={receiptData}
           onClose={() => setReceiptModalOpen(false)}
         />
+      )}
+
+      {/* Modal de rejet avec motif */}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <ExclamationTriangleIcon className="h-8 w-8 text-red-600 mr-3" />
+                <h3 className="text-2xl font-bold text-gray-900">Rejeter la demande</h3>
+              </div>
+              
+              <p className="text-gray-600 mb-4">
+                Veuillez indiquer le motif du rejet. Cette information sera visible par l'utilisateur pour qu'il puisse corriger sa demande.
+              </p>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motif du rejet *
+                </label>
+                <textarea
+                  value={rejectMotif}
+                  onChange={(e) => setRejectMotif(e.target.value)}
+                  placeholder="Ex: Documents manquants (casier judiciaire), informations incomplètes sur les associés, forme juridique non conforme..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  rows={4}
+                  required
+                />
+                {rejectMotif.trim() === '' && (
+                  <p className="mt-1 text-sm text-red-600">Le motif de rejet est obligatoire</p>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setRejectModalOpen(false);
+                    setRejectDemandeId(null);
+                    setRejectMotif('');
+                  }}
+                  className="px-6 py-3 text-base font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  disabled={isLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmReject}
+                  disabled={isLoading || rejectMotif.trim() === ''}
+                  className="px-6 py-3 text-base font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isLoading ? 'Traitement...' : 'Confirmer le rejet'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </>

@@ -7046,6 +7046,8 @@ const PersonalInfoStep: React.FC<{data: BusinessCreationData, updateData: (field
 
                               value={conjoint.dateMariage}
 
+                              min="1900-01-01"
+
                               max={new Date().toISOString().split('T')[0]}
 
                               onChange={(e) => {
@@ -13544,13 +13546,31 @@ const SummaryAndSubmissionStep: React.FC<{
 
         
 
-        if (gerant?.casierJudiciaireFile && data.personalInfo?.hasCriminalRecord) {
+        if (gerant?.casierJudiciaireFile && gerant?.hasCriminalRecord) {
+
+          console.log('📄 [UPLOAD] Upload casier judiciaire pour gérant:', gerantId);
 
           try { 
 
             await uploadDocumentFor(gerantId, 'CASIER_JUDICIAIRE', gerant.casierJudiciaireFile, `CJ-${entrepriseReference}`); 
 
-          } catch (e) { }
+            console.log('✅ [UPLOAD] Casier judiciaire uploadé avec succès');
+
+          } catch (e) { 
+
+            console.error('❌ [UPLOAD] Erreur upload casier judiciaire:', e);
+
+          }
+
+        } else {
+
+          console.log('⚠️ [UPLOAD] Casier judiciaire non uploadé:', {
+
+            hasFile: !!gerant?.casierJudiciaireFile,
+
+            hasCriminalRecord: gerant?.hasCriminalRecord
+
+          });
 
         }
 
@@ -13832,13 +13852,31 @@ const SummaryAndSubmissionStep: React.FC<{
 
         }
 
-        if (!data.personalInfo?.hasCriminalRecord && gerant?.declarationHonneurFile) {
+        if (!gerant?.hasCriminalRecord && gerant?.declarationHonneurFile) {
+
+          console.log('📄 [UPLOAD] Upload déclaration sur l\'honneur pour gérant:', gerantId);
 
           try { 
 
             await uploadDocumentFor(gerantId, 'DECLARATION_HONNEUR', gerant.declarationHonneurFile, `DH-${entrepriseReference}`);
 
-          } catch (e) { }
+            console.log('✅ [UPLOAD] Déclaration sur l\'honneur uploadée avec succès');
+
+          } catch (e) { 
+
+            console.error('❌ [UPLOAD] Erreur upload déclaration sur l\'honneur:', e);
+
+          }
+
+        } else {
+
+          console.log('⚠️ [UPLOAD] Déclaration sur l\'honneur non uploadée:', {
+
+            hasFile: !!gerant?.declarationHonneurFile,
+
+            hasCriminalRecord: gerant?.hasCriminalRecord
+
+          });
 
         }
 

@@ -25,7 +25,8 @@ const AgentDashboard: React.FC = () => {
     totalAgents: 0,
     totalApplications: 0,
     approvedApplications: 0,
-    pendingApplications: 0
+    pendingApplications: 0,
+    rejectedApplications: 0
   });
   const [loading, setLoading] = useState(false);
 
@@ -88,7 +89,8 @@ const AgentDashboard: React.FC = () => {
         totalAgents,
         totalApplications,
         approvedApplications,
-        pendingApplications
+        pendingApplications,
+        rejectedApplications: 0
       };
       
       if (statsResponse.status === 'fulfilled' && statsResponse.value.data) {
@@ -97,7 +99,8 @@ const AgentDashboard: React.FC = () => {
           totalAgents: apiStats.totalAgents || totalAgents,
           totalApplications: apiStats.totalApplications || totalApplications,
           approvedApplications: apiStats.approvedApplications || approvedApplications,
-          pendingApplications: apiStats.pendingApplications || pendingApplications
+          pendingApplications: apiStats.pendingApplications || pendingApplications,
+          rejectedApplications: apiStats.rejectedApplications || 0
         };
       }
       
@@ -112,6 +115,7 @@ const AgentDashboard: React.FC = () => {
         totalApplications: 5,
         approvedApplications: 2,
         pendingApplications: 3,
+        rejectedApplications: 0,
         agentsByAntenne: {
           'Bamako Centre': 3,
           'Kayes': 2,
@@ -314,7 +318,7 @@ const AgentDashboard: React.FC = () => {
                     </div>
                   )}
                 
-                  {/* Cartes statistiques */}
+                  {/* Cartes statistiques - Première ligne */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Carte Agents */}
                     <div className="bg-sky-50 rounded-lg border border-sky-100 p-6 flex items-center space-x-4">
@@ -365,6 +369,23 @@ const AgentDashboard: React.FC = () => {
                           {loading ? '...' : dashboardStats.totalApplications}
                         </p>
                         <p className="text-lg font-semibold text-gray-600">Total</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Deuxième ligne - Entreprises rejetées */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <div className="bg-red-50 rounded-lg border border-red-100 p-6 flex items-center space-x-4">
+                      <div className="w-14 h-14 bg-red-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-4xl font-bold text-gray-800">
+                          {loading ? '...' : dashboardStats.rejectedApplications}
+                        </p>
+                        <p className="text-lg font-semibold text-gray-600">Rejetées</p>
                       </div>
                     </div>
                   </div>

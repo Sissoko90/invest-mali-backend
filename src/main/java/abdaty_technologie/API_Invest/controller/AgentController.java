@@ -372,7 +372,8 @@ public class AgentController {
                 
             long rejectedApplications = allEntreprises.getContent().stream()
                 .filter(e -> e.getStatutCreation() != null && 
-                           e.getStatutCreation().toString().equals("REJETEE"))
+                           (e.getStatutCreation().toString().equals("REJETEE") ||
+                            e.getStatutCreation().toString().equals("REFUSEE")))
                 .count();
             
             Map<String, Object> stats = new HashMap<>();
