@@ -20,7 +20,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 @Entity
 public class Entreprise extends BaseEntity {
   @Column(name="reference", nullable = false, unique = true, length = 50)

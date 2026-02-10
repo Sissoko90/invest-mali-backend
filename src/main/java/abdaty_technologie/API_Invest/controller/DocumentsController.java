@@ -50,14 +50,16 @@ public class DocumentsController {
             @RequestParam("entrepriseId") String entrepriseId,
             @RequestParam("typePiece") TypePieces typePiece,
             @RequestParam(value = "numero", required = false) String numero,
-            @RequestParam("dateExpiration") String dateExpiration,
+            @RequestParam(value = "dateExpiration", required = false) String dateExpiration,
             @RequestParam("file") MultipartFile file
     ) {
-        LocalDate exp;
-        try {
-            exp = LocalDate.parse(dateExpiration);
-        } catch (Exception e) {
-            throw new abdaty_technologie.API_Invest.exception.BadRequestException(Messages.invalidFieldFormat("dateExpiration"));
+        LocalDate exp = null;
+        if (dateExpiration != null && !dateExpiration.isEmpty()) {
+            try {
+                exp = LocalDate.parse(dateExpiration);
+            } catch (Exception e) {
+                throw new abdaty_technologie.API_Invest.exception.BadRequestException(Messages.invalidFieldFormat("dateExpiration"));
+            }
         }
         Documents saved = documentsService.uploadPiece(personneId, entrepriseId, typePiece, numero, exp, file);
         return ResponseEntity.ok(toResponse(saved));
@@ -69,9 +71,10 @@ public class DocumentsController {
             @RequestParam("entrepriseId") String entrepriseId,
             @RequestParam("typeDocument") TypeDocuments typeDocument,
             @RequestParam(value = "numero", required = false) String numero,
+            @RequestParam(value = "conjointId", required = false) String conjointId,
             @RequestParam("file") MultipartFile file
     ) {
-        Documents saved = documentsService.uploadDocument(personneId, entrepriseId, typeDocument, numero, file);
+        Documents saved = documentsService.uploadDocument(personneId, entrepriseId, typeDocument, numero, conjointId, file);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -90,6 +93,10 @@ public class DocumentsController {
     @GetMapping("/entreprise/{entrepriseId}")
     public ResponseEntity<List<DocumentResponse>> getDocumentsByEntreprise(@PathVariable String entrepriseId) {
         List<Documents> documents = documentsRepository.findByEntrepriseId(entrepriseId);
+        System.out.println("📄 [DOCUMENTS] Récupération documents pour entreprise " + entrepriseId + ": " + documents.size() + " document(s)");
+        for (Documents doc : documents) {
+            System.out.println("  - TypeDocument: " + doc.getTypeDocument() + ", TypePiece: " + doc.getTypePiece() + ", Personne: " + (doc.getPersonne() != null ? doc.getPersonne().getNom() : "null"));
+        }
         List<DocumentResponse> responses = documents.stream()
             .map(this::toResponse)
             .collect(Collectors.toList());

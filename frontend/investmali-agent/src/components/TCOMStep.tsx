@@ -15,6 +15,7 @@ import {
 import { useAgentAuth } from '../contexts/AgentAuthContext';
 import { entreprisesAPI } from '../services/api';
 import DocumentViewer from './DocumentViewer';
+import EntrepriseDetails from './EntrepriseDetails';
 import { API_CONFIG } from '../config/api.config';
 
 interface DocumentTCOM {
@@ -51,10 +52,12 @@ interface DemandeTCOM {
   activiteSecondaire?: string;
   capitale?: string;
   localite?: string;
+  divisionCode?: string;
   dateCreation: string;
   etapeValidation: string;
   etapeActuelle: string;
   statut: string;
+  motifRejet?: string;
   membres: MembreTCOM[];
   demandeur: {
     nom: string;
@@ -85,6 +88,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDemande, setSelectedDemande] = useState<DemandeTCOM | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showFullDetails, setShowFullDetails] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [selectedDocumentName, setSelectedDocumentName] = useState<string>('');
   const [showStepDropdown, setShowStepDropdown] = useState(false);
@@ -132,7 +136,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
     setShowSuccessModal(true);
   };
 
-  // Motifs de rejet prédéfinis pour le retour à RÉVISION
+  // Motifs de rejet prédéfinis pour le retour à ACCUEIL
   const rejectReasons = [
     'Document est illisible',
     'Le document téléchargé ne correspond pas au document demandé',
@@ -143,7 +147,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
   ];
 
   const availableSteps = [
-    { id: 'REVISION', label: 'RÉVISION', description: 'Retour à l\'étape de révision' }
+    { id: 'ACCUEIL', label: 'ACCUEIL', description: 'Retour à l\'étape d\'accueil' }
   ];
 
   useEffect(() => {
@@ -170,6 +174,9 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       const response = await entreprisesAPI.getByEtape('TCOM');
       const entreprises = response.data?.data || response.data || [];
       
+      console.log('🔍 [TCOMStep] Réponse API /etape/TCOM:', response);
+      console.log('🔍 [TCOMStep] Nombre d\'entreprises TCOM:', entreprises.length);
+      console.log('🔍 [TCOMStep] Entreprises TCOM:', entreprises);
       
       // Charger les données RCCM manuelles depuis localStorage
       const manualRccmData = JSON.parse(localStorage.getItem('manual_rccm_data') || '{}');
@@ -208,6 +215,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             activiteSecondaire: entreprise.activiteSecondaire || '',
             capitale: entreprise.capitale || entreprise.capital || '1000000',
             localite: entreprise.localite || gerant.localite || 'Bamako',
+            divisionCode: entreprise.divisionCode || entreprise.division_code,
             dateCreation: entreprise.dateCreation || new Date().toISOString(),
             etapeValidation: entreprise.etapeValidation || 'TCOM',
             etapeActuelle: 'TCOM',
@@ -413,12 +421,8 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
           if (result.success && result.numeroRccm) {
             // Sauvegarde réussie dans la base de données
             
-            // Mettre à jour l'état local pour l'affichage immédiat
-            const updatedDemandes = demandes.map(d => 
-              d.id === demandeId 
-                ? { ...d, rccmNumber: manualRccmNumber.trim(), rccmGenerated: true }
-                : d
-            );
+            // Retirer l'entreprise de la liste TCOM car elle a été transférée à RCCM2
+            const updatedDemandes = demandes.filter(d => d.id !== demandeId);
             setDemandes(updatedDemandes);
             
             // Sauvegarder aussi en localStorage pour persistance entre sessions
@@ -428,10 +432,33 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             localStorage.setItem('manual_rccm_data', JSON.stringify(existingRccmData));
             
             const displayName = demande ? getDisplayName(demande) : 'l\'entreprise';
-            showSuccess('RCCM sauvegardé', `Le numéro RCCM pour "${displayName}" a été sauvegardé avec succès.\n\nNuméro: ${manualRccmNumber}`);
+            showSuccess(
+              'RCCM sauvegardé et transféré', 
+              `Le numéro RCCM pour "${displayName}" a été sauvegardé avec succès.\n\nNuméro: ${manualRccmNumber.trim()}\n\n✅ L'entreprise a été automatiquement transférée à l'étape RCCM2.`
+            );
             setManualRccmNumber('');
+            setShowDetails(false);
+            setSelectedDemande(null);
+            
+            // Rafraîchir la liste des demandes TCOM
+            await loadDemandesTCOM();
+            
             return; // Sortir de la fonction, sauvegarde réussie
           }
+        } else if (response.status === 409) {
+          // Conflit - Numéro RCCM déjà utilisé
+          const errorData = await response.json();
+          console.error('❌ [TCOMStep] Doublon RCCM détecté:', errorData);
+          
+          const displayName = demande ? getDisplayName(demande) : 'l\'entreprise';
+          const existingEntrepriseName = errorData.existingEntreprise?.nom || 'une autre entreprise';
+          
+          showError(
+            'Numéro RCCM déjà utilisé', 
+            `Le numéro RCCM "${manualRccmNumber.trim()}" est déjà utilisé par "${existingEntrepriseName}".\n\n⚠️ Veuillez vérifier le numéro RCCM et réessayer avec un numéro différent.`
+          );
+          setSavingManualRccm(null);
+          return; // Sortir sans sauvegarder
         } else {
           const errorText = await response.text();
           console.error('❌ [TCOMStep] Erreur endpoint RCCM:', errorText);
@@ -522,10 +549,19 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
       const result = await response.json();
 
       if (result.success) {
+        // Retirer l'entreprise de la liste TCOM car elle a été transférée à RCCM2
+        const updatedDemandes = demandes.filter(d => d.id !== demandeId);
+        setDemandes(updatedDemandes);
+        
         showSuccess(
-          'RCCM généré avec succès',
-          `Le numéro RCCM pour "${displayName}" a été généré avec succès.\n\nNuméro RCCM: ${result.refDos}`
+          'RCCM généré et transféré',
+          `Le numéro RCCM pour "${displayName}" a été généré avec succès.\n\nNuméro RCCM: ${result.refDos}\n\n✅ L'entreprise a été automatiquement transférée à l'étape RCCM2.`
         );
+        
+        setShowDetails(false);
+        setSelectedDemande(null);
+        
+        // Rafraîchir la liste des demandes TCOM
         await loadDemandesTCOM();
       } else {
         // Analyser le message d'erreur pour donner un message utilisateur-friendly
@@ -671,13 +707,26 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                       <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
                         <DocumentCheckIcon className="h-6 w-6 text-white" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-xl font-black text-slate-800">{demande.nom}</h3>
                         <div className="flex items-center space-x-4 text-lg text-slate-600">
                           <span className="font-medium">Type: {demande.typeEntreprise}</span>
                           <span className="font-medium">Forme: {demande.formeJuridique}</span>
                           <span className="font-medium">Secteur: {demande.secteurActivite}</span>
                         </div>
+                        
+                        {/* Afficher le motif de rejet si présent */}
+                        {demande.motifRejet && (
+                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start">
+                              <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-red-800">Motif de rejet :</p>
+                                <p className="text-sm text-red-700 mt-1">{demande.motifRejet}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -693,12 +742,23 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                     <button
                       onClick={() => {
                         setSelectedDemande(demande);
+                        setShowFullDetails(true);
+                      }}
+                      className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:bg-sky-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
+                    >
+                      <EyeIcon className="h-5 w-5" />
+                      <span>Voir tous les détails</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setSelectedDemande(demande);
                         setShowDetails(true);
                       }}
                       className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold text-lg"
                     >
-                      <EyeIcon className="h-5 w-5" />
-                      <span>Voir détails</span>
+                      <DocumentCheckIcon className="h-5 w-5" />
+                      <span>Gérer RCCM</span>
                     </button>
                   </div>
                 </div>
@@ -726,8 +786,21 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                 </button>
               </div>
 
-              {/* Génération RCCM automatique pour entreprises individuelles */}
-              {canEdit && (selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && (
+              {/* Debug logs */}
+              {(() => {
+                console.log('🔍 [TCOMStep] Debug RCCM Interface:');
+                console.log('  - canEdit:', canEdit);
+                console.log('  - typeEntreprise:', selectedDemande.typeEntreprise);
+                console.log('  - formeJuridique:', selectedDemande.formeJuridique);
+                console.log('  - divisionCode:', selectedDemande.divisionCode);
+                console.log('  - isBamako:', selectedDemande.divisionCode?.startsWith('90'));
+                console.log('  - Condition génération auto:', canEdit && (selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && selectedDemande.divisionCode?.startsWith('90'));
+                console.log('  - Condition saisie manuelle:', canEdit && ((selectedDemande.typeEntreprise === 'SOCIETE' || selectedDemande.formeJuridique === 'SARL' || selectedDemande.formeJuridique === 'SA') || (selectedDemande.divisionCode && !selectedDemande.divisionCode.startsWith('90'))));
+                return null;
+              })()}
+
+              {/* Génération RCCM automatique pour entreprises individuelles de Bamako uniquement */}
+              {canEdit && (selectedDemande.typeEntreprise === 'INDIVIDUELLE' || selectedDemande.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') && selectedDemande.divisionCode?.startsWith('90') && (
                 <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
@@ -760,8 +833,8 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                 </div>
               )}
 
-              {/* Saisie manuelle RCCM pour sociétés */}
-              {canEdit && (selectedDemande.typeEntreprise === 'SOCIETE' || selectedDemande.formeJuridique === 'SARL' || selectedDemande.formeJuridique === 'SA') && (
+              {/* Saisie manuelle RCCM pour sociétés OU entreprises hors Bamako */}
+              {canEdit && ((selectedDemande.typeEntreprise === 'SOCIETE' || selectedDemande.formeJuridique === 'SARL' || selectedDemande.formeJuridique === 'SA') || (selectedDemande.divisionCode && !selectedDemande.divisionCode.startsWith('90'))) && (
                 <div className="bg-gradient-to-r from-blue-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-blue-200 mb-6">
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
@@ -771,7 +844,9 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                   </div>
                   
                   <p className="text-lg text-slate-600 mb-4">
-                    Pour les sociétés, veuillez saisir manuellement le numéro RCCM obtenu du Tribunal de Commerce.
+                    {selectedDemande.divisionCode && !selectedDemande.divisionCode.startsWith('90') 
+                      ? 'Pour les entreprises hors Bamako, veuillez saisir manuellement le numéro RCCM en respectant le code du RCCM de votre localité.'
+                      : 'Pour les sociétés, veuillez saisir manuellement le numéro RCCM obtenu du Tribunal de Commerce.'}
                   </p>
                   
                   <div className="space-y-4">
@@ -859,7 +934,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
                         className="w-full bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg"
                       >
                         <XMarkIcon className="h-6 w-6" />
-                        <span>Rejeter et Retourner à RÉVISION</span>
+                        <span>Rejeter et Retourner à l'ACCUEIL</span>
                       </button>
                       
                     </div>
@@ -893,7 +968,7 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
             
             <div className="p-6">
               <p className="text-lg text-gray-600 mb-4">
-                Sélectionnez le motif de retour à l'étape RÉVISION :
+                Sélectionnez le motif de retour à l'étape ACCUEIL :
               </p>
               
               <div className="space-y-2 mb-4">
@@ -1020,6 +1095,35 @@ const TCOMStep: React.FC<TCOMStepProps> = ({ onDossierUpdate }) => {
               >
                 OK
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pour voir tous les détails de l'entreprise */}
+      {showFullDetails && selectedDemande && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-8xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between z-10">
+              <h3 className="text-2xl font-black text-slate-800">
+                Détails complets - {getDisplayName(selectedDemande)}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowFullDetails(false);
+                  setSelectedDemande(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <EntrepriseDetails 
+                entrepriseId={selectedDemande.id}
+                readOnly={true}
+              />
             </div>
           </div>
         </div>

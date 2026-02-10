@@ -2,6 +2,7 @@ package abdaty_technologie.API_Invest.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import abdaty_technologie.API_Invest.Entity.Enum.*;
+import java.time.Instant;
 
 /**
  * Requête de mise à jour partielle d'une entreprise.
@@ -30,6 +31,9 @@ public class UpdateEntrepriseRequest {
     public EtapeValidation etapeValidation;
     public FormeJuridique formeJuridique;
     public DomaineActivites domaineActivite;
+    
+    // Domaine d'activité non réglementé (code)
+    public String domaineActiviteNr;
 
     // Mise à jour de la localisation via code de division
     public String divisionCode;
@@ -37,6 +41,17 @@ public class UpdateEntrepriseRequest {
     // Champs de localisation spécifique de l'entreprise
     public String rue;
     public String porte;
+    
+    // Motif de rejet (si l'entreprise est rejetée)
+    public String motifRejet;
+    
+    // Date de retrait des documents par l'utilisateur
+    public Instant dateRetrait;
+    
+    // Indicateurs de téléchargement
+    public Boolean telechargementAutorise;
+    public Boolean rccmTelecharge;
+    public Boolean ninaTelecharge;
     
     /**
      * Setter personnalisé pour domaineActivite qui accepte les chaînes vides

@@ -11,10 +11,10 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class InstatApiConfig {
     
-    @Value("${instat.api.base-url:https://apimali.test.instat.ml/api}")
+    @Value("${instat.api.base-url:https://nina.api.instat.ml/api}")
     private String baseUrl;
     
-    @Value("${instat.api.bearer-token:MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw}")
+    @Value("${instat.api.bearer-token:MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx}")
     private String bearerToken;
     
     @Value("${instat.api.timeout:30000}")

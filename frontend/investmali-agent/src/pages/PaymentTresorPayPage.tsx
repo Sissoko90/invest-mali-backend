@@ -215,7 +215,7 @@ const PaymentTresorPayPage: React.FC = () => {
       alert(`✅ Paiement TresorPay validé avec succès pour "${paymentData.entrepriseNom}"!\n\n✅ Entreprise transférée à l'étape de révision`);
 
       // Retourner vers RegisseurStep
-      navigate('/accueil', { state: { activeTab: 'regisseur' } });
+      navigate('/dossier');
 
     } catch (error: any) {
       console.error('❌ Erreur lors de la mise à jour:', error);

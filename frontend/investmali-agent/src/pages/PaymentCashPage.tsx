@@ -235,7 +235,7 @@ const PaymentCashPage: React.FC = () => {
   const handleCloseReceipt = () => {
     setShowReceipt(false);
     setReceiptData(null);
-    navigate('/accueil', { state: { activeTab: 'regisseur' } });
+    navigate('/dossier');
   };
 
   return (

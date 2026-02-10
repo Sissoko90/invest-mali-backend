@@ -98,6 +98,11 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
   // État pour les compteurs de messages non lus par entreprise
   const [unreadCountsByEntreprise, setUnreadCountsByEntreprise] = useState<{[key: string]: number}>({});
 
+  // États pour la pagination
+  const [currentPageDemandes, setCurrentPageDemandes] = useState(1);
+  const [currentPageAssigned, setCurrentPageAssigned] = useState(1);
+  const itemsPerPage = 10;
+
   // État pour les statuts de paiement par entreprise (true = payé, false = non payé)
   const [paiementStatusByEntreprise, setPaiementStatusByEntreprise] = useState<{[key: string]: boolean}>({});
 
@@ -262,10 +267,10 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
       if (divisionIdOrCode.length === 12) {
         const communeCode = divisionIdOrCode.substring(0, 8);
         
-        const response = await fetch(`https://apimali.test.instat.ml/api/get/vfq/${communeCode}`, {
+        const response = await fetch(`https://nina.api.instat.ml/api/get/vfq/${communeCode}`, {
           headers: {
             'accept': '*/*',
-            'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
+            'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx',
             'X-CSRF-TOKEN': ''
           }
         });
@@ -698,7 +703,7 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
         return;
       }
 
-      const newStatus = 'VALIDE';
+      const newStatus = 'EN_COURS';
       const newEtape = 'ACCUEIL';
       const note = 'Demande revalidée par l\'agent d\'accueil après correction';
 
@@ -1797,8 +1802,9 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                   </p>
                 </div>
               ) : (
+                <>
                 <div className="space-y-3">
-                  {demandes.map((demande) => (
+                  {demandes.slice((currentPageDemandes - 1) * itemsPerPage, currentPageDemandes * itemsPerPage).map((demande) => (
                     <div key={demande.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1877,6 +1883,30 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                     </div>
                   ))}
                 </div>
+                
+                {/* Pagination pour Demandes à traiter */}
+                {demandes.length > itemsPerPage && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <button
+                      onClick={() => setCurrentPageDemandes(prev => Math.max(1, prev - 1))}
+                      disabled={currentPageDemandes === 1}
+                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Précédent
+                    </button>
+                    <span className="text-sm text-gray-700 font-medium">
+                      Page {currentPageDemandes} sur {Math.ceil(demandes.length / itemsPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPageDemandes(prev => Math.min(Math.ceil(demandes.length / itemsPerPage), prev + 1))}
+                      disabled={currentPageDemandes >= Math.ceil(demandes.length / itemsPerPage)}
+                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </div>
           )}
@@ -1910,9 +1940,10 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                   </p>
                 </div>
               ) : (
+                <>
                 <div className="space-y-3">
                   {/* Filtrer automatiquement les demandes rejetées */}
-                  {assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').map((demande) => (
+                  {assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').slice((currentPageAssigned - 1) * itemsPerPage, currentPageAssigned * itemsPerPage).map((demande) => (
                     <div key={demande.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1986,6 +2017,30 @@ const AccueilStep: React.FC<AccueilStepProps> = ({ dossier, onDossierUpdate }) =
                     </div>
                   ))}
                 </div>
+                
+                {/* Pagination pour Mes demandes assignées */}
+                {assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').length > itemsPerPage && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <button
+                      onClick={() => setCurrentPageAssigned(prev => Math.max(1, prev - 1))}
+                      disabled={currentPageAssigned === 1}
+                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Précédent
+                    </button>
+                    <span className="text-sm text-gray-700 font-medium">
+                      Page {currentPageAssigned} sur {Math.ceil(assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').length / itemsPerPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPageAssigned(prev => Math.min(Math.ceil(assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').length / itemsPerPage), prev + 1))}
+                      disabled={currentPageAssigned >= Math.ceil(assignedDemandes.filter(d => d.statut !== 'REJETE' && d.statut !== 'REFUSEE').length / itemsPerPage)}
+                      className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </div>
           )}

@@ -87,12 +87,18 @@ public class ConjointServiceImpl implements ConjointService {
                 }
                 
                 if (infosDifferentes) {
-                    throw new BadRequestException(
-                        "Un conjoint avec le nom '" + request.prenom + " " + request.nom + 
-                        "' existe déjà pour cette personne avec des informations différentes: " + 
-                        differences.toString() + 
-                        "Veuillez vérifier les informations ou utiliser le conjoint existant."
-                    );
+                    // Mettre à jour le conjoint existant avec les nouvelles informations
+                    System.out.println("🔄 [CONJOINT] Mise à jour du conjoint existant: " + request.prenom + " " + request.nom);
+                    System.out.println("📝 [CONJOINT] Différences détectées: " + differences.toString());
+                    
+                    existant.setDateMariage(request.dateMariage);
+                    existant.setLieuMariage(request.lieuMariage);
+                    existant.setRegimeMatrimonial(request.regimeMatrimonial);
+                    existant.setClauseRestrictive(request.clauseRestrictive);
+                    
+                    Conjoint updated = conjointRepository.save(existant);
+                    System.out.println("✅ [CONJOINT] Conjoint mis à jour avec succès");
+                    return toResponse(updated);
                 }
                 
                 // Si toutes les infos correspondent, retourner le conjoint existant

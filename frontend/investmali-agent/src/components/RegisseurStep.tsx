@@ -209,7 +209,11 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
       if (entreprisesRegisseur.length > 0) {
         // Convertir au format attendu par le régisseur
         const demandesForRegisseur = await Promise.all(entreprisesRegisseur.map(async (entreprise: any) => {
-          const gerantPersonne = entreprise.gerant || entreprise.gerantPersonne || {};
+          // Récupérer le promoteur/gérant depuis le tableau des membres
+          const gerantPersonne = entreprise.membres?.find((m: any) => m.role === 'GERANT' || m.role === 'PROMOTEUR') || 
+                                 entreprise.gerant || 
+                                 entreprise.gerantPersonne || 
+                                 {};
           
           // Récupérer les informations de l'agent qui a validé via assigne_to
           let agentAccueilNom = 'Agent non spécifié';
@@ -285,7 +289,7 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
           
           const demandeData = {
             id: entreprise.id,
-            nom: entreprise.nom || 'Nom inconnu',
+            nom: entreprise.nom || `${gerantPersonne.prenom || ''} ${gerantPersonne.nom || ''}`.trim(),
             sigle: entreprise.sigle || '',
             formeJuridique: entreprise.formeJuridique || entreprise.forme_juridique || 'Non spécifiée',
             typeEntreprise: entreprise.typeEntreprise || entreprise.type_entreprise || 'Non spécifié',
@@ -293,9 +297,9 @@ const RegisseurStep: React.FC<RegisseurStepProps> = ({ dossier, onDossierUpdate 
             dateValidationAccueil: entreprise.dateValidationAccueil || entreprise.dateCreation || new Date().toISOString(),
             statut: 'VALIDE',
             demandeur: {
-              nom: gerantPersonne.nom || 'Nom non renseinger',
-              prenom: gerantPersonne.prenom || 'Prénom non renseinger',
-              email: gerantPersonne.email || 'Email non renseinger',
+              nom: gerantPersonne.nom || 'Nom non renseigné',
+              prenom: gerantPersonne.prenom || 'Prénom non renseigné',
+              email: gerantPersonne.email || 'Email non renseigné',
               telephone: gerantPersonne.telephone1 || gerantPersonne.telephone || 'Téléphone inconnu'
             },
             etapeActuelle: 'REGISSEUR',

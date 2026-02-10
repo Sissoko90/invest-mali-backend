@@ -28,14 +28,14 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
             HttpEntity<?> entity = new HttpEntity<>(headers);
             
             ResponseEntity<List> response = restTemplate.exchange(
-                "https://apimali.test.instat.ml/api/get/regions",
+                "https://nina.api.instat.ml/api/get/regions",
                 HttpMethod.GET,
                 entity,
                 List.class
@@ -62,14 +62,14 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
             HttpEntity<?> entity = new HttpEntity<>(headers);
             
             ResponseEntity<List> response = restTemplate.exchange(
-                "https://apimali.test.instat.ml/api/get/regions",
+                "https://nina.api.instat.ml/api/get/regions",
                 HttpMethod.GET,
                 entity,
                 List.class
@@ -109,14 +109,14 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
             HttpEntity<?> entity = new HttpEntity<>(headers);
             
             ResponseEntity<List> response = restTemplate.exchange(
-                "https://apimali.test.instat.ml/api/get/cercles/" + regionCode,
+                "https://nina.api.instat.ml/api/get/cercles/" + regionCode,
                 HttpMethod.GET,
                 entity,
                 List.class
@@ -156,14 +156,14 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
             HttpEntity<?> entity = new HttpEntity<>(headers);
             
             ResponseEntity<List> response = restTemplate.exchange(
-                "https://apimali.test.instat.ml/api/get/communes/" + cercleCode,
+                "https://nina.api.instat.ml/api/get/communes/" + cercleCode,
                 HttpMethod.GET,
                 entity,
                 List.class
@@ -203,14 +203,14 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
             HttpEntity<?> entity = new HttpEntity<>(headers);
             
             ResponseEntity<List> response = restTemplate.exchange(
-                "https://apimali.test.instat.ml/api/get/vfq/" + communeCode,
+                "https://nina.api.instat.ml/api/get/vfq/" + communeCode,
                 HttpMethod.GET,
                 entity,
                 List.class
@@ -251,7 +251,7 @@ public class WorkingDivisionController {
             RestTemplate restTemplate = new RestTemplate();
             
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
             headers.set("accept", "*/*");
             headers.set("X-CSRF-TOKEN", "");
             
@@ -271,7 +271,7 @@ public class WorkingDivisionController {
                     String communeCode = code.substring(0, 8); // 90010201
                     
                     ResponseEntity<List> response = restTemplate.exchange(
-                        "https://apimali.test.instat.ml/api/get/vfq/" + communeCode,
+                        "https://nina.api.instat.ml/api/get/vfq/" + communeCode,
                         HttpMethod.GET,
                         entity,
                         List.class

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import abdaty_technologie.API_Invest.Entity.Entreprise;
+import abdaty_technologie.API_Invest.Entity.Persons;
 import abdaty_technologie.API_Invest.Entity.Enum.StatutCreation;
 import abdaty_technologie.API_Invest.Entity.Enum.TypeEntreprise;
 import abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation;
@@ -80,9 +81,16 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
     // Chargement avec fetch join des membres et personnes (conjoints chargés séparément pour éviter MultipleBagFetchException)
     @Query("SELECT DISTINCT e FROM Entreprise e " +
            "LEFT JOIN FETCH e.membres em " +
-           "LEFT JOIN FETCH em.personne " +
+           "LEFT JOIN FETCH em.personne p " +
+           "LEFT JOIN FETCH p.division " +
            "WHERE e.id = :id")
     Optional<Entreprise> findByIdWithMembresAndPaiement(@Param("id") String id);
+    
+    // Chargement des conjoints pour une entreprise (requête séparée pour éviter MultipleBagFetchException)
+    @Query("SELECT DISTINCT p FROM Persons p " +
+           "LEFT JOIN FETCH p.conjoints " +
+           "WHERE p.id IN (SELECT em.personne.id FROM EntrepriseMembre em WHERE em.entreprise.id = :entrepriseId)")
+    List<Persons> findPersonsWithConjointsByEntrepriseId(@Param("entrepriseId") String entrepriseId);
 
     // Méthodes pour l'assignation des demandes
     Page<Entreprise> findByAssignedToId(String agentId, Pageable pageable);
@@ -139,4 +147,10 @@ public interface EntrepriseRepository extends JpaRepository<Entreprise, String>,
            "JOIN e.membres em " +
            "WHERE em.personne.id = :personId")
     List<Entreprise> findAllByPersonId(@Param("personId") String personId);
+    
+    // Vérifier si un numéro RCCM existe déjà
+    boolean existsByNumeroRccm(String numeroRccm);
+    
+    // Trouver une entreprise par numéro RCCM
+    Optional<Entreprise> findByNumeroRccm(String numeroRccm);
 }

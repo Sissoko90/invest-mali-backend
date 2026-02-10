@@ -26,7 +26,7 @@ public class NinaServiceImpl implements NinaService {
     private final ObjectMapper objectMapper;
     
     // Configuration API INSTAT Mali
-    @Value("${instat.api.base-url:https://apimali.test.instat.ml/api}")
+    @Value("${instat.api.base-url:https://nina.api.instat.ml/api}")
     private String instatApiBaseUrl;
     
     @Value("${instat.api.bearer-token}")

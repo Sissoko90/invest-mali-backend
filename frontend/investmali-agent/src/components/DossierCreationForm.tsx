@@ -783,6 +783,30 @@ interface Participant {
     description: string;
 
   }>;
+  
+  // Conjoints (pour les personnes mariées)
+  
+  conjoints?: Array<{
+    
+    id: string;
+    
+    prenom: string;
+    
+    nom: string;
+    
+    dateMariage: string;
+    
+    lieuMariage: string;
+    
+    regimeMatrimonial: string;
+    
+    clauseRestrictive: string;
+    
+    acteMariageFile?: File;
+    
+    acteMariageFilename?: string;
+    
+  }>;
 
 }
 
@@ -879,16 +903,6 @@ interface FormData {
   rueEntreprise: string;
 
   porteEntreprise: string;
-<<<<<<< HEAD
-
-=======
-  // Informations du déposant (pour les sociétés)
-  nomDeposant: string;
-  prenomDeposant: string;
-  telephoneDeposant: string;
-  emailDeposant: string;
-  nomCabinet: string;
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
   // Activité (intégrée dans Informations Société)
 
   domaineActiviteNr?: DomaineActiviteNr; // Domaine non réglementé
@@ -912,14 +926,14 @@ interface FormData {
     registreCommerce: File | null;
 
     justificatifDomicile: File | null;
-<<<<<<< HEAD
 
-=======
-    pvAssemblee: File | null;
-    declarationNotariee: File | null;
-    attestationBancaire: File | null;
-    rccmSocieteMere: File | null;
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
+    pvAssemblee?: File | null;
+
+    declarationNotariee?: File | null;
+
+    attestationBancaire?: File | null;
+
+    rccmSocieteMere?: File | null;
   };
 
   // Localisation
@@ -1032,6 +1046,34 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   const [showPersonalCountryDropdown, setShowPersonalCountryDropdown] = useState(false);
 
+  // États pour ParticipantsStep - déplacés ici pour survivre aux re-renders
+  const [participantEditingIndex, setParticipantEditingIndex] = useState<number | null>(null);
+  const [participantCreatorRole, setParticipantCreatorRole] = useState<'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR'>('GERANT');
+  const [showParticipantDetailedForm, setShowParticipantDetailedForm] = useState(false);
+  const [showParticipantAddForm, setShowParticipantAddForm] = useState(false);
+  const [isParticipantCreatorFlow, setIsParticipantCreatorFlow] = useState(false);
+  const [showParticipantPersonTypeModal, setShowParticipantPersonTypeModal] = useState(false);
+  const [selectedParticipantPersonType, setSelectedParticipantPersonType] = useState<'PHYSIQUE' | 'MORALE' | null>(null);
+  const [newParticipant, setNewParticipant] = useState<Participant>({
+    civilite: '',
+    prenom: '',
+    nom: '',
+    dateNaissance: '',
+    lieuNaissance: '',
+    nationalite: 'MALIENNE',
+    telephone: '',
+    email: '',
+    adresse: '',
+    role: 'GERANT',
+    pourcentageParts: 0,
+    dateDebut: new Date().toISOString().split('T')[0],
+    sexe: '',
+    situationMatrimoniale: 'CELIBATAIRE',
+    typePiece: '',
+    numeroPiece: '',
+    typePersonne: 'PHYSIQUE',
+  });
+
   
 
   // états pour la localisation de l'entreprise
@@ -1058,7 +1100,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   const [companySelectedQuartierId, setCompanySelectedQuartierId] = useState('');
 
-<<<<<<< HEAD
 
 
   // État principal du formulaire avec restauration depuis localStorage
@@ -1089,6 +1130,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
             justificatifDomicile: null,
 
+            pvAssemblee: null,
+
+            declarationNotariee: null,
+
+            attestationBancaire: null,
+
+            rccmSocieteMere: null,
           },
 
           participants: (parsed.formData.participants || []).map((p: any) => ({
@@ -1223,6 +1271,13 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         justificatifDomicile: null,
 
+        pvAssemblee: null,
+
+        declarationNotariee: null,
+
+        attestationBancaire: null,
+
+        rccmSocieteMere: null,
       },
 
       // Localisation - champs vides par défaut
@@ -1233,69 +1288,42 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
     };
 
-=======
-  // État principal du formulaire
-  const [formData, setFormData] = useState<FormData>({
-    // Informations Personnelles - champs vides par défaut
-    civilite: 'MONSIEUR',
-    prenom: '',
-    nom: '',
-    dateNaissance: '',
-    lieuNaissance: '',
-    nationalite: 'MALIENNE',
-    telephonePersonnel: '',
-    telephonePersonnel2: '',
-    emailPersonnel: '',
-    adressePersonnelle: '',
-    localite: '',
-    porte: '',
-    adresseLibre: '',
-    // Questions Oui/Non
-    hasCriminalRecord: false,
-    isMarried: false,
-    allowsOthersResponsible: false,
-    requiresExerciseAuthorization: false,
-    willImportExport: false,
-    hasDifferentAddress: false,
-    // Informations Société
-    nomEntreprise: '',
-    sigleEntreprise: '',
-    typeEntreprise: 'ENTREPRISE_INDIVIDUELLE',
-    formeJuridique: 'E_I',
-    capital: '',
-    adresse: '',
-    telephone: '',
-    email: '',
-    rueEntreprise: '',
-    porteEntreprise: '',
-    // Informations du déposant (pour les sociétés)
-    nomDeposant: '',
-    prenomDeposant: '',
-    telephoneDeposant: '',
-    emailDeposant: '',
-    nomCabinet: '',
-    // Activité
-    activitePrincipale: '',
-    activiteSecondaire: '',
-    // Participants
-    participants: [],
-    // Documents
-    documents: {
-      statuts: null,
-      registreCommerce: null,
-      justificatifDomicile: null,
-      pvAssemblee: null,
-      declarationNotariee: null,
-      attestationBancaire: null,
-      rccmSocieteMere: null,
-    },
-    // Localisation - champs vides par défaut
-    division: '',
-    antenne: '',
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
   });
 
+  // Fonction pour déterminer les documents requis selon la forme juridique
+  const getRequiredDocuments = (formeJuridique: FormeJuridique) => {
+    const docs = {
+      registreCommerce: true,
+      pvAssemblee: false,
+      declarationNotariee: false,
+      attestationBancaire: false,
+      rccmSocieteMere: false
+    };
 
+    // PV d'Assemblée requis pour SA, SAS, SASU
+    if (['SA', 'SAS', 'SASU', 'SUC_SA', 'FIL_SA', 'SUC_SAS', 'FIL_SAS'].includes(formeJuridique)) {
+      docs.pvAssemblee = true;
+    }
+
+    // Déclaration notariée pour SA, SAS
+    if (['SA', 'SAS', 'SUC_SA', 'FIL_SA', 'SUC_SAS', 'FIL_SAS'].includes(formeJuridique)) {
+      docs.declarationNotariee = true;
+    }
+
+    // Attestation bancaire pour SA, SAS, SARL
+    if (['SA', 'SAS', 'SARL', 'SUC_SA', 'FIL_SA', 'SUC_SAS', 'FIL_SAS', 'SUC_SARL', 'FIL_SARL'].includes(formeJuridique)) {
+      docs.attestationBancaire = true;
+    }
+
+    // RCCM société mère pour succursales et filiales
+    if (['SUC_SARL', 'FIL_SARL', 'SUC_SA', 'FIL_SA', 'SUC_SAS', 'FIL_SAS', 'BR'].includes(formeJuridique)) {
+      docs.rccmSocieteMere = true;
+    }
+
+    return docs;
+  };
+
+  const requiredDocs = useMemo(() => getRequiredDocuments(formData.formeJuridique), [formData.formeJuridique]);
 
   // Refs pour stocker les valeurs actuelles sans causer de re-renders
 
@@ -1422,13 +1450,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 registreCommerce: null,
 
                 justificatifDomicile: null,
-<<<<<<< HEAD
 
-=======
                 pvAssemblee: null,
+
                 declarationNotariee: null,
+
                 attestationBancaire: null,
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
+
+                rccmSocieteMere: null,
               },
 
               participants: updated.participants.map(p => ({
@@ -1544,6 +1573,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 registreCommerce: null,
 
                 justificatifDomicile: null,
+
+                pvAssemblee: null,
+
+                declarationNotariee: null,
+
+                attestationBancaire: null,
+
+                rccmSocieteMere: null,
 
               },
 
@@ -1768,16 +1805,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       rueEntreprise: '',
 
       porteEntreprise: '',
-<<<<<<< HEAD
-
-=======
-      // Informations du déposant
-      nomDeposant: '',
-      prenomDeposant: '',
-      telephoneDeposant: '',
-      emailDeposant: '',
-      nomCabinet: '',
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       activitePrincipale: '',
 
       activiteSecondaire: '',
@@ -1791,14 +1818,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         registreCommerce: null,
 
         justificatifDomicile: null,
-<<<<<<< HEAD
 
-=======
         pvAssemblee: null,
+
         declarationNotariee: null,
+
         attestationBancaire: null,
+
         rccmSocieteMere: null,
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       },
 
       division: '',
@@ -2054,13 +2081,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     { number: 1, title: 'Informations Personnelles', icon: UserIcon },
 
     { number: 2, title: 'Informations de l\'entreprise', icon: BuildingOfficeIcon },
-<<<<<<< HEAD
 
     { number: 3, title: 'Promoteur', icon: BriefcaseIcon },
 
-=======
-    { number: 3, title: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'Promoteur' : 'Participants', icon: BriefcaseIcon },
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     { number: 4, title: 'Documents', icon: DocumentIcon },
 
     { number: 5, title: 'Récapitulatif', icon: CheckCircleIcon }
@@ -2085,170 +2108,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   });
 
-<<<<<<< HEAD
 
 
   // Fonction pour déterminer si un réle nécessite des parts
 
   const roleRequiresParts = (role: 'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR'): boolean => {
 
-=======
-  // Fonction pour déterminer si un rôle nécessite des parts
-  const roleRequiresParts = (role: 'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR'): boolean => {
-    // Les GIE n'ont pas de parts sociales
-    if (formData.formeJuridique === 'GIE') {
-      return false;
-    }
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     return role !== 'ADMINISTRATEUR';
 
   };
 
-<<<<<<< HEAD
-
-=======
-  // Fonction pour obtenir la liste des pièces à joindre selon la forme juridique
-  const getRequiredPiecesInfo = (formeJuridique: FormeJuridique): string[] => {
-    switch (formeJuridique) {
-      // SA, SARL, SAS, SNC, SCS - Sociétés classiques
-      case 'SA':
-      case 'SARL':
-      case 'SARL_UNI':
-      case 'SAS':
-      case 'SASU':
-      case 'SNC':
-      case 'SCS':
-        return [
-          'Copie de la pièce d\'identité ou du passeport',
-          'Un certificat de résidence pour les étrangers',
-          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance',
-          'Justificatif de la libération d\'un capital selon le type de société'
-        ];
-      
-      // GIE - Groupement d'Intérêt Économique
-      case 'GIE':
-        return [
-          'Copie de la pièce d\'identité ou du passeport',
-          'Certificat de résidence pour les étrangers',
-          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité 2 mois avec un extrait d\'acte de naissance'
-        ];
-      
-      // Succursales et Filiales
-      case 'SUC_SARL':
-      case 'FIL_SARL':
-      case 'SUC_SA':
-      case 'FIL_SA':
-      case 'SUC_SAS':
-      case 'FIL_SAS':
-        return [
-          'Copie de la pièce d\'identité ou du passeport',
-          'Certificat de résidence pour les étrangers',
-          'Casier judiciaire ou déclaration sur l\'honneur avec un extrait d\'acte de naissance',
-          'Statuts de la société mère',
-          'RCCM de la société mère',
-          'PV de l\'assemblée générale avec la décision de l\'ouverture de la succursale / filiale',
-          'PV de l\'assemblée générale ou assemblée générale ordinaire sur lequel figure la désignation du gérant au Mali'
-        ];
-      
-      // Entreprise Individuelle (E_I) - Liste séparée
-      case 'E_I':
-        return [
-          'Copie de la pièce d\'identité ou du passeport',
-          'Un certificat de résidence pour les étrangers',
-          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance',
-          'Justificatif de la libération d\'un capital selon le type de société'
-        ];
-      default:
-        return [
-          'Copie de la pièce d\'identité ou du passeport',
-          'Un certificat de résidence pour les étrangers',
-          'Casier judiciaire ou déclaration sur l\'honneur d\'une validité de 2 mois avec un extrait d\'acte de naissance'
-        ];
-    }
-  };
-
-  // Fonction pour déterminer les documents requis selon la forme juridique
-  const getRequiredDocuments = (formeJuridique: FormeJuridique): {
-    statuts: boolean;
-    registreCommerce: boolean;
-    pvAssemblee: boolean;
-    declarationNotariee: boolean;
-    attestationBancaire: boolean;
-    rccmSocieteMere: boolean;
-  } => {
-    // Documents de base requis pour toutes les sociétés
-    const baseDocuments = {
-      statuts: true,
-      registreCommerce: true,
-      pvAssemblee: false,
-      declarationNotariee: false,
-      attestationBancaire: false,
-      rccmSocieteMere: false,
-    };
-
-    switch (formeJuridique) {
-      case 'SA':
-      case 'SAS':
-      case 'SASU':
-        // SA, SAS, SASU nécessitent des documents supplémentaires
-        return {
-          ...baseDocuments,
-          declarationNotariee: true,
-          attestationBancaire: true,
-        };
-      case 'SARL':
-      case 'SARL_UNI':
-        // SARL et SARL Unipersonnelle
-        return {
-          ...baseDocuments,
-          attestationBancaire: true, // Justificatif de libération du capital
-        };
-      case 'GIE':
-        // GIE - Groupement d'Intérêt Économique
-        return {
-          ...baseDocuments,
-        };
-      case 'SNC':
-      case 'SCS':
-        // Sociétés en nom collectif et commandite simple
-        return {
-          ...baseDocuments,
-          attestationBancaire: true, // Justificatif de libération du capital
-        };
-      case 'SCI':
-      case 'SCP':
-        // Sociétés civiles
-        return {
-          ...baseDocuments,
-        };
-      case 'SUC_SARL':
-      case 'SUC_SA':
-      case 'SUC_SAS':
-      case 'FIL_SARL':
-      case 'FIL_SA':
-      case 'FIL_SAS':
-        // Succursales et filiales
-        return {
-          ...baseDocuments,
-          pvAssemblee: true,
-          declarationNotariee: true,
-          rccmSocieteMere: true,
-        };
-      case 'BR':
-        // Bureau de représentation
-        return {
-          statuts: false,
-          registreCommerce: true,
-          pvAssemblee: false,
-          declarationNotariee: true,
-          attestationBancaire: false,
-          rccmSocieteMere: false,
-        };
-      default:
-        return baseDocuments;
-    }
-  };
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
   // Calculer le total des parts (exclure les administrateurs)
 
@@ -2495,6 +2364,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         const response = await enumsAPI.getDomaineActivitesNr();
 
         console.log('✅ Domaines d\'activité chargés:', response.data.length, 'options');
+        
+        console.log('📋 Exemple de données:', response.data.slice(0, 3));
 
         setDomaineActiviteNrOptions(response.data);
 
@@ -2817,13 +2688,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // éviter les appels API si des modals sont ouverts
 
       if (hasOpenModals()) {
-<<<<<<< HEAD
 
         console.log('?? Modal ouvert, report du chargement des quartiers');
 
-=======
-        console.log(' Modal ouvert, report du chargement des quartiers');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         return;
 
       }
@@ -2831,13 +2698,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       if (personalSelectedCommuneId && !isPersonalBamako) {
-<<<<<<< HEAD
 
         console.log('?? Chargement quartiers pour commune:', personalSelectedCommuneId);
 
-=======
-        console.log(' Chargement quartiers pour commune:', personalSelectedCommuneId);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Reset des sélections suivantes
@@ -2875,13 +2738,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // éviter les appels API si des modals sont ouverts
 
       if (hasOpenModals()) {
-<<<<<<< HEAD
 
         console.log('?? Modal ouvert, report du chargement des arrondissements (entreprise)');
 
-=======
-        console.log(' Modal ouvert, report du chargement des arrondissements (entreprise)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         return;
 
       }
@@ -2889,13 +2748,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       if (companySelectedRegionId) {
-<<<<<<< HEAD
 
         console.log('?? Chargement arrondissements pour région (entreprise):', companySelectedRegionId);
 
-=======
-        console.log(' Chargement arrondissements pour région (entreprise):', companySelectedRegionId);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Reset des sélections suivantes
@@ -2915,7 +2770,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         setIsCompanyBamako(isBamako);
 
         
-<<<<<<< HEAD
 
         if (isBamako) {
 
@@ -2935,12 +2789,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         }
 
-=======
-        // Structure INSTAT moderne : Bamako a aussi des cercles maintenant
-        const cercles = await divisionService.getCerclesByRegion(companySelectedRegionId);
-        setCompanyCercles(cercles || []);
-        setCompanyArrondissements([]);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       }
 
     };
@@ -2974,13 +2822,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // éviter les appels API si des modals sont ouverts
 
       if (hasOpenModals()) {
-<<<<<<< HEAD
 
         console.log('?? Modal ouvert, report du chargement des quartiers (entreprise)');
 
-=======
-        console.log(' Modal ouvert, report du chargement des quartiers (entreprise)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         return;
 
       }
@@ -2988,13 +2832,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       if (companySelectedCommuneId && !isCompanyBamako) {
-<<<<<<< HEAD
 
         console.log('?? Chargement quartiers pour commune (entreprise):', companySelectedCommuneId);
 
-=======
-        console.log(' Chargement quartiers pour commune (entreprise):', companySelectedCommuneId);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Reset des sélections suivantes
@@ -3154,13 +2994,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         }
 
       } catch (error) {
-<<<<<<< HEAD
 
         console.error('? Erreur lors de la récupération via API:', error);
 
-=======
-        console.error(' Erreur lors de la récupération via API:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       }
 
     }
@@ -3224,13 +3060,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           // Utiliser la logique unifiée pour charger les arrondissements
 
           const arrondissements = await loadBamakoArrondissements(bamakoRegion.id);
-<<<<<<< HEAD
 
           console.log('?? Arrondissements disponibles:', arrondissements?.length || 0);
 
-=======
-          console.log(' Arrondissements disponibles:', arrondissements?.length || 0);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           
 
           // Chercher l'arrondissement correspondant
@@ -3292,7 +3124,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           if (arrondissement) {
 
             hierarchy.arrondissement = arrondissement;
-<<<<<<< HEAD
 
             console.log('? Arrondissement trouvé:', arrondissement.nom);
 
@@ -3300,23 +3131,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
             console.log('? Arrondissement non trouvé pour le code:', arrondissementCode);
 
-=======
-            console.log(' Arrondissement trouvé:', arrondissement.nom);
-          } else {
-            console.log(' Arrondissement non trouvé pour le code:', arrondissementCode);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
           
 
         } catch (error) {
-<<<<<<< HEAD
 
           console.error('? Erreur reconstruction arrondissement:', error);
 
-=======
-          console.error(' Erreur reconstruction arrondissement:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         }
 
       }
@@ -3324,13 +3146,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
 
     
-<<<<<<< HEAD
 
     console.log('?? Hiérarchie reconstruite:', hierarchy);
 
-=======
-    console.log(' Hiérarchie reconstruite:', hierarchy);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     return hierarchy;
 
   };
@@ -3340,13 +3158,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   // Appliquer la hiérarchie aux sélecteurs de maniére séquentielle (logique utilisateur)
 
   const applyPersonalHierarchySequential = async (hierarchy: any) => {
-<<<<<<< HEAD
 
     console.log('?? Application séquentielle de la hiérarchie INSTAT moderne (personnel):', hierarchy);
 
-=======
-    console.log(' Application séquentielle de la hiérarchie INSTAT moderne (personnel):', hierarchy);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     
 
     try {
@@ -3354,22 +3168,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 1: Appliquer la région
 
       if (hierarchy.region) {
-<<<<<<< HEAD
 
         console.log('?? étape 1: Application région:', hierarchy.region.nom);
 
         setPersonalSelectedRegionId(hierarchy.region.id);
 
-=======
-        console.log(' étape 1: Application région:', hierarchy.region.nom);
-        setPersonalSelectedRegionId(hierarchy.region.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les cercles depuis la région
 
         try {
-<<<<<<< HEAD
 
           const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
 
@@ -3381,13 +3189,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement cercles depuis région:', error);
 
-=======
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
-          setPersonalCercles(cercles || []);
-          console.log(' étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés');
-        } catch (error) {
-          console.error(' Erreur chargement cercles depuis région:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setPersonalCercles([]);
 
         }
@@ -3399,22 +3200,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 2: Appliquer le cercle
 
       if (hierarchy.cercle) {
-<<<<<<< HEAD
 
         console.log('?? étape 2: Application cercle:', hierarchy.cercle.nom);
 
         setPersonalSelectedCercleId(hierarchy.cercle.id);
 
-=======
-        console.log(' étape 2: Application cercle:', hierarchy.cercle.nom);
-        setPersonalSelectedCercleId(hierarchy.cercle.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les communes depuis le cercle
 
         try {
-<<<<<<< HEAD
 
           const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
 
@@ -3426,13 +3221,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement communes depuis cercle:', error);
 
-=======
-          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
-          setPersonalCommunes(communes || []);
-          console.log(' étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées');
-        } catch (error) {
-          console.error(' Erreur chargement communes depuis cercle:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setPersonalCommunes([]);
 
         }
@@ -3444,22 +3232,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 3: Appliquer la commune (structure INSTAT moderne)
 
       if (hierarchy.commune) {
-<<<<<<< HEAD
 
         console.log('?? étape 3: Application commune:', hierarchy.commune.nom);
 
         setPersonalSelectedCommuneId(hierarchy.commune.id);
 
-=======
-        console.log(' étape 3: Application commune:', hierarchy.commune.nom);
-        setPersonalSelectedCommuneId(hierarchy.commune.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les quartiers depuis la commune
 
         try {
-<<<<<<< HEAD
 
           const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
 
@@ -3471,13 +3253,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement quartiers depuis commune:', error);
 
-=======
-          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
-          setPersonalQuartiers(quartiers || []);
-          console.log(' étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés');
-        } catch (error) {
-          console.error(' Erreur chargement quartiers depuis commune:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setPersonalQuartiers([]);
 
         }
@@ -3489,7 +3264,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 4: Appliquer le quartier
 
       if (hierarchy.quartier) {
-<<<<<<< HEAD
 
         console.log('?? étape 4: Application quartier:', hierarchy.quartier.nom);
 
@@ -3501,33 +3275,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         console.log('?? étape 5: Aucun quartier dans la hiérarchie');
 
-=======
-        console.log(' étape 4: Application quartier:', hierarchy.quartier.nom);
-        setPersonalSelectedQuartierId(hierarchy.quartier.code);
-        console.log(' étape 4 terminée - quartier appliqué');
-      } else {
-        console.log(' étape 5: Aucun quartier dans la hiérarchie');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       }
 
       
-<<<<<<< HEAD
 
       console.log('? Application séquentielle terminée avec succés (personnel)');
 
-=======
-      console.log(' Application séquentielle terminée avec succés (personnel)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
     } catch (error) {
-<<<<<<< HEAD
 
       console.error('? Erreur lors de l\'application séquentielle (personnel):', error);
 
-=======
-      console.error(' Erreur lors de l\'application séquentielle (personnel):', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     }
 
   };
@@ -3567,7 +3326,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // Si l'adresse n'est pas différente, synchroniser automatiquement l'entreprise
 
       if (!formData.hasDifferentAddress) {
-<<<<<<< HEAD
 
         console.log('?? Synchronisation automatique de la localisation entreprise...');
 
@@ -3575,11 +3333,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         console.log('? Synchronisation localisation entreprise terminée');
 
-=======
-        console.log(' Synchronisation automatique de la localisation entreprise...');
-        await applyCompanyHierarchySequential(hierarchy);
-        console.log(' Synchronisation localisation entreprise terminée');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Synchroniser aussi l'adresse textuelle si elle est différente
@@ -3595,16 +3348,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
     } catch (error) {
-<<<<<<< HEAD
 
       console.error('? Erreur lors de la construction de la hiérarchie (personnel):', error);
 
       console.error('? Stack trace:', (error as Error).stack);
 
-=======
-      console.error(' Erreur lors de la construction de la hiérarchie (personnel):', error);
-      console.error(' Stack trace:', (error as Error).stack);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     }
 
   };
@@ -3614,7 +3362,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   // Gestion de la recherche rapide pour l'entreprise (logique utilisateur)
 
   const handleCompanyDivisionSearch = async (division: any) => {
-<<<<<<< HEAD
 
     console.log('?? Division sélectionnée via recherche (entreprise):', division);
 
@@ -3622,11 +3369,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
     console.log('?? Parent de la division:', division.parent);
 
-=======
-    console.log(' Division sélectionnée via recherche (entreprise):', division);
-    console.log(' Type de division:', division.divisionType);
-    console.log(' Parent de la division:', division.parent);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     
 
     try {
@@ -3636,25 +3378,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       console.log('? Début construction hiérarchie (entreprise)...');
 
       const hierarchy = await buildDivisionHierarchy(division);
-<<<<<<< HEAD
 
       console.log('??? Hiérarchie construite (entreprise):', hierarchy);
 
-=======
-      console.log(' Hiérarchie construite (entreprise):', hierarchy);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Vérifier si la hiérarchie est valide
 
       if (!hierarchy || Object.keys(hierarchy).length === 0) {
-<<<<<<< HEAD
 
         console.error('? Hiérarchie vide ou invalide (entreprise)');
 
-=======
-        console.error(' Hiérarchie vide ou invalide (entreprise)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         return;
 
       }
@@ -3686,13 +3420,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
   // Appliquer la hiérarchie aux sélecteurs de maniére séquentielle pour l'entreprise (logique utilisateur)
 
   const applyCompanyHierarchySequential = async (hierarchy: any) => {
-<<<<<<< HEAD
 
     console.log('?? Application séquentielle de la hiérarchie INSTAT moderne (entreprise):', hierarchy);
 
-=======
-    console.log(' Application séquentielle de la hiérarchie INSTAT moderne (entreprise):', hierarchy);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     
 
     try {
@@ -3700,22 +3430,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 1: Appliquer la région
 
       if (hierarchy.region) {
-<<<<<<< HEAD
 
         console.log('?? étape 1: Application région (entreprise):', hierarchy.region.nom);
 
         setCompanySelectedRegionId(hierarchy.region.id);
 
-=======
-        console.log(' étape 1: Application région (entreprise):', hierarchy.region.nom);
-        setCompanySelectedRegionId(hierarchy.region.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les cercles depuis la région
 
         try {
-<<<<<<< HEAD
 
           const cercles = await divisionService.getCerclesByRegion(hierarchy.region.id);
 
@@ -3727,13 +3451,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement cercles depuis région (entreprise):', error);
 
-=======
-          const cercles = await divisionService.getCerclesByRegion(hierarchy.region.code);
-          setCompanyCercles(cercles || []);
-          console.log(' étape 1 terminée - région appliquée et', cercles?.length || 0, 'cercles chargés (entreprise)');
-        } catch (error) {
-          console.error(' Erreur chargement cercles depuis région (entreprise):', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setCompanyCercles([]);
 
         }
@@ -3745,22 +3462,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 2: Appliquer le cercle
 
       if (hierarchy.cercle) {
-<<<<<<< HEAD
 
         console.log('?? étape 2: Application cercle (entreprise):', hierarchy.cercle.nom);
 
         setCompanySelectedCercleId(hierarchy.cercle.id);
 
-=======
-        console.log(' étape 2: Application cercle (entreprise):', hierarchy.cercle.nom);
-        setCompanySelectedCercleId(hierarchy.cercle.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les communes depuis le cercle
 
         try {
-<<<<<<< HEAD
 
           const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.id);
 
@@ -3772,13 +3483,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement communes depuis cercle (entreprise):', error);
 
-=======
-          const communes = await divisionService.getCommunesByCercle(hierarchy.cercle.code);
-          setCompanyCommunes(communes || []);
-          console.log(' étape 2 terminée - cercle appliqué et', communes?.length || 0, 'communes chargées (entreprise)');
-        } catch (error) {
-          console.error(' Erreur chargement communes depuis cercle (entreprise):', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setCompanyCommunes([]);
 
         }
@@ -3790,22 +3494,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 3: Appliquer la commune (structure INSTAT moderne)
 
       if (hierarchy.commune) {
-<<<<<<< HEAD
 
         console.log('?? étape 3: Application commune (entreprise):', hierarchy.commune.nom);
 
         setCompanySelectedCommuneId(hierarchy.commune.id);
 
-=======
-        console.log(' étape 3: Application commune (entreprise):', hierarchy.commune.nom);
-        setCompanySelectedCommuneId(hierarchy.commune.code);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Charger manuellement les quartiers depuis la commune
 
         try {
-<<<<<<< HEAD
 
           const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.id);
 
@@ -3817,13 +3515,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.error('? Erreur chargement quartiers depuis commune (entreprise):', error);
 
-=======
-          const quartiers = await divisionService.getQuartiersByCommune(hierarchy.commune.code);
-          setCompanyQuartiers(quartiers || []);
-          console.log(' étape 3 terminée - commune appliquée et', quartiers?.length || 0, 'quartiers chargés (entreprise)');
-        } catch (error) {
-          console.error(' Erreur chargement quartiers depuis commune (entreprise):', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           setCompanyQuartiers([]);
 
         }
@@ -3835,7 +3526,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // étape 4: Appliquer le quartier
 
       if (hierarchy.quartier) {
-<<<<<<< HEAD
 
         console.log('?? étape 4: Application quartier (entreprise):', hierarchy.quartier.nom);
 
@@ -3843,31 +3533,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         console.log('? étape 4 terminée - quartier appliqué (entreprise)');
 
-=======
-        console.log(' étape 4: Application quartier (entreprise):', hierarchy.quartier.nom);
-        setCompanySelectedQuartierId(hierarchy.quartier.code);
-        console.log(' étape 4 terminée - quartier appliqué (entreprise)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       }
 
       
-<<<<<<< HEAD
 
       console.log('? Application séquentielle terminée avec succés (entreprise)');
 
-=======
-      console.log(' Application séquentielle terminée avec succés (entreprise)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
     } catch (error) {
-<<<<<<< HEAD
 
       console.error('? Erreur lors de l\'application séquentielle (entreprise):', error);
 
-=======
-      console.error(' Erreur lors de l\'application séquentielle (entreprise):', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     }
 
   };
@@ -3891,27 +3568,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const errors: string[] = [];
 
     
-<<<<<<< HEAD
 
     // Informations personnelles obligatoires
 
-=======
-    // Pour les sociétés, valider uniquement les informations du déposant à l'étape 1
-    if (formData.typeEntreprise === 'SOCIETE') {
-      if (!formData.nomDeposant?.trim()) {
-        errors.push('Le nom du déposant est obligatoire');
-      }
-      if (!formData.prenomDeposant?.trim()) {
-        errors.push('Le prénom du déposant est obligatoire');
-      }
-      if (!formData.telephoneDeposant?.trim()) {
-        errors.push('Le téléphone du déposant est obligatoire');
-      }
-      return errors;
-    }
-    
-    // Informations personnelles obligatoires (uniquement pour les entreprises individuelles)
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     if (!formData.prenom?.trim()) errors.push('Le prénom est obligatoire');
 
     if (!formData.nom?.trim()) errors.push('Le nom est obligatoire');
@@ -3949,13 +3608,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
 
     
-<<<<<<< HEAD
 
     // Validation de la localisation personnelle (obligatoire)
 
-=======
-    // Validation de la localisation personnelle (obligatoire uniquement pour les entreprises individuelles)
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     if (!personalSelectedRegionId) errors.push('La région est obligatoire');
 
     if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
@@ -4045,12 +3700,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
 
     
-<<<<<<< HEAD
-
-=======
-    // Les informations du déposant sont validées à l'étape 1 pour les sociétés
-    
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     // Validation optionnelle de l'email (seulement si fourni)
 
     if (formData.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -4060,7 +3709,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     }
 
     
-<<<<<<< HEAD
 
     // Validation de la localisation de l'entreprise (obligatoire)
 
@@ -4088,29 +3736,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
 
-=======
-    // Validation de la localisation du siège social (obligatoire pour tous)
-    // Pour les sociétés, toujours utiliser companySelected*
-    // Pour les entreprises individuelles, utiliser personalSelected* si l'adresse n'est pas différente
-    if (formData.typeEntreprise === 'SOCIETE') {
-      if (!companySelectedRegionId) errors.push('La région du siège social est obligatoire');
-      if (!companySelectedCercleId) errors.push('Le cercle du siège social est obligatoire');
-      if (!companySelectedCommuneId) errors.push('La commune du siège social est obligatoire');
-      if (!companySelectedQuartierId) errors.push('Le quartier du siège social est obligatoire');
-    } else {
-      // Pour les entreprises individuelles
-      if (formData.hasDifferentAddress) {
-        if (!companySelectedRegionId) errors.push('La région de l\'entreprise est obligatoire');
-        if (!companySelectedCercleId) errors.push('Le cercle de l\'entreprise est obligatoire');
-        if (!companySelectedCommuneId) errors.push('La commune de l\'entreprise est obligatoire');
-        if (!companySelectedQuartierId) errors.push('Le quartier de l\'entreprise est obligatoire');
-      } else {
-        if (!personalSelectedRegionId) errors.push('La région est obligatoire');
-        if (!personalSelectedCercleId) errors.push('Le cercle est obligatoire');
-        if (!personalSelectedCommuneId) errors.push('La commune est obligatoire');
-        if (!personalSelectedQuartierId) errors.push('Le quartier est obligatoire');
-      }
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     }
 
     
@@ -5056,16 +4681,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         <body>
 
           <div class="action-buttons no-print">
-<<<<<<< HEAD
 
             <button class="print-button" onclick="window.print()">??? Imprimer</button>
 
             <button class="pdf-button" onclick="downloadPDF()">?? Télécharger PDF</button>
 
-=======
-            <button class="print-button" onclick="window.print()"> Imprimer</button>
-            <button class="pdf-button" onclick="downloadPDF()"> Télécharger PDF</button>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           </div>
 
           
@@ -5075,13 +4695,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           <script>
 
             function downloadPDF() {
-<<<<<<< HEAD
 
               console.log('?? Début génération PDF...');
 
-=======
-              console.log(' Début génération PDF...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
               try {
@@ -5105,13 +4721,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 // Vérifier si html2canvas est disponible
 
                 if (!window.html2canvas) {
-<<<<<<< HEAD
 
                   console.error('? html2canvas non chargé');
 
-=======
-                  console.error(' html2canvas non chargé');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   alert('Erreur: Bibliotheque de capture non chargee. Utilisation de l impression.');
 
                   window.print();
@@ -5121,13 +4733,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 }
 
                 
-<<<<<<< HEAD
 
                 console.log('? Bibliothéques chargées');
 
-=======
-                console.log(' Bibliothéques chargées');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 
 
                 // Créer une nouvelle instance jsPDF
@@ -5137,13 +4745,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 const pdf = new jsPDF('p', 'mm', 'a4');
 
                 
-<<<<<<< HEAD
 
                 console.log('? Instance jsPDF créée');
 
-=======
-                console.log(' Instance jsPDF créée');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 
 
                 // Masquer les boutons temporairement
@@ -5153,25 +4757,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 if (buttons) {
 
                   buttons.style.display = 'none';
-<<<<<<< HEAD
 
                   console.log('? Boutons masqués');
 
-=======
-                  console.log(' Boutons masqués');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 }
 
                 
 
                 // Utiliser html2canvas pour capturer le contenu
-<<<<<<< HEAD
 
                 console.log('?? Début capture html2canvas...');
 
-=======
-                console.log(' Début capture html2canvas...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 
 
                 window.html2canvas(document.body, {
@@ -5187,13 +4783,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   logging: true
 
                 }).then(canvas => {
-<<<<<<< HEAD
 
                   console.log('? Capture réussie, taille:', canvas.width, 'x', canvas.height);
 
-=======
-                  console.log(' Capture réussie, taille:', canvas.width, 'x', canvas.height);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   
 
                   const imgData = canvas.toDataURL('image/png');
@@ -5205,13 +4797,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
                   
-<<<<<<< HEAD
 
                   console.log('?? Ajout image au PDF...');
 
-=======
-                  console.log(' Ajout image au PDF...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   
 
                   // Ajouter l'image au PDF
@@ -5223,25 +4811,17 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   // Télécharger le PDF
 
                   const filename = 'Declaration_Honneur.pdf';
-<<<<<<< HEAD
 
                   console.log('?? Téléchargement:', filename);
 
-=======
-                  console.log(' Téléchargement:', filename);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   
 
                   pdf.save(filename);
 
                   
-<<<<<<< HEAD
 
                   console.log('? PDF téléchargé avec succés!');
 
-=======
-                  console.log(' PDF téléchargé avec succés!');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   
 
                   // Réafficher les boutons
@@ -5255,13 +4835,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   
 
                 }).catch(error => {
-<<<<<<< HEAD
 
                   console.error('? Erreur html2canvas:', error);
 
-=======
-                  console.error(' Erreur html2canvas:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   alert('Erreur lors de la capture. Utilisation de l impression.');
 
                   window.print();
@@ -5273,13 +4849,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 
 
               } catch (error) {
-<<<<<<< HEAD
 
                 console.error('? Erreur génération PDF:', error);
 
-=======
-                console.error(' Erreur génération PDF:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 alert('Erreur lors de la génération PDF: ' + error.message);
 
                 window.print();
@@ -5301,13 +4873,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               <strong>APIEx</strong>
 
             </div>
-<<<<<<< HEAD
 
             <div class="title">DéCLARATION SUR L'HONNEUR</div>
 
-=======
-            <div class="title">DECLARATION SUR L'HONNEUR</div>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             <div class="subtitle">(Art. 45, 47 de l'Acte Uniforme portant sur le Droit Commercial Général OHADA)</div>
 
           </div>
@@ -5405,13 +4973,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         newWindow.document.write(printContent);
 
         newWindow.document.close();
-<<<<<<< HEAD
 
         console.log('? Déclaration générée avec succés - Utilisez Ctrl+P pour sauvegarder en PDF');
 
-=======
-        console.log(' Déclaration générée avec succés - Utilisez Ctrl+P pour sauvegarder en PDF');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       } else {
 
         alert('Impossible d\'ouvrir une nouvelle fenétre. Veuillez autoriser les pop-ups.');
@@ -5421,13 +4985,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
     } catch (error) {
-<<<<<<< HEAD
 
       console.error('? Erreur lors de la génération du PDF:', error);
 
-=======
-      console.error(' Erreur lors de la génération du PDF:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
 
     }
@@ -5443,23 +5003,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
     try {
-<<<<<<< HEAD
 
       console.log('?? Début de la création du dossier d\'entreprise...');
 
-=======
-      console.log(' Début de la création du dossier d\'entreprise...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Validation finale de toutes les étapes
-<<<<<<< HEAD
 
       console.log('?? Validation finale de toutes les étapes...');
 
-=======
-      console.log(' Validation finale de toutes les étapes...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       const allErrors = [];
 
       
@@ -5519,13 +5071,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       }
 
       
-<<<<<<< HEAD
 
       console.log('? Toutes les validations sont passées avec succés');
 
-=======
-      console.log(' Toutes les validations sont passées avec succés');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Préparer les données pour l'API
@@ -5683,7 +5231,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       // Pour le moment, on teste sans fichiers pour identifier le probléme de données
-<<<<<<< HEAD
 
       console.log('?? Test sans fichiers pour identifier le probléme de structure des données...');
 
@@ -5697,14 +5244,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       console.log('?? Participants détaillés:', formData.participants.map(p => ({
 
-=======
-      console.log(' Test sans fichiers pour identifier le probléme de structure des données...');
-
-      console.log(' Envoi des données é l\'API...');
-      console.log(' Adresse libre envoyée:', formData.adresseLibre);
-      console.log(' Données é envoyer:', applicationData);
-      console.log(' Participants détaillés:', formData.participants.map(p => ({
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         nom: `${p.prenom} ${p.nom}`,
 
         role: p.role,
@@ -5714,25 +5253,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         civilite: p.civilite
 
       })));
-<<<<<<< HEAD
 
       console.log('?? Fichiers é envoyer:', {
 
-=======
-      console.log(' Fichiers é envoyer:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         statuts: !!formData.documents.statuts,
 
         registreCommerce: !!formData.documents.registreCommerce,
 
         justificatifDomicile: !!formData.documents.justificatifDomicile,
-<<<<<<< HEAD
-
-=======
-        pvAssemblee: !!formData.documents.pvAssemblee,
-        declarationNotariee: !!formData.documents.declarationNotariee,
-        attestationBancaire: !!formData.documents.attestationBancaire,
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         documentsParticipants: formData.participants.map(p => ({
 
           nom: `${p.prenom} ${p.nom}`,
@@ -5748,42 +5276,29 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       // IMPLéMENTATION RéELLE : Logique de création inspirée du cété utilisateur
-<<<<<<< HEAD
 
       console.log('?? Début de la création réelle du dossier d\'entreprise...');
 
-=======
-      console.log(' Début de la création réelle du dossier d\'entreprise...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Importer l'API configurée pour les agents
 
       const { axiosInstance } = await import('../services/api');
 
-<<<<<<< HEAD
 
 
       // éTAPE 1: Validation des documents requis
 
       console.log('?? éTAPE 1 - Validation des documents requis...');
 
-=======
-      // ÉTAPE 1: Validation des documents requis
-      console.log(' ÉTAPE 1 - Validation des documents requis...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       const missingDocs: string[] = [];
 
       
 
       // Vérifier les documents des participants
-<<<<<<< HEAD
 
       console.log('?? Debug participants:', formData.participants.map((p, idx) => ({
 
-=======
-      console.log(' Debug participants:', formData.participants.map((p, idx) => ({
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         index: idx + 1,
 
         nom: p.nom,
@@ -5811,13 +5326,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         // Ignorer les participants vides (pas de nom ni prénom)
 
         if (!participant.nom && !participant.prenom) {
-<<<<<<< HEAD
 
           console.log(`?? Participant ${idx + 1} ignoré (vide)`);
 
-=======
-          console.log(` Participant ${idx + 1} ignoré (vide)`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           return;
 
         }
@@ -5868,29 +5379,18 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       });
 
-<<<<<<< HEAD
 
 
       // Vérifier les documents de l'entreprise
 
       if (!formData.documents.statuts) {
 
-=======
-      // Vérifier les documents de l'entreprise selon la forme juridique
-      const requiredDocs = getRequiredDocuments(formData.formeJuridique);
-      
-      if (requiredDocs.statuts && !formData.documents.statuts) {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         missingDocs.push('Statuts de l\'entreprise manquants');
 
       }
-<<<<<<< HEAD
 
       if (!formData.documents.registreCommerce) {
 
-=======
-      if (requiredDocs.registreCommerce && !formData.documents.registreCommerce) {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         missingDocs.push('Registre de commerce manquant');
 
       }
@@ -5916,16 +5416,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       const selectedQuartier = companyQuartiers.find(q => q.id === companySelectedQuartierId);
 
       const divisionCode = selectedQuartier?.code || formData.division || agent?.division || '10040102';
-<<<<<<< HEAD
 
       console.log('?? Division utilisée:', divisionCode);
 
       console.log('?? Quartier sélectionné:', selectedQuartier);
 
-=======
-      console.log(' Division utilisée:', divisionCode);
-      console.log(' Quartier sélectionné:', selectedQuartier);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Note: Si la division n'existe pas, l'API smart essaiera différents endpoints
@@ -5933,15 +5428,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
       // Mode test : permettre la création sans documents pour tester l'API
-<<<<<<< HEAD
 
       const isTestMode = !formData.documents.statuts && !formData.documents.registreCommerce;
 
-=======
-      const hasNoRequiredDocs = (!requiredDocs.statuts || !formData.documents.statuts) && 
-                                 (!requiredDocs.registreCommerce || !formData.documents.registreCommerce);
-      const isTestMode = hasNoRequiredDocs;
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       if (missingDocs.length > 0 && !isTestMode) {
@@ -5953,7 +5442,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       if (isTestMode) {
-<<<<<<< HEAD
 
         console.log('?? MODE TEST - Création sans documents pour tester l\'API backend');
 
@@ -5965,13 +5453,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       console.log('?? éTAPE 2 - Vérification de l\'unicité des piéces d\'identité...');
 
-=======
-        console.log(' MODE TEST - Création sans documents pour tester l\'API backend');
-      }
-
-      // ÉTAPE 2: Validation de l'unicité des piéces d'identité
-      console.log(' ÉTAPE 2 - Vérification de l\'unicité des piéces d\'identité...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       const piecesToCheck = formData.participants
 
         .filter(p => p.civilite !== 'PERSONNE_MORALE' && p.numeroPiece && p.typePiece)
@@ -6041,38 +5522,25 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             }
 
           } else {
-<<<<<<< HEAD
 
             console.warn('?? Endpoint de validation non disponible, on continue sans validation préalable');
 
-=======
-            console.warn(' Endpoint de validation non disponible, on continue sans validation préalable');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
         } catch (e) {
-<<<<<<< HEAD
 
           console.warn('?? Erreur lors de la validation préalable:', e);
 
-=======
-          console.warn(' Erreur lors de la validation préalable:', e);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         }
 
       }
 
-<<<<<<< HEAD
 
 
       // éTAPE 3: Création des participants (RéACTIVéE)
 
       console.log(' étape 3 - Création des participants...');
 
-=======
-      // ÉTAPE 3: Création des participants (RéACTIVÉE)
-      console.log(' ÉTAPE 3 - Création des participants...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       // Nettoyer les IDs temporaires des participants (garder seulement les vrais IDs backend)
@@ -6124,38 +5592,47 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         return false;
 
       });
-<<<<<<< HEAD
 
-      console.log(`?? Participants é créer: ${participantsToCreate.length}/${formData.participants.length}`);
-
-=======
-      console.log(` Participants à créer: ${participantsToCreate.length}/${formData.participants.length}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
+      console.log(`📤 Participants à créer: ${participantsToCreate.length}/${formData.participants.length}`);
+      console.log(`📋 [DEBUG GLOBAL] formData.isMarried: ${formData.isMarried}, formData.conjoints:`, formData.conjoints);
+      console.log(`📋 [DEBUG GLOBAL] formData.email: ${formData.email}, formData.prenom: ${formData.prenom}, formData.nom: ${formData.nom}`);
       
-
       for (const participant of participantsToCreate) {
-
+        console.log(`\n🔄 Traitement participant:`, {
+          prenom: participant.prenom,
+          nom: participant.nom,
+          email: participant.email,
+          role: participant.role,
+          situationMatrimoniale: participant.situationMatrimoniale,
+          hasConjoints: participant.conjoints && participant.conjoints.length > 0
+        });
+        
         // Adapter la structure pour le backend (enums et dates)
-
         const isPersonneMorale = participant.civilite === 'PERSONNE_MORALE';
 
         
-<<<<<<< HEAD
 
         console.log(`?? Création participant ${participant.role} - ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}`);
 
-=======
-        console.log(` Création participant ${participant.role} - ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Déterminer si ce participant correspond aux informations personnelles (créateur/gérant/promoteur)
+        // Utiliser l'email comme identifiant unique car nom/prénom peuvent avoir des variations
 
-        const isCreatorParticipant = participant.prenom === formData.prenom && 
-
-                                   participant.nom === formData.nom &&
+        const isCreatorParticipant = participant.email === formData.email &&
 
                                    (participant.role === 'GERANT' || participant.role === 'PROMOTEUR');
+        
+        console.log(`🔍 Vérification créateur pour ${participant.prenom} ${participant.nom}:`, {
+          participantEmail: participant.email,
+          formDataEmail: formData.email,
+          isCreator: isCreatorParticipant,
+          role: participant.role,
+          formDataIsMarried: formData.isMarried,
+          formDataConjointsLength: formData.conjoints ? formData.conjoints.length : 0,
+          participantSituationMatrimoniale: participant.situationMatrimoniale,
+          participantConjointsLength: participant.conjoints ? participant.conjoints.length : 0
+        });
 
         
 
@@ -6408,13 +5885,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
             if (!emailRegex.test(correctedEmail)) {
-<<<<<<< HEAD
 
               console.warn(`?? Email invalide détecté: "${email}" ? générer un email valide`);
 
-=======
-              console.warn(` Email invalide détecté: "${email}"  générer un email valide`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               // Générer un email valide basé sur le nom/prénom
 
               const safeName = (participant.prenom || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -6463,42 +5936,79 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           porte: isCreatorParticipant ? formData.porte : undefined,
 
-          // Conjoints (seulement pour le créateur marié)
+          // Conjoints (pour tous les participants mariés)
+          // Si c'est le créateur et qu'il est marié, utiliser formData.conjoints
+          // Sinon, utiliser participant.conjoints s'il existe
 
-          conjoints: isCreatorParticipant && formData.isMarried && formData.conjoints ? 
-
-            formData.conjoints.map(c => ({
-
-              prenom: c.prenom,
-
-              nom: c.nom,
-
-              dateMariage: c.dateMariage,
-
-              lieuMariage: c.lieuMariage,
-
-              regimeMatrimonial: c.regimeMatrimonial,
-
-              clauseRestrictive: c.clauseRestrictive
-
-            })) : []
+          conjoints: (() => {
+            // 1. Si le participant a déjà des conjoints définis, les utiliser
+            if (participant.conjoints && participant.conjoints.length > 0) {
+              console.log(`💍 Ajout de ${participant.conjoints.length} conjoint(s) pour ${participant.prenom} ${participant.nom} (depuis participant.conjoints)`);
+              return participant.conjoints.map(c => ({
+                prenom: c.prenom,
+                nom: c.nom,
+                dateMariage: c.dateMariage,
+                lieuMariage: c.lieuMariage,
+                regimeMatrimonial: c.regimeMatrimonial,
+                clauseRestrictive: c.clauseRestrictive
+              }));
+            }
+            
+            // 2. Si c'est le créateur marié ET qu'il n'a pas de conjoints définis, utiliser formData.conjoints
+            if (isCreatorParticipant && formData.isMarried && formData.conjoints && formData.conjoints.length > 0) {
+              console.log(`💍 Ajout de ${formData.conjoints.length} conjoint(s) pour le créateur ${participant.prenom} ${participant.nom} (depuis formData.conjoints)`);
+              return formData.conjoints.map(c => ({
+                prenom: c.prenom,
+                nom: c.nom,
+                dateMariage: c.dateMariage,
+                lieuMariage: c.lieuMariage,
+                regimeMatrimonial: c.regimeMatrimonial,
+                clauseRestrictive: c.clauseRestrictive
+              }));
+            }
+            
+            // 3. Si le participant est marié mais n'a pas de conjoints, vérifier s'il correspond au créateur par nom/prénom
+            if (participant.situationMatrimoniale === 'MARIE' && 
+                formData.isMarried && 
+                formData.conjoints && 
+                formData.conjoints.length > 0 &&
+                participant.prenom === formData.prenom && 
+                participant.nom === formData.nom) {
+              console.log(`💍 Ajout de ${formData.conjoints.length} conjoint(s) pour ${participant.prenom} ${participant.nom} (correspondance nom/prénom avec créateur)`);
+              return formData.conjoints.map(c => ({
+                prenom: c.prenom,
+                nom: c.nom,
+                dateMariage: c.dateMariage,
+                lieuMariage: c.lieuMariage,
+                regimeMatrimonial: c.regimeMatrimonial,
+                clauseRestrictive: c.clauseRestrictive
+              }));
+            }
+            
+            console.log(`⚠️ Aucun conjoint trouvé pour ${participant.prenom} ${participant.nom} (marié: ${participant.situationMatrimoniale === 'MARIE'})`);
+            return [];
+          })()
 
         };
 
-<<<<<<< HEAD
 
 
-        console.log(`?? Données participant ${participant.role}:`, personRequest);
+        console.log(`📤 Données participant ${participant.role}:`, personRequest);
+        console.log(`📤 Téléphone formaté: ${participant.telephone} → ${personRequest.telephone1}`);
+        
+        console.log(`💍 Conjoints envoyés pour ${participant.prenom} ${participant.nom}:`, personRequest.conjoints);
+        
+        // IMPORTANT: Mettre à jour formData.participants avec les conjoints pour qu'ils soient disponibles lors du mapping final
+        if (personRequest.conjoints && personRequest.conjoints.length > 0) {
+          participant.conjoints = personRequest.conjoints.map((c, idx) => ({
+            id: `conjoint-${Date.now()}-${idx}`,
+            ...c
+          }));
+          console.log(`✅ Conjoints sauvegardés dans formData.participants pour ${participant.prenom} ${participant.nom}`);
+        }
 
-        console.log(`?? Téléphone formaté: ${participant.telephone} ? ${personRequest.telephone1}`);
+        console.log(`📤 Localisation participant:`, {
 
-        console.log(`?? Localisation participant:`, {
-
-=======
-        console.log(` Données participant ${participant.role}:`, personRequest);
-        console.log(` Téléphone formaté: ${participant.telephone} ? ${personRequest.telephone1}`);
-        console.log(` Localisation participant:`, {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           isCreator: isCreatorParticipant,
 
           division_id: personRequest.division_id,
@@ -6520,13 +6030,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           const token = localStorage.getItem('investmali_agent_token') || localStorage.getItem('agentToken') || localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('agent_token');
 
           
-<<<<<<< HEAD
 
           console.log(`?? Token pour création participant:`, {
 
-=======
-          console.log(` Token pour création participant:`, {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             hasToken: !!token,
 
             tokenLength: token?.length,
@@ -6538,64 +6044,43 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
 
           // ÉTAPE 1: Vérifier si le participant existe déjà par téléphone
-<<<<<<< HEAD
 
           console.log(`?? Vérification existence participant par téléphone: ${personRequest.telephone1}`);
 
-=======
-          console.log(` Vérification existence participant par téléphone: ${personRequest.telephone1}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
-          
-
           try {
-
             const searchResponse = await fetch(`${getApiBaseUrl()}/persons/search?telephone=${encodeURIComponent(personRequest.telephone1)}`, {
-
               method: 'GET',
-
               headers: {
-
                 'Authorization': `Bearer ${token}`,
-
                 'Content-Type': 'application/json'
-
               }
-
             });
 
-            
-
             if (searchResponse.ok) {
-
               const existingPerson = await searchResponse.json();
-
               console.log(`✅ Participant existant trouvé:`, existingPerson);
-
               participant.id = existingPerson.id;
 
+              // IMPORTANT: Sauvegarder les conjoints dans participant AVANT le continue
+              if (personRequest.conjoints && personRequest.conjoints.length > 0) {
+                participant.conjoints = personRequest.conjoints.map((c, idx) => ({
+                  id: `conjoint-${Date.now()}-${idx}`,
+                  ...c
+                }));
+                console.log(`✅ Conjoints sauvegardés dans formData.participants pour participant existant ${participant.prenom} ${participant.nom}`);
+              }
+
               console.log(`✅ Réutilisation du participant existant avec ID: ${participant.id}`);
-
               continue; // Passer au participant suivant
-
             }
-
           } catch (searchError) {
-
             console.log(`ℹ️ Participant non trouvé, création d'un nouveau participant`);
-
           }
 
-          
-
           // ÉTAPE 2: Créer un nouveau participant si non trouvé
-<<<<<<< HEAD
 
           console.log(`?? Envoi requéte POST /api/v1/persons pour ${participant.prenom} ${participant.nom}:`, personRequest);
 
-=======
-          console.log(` Envoi requéte POST /api/v1/persons pour ${participant.prenom} ${participant.nom}:`, personRequest);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
-          
 
           const response = await fetch(`${getApiBaseUrl()}/persons`, {
 
@@ -6614,13 +6099,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           });
 
           
-<<<<<<< HEAD
 
           console.log(`?? Réponse POST /api/v1/persons:`, {
 
-=======
-          console.log(` Réponse POST /api/v1/persons:`, {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             status: response.status,
 
             statusText: response.statusText,
@@ -6634,13 +6115,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           if (!response.ok) {
 
             const errorText = await response.text();
-<<<<<<< HEAD
 
             console.error(`? Erreur détaillée création participant:`, errorText);
 
-=======
-            console.error(` Erreur détaillée création participant:`, errorText);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             throw new Error(`Erreur ${response.status}: ${response.statusText} - ${errorText}`);
 
           }
@@ -6648,35 +6125,23 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
 
           const result = await response.json();
-<<<<<<< HEAD
 
           console.log(`? Participant ${participant.role} créé avec succés:`, result);
 
-=======
-          console.log(` Participant ${participant.role} créé avec succés:`, result);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           
 
           // Mettre é jour l'ID du participant
 
           participant.id = result.id || result.data?.id;
-<<<<<<< HEAD
 
           console.log(`?? ID assigné au participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
 
-=======
-          console.log(` ID assigné au participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           
 
         } catch (error) {
-<<<<<<< HEAD
 
           console.error(`? ERREUR création participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}:`, error);
 
-=======
-          console.error(` ERREUR création participant ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}:`, error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           
 
           // Vérifier si c'est une erreur d'email déjé utilisé
@@ -6684,47 +6149,31 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           const errorMessage = (error as Error).message || error?.toString() || '';
 
           if (errorMessage.includes('email est déjé utilisé') || errorMessage.includes('email already exists')) {
-<<<<<<< HEAD
 
             console.log(`?? Email déjé utilisé détecté pour ${personRequest.email}`);
 
-=======
-            console.log(` Email déjé utilisé détecté pour ${personRequest.email}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             
 
             // Pour les personnes morales, continuer automatiquement sans email
 
             if (isPersonneMorale) {
-<<<<<<< HEAD
 
               console.log(`?? Email "${personRequest.email}" déjé utilisé pour la personne morale "${participant.denominationEntreprise}" - Suppression automatique de l'email`);
 
-=======
-              console.log(` Email "${personRequest.email}" déjé utilisé pour la personne morale "${participant.denominationEntreprise}" - Suppression automatique de l'email`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
               // Retenter sans email pour personne morale
-<<<<<<< HEAD
 
               console.log(`?? Tentative sans email pour personne morale: ${participant.denominationEntreprise}`);
 
-=======
-              console.log(` Tentative sans email pour personne morale: ${participant.denominationEntreprise}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               personRequest.email = undefined;
 
             } else {
 
               // Pour les personnes physiques, modifier l'email automatiquement SANS demander confirmation
-<<<<<<< HEAD
 
               console.log(`?? Email "${personRequest.email}" déjé utilisé pour ${participant.prenom} ${participant.nom} - Modification automatique`);
 
-=======
-              console.log(` Email "${personRequest.email}" déjé utilisé pour ${participant.prenom} ${participant.nom} - Modification automatique`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
               // Modifier l'email automatiquement et réessayer
@@ -6738,13 +6187,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               const newEmail = `${emailParts[0]}_${timestamp}@${emailParts[1]}`;
 
               
-<<<<<<< HEAD
 
               console.log(`?? Tentative avec nouvel email: ${originalEmail} ? ${newEmail}`);
 
-=======
-              console.log(` Tentative avec nouvel email: ${originalEmail} ? ${newEmail}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               personRequest.email = newEmail;
 
             }
@@ -6784,13 +6229,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               
 
               const retryResult = await retryResponse.json();
-<<<<<<< HEAD
 
               console.log(`? Participant créé avec email modifié:`, retryResult);
 
-=======
-              console.log(` Participant créé avec email modifié:`, retryResult);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
               participant.id = retryResult.id || retryResult.data?.id;
@@ -6800,13 +6241,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 participant.email = personRequest.email; // Mettre é jour l'email dans les données
 
               }
-<<<<<<< HEAD
 
               console.log(`?? ID assigné au participant: ${participant.id}`);
 
-=======
-              console.log(`✅ ID assigné au participant: ${participant.id}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
             } catch (retryError) {
@@ -6816,13 +6253,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               // En dernier recours, simuler un ID
 
               participant.id = `sim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-<<<<<<< HEAD
 
               console.log(`?? ID simulé en dernier recours: ${participant.id}`);
 
-=======
-              console.log(` ID simulé en dernier recours: ${participant.id}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             }
 
           } else {
@@ -6830,13 +6263,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // Pour les autres erreurs, simuler un ID
 
             participant.id = `sim-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-<<<<<<< HEAD
 
             console.log(`?? ID simulé pour ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
 
-=======
-            console.log(` ID simulé pour ${isPersonneMorale ? participant.denominationEntreprise : `${participant.prenom} ${participant.nom}`}: ${participant.id}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
         }
@@ -6846,13 +6275,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
       // éTAPE 4: Créer l'entreprise
-<<<<<<< HEAD
 
       console.log('?? éTAPE 4 - Création de l\'entreprise...');
 
-=======
-      console.log(' éTAPE 4 - Création de l\'entreprise...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       console.log('🔍 DEBUG - formData.participants AVANT mapping:', formData.participants.map(p => ({
@@ -6906,23 +6331,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
 
           if (!validRoles.includes(cleanRole)) {
-<<<<<<< HEAD
 
             console.warn(`Réle invalide pour participant ${participantName}: ${p.role}, utilisation de ASSOCIE`);
 
-=======
-            console.warn(`Role invalide pour participant ${participantName}: ${p.role}, utilisation de ASSOCIE`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
           
-<<<<<<< HEAD
 
           console.log(`?? Mapping participant ${participantName}:`, {
 
-=======
-          console.log(` Mapping participant ${participantName}:`, {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             originalId: p.id,
 
             isSimulated: p.id?.startsWith('sim-'),
@@ -7022,13 +6439,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         email: formData.email || formData.emailPersonnel || '',
 
         adresseDifferentIdentite: formData.hasDifferentAddress || false,
-<<<<<<< HEAD
 
-        extraitJudiciaire: formData.hasCriminalRecord || false,
+        extraitJudiciaire: (() => {
+          // Vérifier si au moins un gérant/promoteur a un casier judiciaire
+          const hasGerantWithCasier = formData.participants.some(p => 
+            (p.role === 'GERANT' || p.role === 'PROMOTEUR') && 
+            p.hasCriminalRecord === true
+          );
+          return hasGerantWithCasier || formData.hasCriminalRecord || false;
+        })(),
 
-=======
-        extraitJudiciaire: formData.hasCriminalRecord || formData.participants.some(p => p.hasCriminalRecord === true) || false,
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         autorisationGerant: formData.allowsOthersResponsible || false,
 
         autorisationExercice: formData.requiresExerciseAuthorization || false,
@@ -7052,16 +6472,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         activitePrincipale: formData.activitePrincipale || '', // Activité principale
 
         activiteSecondaire: formData.activiteSecondaire || '', // Champ optionnel avec valeur par défaut
-<<<<<<< HEAD
-
-=======
-        // Informations du déposant (pour les sociétés)
-        nomDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.nomDeposant || null : null,
-        prenomDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.prenomDeposant || null : null,
-        telephoneDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.telephoneDeposant || null : null,
-        emailDeposant: formData.typeEntreprise === 'SOCIETE' ? formData.emailDeposant || null : null,
-        nomCabinet: formData.typeEntreprise === 'SOCIETE' ? formData.nomCabinet || null : null,
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         capitale: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
 
           ? 0 // Capital é 0 pour les entreprises individuelles
@@ -7143,13 +6553,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             // TOUJOURS corriger les ADMINISTRATEUR (mettre é 0%)
 
             const adjustedWithoutParts = participantsWithoutParts.map(p => {
-<<<<<<< HEAD
 
               console.log(`?? ADMINISTRATEUR ${p.personId} - Parts forcées é 0% (était ${p.pourcentageParts}%)`);
 
-=======
-              console.log(` ADMINISTRATEUR ${p.personId} - Parts forcées é 0% (était ${p.pourcentageParts}%)`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               return {
 
                 ...p,
@@ -7167,13 +6573,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             let adjustedWithParts = participantsWithParts;
 
             if (totalPercentage !== 100 && participantsWithParts.length > 0) {
-<<<<<<< HEAD
 
               console.log(`?? Ajustement des pourcentages: ${totalPercentage}% ? 100% (${participantsWithParts.length} participants avec parts)`);
 
-=======
-              console.log(` Ajustement des pourcentages: ${totalPercentage}% ? 100% (${participantsWithParts.length} participants avec parts)`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               
 
               // Si la somme n'est pas 100%, redistribuer équitablement seulement entre ceux qui ont des parts
@@ -7199,13 +6601,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             realParticipants = [...adjustedWithParts, ...adjustedWithoutParts];
 
             
-<<<<<<< HEAD
 
             console.log(`? Pourcentages finaux:`, realParticipants.map(p => ({ 
 
-=======
-            console.log(` Pourcentages finaux:`, realParticipants.map(p => ({ 
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               personId: p.personId, 
 
               role: p.role, 
@@ -7217,13 +6615,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           }
 
           
-<<<<<<< HEAD
 
           console.log(`?? Participants aprés filtrage (IDs réels seulement):`, {
 
-=======
-          console.log(` Participants aprés filtrage (IDs réels seulement):`, {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             total: allParticipants.length,
 
             real: realParticipants.length,
@@ -7263,13 +6657,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 // Convertir la date au format Date pour le backend
 
                 result.dateNaissance = new Date(originalParticipant.dateNaissance);
-<<<<<<< HEAD
 
                 console.log(`?? [PARTICIPANT] ${participant.personId} - Date naissance ajoutée: ${originalParticipant.dateNaissance}`);
 
-=======
-                console.log(` [PARTICIPANT] ${participant.personId} - Date naissance ajoutée: ${originalParticipant.dateNaissance}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               }
 
               
@@ -7279,27 +6669,43 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               if (originalParticipant.lieuNaissance && originalParticipant.lieuNaissance !== '') {
 
                 result.lieuNaissance = originalParticipant.lieuNaissance;
-<<<<<<< HEAD
 
-                console.log(`?? [PARTICIPANT] ${participant.personId} - Lieu naissance ajouté: ${originalParticipant.lieuNaissance}`);
+                console.log(`📤 [PARTICIPANT] ${participant.personId} - Lieu naissance ajouté: ${originalParticipant.lieuNaissance}`);
 
-=======
-                console.log(` [PARTICIPANT] ${participant.personId} - Lieu naissance ajouté: ${originalParticipant.lieuNaissance}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
+              }
+
+              // Ajouter conjoints si disponible
+
+              if (originalParticipant.conjoints && originalParticipant.conjoints.length > 0) {
+
+                result.conjoints = originalParticipant.conjoints.map(c => ({
+
+                  prenom: c.prenom,
+
+                  nom: c.nom,
+
+                  dateMariage: c.dateMariage,
+
+                  lieuMariage: c.lieuMariage,
+
+                  regimeMatrimonial: c.regimeMatrimonial,
+
+                  clauseRestrictive: c.clauseRestrictive
+
+                }));
+
+                console.log(`💍 [PARTICIPANT] ${participant.personId} - ${result.conjoints.length} conjoint(s) ajouté(s)`);
+
               }
 
             } else {
 
-              // ?? CAS SPéCIAL: Entreprise individuelle - utiliser les données du créateur principal
+              // 🔧 CAS SPÉCIAL: Entreprise individuelle - utiliser les données du créateur principal
 
               if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && (participant.role === 'GERANT' || participant.role === 'PROMOTEUR')) {
-<<<<<<< HEAD
 
                 console.log(`?? [ENTREPRISE INDIVIDUELLE] Utilisation des données du créateur pour le gérant ${participant.personId}`);
 
-=======
-                console.log(` [ENTREPRISE INDIVIDUELLE] Utilisation des données du créateur pour le gérant ${participant.personId}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 
 
                 // Utiliser les données personnelles du créateur principal
@@ -7307,13 +6713,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 if (formData.dateNaissance && formData.dateNaissance !== '') {
 
                   result.dateNaissance = new Date(formData.dateNaissance);
-<<<<<<< HEAD
 
                   console.log(`?? [CRéATEUR] ${participant.personId} - Date naissance du créateur ajoutée: ${formData.dateNaissance}`);
 
-=======
-                  console.log(` [CREATEUR] ${participant.personId} - Date naissance du créateur ajoutée: ${formData.dateNaissance}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 }
 
                 
@@ -7321,23 +6723,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 if (formData.lieuNaissance && formData.lieuNaissance !== '') {
 
                   result.lieuNaissance = formData.lieuNaissance;
-<<<<<<< HEAD
 
                   console.log(`?? [CRéATEUR] ${participant.personId} - Lieu naissance du créateur ajouté: ${formData.lieuNaissance}`);
 
-=======
-                  console.log(` [CREATEUR] ${participant.personId} - Lieu naissance du créateur ajouté: ${formData.lieuNaissance}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 }
 
               } else {
-<<<<<<< HEAD
 
                 console.warn(`?? [PARTICIPANT] ${participant.personId} - Données personnelles non trouvées dans formData.participants`);
 
-=======
-                console.warn(` [PARTICIPANT] ${participant.personId} - Données personnelles non trouvées dans formData.participants`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               }
 
             }
@@ -7349,13 +6743,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           });
 
           
-<<<<<<< HEAD
 
           console.log(`? Participants avec données personnelles:`, participantsWithPersonalData.map((p: any) => ({ 
 
-=======
-          console.log(` Participants avec données personnelles:`, participantsWithPersonalData.map((p: any) => ({ 
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             personId: p.personId, 
 
             role: p.role, 
@@ -7397,17 +6787,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       // Validation des participants réactivée
 
       const realParticipants = allParticipants.filter(p => p.personId && !p.personId.startsWith('sim-'));
-<<<<<<< HEAD
 
       console.log(`?? Participants réels: ${realParticipants.length}, Participants simulés: ${allParticipants.length - realParticipants.length}`);
 
-=======
-      console.log(` Participants réels: ${realParticipants.length}, Participants simulés: ${allParticipants.length - realParticipants.length}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       if (realParticipants.length === 0) {
-<<<<<<< HEAD
 
         console.warn('?? Aucun participant réel trouvé - l\'entreprise sera créée sans participants');
 
@@ -7417,12 +6802,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       console.log('?? DEBUG NOM ENTREPRISE:', {
 
-=======
-        console.warn(' Aucun participant réel trouvé - l\'entreprise sera créée sans participants');
-      }
-
-      console.log(' DEBUG NOM ENTREPRISE:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         nomEntreprise: formData.nomEntreprise,
 
         typeEntreprise: formData.typeEntreprise,
@@ -7438,7 +6817,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         estVide: entrepriseRequest.nom === ''
 
       });
-<<<<<<< HEAD
 
       console.log('?? Données entreprise é envoyer:', entrepriseRequest);
 
@@ -7452,14 +6830,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       console.log('?? Code division utilisé:', {
 
-=======
-      console.log(' Données entreprise é envoyer:', entrepriseRequest);
-      console.log(' Participants formatés (AVANT correction):', allParticipants);
-      console.log(' Participants finaux (APRéS correction):', entrepriseRequest.participants);
-      console.log(' DEBUG - Nombre de participants dans la requête:', entrepriseRequest.participants.length);
-      console.log(' DEBUG - Contenu détaillé des participants:', JSON.stringify(entrepriseRequest.participants, null, 2));
-      console.log(' Code division utilisé:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         divisionCode: entrepriseRequest.divisionCode,
 
         selectedQuartierId: companySelectedQuartierId || personalSelectedQuartierId,
@@ -7469,13 +6839,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         fallbackDivision: formData.division || agent?.division
 
       });
-<<<<<<< HEAD
 
       console.log('?? Validation des champs obligatoires:', {
 
-=======
-      console.log(' Validation des champs obligatoires:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         nom: !!entrepriseRequest.nom,
 
         capitale: !!entrepriseRequest.capitale,
@@ -7497,13 +6863,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       
 
       // VRAIE LOGIQUE : Utiliser directement l'endpoint /entreprises comme cété utilisateur
-<<<<<<< HEAD
 
       console.log('?? éTAPE 4 - POST /api/v1/entreprises (JSON)');
 
-=======
-      console.log('ÉTAPE 4 - POST /api/v1/entreprises (JSON)');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       
 
       let entRes;
@@ -7523,13 +6885,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       localStorage.getItem('agent_token');
 
         
-<<<<<<< HEAD
 
         console.log('?? Vérification authentification agent:', {
 
-=======
-        console.log(' Vérification authentification agent:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           hasToken: !!token,
 
           tokenLength: token?.length || 0,
@@ -7609,13 +6967,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           }
 
           
-<<<<<<< HEAD
 
           console.error('? Erreur détaillée du serveur:', {
 
-=======
-          console.error(' Erreur détaillée du serveur:', {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             status: response.status,
 
             statusText: response.statusText,
@@ -7635,7 +6989,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         
 
         entRes = { data: await response.json() };
-<<<<<<< HEAD
 
         console.log('? Entreprise créée avec succés via l\'endpoint réel');
 
@@ -7645,12 +6998,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         console.error('? Erreur lors de la création de l\'entreprise:', error);
 
-=======
-        console.log(' Entreprise créée avec succés via l\'endpoint réel');
-        console.log(' Réponse complète du backend:', JSON.stringify(entRes.data, null, 2));
-      } catch (error) {
-        console.error(' Erreur lors de la création de l\'entreprise:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         // Extraire et traduire le message d'erreur pour l'utilisateur
@@ -7757,27 +7104,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       }
 
-<<<<<<< HEAD
 
 
       console.log('? Entreprise créée:', { entrepriseId, entrepriseReference });
-=======
-      console.log(' Entreprise créée:', { entrepriseId, entrepriseReference });
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
 
 
       // éTAPE 5: Upload des documents
-<<<<<<< HEAD
 
       console.log('?? éTAPE 5 - Upload des documents...');
-=======
-      console.log('  ÉTAPE 5 - Upload des documents...');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
 
 
-      const uploadPieceForParticipant = async (personId: string, typePiece: string, numeroPiece: string, file: File) => {
+      const uploadPieceForParticipant = async (personId: string, typePiece: string, numeroPiece: string | null, file: File) => {
 
         const fd = new FormData();
 
@@ -7787,7 +7126,10 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         fd.append('typePiece', typePiece);
 
-        fd.append('numero', numeroPiece);
+        // N'ajouter le numéro que s'il est fourni (éviter d'envoyer "null" comme string)
+        if (numeroPiece) {
+          fd.append('numero', numeroPiece);
+        }
 
         const exp = new Date(); exp.setFullYear(exp.getFullYear() + 5);
 
@@ -7818,7 +7160,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           }
 
         } catch (error) {
-<<<<<<< HEAD
 
           console.error('❌ [UPLOAD PIECE] Erreur détaillée:', error);
 
@@ -7826,11 +7167,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           throw error; // Propager l'erreur au lieu de la masquer
 
-=======
-          console.warn(' Endpoint documents/piece non implémenté, simulation de l\'upload');
-          // Simuler un délai d'upload
-          await new Promise(resolve => setTimeout(resolve, 500));
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         }
 
       };
@@ -7870,26 +7206,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           });
 
           if (!response.ok) {
-<<<<<<< HEAD
 
             throw new Error(`Upload failed: ${response.status}`);
 
-=======
-            const errorText = await response.text();
-            console.error('❌ Erreur upload document:', {
-              status: response.status,
-              statusText: response.statusText,
-              errorDetails: errorText,
-              typeDocument,
-              personId,
-              entrepriseId
-            });
-            throw new Error(`Upload failed: ${response.status} - ${errorText}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
         } catch (error) {
-<<<<<<< HEAD
 
           console.error('❌ [UPLOAD DOCUMENT] Erreur détaillée:', error);
 
@@ -7897,10 +7219,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           throw error; // Propager l'erreur au lieu de la masquer
 
-=======
-          console.error('❌ Exception lors de l\'upload:', error);
-          throw error;
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         }
 
       };
@@ -7922,13 +7240,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
 
         if (isEmpty) {
-<<<<<<< HEAD
 
           console.log('?? Participant vide ignoré pour l\'upload');
 
-=======
-          console.log(' Participant vide ignoré pour l\'upload');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           continue;
 
         }
@@ -7936,19 +7250,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         
 
         if (participant.civilite === 'PERSONNE_MORALE') {
-<<<<<<< HEAD
 
           console.log('?? Personne morale détectée - upload du RCCM');
 
-=======
-          console.log(' Personne morale détectée - upload du RCCM');
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           // Upload du document RCCM pour les personnes morales
 
           if (participant.rccmFile && participant.id) {
 
             try {
-<<<<<<< HEAD
 
               console.log(`?? Upload RCCM pour ${participant.denominationEntreprise}`);
 
@@ -7960,104 +7269,55 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               console.error('? Upload RCCM échoué:', e);
 
-=======
-              console.log(` Upload RCCM pour ${participant.denominationEntreprise}`);
-              await uploadDocumentFor(participant.id, 'RCCM', participant.rccmFile, `RCCM-${participant.denominationEntreprise}-${entrepriseReference}`);
-              console.log(' Document RCCM uploadé');
-            } catch (e) {
-              console.error(' Upload RCCM échoué:', e);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               throw new Error(`Erreur upload RCCM ${participant.denominationEntreprise}: ${e}`);
 
             }
 
           } else {
-<<<<<<< HEAD
 
             console.log('?? Pas de fichier RCCM ou ID manquant pour', participant.denominationEntreprise);
 
-=======
-            console.log(' Pas de fichier RCCM ou ID manquant pour', participant.denominationEntreprise);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           }
 
         } else {
 
-          // Upload des documents pour les personnes physiques
+          // Upload des pièces d'identité (CNI, PASSEPORT, etc.) pour les personnes physiques
+          console.log('🔍 [PIECE IDENTITE] Participant:', participant.prenom, participant.nom);
+          console.log('🔍 [PIECE IDENTITE] participant.id:', participant.id);
+          console.log('🔍 [PIECE IDENTITE] participant.documentFile:', !!participant.documentFile, participant.documentFile?.name);
+          console.log('🔍 [PIECE IDENTITE] participant.typePiece:', participant.typePiece);
+          console.log('🔍 [PIECE IDENTITE] participant.numeroPiece:', participant.numeroPiece);
 
-          if (participant.id && participant.documentFile && participant.typePiece && participant.numeroPiece) {
+          // Le numéro de pièce est optionnel, on envoie null si non renseigné
+          if (participant.id && participant.documentFile && participant.typePiece) {
 
             try {
-<<<<<<< HEAD
 
-              console.log(`?? Upload piéce ${participant.typePiece} pour ${participant.prenom} ${participant.nom}`);
+              // Utiliser null si le numéro n'est pas renseigné (évite les faux numéros en base)
+              const numeroPiece = participant.numeroPiece || null;
+              console.log(`📄 Upload pièce ${participant.typePiece} pour ${participant.prenom} ${participant.nom} (numéro: ${numeroPiece || 'non renseigné'})`);
 
-=======
-              console.log(` Upload piéce ${participant.typePiece} pour ${participant.prenom} ${participant.nom}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
-              await uploadPieceForParticipant(participant.id, participant.typePiece, participant.numeroPiece, participant.documentFile);
+              await uploadPieceForParticipant(participant.id, participant.typePiece, numeroPiece, participant.documentFile);
+              
+              console.log(`✅ Pièce ${participant.typePiece} uploadée avec succès pour ${participant.prenom} ${participant.nom}`);
 
             } catch (e) {
-<<<<<<< HEAD
 
-              console.error('? Upload piéce échoué:', e);
+              console.error('❌ Upload pièce échoué:', e);
 
-=======
-              console.error(' Upload piéce échoué:', e);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               throw new Error(`Erreur upload document ${participant.prenom} ${participant.nom}: ${e}`);
 
             }
 
+          } else {
+            console.warn('⚠️ [PIECE IDENTITE] Conditions non remplies pour', participant.prenom, participant.nom);
+            console.warn('⚠️ [PIECE IDENTITE] Manquant:', {
+              id: !participant.id,
+              documentFile: !participant.documentFile,
+              typePiece: !participant.typePiece
+            });
           }
-<<<<<<< HEAD
 
-=======
-          
-          // Upload des documents supplémentaires pour les gérants/promoteurs
-          if (participant.id && (participant.role === 'GERANT' || participant.role === 'PROMOTEUR')) {
-            // Upload extrait de naissance
-            if (participant.extraitNaissanceFile) {
-              try {
-                console.log(` Upload extrait de naissance pour ${participant.prenom} ${participant.nom}`);
-                await uploadDocumentFor(participant.id, 'EXTRAIT_NAISSANCE', participant.extraitNaissanceFile, `EXTRAIT-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
-                console.log('✅ Extrait de naissance uploadé');
-              } catch (e) {
-                console.error('❌ Upload extrait de naissance échoué:', e);
-              }
-            }
-            
-            // Upload casier judiciaire ou déclaration sur l'honneur
-            if (participant.hasCriminalRecord === true && participant.casierJudiciaireFile) {
-              try {
-                console.log(` Upload casier judiciaire pour ${participant.prenom} ${participant.nom}`);
-                await uploadDocumentFor(participant.id, 'CASIER_JUDICIAIRE', participant.casierJudiciaireFile, `CASIER-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
-                console.log('✅ Casier judiciaire uploadé');
-              } catch (e) {
-                console.error('❌ Upload casier judiciaire échoué:', e);
-              }
-            } else if (participant.hasCriminalRecord === false && participant.declarationHonneurFile) {
-              try {
-                console.log(` Upload déclaration sur l'honneur pour ${participant.prenom} ${participant.nom}`);
-                await uploadDocumentFor(participant.id, 'DECLARATION_HONNEUR', participant.declarationHonneurFile, `DECLARATION-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
-                console.log('✅ Déclaration sur l\'honneur uploadée');
-              } catch (e) {
-                console.error('❌ Upload déclaration sur l\'honneur échoué:', e);
-              }
-            }
-            
-            // Upload acte de mariage si marié
-            if (participant.situationMatrimoniale === 'MARIE' && participant.acteMariageFile) {
-              try {
-                console.log(` Upload acte de mariage pour ${participant.prenom} ${participant.nom}`);
-                await uploadDocumentFor(participant.id, 'ACTE_MARIAGE', participant.acteMariageFile, `MARIAGE-${participant.prenom}-${participant.nom}-${entrepriseReference}`);
-                console.log('✅ Acte de mariage uploadé');
-              } catch (e) {
-                console.error('❌ Upload acte de mariage échoué:', e);
-              }
-            }
-          }
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         }
 
       }
@@ -8106,49 +7366,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       }
 
-<<<<<<< HEAD
-
-=======
-      // Upload PV d'Assemblée (conditionnel selon forme juridique)
-      if (formData.documents.pvAssemblee && gerantId) {
-        try { 
-          await uploadDocumentFor(gerantId, 'PV_ASSEMBLEE', formData.documents.pvAssemblee, `PV-${entrepriseReference}`); 
-          console.log('✅ PV d\'Assemblée uploadé');
-        } catch (e) { 
-          console.error('❌ Upload PV d\'Assemblée échoué:', e); 
-        }
-      }
-
-      // Upload Déclaration notariée (conditionnel selon forme juridique)
-      if (formData.documents.declarationNotariee && gerantId) {
-        try { 
-          await uploadDocumentFor(gerantId, 'DECLARATION_NOTARIEE', formData.documents.declarationNotariee, `DN-${entrepriseReference}`); 
-          console.log('✅ Déclaration notariée uploadée');
-        } catch (e) { 
-          console.error('❌ Upload déclaration notariée échoué:', e); 
-        }
-      }
-
-      // Upload Attestation bancaire (conditionnel selon forme juridique)
-      if (formData.documents.attestationBancaire && gerantId) {
-        try { 
-          await uploadDocumentFor(gerantId, 'ATTESTATION_BANCAIRE', formData.documents.attestationBancaire, `AB-${entrepriseReference}`); 
-          console.log('✅ Attestation bancaire uploadée');
-        } catch (e) { 
-          console.error('❌ Upload attestation bancaire échoué:', e); 
-        }
-      }
-
-      // Upload RCCM de la société mère (conditionnel pour succursales/filiales)
-      if (formData.documents.rccmSocieteMere && gerantId) {
-        try { 
-          await uploadDocumentFor(gerantId, 'RCCM', formData.documents.rccmSocieteMere, `RCCM-MERE-${entrepriseReference}`); 
-          console.log('✅ RCCM de la société mère uploadé');
-        } catch (e) { 
-          console.error('❌ Upload RCCM société mère échoué:', e); 
-        }
-      }
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
       // Certificat de résidence depuis l'étape 3 (Participants)
 
@@ -8176,33 +7393,41 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
 
-      // Pièce de nationalité pour les entreprises individuelles
-
+      // Certificat de nationalité (PIECE_NATIONALITE) pour les entreprises individuelles
+      // Note: C'est un DOCUMENT (TypeDocuments), pas une pièce d'identité (TypePieces)
+      console.log('🔍 [CERTIFICAT NATIONALITE] Type entreprise:', formData.typeEntreprise);
+      console.log('🔍 [CERTIFICAT NATIONALITE] gerantParticipant:', gerantParticipant);
+      console.log('🔍 [CERTIFICAT NATIONALITE] gerantId:', gerantId);
+      
       if (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE') {
 
-        const pieceNationalite = gerantParticipant?.pieceNationaliteFile;
+        const certificatNationalite = gerantParticipant?.pieceNationaliteFile;
+        console.log('🔍 [CERTIFICAT NATIONALITE] Fichier présent:', !!certificatNationalite, certificatNationalite?.name);
 
         
 
-        if (pieceNationalite && gerantId) {
+        if (certificatNationalite && gerantId) {
 
           try { 
 
-            await uploadDocumentFor(gerantId, 'PIECE_NATIONALITE', pieceNationalite, `PN-${entrepriseReference}`); 
+            console.log('📤 [CERTIFICAT NATIONALITE] Upload en cours pour gerantId:', gerantId);
+            // Upload comme document PIECE_NATIONALITE
+            await uploadDocumentFor(gerantId, 'PIECE_NATIONALITE', certificatNationalite, `CN-${entrepriseReference}`);
 
-            console.log('✅ Pièce de nationalité uploadée depuis l\'étape 3');
+            console.log(`✅ Certificat de nationalité uploadé pour l'entreprise individuelle`);
 
           } catch (e) {
 
-            console.error('❌ Upload pièce nationalité échoué:', e);
+            console.error('❌ Upload certificat de nationalité échoué:', e);
 
           }
 
+        } else {
+          console.warn('⚠️ [CERTIFICAT NATIONALITE] Conditions non remplies - certificatNationalite:', !!certificatNationalite, 'gerantId:', gerantId);
         }
 
       }
 
-<<<<<<< HEAD
 
 
       // Upload des documents spécifiques aux gérants
@@ -8365,16 +7590,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           console.log(`🔄 Upload documents supplémentaires pour participant non-gérant: ${participant.prenom || participant.denominationEntreprise}`);
 
-=======
-      
-      // Upload des documents supplémentaires pour tous les participants
-      for (const participant of formData.participants) {
-        if (participant.autresDocuments && participant.autresDocuments.length > 0 && participant.id) {
-          const participantName = participant.civilite === 'PERSONNE_MORALE' 
-            ? participant.denominationEntreprise 
-            : `${participant.prenom} ${participant.nom}`;
-          console.log(`🔄 Upload ${participant.autresDocuments.length} document(s) supplémentaire(s) pour ${participantName}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           
 
           for (const doc of participant.autresDocuments) {
@@ -8386,13 +7601,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 const docNumber = doc.name;
 
                 await uploadDocumentFor(participant.id, 'AUTRES', doc.file, docNumber);
-<<<<<<< HEAD
 
                 console.log(`✅ Document supplémentaire "${doc.name}" uploadé pour ${participant.prenom || participant.denominationEntreprise}`);
 
-=======
-                console.log(`✅ Document supplémentaire "${doc.name}" uploadé pour ${participantName}`);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               } catch (e) {
 
                 console.error(`❌ Upload document supplémentaire "${doc.name}" échoué:`, e);
@@ -8661,6 +7872,64 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       
 
+      // Nettoyer le localStorage après la création réussie
+      console.log('🧹 Nettoyage du localStorage...');
+      localStorage.removeItem('dossier_creation_cache');
+      console.log('✅ localStorage nettoyé');
+
+      // Réinitialiser complètement le formulaire immédiatement
+      console.log('🔄 Réinitialisation du formulaire...');
+      setFormData({
+        civilite: 'MONSIEUR',
+        prenom: '',
+        nom: '',
+        dateNaissance: '',
+        lieuNaissance: '',
+        nationalite: 'MALIENNE',
+        telephonePersonnel: '',
+        telephonePersonnel2: '',
+        emailPersonnel: '',
+        adressePersonnelle: '',
+        localite: '',
+        porte: '',
+        adresseLibre: '',
+        hasCriminalRecord: false,
+        isMarried: false,
+        allowsOthersResponsible: false,
+        requiresExerciseAuthorization: false,
+        willImportExport: false,
+        hasDifferentAddress: false,
+        nomEntreprise: '',
+        sigleEntreprise: '',
+        typeEntreprise: 'ENTREPRISE_INDIVIDUELLE',
+        formeJuridique: 'E_I',
+        capital: '',
+        adresse: '',
+        telephone: '',
+        email: '',
+        rueEntreprise: '',
+        porteEntreprise: '',
+        activitePrincipale: '',
+        activiteSecondaire: '',
+        participants: [],
+        conjoints: [],
+        documents: {
+          statuts: null,
+          registreCommerce: null,
+          justificatifDomicile: null,
+          pvAssemblee: null,
+          declarationNotariee: null,
+          attestationBancaire: null,
+          rccmSocieteMere: null,
+        },
+        division: '',
+        antenne: '',
+      });
+      setCurrentStep(1);
+      console.log('✅ Formulaire réinitialisé');
+
+      
+
       // Réinitialisation commentée pour rester sur la page récapitulatif
 
       /*
@@ -8741,9 +8010,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           registreCommerce: null,
 
-          identite: null,
-
           justificatifDomicile: null,
+
+          pvAssemblee: null,
+
+          declarationNotariee: null,
+
+          attestationBancaire: null,
+
+          rccmSocieteMere: null,
 
         },
 
@@ -8999,7 +8274,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       </div>
 
-<<<<<<< HEAD
 
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -9032,292 +8306,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-=======
-      {/* Affichage conditionnel selon le type d'entreprise */}
-      {formData.typeEntreprise === 'SOCIETE' ? (
-        /* ========== FORMULAIRE DÉPOSANT (SOCIÉTÉ) ========== */
-        <>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-[#2d85c9] rounded-lg">
-                <UserIcon className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">Informations du Déposant</h2>
-                <p className="text-slate-600 font-medium mt-1">
-                  Renseignez les informations de la personne qui dépose le dossier de création de société.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Nom *
-              </label>
-              <input
-                type="text"
-                required
-                defaultValue={formData.nomDeposant}
-                onBlur={(e) => updateFormData('nomDeposant', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                placeholder="Nom de famille"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Prénom *
-              </label>
-              <input
-                type="text"
-                required
-                defaultValue={formData.prenomDeposant}
-                onBlur={(e) => updateFormData('prenomDeposant', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                placeholder="Prénom"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Civilité *
-              </label>
-              <select
-                required
-                value={formData.civilite}
-                onChange={(e) => updateFormData('civilite', e.target.value as Civilites)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              >
-                <option value="MONSIEUR">Monsieur</option>
-                <option value="MADAME">Madame</option>
-               
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Téléphone *
-              </label>
-              <div className="relative">
-                <div className="flex">
-                  <div className="relative personal-country-dropdown">
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPersonalCountryDropdown(!showPersonalCountryDropdown)}
-                      className="flex items-center px-3 py-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300"
-                    >
-                      <img 
-                        alt={`Drapeau ${personalSelectedCountry.iso}`} 
-                        className="w-6 h-4 mr-2 object-cover rounded-sm" 
-                        src={personalSelectedCountry.flag}
-                      />
-                      <span className="text-sm font-medium text-gray-700">{personalSelectedCountry.code}</span>
-                      <svg className="w-4 h-4 ml-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                    
-                    {showPersonalCountryDropdown && (
-                      <div className="absolute top-full left-0 z-50 w-80 max-h-60 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
-                        {countries.map((country) => (
-                          <button
-                            key={country.iso}
-                            type="button"
-                            onClick={() => {
-                              setPersonalSelectedCountry(country);
-                              setShowPersonalCountryDropdown(false);
-                            }}
-                            className="w-full flex items-center px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-left"
-                          >
-                            <img 
-                              alt={`Drapeau ${country.iso}`} 
-                              className="w-6 h-4 mr-3 object-cover rounded-sm" 
-                              src={country.flag}
-                            />
-                            <span className="text-sm font-medium text-gray-700 mr-2">{country.code}</span>
-                            <span className="text-sm text-gray-600">{country.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="tel"
-                    defaultValue={formData.telephoneDeposant}
-                    onChange={(e) => handlePersonalPhoneChange(e.target.value, e.target)}
-                    onBlur={(e) => updateFormData('telephoneDeposant', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-300 hover:border-mali-emerald/50"
-                    placeholder={personalPhonePlaceholder}
-                    maxLength={personalPhoneMaxLength}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Email (optionnel)
-              </label>
-              <input
-                type="email"
-                defaultValue={formData.emailDeposant}
-                onBlur={(e) => updateFormData('emailDeposant', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                placeholder="email@exemple.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
-                Nom du cabinet (optionnel)
-              </label>
-              <input
-                type="text"
-                defaultValue={formData.nomCabinet || ''}
-                onBlur={(e) => updateFormData('nomCabinet', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                placeholder="Nom du cabinet si applicable"
-              />
-            </div>
-          </div>
-
-          {/* Questions Oui/Non pour les sociétés */}
-          <div className="col-span-2 space-y-6 pt-6 border-t border-white/40">
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm font-medium text-gray-700">Avez-vous un extrait de casier judiciaire ?</span>
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('hasCriminalRecord', true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    formData.hasCriminalRecord 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Oui
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('hasCriminalRecord', false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    !formData.hasCriminalRecord 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm font-medium text-gray-700">Êtes-vous marié(e) ?</span>
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('isMarried', true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    formData.isMarried 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Oui
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('isMarried', false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    !formData.isMarried 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm font-medium text-gray-700">Votre activité est-elle soumise à une autorisation d'exercice ?</span>
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('requiresExerciseAuthorization', true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    formData.requiresExerciseAuthorization 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Oui
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('requiresExerciseAuthorization', false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    !formData.requiresExerciseAuthorization 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm font-medium text-gray-700">Allez-vous importer ou exporter des marchandises ?</span>
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('willImportExport', true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    formData.willImportExport 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Oui
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => updateFormData('willImportExport', false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    !formData.willImportExport 
-                      ? 'bg-[#2d85c9] text-white shadow-lg' 
-                      : 'bg-white/60  text-slate-700 border border-white/50 shadow-lg hover:shadow-sm'
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        /* ========== FORMULAIRE PROMOTEUR (ENTREPRISE INDIVIDUELLE) ========== */
-        <>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-[#2d85c9] rounded-lg">
-                <UserIcon className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">Informations Personnelles</h2>
-                <p className="text-slate-600 font-medium mt-1">
-                  Renseignez les informations personnelles du promoteur de l'entreprise.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
 
@@ -10355,43 +9343,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-<<<<<<< HEAD
-=======
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Région *</label>
-                <select
-                  value={personalSelectedRegionId}
-                  onChange={async (e) => {
-                    const regionId = e.target.value;
-                    setPersonalSelectedRegionId(regionId);
-                    
-                    // Reset des niveaux inférieurs (structure INSTAT moderne)
-                    setPersonalSelectedCercleId('');
-                    setPersonalSelectedCommuneId('');
-                    setPersonalSelectedQuartierId('');
-                    setPersonalCercles([]);
-                    setPersonalCommunes([]);
-                    setPersonalQuartiers([]);
-                    
-                    if (regionId) {
-                      console.log(' Chargement cercles pour région:', regionId);
-                      try {
-                        const cercles = await divisionService.getCerclesByRegion(regionId);
-                                    setPersonalCercles(cercles || []);
-                      } catch (error) {
-                                    setPersonalCercles([]);
-                      }
-                    }
-                  }}
-                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300"
-                >
-                  <option value="">Sélectionnez une région</option>
-                  {personalRegions.map((region: any) => (
-                    <option key={region.id} value={region.id}>{region.nom}</option>
-                  ))}
-                </select>
-              </div>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
               <div>
 
@@ -10638,7 +9589,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       {/* Questions Oui/Non */}
 
       <div className="col-span-2 space-y-6 pt-6 border-t border-white/40">
-<<<<<<< HEAD
 
         <div className="flex items-center justify-between mt-4">
 
@@ -10696,9 +9646,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
 
-=======
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
-        {/* <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between mt-4">
 
           <span className="text-sm font-medium text-gray-700">Avez-vous un extrait de casier judiciaire ?</span>
 
@@ -10750,7 +9698,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
           </div>
 
-        </div> */}
+        </div>
 
 
 
@@ -11257,12 +10205,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
         </div>
 
       </div>
-<<<<<<< HEAD
-
-=======
-      </>
-      )}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
     </div>
 
   );
@@ -11472,23 +10414,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             required
 
             value={formData.formeJuridique}
-<<<<<<< HEAD
 
             onChange={(e) => updateFormData('formeJuridique', e.target.value as FormeJuridique)}
 
-=======
-            onChange={(e) => {
-              const selectedForme = e.target.value as FormeJuridique;
-              // Mettre à jour la forme juridique
-              updateFormData('formeJuridique', selectedForme);
-              // Si une forme de société est sélectionnée, mettre automatiquement typeEntreprise à SOCIETE
-              if (selectedForme !== 'E_I') {
-                updateFormData('typeEntreprise', 'SOCIETE');
-              } else {
-                updateFormData('typeEntreprise', 'ENTREPRISE_INDIVIDUELLE');
-              }
-            }}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             disabled={formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE'}
 
             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-500 ${
@@ -11617,7 +10545,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
             <label className="block text-sm font-bold text-slate-700 mb-2">
 
-              Domaine d'activité 
+              Domaine d'activité {domaineActiviteNrOptions.length > 0 && `(${domaineActiviteNrOptions.length} options disponibles)`}
 
             </label>
 
@@ -11798,7 +10726,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
         <div className="space-y-6">
-<<<<<<< HEAD
 
             <div className={`border rounded-xl p-4 ${
 
@@ -11820,14 +10747,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               }`}>
 
-=======
-            <div className="border rounded-xl p-4 bg-sky-50 border-primary-200">
-              <h3 className="text-lg font-semibold mb-3 flex items-center text-primary-800">
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                  Recherche rapide de localisation
 
               </h3>
-<<<<<<< HEAD
 
               {!formData.hasDifferentAddress ? (
 
@@ -11863,15 +10785,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                 disabled={!formData.hasDifferentAddress}
 
-=======
-              <p className="text-sm text-primary-600 mb-4">
-                Tapez le nom d'une localisation pour remplir automatiquement la hiérarchie administrative du siège social
-              </p>
-              <DivisionSearchInput
-                placeholder="Rechercher une région, cercle, arrondissement, commune ou quartier..."
-                onSelect={handleCompanyDivisionSearch}
-                disabled={false}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 className="w-full"
 
               />
@@ -11891,7 +10804,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   required
 
                   value={companySelectedRegionId}
-<<<<<<< HEAD
 
                   disabled={!formData.hasDifferentAddress}
 
@@ -11901,12 +10813,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                     setCompanySelectedRegionId(regionId);
 
-=======
-                  disabled={false}
-                  onChange={async (e) => {
-                    const regionCode = e.target.value;
-                    setCompanySelectedRegionId(regionCode);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     
 
                     // Reset des niveaux inférieurs (structure INSTAT moderne)
@@ -11924,7 +10830,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     setCompanyQuartiers([]);
 
                     
-<<<<<<< HEAD
 
                     if (regionId) {
 
@@ -11936,23 +10841,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                         console.log('? Cercles entreprise chargés:', cercles?.length || 0);
 
-=======
-                    if (regionCode) {
-                      console.log('🔄 Chargement cercles pour région entreprise (code):', regionCode);
-                      try {
-                        const cercles = await divisionService.getCerclesByRegion(regionCode);
-                        console.log('✅ Cercles entreprise chargés:', cercles?.length || 0, cercles);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                         setCompanyCercles(cercles || []);
 
                       } catch (error) {
-<<<<<<< HEAD
 
                         console.error('? Erreur chargement cercles entreprise:', error);
 
-=======
-                        console.error('❌ Erreur chargement cercles entreprise:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                         setCompanyCercles([]);
 
                       }
@@ -11968,13 +10862,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <option value="">Sélectionnez une région</option>
 
                   {companyRegions.map((region: any) => (
-<<<<<<< HEAD
 
                     <option key={region.id} value={region.id}>{region.nom}</option>
 
-=======
-                    <option key={region.code} value={region.code}>{region.nom}</option>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   ))}
 
                 </select>
@@ -11992,16 +10882,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     value={companySelectedCercleId}
 
                     onChange={async (e) => {
-<<<<<<< HEAD
 
                       const cercleId = e.target.value;
 
                       setCompanySelectedCercleId(cercleId);
 
-=======
-                      const cercleCode = e.target.value;
-                      setCompanySelectedCercleId(cercleCode);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                       
 
                       // Reset des niveaux inférieurs (structure INSTAT moderne)
@@ -12015,17 +10900,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       setCompanyQuartiers([]);
 
                       
-<<<<<<< HEAD
 
                       if (cercleId) {
 
-=======
-                      if (cercleCode) {
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                         // Structure INSTAT moderne : charger directement les communes depuis le cercle
 
                         try {
-<<<<<<< HEAD
 
                           const communes = await divisionService.getCommunesByCercle(cercleId);
 
@@ -12037,13 +10917,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                           console.error('? Erreur chargement communes entreprise depuis cercle:', error);
 
-=======
-                          const communes = await divisionService.getCommunesByCercle(cercleCode);
-                          setCompanyCommunes(communes || []);
-                          console.log('✅ Communes entreprise chargées depuis cercle:', communes?.length || 0);
-                        } catch (error) {
-                          console.error('❌ Erreur chargement communes entreprise depuis cercle:', error);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                           setCompanyCommunes([]);
 
                         }
@@ -12051,13 +10924,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       }
 
                     }}
-<<<<<<< HEAD
 
                     disabled={!formData.hasDifferentAddress || companyCercles.length === 0}
 
-=======
-                    disabled={!companySelectedRegionId}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
 
                   >
@@ -12065,13 +10934,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <option value="">Sélectionnez un cercle</option>
 
                     {companyCercles.map((cercle: any) => (
-<<<<<<< HEAD
 
                       <option key={cercle.id} value={cercle.id}>{cercle.nom}</option>
 
-=======
-                      <option key={cercle.code} value={cercle.code}>{cercle.nom}</option>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     ))}
 
                   </select>
@@ -12089,16 +10954,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     value={companySelectedCommuneId}
 
                     onChange={async (e) => {
-<<<<<<< HEAD
 
                       const communeId = e.target.value;
 
                       setCompanySelectedCommuneId(communeId);
 
-=======
-                      const communeCode = e.target.value;
-                      setCompanySelectedCommuneId(communeCode);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                       
 
                       // Reset des niveaux inférieurs
@@ -12108,28 +10968,19 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                       setCompanyQuartiers([]);
 
                       
-<<<<<<< HEAD
 
                       if (communeId) {
 
                         const quartiers = await divisionService.getQuartiersByCommune(communeId);
 
-=======
-                      if (communeCode) {
-                        const quartiers = await divisionService.getQuartiersByCommune(communeCode);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                         setCompanyQuartiers(quartiers || []);
 
                       }
 
                     }}
-<<<<<<< HEAD
 
                     disabled={!formData.hasDifferentAddress || companyCommunes.length === 0}
 
-=======
-                    disabled={companyCommunes.length === 0}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
 
                   >
@@ -12137,13 +10988,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <option value="">Sélectionnez une commune</option>
 
                     {companyCommunes.map((commune: any) => (
-<<<<<<< HEAD
 
                       <option key={commune.id} value={commune.id}>{commune.nom}</option>
 
-=======
-                      <option key={commune.code} value={commune.code}>{commune.nom}</option>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     ))}
 
                   </select>
@@ -12167,13 +11014,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     setCompanySelectedQuartierId(e.target.value);
 
                   }}
-<<<<<<< HEAD
 
                   disabled={!formData.hasDifferentAddress || companyQuartiers.length === 0}
 
-=======
-                  disabled={companyQuartiers.length === 0}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-mali-emerald focus:border-transparent transition-all duration-500 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
 
                 >
@@ -12181,13 +11024,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <option value="">Sélectionnez un quartier</option>
 
                   {companyQuartiers.map((quartier: any) => (
-<<<<<<< HEAD
 
                     <option key={quartier.id} value={quartier.id}>{quartier.nom}</option>
 
-=======
-                    <option key={quartier.code} value={quartier.code}>{quartier.nom}</option>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   ))}
 
                 </select>
@@ -12205,13 +11044,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Rue</label>
 
                   <input
-<<<<<<< HEAD
 
                     className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed"
 
-=======
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     placeholder=""
 
                     type="text"
@@ -12219,13 +11054,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     defaultValue={formData.rueEntreprise || ''}
 
                     onBlur={(e) => updateFormData('rueEntreprise', e.target.value)}
-<<<<<<< HEAD
 
                     disabled={!formData.hasDifferentAddress}
 
-=======
-                    disabled={false}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   />
 
                 </div>
@@ -12235,13 +11066,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">Porte</label>
 
                   <input
-<<<<<<< HEAD
 
                     className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed"
 
-=======
-                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent text-sm sm:text-base"
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     placeholder=""
 
                     type="text"
@@ -12249,13 +11076,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     defaultValue={formData.porteEntreprise || ''}
 
                     onBlur={(e) => updateFormData('porteEntreprise', e.target.value)}
-<<<<<<< HEAD
 
                     disabled={!formData.hasDifferentAddress}
 
-=======
-                    disabled={false}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   />
 
                 </div>
@@ -12280,28 +11103,25 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
   const ParticipantsStep = () => {
 
-    const [editingIndex, setEditingIndex] = useState<number | null>(null);
-
-    const [creatorRole, setCreatorRole] = useState<'GERANT' | 'PROMOTEUR' | 'ASSOCIE' | 'ADMINISTRATEUR'>(
-
-      formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' ? 'PROMOTEUR' : 'GERANT'
-
-    );
-
-    const [showDetailedForm, setShowDetailedForm] = useState(false);
-
-    const [showAddForm, setShowAddForm] = useState(false);
-
-    const [isCreatorFlow, setIsCreatorFlow] = useState(false);
-
-    const [showPersonTypeModal, setShowPersonTypeModal] = useState(false);
-
-    const [selectedPersonType, setSelectedPersonType] = useState<'PHYSIQUE' | 'MORALE' | null>(null);
+    // Utiliser les états du parent au lieu de créer des états locaux
+    const editingIndex = participantEditingIndex;
+    const setEditingIndex = setParticipantEditingIndex;
+    const creatorRole = participantCreatorRole;
+    const setCreatorRole = setParticipantCreatorRole;
+    const showDetailedForm = showParticipantDetailedForm;
+    const setShowDetailedForm = setShowParticipantDetailedForm;
+    const showAddForm = showParticipantAddForm;
+    const setShowAddForm = setShowParticipantAddForm;
+    const isCreatorFlow = isParticipantCreatorFlow;
+    const setIsCreatorFlow = setIsParticipantCreatorFlow;
+    const showPersonTypeModal = showParticipantPersonTypeModal;
+    const setShowPersonTypeModal = setShowParticipantPersonTypeModal;
+    const selectedPersonType = selectedParticipantPersonType;
+    const setSelectedPersonType = setSelectedParticipantPersonType;
 
 
 
-    const createEmptyParticipant = (): Participant => ({
-<<<<<<< HEAD
+    const createEmptyParticipant = useCallback((): Participant => ({
 
       civilite: selectedPersonType === 'MORALE' ? 'PERSONNE_MORALE' : (isCreatorFlow ? formData.civilite : ''),
 
@@ -12323,18 +11143,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       adresse: isCreatorFlow ? formData.adressePersonnelle : '',
 
-=======
-      civilite: selectedPersonType === 'MORALE' ? 'PERSONNE_MORALE' : (isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.civilite : ''),
-      prenom: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.prenom : '',
-      nom: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.nom : '',
-      dateNaissance: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.dateNaissance : '',
-      lieuNaissance: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.lieuNaissance : '',
-      nationalite: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.nationalite : 'MALIENNE',
-      telephone: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.telephonePersonnel : '',
-      telephone2: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.telephonePersonnel2 : '',
-      email: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.emailPersonnel : '',
-      adresse: isCreatorFlow && formData.typeEntreprise !== 'SOCIETE' ? formData.adressePersonnelle : '',
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       role: formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
 
         ? 'PROMOTEUR' // Pour les entreprises individuelles, toujours PROMOTEUR
@@ -12383,21 +11191,29 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       acteMariageFile: undefined,
 
-    });
+    }), [selectedPersonType, isCreatorFlow, formData.civilite, formData.prenom, formData.nom, formData.dateNaissance, formData.lieuNaissance, formData.nationalite, formData.telephonePersonnel, formData.telephonePersonnel2, formData.emailPersonnel, formData.adressePersonnelle, formData.typeEntreprise, formData.isMarried, formData.hasCriminalRecord]);
 
 
 
-    const [newParticipant, setNewParticipant] = useState<Participant>(() => createEmptyParticipant());
+    // newParticipant et setNewParticipant sont maintenant dans le parent
 
 
 
     // Fonction optimisée pour mettre à jour les champs du participant
 
     const updateParticipantField = useCallback((field: string, value: any) => {
-
       setNewParticipant((prev: Participant) => ({ ...prev, [field]: value }));
-
     }, []);
+
+    // useRef pour gérer le champ numeroPiece sans re-render
+    const numeroPieceRef = React.useRef<HTMLInputElement>(null);
+
+    // Synchroniser le champ numeroPiece quand le participant change
+    React.useEffect(() => {
+      if (numeroPieceRef.current && numeroPieceRef.current !== document.activeElement) {
+        numeroPieceRef.current.value = newParticipant.numeroPiece || '';
+      }
+    }, [newParticipant.id, editingIndex]);
 
 
 
@@ -12462,12 +11278,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     useEffect(() => {
 
       if (selectedPersonType && editingIndex === null) {
-
-        setNewParticipant(createEmptyParticipant());
-
+        // Ne pas réinitialiser si l'utilisateur a déjà commencé à remplir le formulaire
+        const hasStartedFilling = newParticipant.sexe || newParticipant.typePiece || newParticipant.numeroPiece || newParticipant.documentFile;
+        if (!hasStartedFilling) {
+          setNewParticipant(createEmptyParticipant());
+        }
       }
 
-    }, [selectedPersonType, editingIndex]);
+    }, [selectedPersonType, editingIndex, newParticipant.sexe, newParticipant.typePiece, newParticipant.numeroPiece, newParticipant.documentFile]);
 
 
 
@@ -12476,12 +11294,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     useEffect(() => {
 
       if (isCreatorFlow && editingIndex === null) {
-
-        setNewParticipant(createEmptyParticipant());
-
+        // Ne pas réinitialiser si l'utilisateur a déjà commencé à remplir le formulaire
+        const hasStartedFilling = newParticipant.sexe || newParticipant.typePiece || newParticipant.numeroPiece || newParticipant.documentFile;
+        if (!hasStartedFilling) {
+          setNewParticipant(createEmptyParticipant());
+        }
       }
 
-    }, [isCreatorFlow, editingIndex]);
+    }, [isCreatorFlow, editingIndex, newParticipant.sexe, newParticipant.typePiece, newParticipant.numeroPiece, newParticipant.documentFile]);
 
 
 
@@ -12812,13 +11632,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
     const editParticipant = (index: number) => {
 
       const participant = formData.participants[index];
-<<<<<<< HEAD
 
       console.log('?? édition du participant:', participant);
 
-=======
-      console.log(' édition du participant:', participant);
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
       setEditingIndex(index);
 
       setSelectedPersonType(participant.typePersonne || 'PHYSIQUE');
@@ -12832,6 +11648,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
     const addParticipant = () => {
+      console.log('🔍 [ADD PARTICIPANT] newParticipant avant ajout:', newParticipant);
 
       if (editingIndex !== null) {
 
@@ -12846,6 +11663,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
       } else {
 
         const participant = { ...newParticipant, tempId: Date.now().toString() }; // Utiliser tempId au lieu de id
+        console.log('🔍 [ADD PARTICIPANT] participant à ajouter:', participant);
 
         updateFormData('participants', [...formData.participants, participant]);
 
@@ -13320,13 +12138,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
                 {/* Pourcentage de parts - Conditionnel pour personnes morales et masqué pour entreprises individuelles */}
-<<<<<<< HEAD
 
                 {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' ? (
 
-=======
-                {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' && (
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   <div>
 
                     <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -13366,19 +12180,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     {newParticipant.civilite === 'PERSONNE_MORALE' && (
 
                       <p className="text-xs text-primary-600 mt-1">
-<<<<<<< HEAD
 
                         ?? Les personnes morales peuvent avoir 0% de parts (participation sans capital)
 
-=======
-                        Les personnes morales peuvent avoir 0% de parts (participation sans capital)
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                       </p>
 
                     )}
 
                   </div>
-<<<<<<< HEAD
 
                 ) : (
 
@@ -13412,8 +12221,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                   )
 
-=======
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 )}
 
 
@@ -14377,13 +13184,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
               {/* Pourcentage de parts - Conditionnel et masqué pour entreprises individuelles */}
-<<<<<<< HEAD
 
               {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' ? (
 
-=======
-              {roleRequiresParts(newParticipant.role) && formData.typeEntreprise === 'SOCIETE' && (
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 <div>
 
                   <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -14415,31 +13218,22 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     type="number"
 
                     value={newParticipant.pourcentageParts}
-<<<<<<< HEAD
 
                     onChange={(e) => setNewParticipant({...newParticipant, pourcentageParts: parseFloat(e.target.value)})}
 
-=======
-                    onChange={(e) => setNewParticipant({...newParticipant, pourcentageParts: parseFloat(e.target.value) || 0})}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   />
 
                   {newParticipant.civilite === 'PERSONNE_MORALE' && (
 
                     <p className="text-xs text-primary-600 mt-1">
-<<<<<<< HEAD
 
                       ?? Les personnes morales peuvent avoir 0% de parts (participation sans capital)
 
-=======
-                       Les personnes morales peuvent avoir 0% de parts (participation sans capital)
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     </p>
 
                   )}
 
                 </div>
-<<<<<<< HEAD
 
               ) : (
 
@@ -14473,8 +13267,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                 )
 
-=======
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               )}
 
 
@@ -14567,19 +13359,29 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               <div>
 
-                <label className="block text-sm font-bold text-slate-700 mb-2">Numéro de la piéce (optionnel)</label>
+                <label htmlFor="numeroPiece" className="block text-sm font-bold text-slate-700 mb-2">Numéro de la pièce (optionnel)</label>
 
                 <input
 
+                  key={`numeroPiece-${newParticipant.id || editingIndex || 'new'}`}
+
+                  id="numeroPiece"
+
+                  name="numeroPiece"
+
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mali-emerald focus:border-transparent"
 
-                  placeholder="Numéro de la piéce d'identité (optionnel)"
+                  placeholder="Numéro de la pièce d'identité (optionnel)"
 
                   type="text"
 
-                  value={newParticipant.numeroPiece || ''}
+                  defaultValue={newParticipant.numeroPiece || ''}
 
-                  onChange={(e) => updateParticipantField('numeroPiece', e.target.value)}
+                  onBlur={(e) => setNewParticipant({...newParticipant, numeroPiece: e.target.value})}
+
+                  maxLength={50}
+
+                  autoComplete="off"
 
                 />
 
@@ -14848,8 +13650,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
                   {/* Actes de mariage par conjoint */}
-
-                  {newParticipant.situationMatrimoniale === 'MARIE' && formData.conjoints && formData.conjoints.length > 0 && (
+                  {(() => {
+                    const isCreator = newParticipant.email === formData.email || 
+                                     (formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' && 
+                                      (newParticipant.role === 'GERANT' || newParticipant.role === 'PROMOTEUR'));
+                    return isCreator && formData.isMarried && formData.conjoints && formData.conjoints.length > 0;
+                  })() && (
 
                     <div className="md:col-span-2">
 
@@ -14857,7 +13663,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                       <div className="space-y-3">
 
-                        {formData.conjoints.map((conjoint, index) => (
+                        {(formData.conjoints || []).map((conjoint, index) => (
 
                           <div key={conjoint.id || index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
 
@@ -14882,9 +13688,7 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 const file = e.target.files?.[0];
 
                                 if (file) {
-
                                   updateConjoint(index, 'acteMariageFile', file);
-
                                 }
 
                               }}
@@ -14948,7 +13752,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                                 type="button"
 
                                 onClick={() => handleGenerateDeclaration(newParticipant)}
-<<<<<<< HEAD
 
                                 disabled={!newParticipant.nom || !newParticipant.prenom}
 
@@ -14958,21 +13761,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                 ?? Générer la déclaration PDF
 
-=======
-                                className="w-full py-2 px-4 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
-                              >
-                                📄 Générer la déclaration PDF
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                               </button>
 
                               <p className="text-xs text-black-600 mt-1">
-<<<<<<< HEAD
 
                                 ?? Génére un PDF de déclaration sur l'honneur avec vos informations et signature
 
-=======
-                                📝 Génère un PDF de déclaration sur l'honneur avec vos informations et signature
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                               </p>
 
                             </div>
@@ -14984,13 +13778,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                             <div className="mt-4">
 
                               <label className="block text-sm font-medium text-black-900 mb-3">
-<<<<<<< HEAD
 
                                 ?? Signature de la déclaration sur l'honneur {!newParticipant.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
 
-=======
-                                ✍️ Signature de la déclaration sur l'honneur {!newParticipant.declarationHonneurFile ? '*' : '(optionnel si document uploadé)'}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                               </label>
 
                               <SignatureCanvas
@@ -15006,13 +13796,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                               />
 
                               <p className="text-xs text-black-600 mt-2">
-<<<<<<< HEAD
 
                                 ?? {newParticipant.declarationHonneurFile 
 
-=======
-                                💡 {newParticipant.declarationHonneurFile 
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                                   ? 'Signature optionnelle car vous avez uploadé une déclaration' 
 
                                   : 'Signature obligatoire pour générer une déclaration sur l\'honneur'
@@ -15030,13 +13816,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                             <div className="mt-4">
 
                               <label className="block text-sm font-medium text-black-600 mb-2">
-<<<<<<< HEAD
 
                                 ?? Uploader la déclaration sur l'honneur (optionnel)
 
-=======
-                                📤 Uploader la déclaration sur l'honneur (optionnel)
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                               </label>
 
                               <input
@@ -15052,16 +13834,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                               />
 
                               <p className="text-xs text-black-600 mt-1">
-<<<<<<< HEAD
 
                                 ?? Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)<br />
 
                                 ?? <strong>Astuce:</strong> Si vous uploadez une déclaration déjé signée, la signature ci-dessus devient optionnelle
 
-=======
-                                📄 Uploadez le PDF généré ou un document scanné - Formats: PDF, JPG, JPEG, PNG (max 5MB)<br />
-                                💡 <strong>Astuce:</strong> Si vous uploadez une déclaration déjà signée, la signature ci-dessus devient optionnelle
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                               </p>
 
                             </div>
@@ -15793,13 +14570,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
               {formData.typeEntreprise === 'ENTREPRISE_INDIVIDUELLE' 
 
                 ? 'Les documents ne sont pas requis pour les entreprises individuelles.'
-<<<<<<< HEAD
 
                 : 'Téléchargez les documents requis pour la création de l\'entreprise.'
 
-=======
-                : 'Les documents ne sont pas requis pour les societes.'
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               }
 
             </p>
@@ -15810,58 +14583,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
       </div>
 
-<<<<<<< HEAD
 
 
       {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
 
         <div className="space-y-6">
-=======
-      {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (() => {
-        const requiredDocs = getRequiredDocuments(formData.formeJuridique);
-        const requiredPieces = getRequiredPiecesInfo(formData.formeJuridique);
-        return (
-        <div className="space-y-6">
-          {/* Statuts de l'entreprise - Conditionnel */}
-          {requiredDocs.statuts && (
-          <div className="border-2 border-dashed border-white/60 rounded-lg p-8 bg-gradient-to-r from-white/80 via-slate-50/60 to-primary-50/40  shadow-sm hover:shadow-sm transition-all duration-300 hover:border-[#412A5C]/50">
-            <div className="text-center">
-              <div className="mx-auto h-16 w-16 bg-[#2d85c9] rounded-lg flex items-center justify-center shadow-lg">
-                <DocumentIcon className="h-8 w-8 text-white" />
-              </div>
-              <div className="mt-4">
-                <label htmlFor="statuts" className="cursor-pointer">
-                  <span className="mt-3 block text-lg font-semibold text-slate-800">
-                    Statuts de l'entreprise *
-                  </span>
-                  <span className="mt-2 block text-sm font-medium text-slate-600">
-                    PDF, DOC, DOCX jusqu'à 10MB
-                  </span>
-                </label>
-                <input
-                  id="statuts"
-                  name="statuts"
-                  type="file"
-                  className="sr-only"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    updateFormData('documents', { ...formData.documents, statuts: file });
-                  }}
-                />
-              </div>
-              {formData.documents.statuts && (
-                <div className="mt-4 p-3 bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl">
-                  <p className="text-sm font-bold text-primary-800 flex items-center">
-                    <span className="text-lg mr-2">✓</span>
-                    {formData.documents.statuts.name}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          )}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
           {/* Registre de commerce - Toujours requis */}
           {requiredDocs.registreCommerce && (
@@ -15886,13 +14612,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   </span>
 
                   <span className="mt-2 block text-sm font-medium text-slate-600">
-<<<<<<< HEAD
 
                     PDF, DOC, DOCX jusqu'é 10MB
 
-=======
-                    PDF, DOC, DOCX, JPG, PNG jusqu'à 10MB
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   </span>
 
                 </label>
@@ -15926,16 +14648,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <div className="mt-4 p-3 bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl">
 
                   <p className="text-sm font-bold text-primary-800 flex items-center">
-<<<<<<< HEAD
 
                     <span className="text-lg mr-2">?</span>
 
                     {formData.documents.statuts.name}
 
-=======
-                    <span className="text-lg mr-2">✓</span>
-                    {formData.documents.registreCommerce.name}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                   </p>
 
                 </div>
@@ -16184,13 +14901,8 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
         </div>
-<<<<<<< HEAD
 
       )}
-=======
-        );
-      })()}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
 
 
@@ -16410,7 +15122,16 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               <span className="font-bold text-slate-700">Casier judiciaire :</span>
 
-              <span className="font-medium text-slate-600">{formData.hasCriminalRecord ? 'Oui' : 'Non'}</span>
+              <span className="font-medium text-slate-600">
+                {(() => {
+                  // Vérifier si au moins un gérant/promoteur a un casier judiciaire
+                  const hasGerantWithCasier = formData.participants.some(p => 
+                    (p.role === 'GERANT' || p.role === 'PROMOTEUR') && 
+                    (p.hasCriminalRecord === true || p.casierJudiciaireFile)
+                  );
+                  return (hasGerantWithCasier || formData.hasCriminalRecord) ? 'Oui' : 'Non';
+                })()}
+              </span>
 
             </div>
 
@@ -16418,7 +15139,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               <span className="font-bold text-slate-700">Marié(e) :</span>
 
-              <span className="font-medium text-slate-600">{formData.isMarried ? 'Oui' : 'Non'}</span>
+              <span className="font-medium text-slate-600">
+                {(() => {
+                  // Vérifier si au moins un participant est marié ou si le créateur est marié
+                  const hasMarriedParticipant = formData.participants.some(p => 
+                    p.situationMatrimoniale === 'MARIE'
+                  );
+                  return (hasMarriedParticipant || formData.isMarried) ? 'Oui' : 'Non';
+                })()}
+              </span>
 
             </div>
 
@@ -16738,41 +15467,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
         </div>
 
-<<<<<<< HEAD
-
-=======
-        {/* Informations du déposant - uniquement pour les sociétés */}
-        {formData.typeEntreprise === 'SOCIETE' && (
-          <div className="bg-gradient-to-r from-white/95 p-6 rounded-lg shadow-sm border border-white/60 hover:shadow-sm transition-all duration-300">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-[#2d85c9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Informations du déposant
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
-                <span className="font-bold text-slate-700">Nom :</span>
-                <span className="font-medium text-slate-600">{formData.nomDeposant || 'Non renseigné'}</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
-                <span className="font-bold text-slate-700">Prénom :</span>
-                <span className="font-medium text-slate-600">{formData.prenomDeposant || 'Non renseigné'}</span>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
-                <span className="font-bold text-slate-700">Téléphone :</span>
-                <span className="font-medium text-slate-600">{formData.telephoneDeposant || 'Non renseigné'}</span>
-              </div>
-              {formData.nomCabinet && (
-                <div className="flex justify-between items-center p-2 bg-white/50 rounded-xl border border-white/40">
-                  <span className="font-bold text-slate-700">Cabinet :</span>
-                  <span className="font-medium text-slate-600">{formData.nomCabinet}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
         {/* Participants - Masqué pour les entreprises individuelles */}
 
@@ -16847,21 +15541,14 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
 
         {/* Documents - Masqué pour les entreprises individuelles */}
-<<<<<<< HEAD
 
         {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (
 
-=======
-        {formData.typeEntreprise !== 'ENTREPRISE_INDIVIDUELLE' && (() => {
-          const requiredDocs = getRequiredDocuments(formData.formeJuridique);
-          return (
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
           <div className="bg-white p-6 rounded-lg shadow-md border lg:col-span-2">
 
             <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
 
               <DocumentIcon className="h-5 w-5 text-mali-emerald mr-2" />
-<<<<<<< HEAD
 
               Documents
 
@@ -16869,12 +15556,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-=======
-              Documents ({formData.formeJuridique})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {requiredDocs.statuts && (
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               <div className="flex items-center">
 
                 <CheckCircleIcon className={`h-5 w-5 mr-2 ${formData.documents.statuts ? 'text-primary-500' : 'text-gray-400'}`} />
@@ -16882,12 +15563,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <span className="text-sm">Statuts</span>
 
               </div>
-<<<<<<< HEAD
-
-=======
-              )}
-              {requiredDocs.registreCommerce && (
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
               <div className="flex items-center">
 
                 <CheckCircleIcon className={`h-5 w-5 mr-2 ${formData.documents.registreCommerce ? 'text-primary-500' : 'text-gray-400'}`} />
@@ -16895,7 +15570,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                 <span className="text-sm">Registre de commerce</span>
 
               </div>
-<<<<<<< HEAD
 
               <div className="flex items-center">
 
@@ -16905,38 +15579,12 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
               </div>
 
-=======
-              )}
-              {requiredDocs.pvAssemblee && (
-              <div className="flex items-center">
-                <CheckCircleIcon className={`h-5 w-5 mr-2 ${formData.documents.pvAssemblee ? 'text-primary-500' : 'text-gray-400'}`} />
-                <span className="text-sm">PV d'Assemblée</span>
-              </div>
-              )}
-              {requiredDocs.declarationNotariee && (
-              <div className="flex items-center">
-                <CheckCircleIcon className={`h-5 w-5 mr-2 ${formData.documents.declarationNotariee ? 'text-primary-500' : 'text-gray-400'}`} />
-                <span className="text-sm">Déclaration notariée</span>
-              </div>
-              )}
-              {requiredDocs.attestationBancaire && (
-              <div className="flex items-center">
-                <CheckCircleIcon className={`h-5 w-5 mr-2 ${formData.documents.attestationBancaire ? 'text-primary-500' : 'text-gray-400'}`} />
-                <span className="text-sm">Attestation bancaire</span>
-              </div>
-              )}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             </div>
 
           </div>
-<<<<<<< HEAD
 
         )}
 
-=======
-          );
-        })()}
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
         
 
         {/* Alerte Domaine Réglementé */}
@@ -17030,13 +15678,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
 
                   </svg>
-<<<<<<< HEAD
 
                   ?? DOMAINE RéGLEMENTé DéTECTé
 
-=======
-                  DOMAINE RÉGLEMENTÉ DéTECTÉ
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                 </h3>
 
                 <div className="space-y-4">
@@ -17044,23 +15688,15 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <div className="bg-primary-100 p-4 rounded-md">
 
                     <p className="text-sm font-medium text-primary-900 mb-2">
-<<<<<<< HEAD
 
                       ?? Votre activité "{titreActivite}" nécessite une DEMANDE D'AUTORISATION D'EXERCICE.
 
-=======
-                      Votre activité "{titreActivite}" nécessite une DEMANDE D'AUTORISATION D'EXERCICE.
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     </p>
 
                     <p className="text-xs text-primary-800">
-<<<<<<< HEAD
 
                       Aprés la création de votre entreprise, vous devrez constituer et déposer un dossier de demande d'autorisation.
 
-=======
-                      Après la création de votre entreprise, vous devrez constituer et déposer un dossier de demande d'autorisation.
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     </p>
 
                   </div>
@@ -17072,7 +15708,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                     <h4 className="text-sm font-semibold text-gray-900 mb-2">Prochaines étapes :</h4>
 
                     <ul className="text-xs text-primary-800 space-y-1">
-<<<<<<< HEAD
 
                       <li>é Dépét du dossier auprés de l'API-Mali</li>
 
@@ -17080,11 +15715,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
 
                       <li>é Obtention de l'autorisation d'exercice</li>
 
-=======
-                      <li> Dépot du dossier aupres de l'API-Mali</li>
-                      <li> Étude et validation par les services compétents</li>
-                      <li> Obtention de l'autorisation d'exercice</li>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     </ul>
 
                   </div>
@@ -17094,16 +15724,11 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
                   <div className="bg-gray-50 p-3 rounded-md">
 
                     <p className="text-xs text-gray-700">
-<<<<<<< HEAD
 
                       ?? <strong>Contact API-Mali :</strong> +223 20 29 76 00 | info@apimali.gov.ml<br/>
 
                       ?? <strong>Site web :</strong> https://www.apimali.gov.ml
 
-=======
-                       <strong>Contact API-Mali :</strong> +223 20 29 76 00 | info@apimali.gov.ml<br/>
-                       <strong>Site web :</strong> https://www.apimali.gov.ml
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
                     </p>
 
                   </div>
@@ -17235,25 +15860,6 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
           
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-<<<<<<< HEAD
-=======
-            <div className="bg-white/70 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-800 mb-2">Répartition des parts</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">Total actuel :</span>
-                  <span className={`font-bold ${calculateTotalParts() === 100 ? 'text-primary-600' : 'text-primary-600'}`}>
-                    {calculateTotalParts().toFixed(2)}%
-                  </span>
-                </div>
-                {calculateTotalParts() !== 100 && (
-                  <p className="text-xs text-primary-600">
-                     Le total doit égaler 100% (administrateurs exclus)
-                  </p>
-                )}
-              </div>
-            </div>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
 
             <div className="bg-white/70 rounded-lg p-4">
 
@@ -17688,13 +16294,9 @@ const DossierCreationForm: React.FC<DossierCreationFormProps> = ({ onDossierCrea
             className="flex items-center px-6 py-3 bg-[#2d85c9] text-white shadow-lg rounded-lg hover:bg-mali-emerald-dark"
 
           >
-<<<<<<< HEAD
 
             <span className="mr-2">?</span>
 
-=======
-            <span className="mr-2"></span>
->>>>>>> c4076667291e5752bab0de894b602c8b5d52d9c0
             Nouveau dossier
 
           </button>

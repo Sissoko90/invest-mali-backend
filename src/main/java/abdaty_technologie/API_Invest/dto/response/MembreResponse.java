@@ -63,6 +63,15 @@ public class MembreResponse {
     //La nationalité du membre
     public String nationalite;
 
+    // Informations de localisation du membre
+    public String divisionCode;
+    public String divisionNom;
+    public String regionNom;
+    public String cercleNom;
+    public String arrondissementNom;
+    public String communeNom;
+    public String quartierNom;
+
     // Champs spécifiques aux personnes morales
     //Le pays d'émission du RCCM pour les personnes morales
     public PaysEmissionRccM paysEmissionRccm;

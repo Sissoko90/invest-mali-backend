@@ -42,4 +42,10 @@ public class ParticipantRequest {
     
     /** Nom du cabinet (optionnel - pour les déposants) */
     public String nomCabinet;
+    
+    /** Code de division (localisation) - optionnel pour mise à jour */
+    public String divisionCode;
+    
+    /** Liste des conjoints (pour les personnes mariées) - optionnel */
+    public java.util.List<ConjointRequest> conjoints;
 }

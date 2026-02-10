@@ -25,6 +25,11 @@ const RetraitStep: React.FC<RetraitStepProps> = ({ onDossierUpdate }) => {
   const [selectedEntreprise, setSelectedEntreprise] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<{ [key: string]: boolean }>({});
   const [marking, setMarking] = useState<{ [key: string]: boolean }>({});
+  
+  // États pour la pagination et le filtre
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [filterStatus, setFilterStatus] = useState<'tous' | 'en_attente' | 'retires'>('en_attente');
 
   useEffect(() => {
     loadEntreprises();
@@ -89,11 +94,10 @@ const RetraitStep: React.FC<RetraitStepProps> = ({ onDossierUpdate }) => {
       let foundDocument = null;
       if (documentType === 'RCCM') {
         // Chercher le document RCCM uploadé/remplacé à l'étape RCCM2
-        // Priorité aux documents avec typeDocument='RCCM' ou type='RCCM'/'REGISTRE_COMMERCE'
+        // L'API retourne typeDocument, pas type
         foundDocument = documents.find((doc: any) => 
           doc.typeDocument === 'RCCM' || 
-          doc.type === 'RCCM' || 
-          doc.type === 'REGISTRE_COMMERCE'
+          doc.typeDocument === 'REGISTRE_COMMERCE'
         );
         
         console.log(`🔍 Document RCCM trouvé:`, foundDocument);
@@ -106,8 +110,7 @@ const RetraitStep: React.FC<RetraitStepProps> = ({ onDossierUpdate }) => {
       } else if (documentType === 'NINA') {
         foundDocument = documents.find((doc: any) => 
           doc.typeDocument === 'NINA' || 
-          doc.type === 'NINA' || 
-          doc.type === 'CERTIFICAT_NINA'
+          doc.typeDocument === 'CERTIFICAT_NINA'
         );
         
         console.log(`🔍 Document NINA trouvé:`, foundDocument);
@@ -336,9 +339,50 @@ l'Institut National de la Statistique (INSTAT)
     try {
       setMarking(prev => ({ ...prev, [entrepriseId]: true }));
       
-      // Appel API pour marquer comme retiré et passer à l'étape RETRAIT
-      await entreprisesAPI.update(entrepriseId, { etapeValidation: 'RETRAIT' });
+      const token = localStorage.getItem('investmali_agent_token');
       
+      // Récupérer d'abord l'entreprise complète
+      const getResponse = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${entrepriseId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!getResponse.ok) {
+        throw new Error('Erreur lors de la récupération de l\'entreprise');
+      }
+      
+      const entrepriseData = await getResponse.json();
+      
+      console.log('📋 Données entreprise récupérées:', entrepriseData);
+      
+      const updateData = {
+        ...entrepriseData,
+        dateRetrait: new Date().toISOString(),
+        telechargementAutorise: false
+      };
+      
+      console.log('📤 Données à envoyer pour mise à jour:', updateData);
+      
+      // Mettre à jour avec PUT en incluant toutes les données + dateRetrait
+      const response = await fetch(`${API_CONFIG.BASE_URL}/entreprises/${entrepriseId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur serveur:', response.status, errorText);
+        throw new Error(`Erreur lors du marquage comme retiré: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Réponse serveur après mise à jour:', result);
       console.log(`✅ Entreprise ${entrepriseId} marquée comme retirée`);
       
       // Recharger la liste
@@ -351,6 +395,25 @@ l'Institut National de la Statistique (INSTAT)
     } finally {
       setMarking(prev => ({ ...prev, [entrepriseId]: false }));
     }
+  };
+  
+  // Filtrer les entreprises selon le statut
+  const filteredEntreprises = entreprises.filter(entreprise => {
+    if (filterStatus === 'tous') return true;
+    if (filterStatus === 'retires') return entreprise.dateRetrait != null;
+    if (filterStatus === 'en_attente') return entreprise.dateRetrait == null;
+    return true;
+  });
+  
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEntreprises = filteredEntreprises.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredEntreprises.length / itemsPerPage);
+  
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -395,7 +458,7 @@ l'Institut National de la Statistique (INSTAT)
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
           <div className="p-3 bg-sky-600 rounded-2xl shadow-lg mr-4">
             <DocumentArrowDownIcon className="h-8 w-8 text-white" />
@@ -407,9 +470,48 @@ l'Institut National de la Statistique (INSTAT)
         </div>
       </div>
 
+      {/* Filtres */}
+      <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-slate-800">Filtrer par statut:</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setFilterStatus('en_attente'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterStatus === 'en_attente'
+                  ? 'bg-sky-600 text-white shadow-lg'
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              En attente ({entreprises.filter(e => !e.dateRetrait).length})
+            </button>
+            <button
+              onClick={() => { setFilterStatus('retires'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterStatus === 'retires'
+                  ? 'bg-sky-600 text-white shadow-lg'
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              Retirés ({entreprises.filter(e => e.dateRetrait).length})
+            </button>
+            <button
+              onClick={() => { setFilterStatus('tous'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterStatus === 'tous'
+                  ? 'bg-sky-600 text-white shadow-lg'
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              Tous ({entreprises.length})
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-lg text-slate-600 font-bold">Dossiers prêts</p>
@@ -419,29 +521,29 @@ l'Institut National de la Statistique (INSTAT)
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg text-slate-600 font-bold">Documents disponibles</p>
-              <p className="text-4xl font-black text-slate-800">{entreprises.length * 2}</p>
+              <p className="text-lg text-slate-600 font-bold">En attente</p>
+              <p className="text-4xl font-black text-slate-800">{entreprises.filter(e => !e.dateRetrait).length}</p>
             </div>
             <DocumentTextIcon className="h-10 w-10 text-sky-600" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
+        <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl border border-white/60 p-4 shadow-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-lg text-slate-600 font-bold">En attente de retrait</p>
-              <p className="text-4xl font-black text-slate-800">{entreprises.length}</p>
+              <p className="text-lg text-slate-600 font-bold">Retirés</p>
+              <p className="text-4xl font-black text-slate-800">{entreprises.filter(e => e.dateRetrait).length}</p>
             </div>
-            <DocumentArrowDownIcon className="h-10 w-10 text-sky-600" />
+            <CheckCircleIcon className="h-10 w-10 text-green-600" />
           </div>
         </div>
       </div>
 
       {/* Liste des entreprises */}
-      {entreprises.length === 0 ? (
+      {filteredEntreprises.length === 0 ? (
         <div className="text-center py-12">
           <div className="p-4 bg-sky-600 rounded-2xl shadow-lg mx-auto mb-6 w-fit">
             <ExclamationTriangleIcon className="h-12 w-12 text-white mx-auto" />
@@ -455,10 +557,10 @@ l'Institut National de la Statistique (INSTAT)
         </div>
       ) : (
         <div className="space-y-4">
-          {entreprises.map((entreprise) => (
+          {currentEntreprises.map((entreprise) => (
             <div
               key={entreprise.id}
-              className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300"
+              className="bg-gradient-to-r from-white/95 via-slate-50/80 to-sky-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -474,13 +576,13 @@ l'Institut National de la Statistique (INSTAT)
                     </div>
                     <div>
                       <span className="font-medium">N° RCCM:</span>
-                      <span className="ml-2 font-mono font-semibold text-blue-700">
+                      <span className="ml-2 font-mono font-semibold text-red-700">
                         {entreprise.numeroRccm || 'Non attribué'}
                       </span>
                     </div>
                     <div>
                       <span className="font-medium">N° NINA:</span>
-                      <span className="ml-2 font-mono font-semibold text-blue-700">
+                      <span className="ml-2 font-mono font-semibold text-red-700">
                         {entreprise.numeroNina || 'Non attribué'}
                       </span>
                     </div>
@@ -495,7 +597,7 @@ l'Institut National de la Statistique (INSTAT)
                   <button
                     onClick={() => handleDownloadDocument(entreprise.id, 'RCCM')}
                     disabled={downloading[`${entreprise.id}-RCCM`] || !entreprise.numeroRccm}
-                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-sky-600 to-sky-700 text-white rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     {downloading[`${entreprise.id}-RCCM`] ? 'Téléchargement...' : 'Télécharger RCCM'}
@@ -504,24 +606,68 @@ l'Institut National de la Statistique (INSTAT)
                   <button
                     onClick={() => handleDownloadDocument(entreprise.id, 'NINA')}
                     disabled={downloading[`${entreprise.id}-NINA`] || !entreprise.numeroNina}
-                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-sky-600 to-sky-700 text-white rounded-lg hover:from-sky-700 hover:to-sky-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     {downloading[`${entreprise.id}-NINA`] ? 'Téléchargement...' : 'Télécharger NINA'}
                   </button>
                   
-                  <button
-                    onClick={() => handleMarkAsWithdrawn(entreprise.id)}
-                    disabled={marking[entreprise.id]}
-                    className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    {marking[entreprise.id] ? 'Traitement...' : 'Marquer comme retiré'}
-                  </button>
+                  {!entreprise.dateRetrait ? (
+                    <button
+                      onClick={() => handleMarkAsWithdrawn(entreprise.id)}
+                      disabled={marking[entreprise.id]}
+                      className="flex items-center px-4 py-2 text-lg bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      {marking[entreprise.id] ? 'Traitement...' : 'Marquer comme retiré'}
+                    </button>
+                  ) : (
+                    <div className="flex items-center px-4 py-2 text-lg bg-green-100 text-green-800 rounded-lg font-medium">
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      <span>Retiré le {new Date(entreprise.dateRetrait).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ))}
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-slate-700"
+              >
+                Précédent
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => handlePageChange(pageNumber)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      currentPage === pageNumber
+                        ? 'bg-sky-600 text-white shadow-lg'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-slate-700"
+              >
+                Suivant
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

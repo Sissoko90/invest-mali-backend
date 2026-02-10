@@ -40,6 +40,10 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
   const [error, setError] = useState<string | null>(null);
   const [showCertificatePreview, setShowCertificatePreview] = useState<string | null>(null);
   const [isChangingEtape, setIsChangingEtape] = useState<string | null>(null);
+  
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     loadEntreprises();
@@ -477,7 +481,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
   const getStatusBadge = (entreprise: Entreprise) => {
     if (entreprise.numeroNina) {
       return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-blue-800">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-black-800">
           <CheckCircleIcon className="w-5 h-5 mr-1" />
           NINA Généré
         </span>
@@ -485,11 +489,22 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
     }
     
     return (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-blue-800">
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-black-800">
         <ClockIcon className="w-5 h-5 mr-1" />
         En attente
       </span>
     );
+  };
+  
+  // Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEntreprises = entreprises.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(entreprises.length / itemsPerPage);
+  
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const formatTypeEntreprise = (type: string) => {
@@ -526,13 +541,13 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
       console.log(`📋 [INSTAT] Région: ${regionCode}, Cercle: ${regionCode}${cercleCode}, Commune: ${communeCode}, Quartier: ${divisionCode}`);
       
       // Utiliser l'API INSTAT directe avec les mêmes endpoints que le backend
-      const apiUrl = `https://apimali.test.instat.ml/api/get/vfq/${communeCode}`;
+      const apiUrl = `https://nina.api.instat.ml/api/get/vfq/${communeCode}`;
       console.log(`🌐 [InstatApiService] Appel API INSTAT directe: ${apiUrl}`);
       
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
+          'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx',
           'Accept': '*/*',
           'X-CSRF-TOKEN': ''
         }
@@ -908,7 +923,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
       {/* En-tête */}
       <div className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/60 p-6">
         <div className="flex items-center mb-6">
@@ -957,7 +972,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {entreprises.map((entreprise) => (
+            {currentEntreprises.map((entreprise) => (
               <div key={entreprise.id} className="bg-gradient-to-r from-white/95 via-slate-50/80 to-blue-50/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -1001,10 +1016,10 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                       <div className="bg-sky-50 border border-blue-200 rounded-lg p-4 mb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2" />
+                            <CheckCircleIcon className="h-5 w-5 text-black-400 mr-2" />
                             <div>
-                              <p className="text-blue-800 font-medium text-lg">Numéro NINA généré</p>
-                              <p className="text-blue-700 font-mono text-xl">{entreprise.numeroNina}</p>
+                              <p className="text-black-800 font-medium text-lg">Numéro NINA généré</p>
+                              <p className="text-black-700 font-mono text-xl">{entreprise.numeroNina}</p>
                             </div>
                           </div>
                           
@@ -1012,7 +1027,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                           <div className="flex flex-wrap gap-2">
                             <button
                               onClick={() => setShowCertificatePreview(entreprise.id)}
-                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-black-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Prévisualiser le certificat NINA"
                             >
                               <EyeIcon className="w-5 h-5 mr-1" />
@@ -1021,7 +1036,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                             
                             <button
                               onClick={() => setShowSignatureUpload(entreprise.id)}
-                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-black-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Ajouter une signature au certificat"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1032,7 +1047,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                             
                             <button
                               onClick={() => handleGenerateCertificate(entreprise)}
-                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-black-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Télécharger le certificat NINA"
                             >
                               <DocumentArrowDownIcon className="w-5 h-5 mr-1" />
@@ -1041,7 +1056,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                             
                             <button
                               onClick={() => window.print()}
-                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-blue-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              className="inline-flex items-center px-4 py-2 border border-blue-300 text-lg font-medium rounded-md text-black-700 bg-sky-50 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                               title="Imprimer le certificat NINA"
                             >
                               <PrinterIcon className="w-4 h-4 mr-1" />
@@ -1052,7 +1067,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                         
                         {/* Informations supplémentaires */}
                         <div className="mt-3 pt-3 border-t border-blue-200">
-                          <p className="text-blue-600 text-sm flex items-center gap-2">
+                          <p className="text-black-600 text-sm flex items-center gap-2">
                             <DocumentTextIcon className="w-5 h-5" />
                             Vous pouvez maintenant générer le certificat d'immatriculation officiel NINA
                           </p>
@@ -1137,7 +1152,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                           <button
                             onClick={() => handleGenerateNina(entreprise)}
                             disabled={isGenerating === entreprise.id || !entreprise.numeroRccm?.trim()}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isGenerating === entreprise.id ? (
                               <>
@@ -1158,6 +1173,43 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                 </div>
               </div>
             ))}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-6">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-slate-700"
+                >
+                  Précédent
+                </button>
+                
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNumber => (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        currentPage === pageNumber
+                          ? 'bg-sky-600 text-white shadow-lg'
+                          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-slate-700"
+                >
+                  Suivant
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1328,7 +1380,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-blue-700 hover:file:bg-sky-100"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-black-700 hover:file:bg-sky-100"
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Formats acceptés : PNG, JPG, GIF, SVG (recommandé : PNG avec fond transparent)
@@ -1339,7 +1391,7 @@ const NinaStep: React.FC<NinaStepProps> = ({ onEntrepriseUpdate }) => {
                 {signatureValidation && (
                   <div className={`mt-2 p-2 rounded text-sm ${
                     signatureValidation.isValid 
-                      ? 'bg-sky-50 text-blue-700 border border-blue-200'
+                      ? 'bg-sky-50 text-black-700 border border-blue-200'
                       : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
                     <div className="flex items-center">

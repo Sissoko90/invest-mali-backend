@@ -20,13 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -317,9 +314,17 @@ public class RccmController {
                 RccmResponse rccmResponse = (RccmResponse) response.getBody();
                 if (rccmResponse.isSuccess() && rccmResponse.getRefDos() != null && !rccmResponse.getRefDos().isEmpty()) {
                     entreprise.setNumeroRccm(rccmResponse.getRefDos());
+                    
+                    // Transférer automatiquement vers RCCM2 après génération du RCCM
+                    if (entreprise.getEtapeValidation() == abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation.TCOM) {
+                        entreprise.setEtapeValidation(abdaty_technologie.API_Invest.Entity.Enum.EtapeValidation.RCCM2);
+                        System.out.println("🔄 [RccmController] Transition automatique TCOM → RCCM2 après génération RCCM");
+                    }
+                    
                     entrepriseRepository.save(entreprise);
                     System.out.println("💾 [RccmController] Numéro RCCM persisté: " + rccmResponse.getRefDos());
                     System.out.println("📋 [RccmController] Nom entreprise: " + rccmResponse.getName());
+                    System.out.println("📍 [RccmController] Étape actuelle: " + entreprise.getEtapeValidation());
                 }
             }
             

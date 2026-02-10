@@ -214,10 +214,26 @@ const entreprisesAPI = {
         etapeValidation = 'ACCUEIL';
     }
     
-    return api.put(API_ENDPOINTS.ENTREPRISES.UPDATE(id), { 
+    // Extraire le motif de rejet de la note si présent
+    let motifRejet = null;
+    if (status === 'REJETE' && note && note.includes('Motif:')) {
+      motifRejet = note.substring(note.indexOf('Motif:') + 6).trim();
+    }
+    
+    const payload: any = { 
       statutCreation,
       etapeValidation
-    });
+    };
+    
+    // Ajouter le motif de rejet si présent, ou le supprimer si on revalide
+    if (motifRejet) {
+      payload.motifRejet = motifRejet;
+    } else if (status !== 'REJETE') {
+      // Supprimer le motif de rejet lors de la revalidation
+      payload.motifRejet = null;
+    }
+    
+    return api.put(API_ENDPOINTS.ENTREPRISES.UPDATE(id), payload);
   },
   // Mes applications (pour les agents)
   myApplications: () => api.get(API_ENDPOINTS.ENTREPRISES.MY_APPLICATIONS),

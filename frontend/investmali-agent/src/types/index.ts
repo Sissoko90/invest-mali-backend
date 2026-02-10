@@ -43,6 +43,7 @@ export interface Entreprise {
   agrementSignePath?: string;
   telechargementAutorise?: boolean;
   paiementEffectue?: boolean;
+  dateRetrait?: string;
 }
 
 export interface DemandeEntreprise {

@@ -27,6 +27,7 @@ import abdaty_technologie.API_Invest.repository.DocumentsRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseMembreRepository;
 import abdaty_technologie.API_Invest.repository.EntrepriseRepository;
 import abdaty_technologie.API_Invest.repository.PersonsRepository;
+import abdaty_technologie.API_Invest.repository.ConjointRepository;
 import abdaty_technologie.API_Invest.service.DocumentsService;
 import abdaty_technologie.API_Invest.service.FileStorageService;
 import abdaty_technologie.API_Invest.constants.Messages;
@@ -39,6 +40,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     @Autowired private PersonsRepository personsRepository;
     @Autowired private EntrepriseRepository entrepriseRepository;
     @Autowired private EntrepriseMembreRepository entrepriseMembreRepository;
+    @Autowired private ConjointRepository conjointRepository;
     @Autowired private FileStorageService fileStorageService;
 
     @Override
@@ -46,10 +48,18 @@ public class DocumentsServiceImpl implements DocumentsService {
         if (personneId == null || personneId.isBlank()) throw new BadRequestException(Messages.PERSONNE_ID_OBLIGATOIRE);
         if (entrepriseId == null || entrepriseId.isBlank()) throw new BadRequestException(Messages.ENTREPRISE_ID_OBLIGATOIRE);
         if (typePiece == null) throw new BadRequestException(Messages.TYPE_PIECE_OBLIGATOIRE);
-        if (numero == null || numero.isBlank()) throw new BadRequestException(Messages.NUMERO_OBLIGATOIRE_PIECE);
-        if (numero.trim().length() < 6) throw new BadRequestException(Messages.NUMERO_PIECE_TROP_COURT);
-        if (dateExpiration == null) throw new BadRequestException(Messages.DATE_EXPIRATION_OBLIGATOIRE);
-        if (dateExpiration.isBefore(LocalDate.now(ZoneId.of("Africa/Bamako")))) {
+        
+        // Le numéro de pièce est optionnel - validation seulement s'il est fourni
+        if (numero != null && !numero.isBlank()) {
+            if (numero.trim().length() < 6) throw new BadRequestException(Messages.NUMERO_PIECE_TROP_COURT);
+            // Vérifier l'unicité seulement si le numéro est fourni
+            if (documentsRepository.existsByNumero(numero.trim())) {
+                throw new BadRequestException(Messages.NUMERO_PIECE_DEJA_UTILISE);
+            }
+        }
+        
+        // La date d'expiration est optionnelle - validation seulement si elle est fournie
+        if (dateExpiration != null && dateExpiration.isBefore(LocalDate.now(ZoneId.of("Africa/Bamako")))) {
             throw new BadRequestException(Messages.DATE_EXPIRATION_INVALIDE);
         }
         if (file == null || file.isEmpty()) throw new BadRequestException(Messages.PHOTO_PIECE_OBLIGATOIRE);
@@ -58,11 +68,6 @@ public class DocumentsServiceImpl implements DocumentsService {
             .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(personneId)));
         Entreprise ent = entrepriseRepository.findById(entrepriseId)
             .orElseThrow(() -> new NotFoundException(Messages.ENTREPRISE_INTROUVABLE));
-
-        // Unicité du numéro et du type de pièce pour la personne
-        if (documentsRepository.existsByNumero(numero.trim())) {
-            throw new BadRequestException(Messages.NUMERO_PIECE_DEJA_UTILISE);
-        }
         // DÉSACTIVÉ: Contrôle d'unicité par typePiece pour une personne
         // Une personne peut avoir plusieurs documents du même type (renouvellement, validité, etc.)
         // if (!documentsRepository.findByTypePieceAndPersonneId(typePiece, personneId).isEmpty()) {
@@ -81,7 +86,7 @@ public class DocumentsServiceImpl implements DocumentsService {
     }
 
     @Override
-    public Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, MultipartFile file) {
+    public Documents uploadDocument(String personneId, String entrepriseId, TypeDocuments typeDocument, String numero, String conjointId, MultipartFile file) {
         if (personneId == null || personneId.isBlank()) throw new BadRequestException(Messages.PERSONNE_ID_OBLIGATOIRE);
         if (entrepriseId == null || entrepriseId.isBlank()) throw new BadRequestException(Messages.ENTREPRISE_ID_OBLIGATOIRE);
         if (typeDocument == null) throw new BadRequestException(Messages.TYPE_DOCUMENT_OBLIGATOIRE);
@@ -140,6 +145,17 @@ public class DocumentsServiceImpl implements DocumentsService {
         String safeNumero = (numero != null && !numero.isBlank()) ? numero.trim() : generateNumeroFallback(typeDocument);
         d.setNumero(safeNumero);
         d.setPhotoPiece(toBlob(file));
+        
+        // Gérer le conjoint si conjointId est fourni (pour ACTE_MARIAGE)
+        if (conjointId != null && !conjointId.isBlank() && typeDocument == TypeDocuments.ACTE_MARIAGE) {
+            abdaty_technologie.API_Invest.Entity.Conjoint conjoint = conjointRepository.findById(conjointId)
+                .orElse(null);
+            if (conjoint != null) {
+                d.setConjoint(conjoint);
+                System.out.println("📋 [DocumentsServiceImpl] Acte de mariage lié au conjoint: " + conjointId);
+            }
+        }
+        
         return documentsRepository.save(d);
     }
 
@@ -208,6 +224,11 @@ public class DocumentsServiceImpl implements DocumentsService {
 
     @Override
     public Documents updateDocumentFile(String documentId, MultipartFile file) {
+        System.out.println("🔄 [DocumentsServiceImpl] updateDocumentFile - Début");
+        System.out.println("📋 [DocumentsServiceImpl] Document ID: " + documentId);
+        System.out.println("📄 [DocumentsServiceImpl] Fichier: " + (file != null ? file.getOriginalFilename() : "null"));
+        System.out.println("📊 [DocumentsServiceImpl] Taille fichier: " + (file != null ? file.getSize() : 0) + " bytes");
+        
         if (documentId == null || documentId.isBlank()) {
             throw new BadRequestException("ID du document obligatoire");
         }
@@ -230,10 +251,22 @@ public class DocumentsServiceImpl implements DocumentsService {
         Documents document = documentsRepository.findById(documentId)
             .orElseThrow(() -> new NotFoundException("Document non trouvé avec l'ID: " + documentId));
 
+        System.out.println("📋 [DocumentsServiceImpl] Document trouvé:");
+        System.out.println("   - Numéro: " + document.getNumero());
+        System.out.println("   - Type Document: " + document.getTypeDocument());
+        System.out.println("   - Type Pièce: " + document.getTypePiece());
+        System.out.println("   - Description: " + document.getDescription());
+        System.out.println("   - Entreprise ID: " + (document.getEntreprise() != null ? document.getEntreprise().getId() : "null"));
+
         // Mettre à jour uniquement le fichier
         document.setPhotoPiece(toBlob(file));
+        System.out.println("✅ [DocumentsServiceImpl] Fichier converti en Blob");
         
-        return documentsRepository.save(document);
+        Documents saved = documentsRepository.save(document);
+        System.out.println("✅ [DocumentsServiceImpl] Document sauvegardé avec succès");
+        System.out.println("📋 [DocumentsServiceImpl] Document ID après sauvegarde: " + saved.getId());
+        
+        return saved;
     }
 
     @Override

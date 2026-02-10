@@ -84,7 +84,13 @@ import abdaty_technologie.API_Invest.repository.PersonsRepository;
 
 import abdaty_technologie.API_Invest.repository.ReferenceSequenceRepository;
 
+import abdaty_technologie.API_Invest.repository.ConjointRepository;
+
+import abdaty_technologie.API_Invest.dto.request.ConjointRequest;
+
 import abdaty_technologie.API_Invest.service.EntrepriseService;
+
+import abdaty_technologie.API_Invest.service.ConjointService;
 
 import abdaty_technologie.API_Invest.service.EmailService;
 
@@ -159,6 +165,14 @@ public class EntrepriseServiceImpl implements EntrepriseService {
     @Autowired
 
     private EntrepriseMembreRepository entrepriseMembreRepository;
+    
+    @Autowired
+    
+    private ConjointRepository conjointRepository;
+    
+    @Autowired
+    
+    private ConjointService conjointService;
 
 
 
@@ -536,6 +550,8 @@ public class EntrepriseServiceImpl implements EntrepriseService {
             Persons person = personsRepository.findById(p.personId)
 
                 .orElseThrow(() -> new NotFoundException(Messages.personneIntrouvable(p.personId)));
+            
+            System.out.println("💍 [DEBUG CONJOINTS] Participant " + person.getNom() + " - conjoints reçus: " + (p.conjoints != null ? p.conjoints.size() : "null"));
 
 
 
@@ -579,6 +595,30 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
                 System.out.println("❌ [DEBUG] representativeAdresseLibre vide ou null");
 
+            }
+            
+            // Mettre à jour la localisation (divisionCode) si fournie
+            if (p.divisionCode != null && !p.divisionCode.trim().isEmpty()) {
+                System.out.println("📍 [LOCALISATION] Mise à jour divisionCode pour " + person.getNom() + ": " + p.divisionCode);
+                person.setDivisionCode(p.divisionCode.trim());
+                personsRepository.save(person);
+            }
+            
+            // Persister les conjoints si la personne est mariée
+            if (p.conjoints != null && !p.conjoints.isEmpty()) {
+                System.out.println("💍 [CONJOINTS] Persistance de " + p.conjoints.size() + " conjoint(s) pour " + person.getNom());
+                for (ConjointRequest conjointReq : p.conjoints) {
+                    try {
+                        // Utiliser ConjointService pour avoir toute la logique de validation et gestion des doublons
+                        abdaty_technologie.API_Invest.dto.response.ConjointResponse conjointResponse = 
+                            conjointService.findOrCreate(person.getId(), conjointReq);
+                        System.out.println("✅ [CONJOINTS] Conjoint persisté: " + conjointResponse.getPrenom() + " " + conjointResponse.getNom());
+                    } catch (Exception ex) {
+                        System.err.println("❌ [CONJOINTS] Erreur lors de la persistance du conjoint " + 
+                            conjointReq.getPrenom() + " " + conjointReq.getNom() + ": " + ex.getMessage());
+                        // Ne pas bloquer la création de l'entreprise pour un problème de conjoint
+                    }
+                }
             }
 
 
@@ -2210,6 +2250,52 @@ public class EntrepriseServiceImpl implements EntrepriseService {
         if (req.formeJuridique != null) e.setFormeJuridique(req.formeJuridique);
 
         if (req.domaineActivite != null) e.setDomaineActivite(req.domaineActivite);
+        
+        if (req.domaineActiviteNr != null && !req.domaineActiviteNr.trim().isEmpty()) {
+            abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr nouveauDomaine;
+            try {
+                nouveauDomaine = abdaty_technologie.API_Invest.Entity.Enum.DomaineActiviteNr.valueOf(req.domaineActiviteNr.trim());
+            } catch (IllegalArgumentException ex) {
+                System.err.println("⚠️ [UPDATE] DomaineActiviteNr invalide: " + req.domaineActiviteNr);
+                nouveauDomaine = null;
+            }
+            
+            if (nouveauDomaine != null) {
+                // Vérifier si le promoteur a déjà une entreprise dans ce domaine
+                // Récupérer les promoteurs/gérants de cette entreprise
+                java.util.List<String> promoteurIds = e.getMembres().stream()
+                    .filter(m -> m.getRole() == abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.PROMOTEUR || 
+                                 m.getRole() == abdaty_technologie.API_Invest.Entity.Enum.EntrepriseRole.GERANT)
+                    .map(m -> m.getPersonne().getId())
+                    .collect(java.util.stream.Collectors.toList());
+                
+                if (!promoteurIds.isEmpty()) {
+                    // Vérifier si un de ces promoteurs a déjà une entreprise dans ce domaine (autre que celle-ci)
+                    for (String promoteurId : promoteurIds) {
+                        java.util.List<Entreprise> entreprisesPromoteur = entrepriseMembreRepository
+                            .findByPersonne_Id(promoteurId).stream()
+                            .map(abdaty_technologie.API_Invest.Entity.EntrepriseMembre::getEntreprise)
+                            .filter(ent -> !ent.getId().equals(e.getId())) // Exclure l'entreprise actuelle
+                            .filter(ent -> ent.getDomaineActiviteNr() != null)
+                            .collect(java.util.stream.Collectors.toList());
+                        
+                        for (Entreprise autreEntreprise : entreprisesPromoteur) {
+                            if (autreEntreprise.getDomaineActiviteNr() == nouveauDomaine) {
+                                System.err.println("⚠️ [UPDATE] Le promoteur " + promoteurId + " a déjà une entreprise (" + 
+                                    autreEntreprise.getReference() + ") dans le domaine " + nouveauDomaine);
+                                throw new BadRequestException(
+                                    "Un promoteur de cette entreprise possède déjà une entreprise dans le domaine d'activité '" + 
+                                    nouveauDomaine.name() + "'. Une personne ne peut pas avoir deux entreprises dans le même domaine d'activité."
+                                );
+                            }
+                        }
+                    }
+                }
+                
+                e.setDomaineActiviteNr(nouveauDomaine);
+                System.out.println("✏️ [UPDATE] DomaineActiviteNr: " + req.domaineActiviteNr);
+            }
+        }
 
         if (req.activiteSecondaire != null) e.setActiviteSecondaire(req.activiteSecondaire.trim());
 
@@ -2237,7 +2323,48 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
         if (req.porte != null) e.setPorte(req.porte.trim().isEmpty() ? null : req.porte.trim());
 
+        // Traiter le motif de rejet
+        if (req.motifRejet != null) {
+            if (req.motifRejet.trim().isEmpty()) {
+                // Supprimer le motif de rejet lors de la revalidation
+                e.setMotifRejet(null);
+                System.out.println("🗑️ [EntrepriseServiceImpl] Motif de rejet supprimé (revalidation)");
+            } else {
+                e.setMotifRejet(req.motifRejet.trim());
+                System.out.println("📝 [EntrepriseServiceImpl] Motif de rejet enregistré: " + req.motifRejet.trim());
+            }
+        }
 
+        // Supprimer automatiquement le motif de rejet si le statut change de REFUSEE vers un autre statut
+        if (req.statutCreation != null && oldStatus == StatutCreation.REFUSEE && req.statutCreation != StatutCreation.REFUSEE) {
+            e.setMotifRejet(null);
+            System.out.println("🗑️ [EntrepriseServiceImpl] Motif de rejet supprimé automatiquement (changement de statut REFUSEE → " + req.statutCreation + ")");
+        }
+
+        // Désassigner automatiquement si la demande est rejetée (statut REFUSEE)
+        if (req.statutCreation != null && req.statutCreation == StatutCreation.REFUSEE) {
+            System.out.println("🔄 [EntrepriseServiceImpl] Désassignation automatique - Demande rejetée - Entreprise: " + e.getId());
+            e.setAssignedTo(null);
+            System.out.println("✅ [EntrepriseServiceImpl] Demande désassignée pour retour dans 'Demandes à traiter'");
+        }
+        
+        // Mise à jour des champs de retrait et téléchargement
+        if (req.dateRetrait != null) {
+            e.setDateRetrait(req.dateRetrait);
+            System.out.println("📅 [EntrepriseServiceImpl] Date de retrait mise à jour: " + req.dateRetrait);
+        }
+        if (req.telechargementAutorise != null) {
+            e.setTelechargementAutorise(req.telechargementAutorise);
+            System.out.println("📥 [EntrepriseServiceImpl] Téléchargement autorisé: " + req.telechargementAutorise);
+        }
+        if (req.rccmTelecharge != null) {
+            e.setRccmTelecharge(req.rccmTelecharge);
+            System.out.println("📄 [EntrepriseServiceImpl] RCCM téléchargé: " + req.rccmTelecharge);
+        }
+        if (req.ninaTelecharge != null) {
+            e.setNinaTelecharge(req.ninaTelecharge);
+            System.out.println("📄 [EntrepriseServiceImpl] NINA téléchargé: " + req.ninaTelecharge);
+        }
 
         e.setModification(Instant.now());
 
@@ -2933,7 +3060,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
 
-            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw");
+            headers.set("Authorization", "Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx");
 
             headers.set("accept", "*/*");
 
@@ -2959,7 +3086,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
                 org.springframework.http.ResponseEntity<java.util.List> response = restTemplate.exchange(
 
-                    "https://apimali.test.instat.ml/api/get/vfq/" + communeCode,
+                    "https://nina.api.instat.ml/api/get/vfq/" + communeCode,
 
                     org.springframework.http.HttpMethod.GET,
 
@@ -3019,7 +3146,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
                 org.springframework.http.ResponseEntity<java.util.List> response = restTemplate.exchange(
 
-                    "https://apimali.test.instat.ml/api/get/communes/" + cercleCode,
+                    "https://nina.api.instat.ml/api/get/communes/" + cercleCode,
 
                     org.springframework.http.HttpMethod.GET,
 
@@ -3061,7 +3188,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
                 org.springframework.http.ResponseEntity<java.util.List> response = restTemplate.exchange(
 
-                    "https://apimali.test.instat.ml/api/get/cercles/" + regionCode,
+                    "https://nina.api.instat.ml/api/get/cercles/" + regionCode,
 
                     org.springframework.http.HttpMethod.GET,
 
@@ -3099,7 +3226,7 @@ public class EntrepriseServiceImpl implements EntrepriseService {
 
                 org.springframework.http.ResponseEntity<java.util.List> response = restTemplate.exchange(
 
-                    "https://apimali.test.instat.ml/api/get/regions",
+                    "https://nina.api.instat.ml/api/get/regions",
 
                     org.springframework.http.HttpMethod.GET,
 

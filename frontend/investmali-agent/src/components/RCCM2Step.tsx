@@ -462,7 +462,24 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
         console.log(`✅ [RCCM2Step] Fichier RCCM modifié avec succès (même ID/numéro conservés):`, result);
         
         // Recharger les demandes
-        loadDemandesRCCM2();
+        await loadDemandesRCCM2();
+        
+        // Si le modal Détails est ouvert pour cette entreprise, recharger ses documents
+        if (showDetails && selectedDemande && selectedDemande.id === entrepriseId) {
+          console.log(`🔄 [RCCM2Step] Rechargement des documents de l'entreprise sélectionnée`);
+          
+          // Recharger les documents de l'entreprise
+          const updatedDocuments = await getEntrepriseDocuments(entrepriseId);
+          
+          // Mettre à jour selectedDemande avec les nouveaux documents
+          setSelectedDemande({
+            ...selectedDemande,
+            documents: updatedDocuments,
+            rccmDocument: updatedDocuments.find(doc => doc.type === 'RCCM' || doc.type === 'REGISTRE_COMMERCE')
+          });
+          
+          console.log(`✅ [RCCM2Step] Documents de l'entreprise sélectionnée mis à jour`);
+        }
         
       } else {
         console.log(`📤 [RCCM2Step] Aucun RCCM existant, upload initial du document`);
@@ -870,6 +887,46 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                   )}
                 </div>
 
+                {/* Document RCCM uploadé */}
+                {selectedDemande.rccmDocument && (
+                  <div className="mt-6 p-6 rounded-2xl border-2 border-sky-200 shadow-xl bg-gradient-to-br from-sky-50 to-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-sky-600 rounded-xl shadow-lg">
+                          <DocumentTextIcon className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-black text-slate-800">Document RCCM uploadé</h4>
+                          <p className="text-sm text-gray-600">Fichier PDF du registre de commerce</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleViewDocument(selectedDemande.rccmDocument!.id, selectedDemande.rccmDocument!.nom)}
+                        className="bg-sky-600 text-white px-6 py-3 rounded-xl hover:bg-sky-700 flex items-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                        <span>Visualiser le document</span>
+                      </button>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-sky-200">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-semibold text-gray-700">Type:</span>
+                          <span className="ml-2 text-gray-900">{selectedDemande.rccmDocument.type}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">Date d'upload:</span>
+                          <span className="ml-2 text-gray-900">
+                            {selectedDemande.rccmDocument.dateUpload 
+                              ? new Date(selectedDemande.rccmDocument.dateUpload).toLocaleDateString('fr-FR')
+                              : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Actions modernisées */}
                 {canEdit && (
                   <div className="rounded-2xl p-6 border-t border-white/40 mt-8">
@@ -887,8 +944,7 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                             alert('⚠️ Le numéro RCCM doit être généré avant d\'approuver cette entreprise.');
                             return;
                           }
-                          const commentaire = prompt('💬 Commentaire final (optionnel):');
-                          handleFinaliserRCCM2(selectedDemande.id, 'approuve', commentaire || undefined);
+                          handleFinaliserRCCM2(selectedDemande.id, 'approuve');
                         }}
                         className="flex-1 bg-sky-600 text-white px-8 py-4 rounded-2xl hover:from-primary-600 hover:to-primary-700 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!selectedDemande.rccmNumber}

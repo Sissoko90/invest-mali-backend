@@ -208,7 +208,7 @@ public class EntrepriseController {
                 String founderId = findFounderId(created);
                 if (founderId != null) {
                     documentsService.uploadDocument(founderId, created.getId(), 
-                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), statuts);
+                        TypeDocuments.STATUS_SOCIETE, "STATUTS-" + created.getReference(), null, statuts);
                 }
             }
             
@@ -216,7 +216,7 @@ public class EntrepriseController {
                 String founderId = findFounderId(created);
                 if (founderId != null) {
                     documentsService.uploadDocument(founderId, created.getId(), 
-                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), registreCommerce);
+                        TypeDocuments.REGISTRE_COMMERCE, "RC-" + created.getReference(), null, registreCommerce);
                 }
             }
             
@@ -224,7 +224,7 @@ public class EntrepriseController {
                 String gerantId = findGerantId(created);
                 if (gerantId != null) {
                     documentsService.uploadDocument(gerantId, created.getId(), 
-                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), certificatResidence);
+                        TypeDocuments.CERTIFICAT_RESIDENCE, "CR-" + created.getReference(), null, certificatResidence);
                 }
             }
             
@@ -395,11 +395,15 @@ public class EntrepriseController {
     @GetMapping("/{id}")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<EntrepriseResponse> getEntrepriseById(@PathVariable String id) {
-        // Charger avec fetch join pour inclure membres et personnes
+        // Charger avec fetch join pour inclure membres, personnes et divisions
         Entreprise e = entrepriseRepository.findByIdWithMembresAndPaiement(id)
             .orElseThrow(() -> new NotFoundException("Entreprise introuvable: " + id));
         
-        return ResponseEntity.ok(toResponse(e));
+        // Charger les conjoints séparément pour éviter MultipleBagFetchException
+        List<Persons> personsWithConjoints = entrepriseRepository.findPersonsWithConjointsByEntrepriseId(id);
+        System.out.println("🔍 [GET ENTREPRISE] Personnes avec conjoints chargées: " + personsWithConjoints.size());
+        
+        return ResponseEntity.ok(toResponseWithConjoints(e));
     }
 
     /**
@@ -424,6 +428,7 @@ public class EntrepriseController {
      * Met à jour les informations d'une entreprise existante.
      */
     @PutMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<EntrepriseResponse> updateEntreprise(
             @PathVariable String id,
             @RequestBody UpdateEntrepriseRequest request) {
@@ -487,8 +492,21 @@ public class EntrepriseController {
                 System.out.println("📝 [UPDATE MEMBRES] Mise à jour de: " + person.getNom());
                 
                 // Mettre à jour les champs de la personne
+                if (membreData.containsKey("nom")) {
+                    person.setNom((String) membreData.get("nom"));
+                    System.out.println("✏️ [UPDATE] Nom: " + membreData.get("nom"));
+                }
+                if (membreData.containsKey("prenom")) {
+                    person.setPrenom((String) membreData.get("prenom"));
+                    System.out.println("✏️ [UPDATE] Prénom: " + membreData.get("prenom"));
+                }
                 if (membreData.containsKey("email")) {
                     person.setEmail((String) membreData.get("email"));
+                }
+                // Gérer à la fois "telephone" et "telephone1"
+                if (membreData.containsKey("telephone")) {
+                    person.setTelephone1((String) membreData.get("telephone"));
+                    System.out.println("✏️ [UPDATE] Téléphone: " + membreData.get("telephone"));
                 }
                 if (membreData.containsKey("telephone1")) {
                     person.setTelephone1((String) membreData.get("telephone1"));
@@ -501,27 +519,74 @@ public class EntrepriseController {
                         person.setDateNaissance(date);
                     }
                 }
-                if (membreData.containsKey("situationMatrimoniale")) {
-                    String sitMat = (String) membreData.get("situationMatrimoniale");
+                if (membreData.containsKey("situationMatrimonialeStr")) {
+                    String sitMat = (String) membreData.get("situationMatrimonialeStr");
                     if (sitMat != null && !sitMat.isEmpty()) {
                         person.setSituationMatrimoniale(abdaty_technologie.API_Invest.Entity.Enum.SituationMatrimoniales.valueOf(sitMat));
+                        
+                        // Si la situation matrimoniale n'est plus MARIE, supprimer tous les conjoints
+                        if (!sitMat.equals("MARIE")) {
+                            List<abdaty_technologie.API_Invest.Entity.Conjoint> existingConjoints = conjointRepository.findByPerson(person);
+                            if (!existingConjoints.isEmpty()) {
+                                System.out.println("🗑️ [DELETE CONJOINTS] Suppression de " + existingConjoints.size() + " conjoint(s) car situation matrimoniale = " + sitMat);
+                                conjointRepository.deleteAll(existingConjoints);
+                                conjointsUpdated += existingConjoints.size();
+                            }
+                        }
                     }
                 }
                 
                 personsRepository.save(person);
                 membresUpdated++;
                 
-                // Mettre à jour les conjoints si la personne est mariée
+                // Mettre à jour/créer les conjoints si la personne est mariée
                 if (membreData.containsKey("conjoints")) {
                     @SuppressWarnings("unchecked")
                     List<Map<String, Object>> conjointsData = (List<Map<String, Object>>) membreData.get("conjoints");
                     
+                    // Récupérer les conjoints existants pour cette personne
+                    List<abdaty_technologie.API_Invest.Entity.Conjoint> existingConjoints = conjointRepository.findByPerson(person);
+                    List<String> receivedConjointIds = new java.util.ArrayList<>();
+                    
                     if (conjointsData != null && !conjointsData.isEmpty()) {
                         for (Map<String, Object> conjointData : conjointsData) {
                             String conjointId = (String) conjointData.get("id");
-                            if (conjointId == null) continue;
                             
-                            // Trouver le conjoint
+                            // Si l'ID commence par "new-conjoint-", c'est un nouveau conjoint à créer
+                            if (conjointId != null && conjointId.startsWith("new-conjoint-")) {
+                                System.out.println("➕ [CREATE CONJOINT] Création d'un nouveau conjoint pour: " + person.getNom());
+                                
+                                abdaty_technologie.API_Invest.Entity.Conjoint newConjoint = new abdaty_technologie.API_Invest.Entity.Conjoint();
+                                newConjoint.setPerson(person);
+                                newConjoint.setPrenom((String) conjointData.get("prenom"));
+                                newConjoint.setNom((String) conjointData.get("nom"));
+                                
+                                String dateStr = (String) conjointData.get("dateMariage");
+                                if (dateStr != null && !dateStr.isEmpty()) {
+                                    newConjoint.setDateMariage(java.time.LocalDate.parse(dateStr));
+                                }
+                                
+                                newConjoint.setLieuMariage((String) conjointData.get("lieuMariage"));
+                                
+                                String regime = (String) conjointData.get("regimeMatrimonial");
+                                if (regime != null && !regime.isEmpty()) {
+                                    newConjoint.setRegimeMatrimonial(abdaty_technologie.API_Invest.Entity.Enum.RegimeMatrimonial.valueOf(regime));
+                                }
+                                
+                                String clause = (String) conjointData.get("clauseRestrictive");
+                                if (clause != null && !clause.isEmpty()) {
+                                    newConjoint.setClauseRestrictive(abdaty_technologie.API_Invest.Entity.Enum.ClauseRestrictive.valueOf(clause));
+                                }
+                                
+                                conjointRepository.save(newConjoint);
+                                conjointsUpdated++;
+                                continue;
+                            }
+                            
+                            if (conjointId == null) continue;
+                            receivedConjointIds.add(conjointId);
+                            
+                            // Trouver le conjoint existant
                             abdaty_technologie.API_Invest.Entity.Conjoint conjoint = conjointRepository.findById(conjointId)
                                 .orElse(null);
                             
@@ -559,6 +624,15 @@ public class EntrepriseController {
                                 conjointRepository.save(conjoint);
                                 conjointsUpdated++;
                             }
+                        }
+                    }
+                    
+                    // Supprimer les conjoints qui ne sont plus dans la liste reçue
+                    for (abdaty_technologie.API_Invest.Entity.Conjoint existingConjoint : existingConjoints) {
+                        if (!receivedConjointIds.contains(existingConjoint.getId())) {
+                            System.out.println("🗑️ [DELETE CONJOINT] Suppression du conjoint: " + existingConjoint.getPrenom() + " " + existingConjoint.getNom());
+                            conjointRepository.delete(existingConjoint);
+                            conjointsUpdated++;
                         }
                     }
                 }
@@ -878,20 +952,47 @@ public class EntrepriseController {
                 return ResponseEntity.badRequest().body(errorResponse);
             }
             
+            // Vérifier si le numéro RCCM existe déjà pour une autre entreprise
+            String numeroRccmTrimmed = numeroRccm.trim();
+            Optional<Entreprise> existingEntreprise = entrepriseRepository.findByNumeroRccm(numeroRccmTrimmed);
+            if (existingEntreprise.isPresent() && !existingEntreprise.get().getId().equals(id)) {
+                System.out.println("⚠️ [EntrepriseController] Numéro RCCM déjà utilisé: " + numeroRccmTrimmed);
+                System.out.println("📋 [EntrepriseController] Entreprise existante: " + existingEntreprise.get().getNom() + " (ID: " + existingEntreprise.get().getId() + ")");
+                
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Ce numéro RCCM est déjà utilisé par une autre entreprise: " + existingEntreprise.get().getNom());
+                errorResponse.put("duplicate", true);
+                errorResponse.put("existingEntreprise", Map.of(
+                    "id", existingEntreprise.get().getId(),
+                    "nom", existingEntreprise.get().getNom() != null ? existingEntreprise.get().getNom() : "Entreprise sans nom",
+                    "numeroRccm", numeroRccmTrimmed
+                ));
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+            }
+            
             // Mettre à jour le numéro RCCM
-            entreprise.setNumeroRccm(numeroRccm.trim());
+            entreprise.setNumeroRccm(numeroRccmTrimmed);
             entreprise.setModification(Instant.now());
+            
+            // Transférer automatiquement vers RCCM2 après sauvegarde du RCCM
+            if (entreprise.getEtapeValidation() == EtapeValidation.TCOM) {
+                entreprise.setEtapeValidation(EtapeValidation.RCCM2);
+                System.out.println("🔄 [EntrepriseController] Transition automatique TCOM → RCCM2 après sauvegarde RCCM");
+            }
             
             // Sauvegarder
             entreprise = entrepriseService.save(entreprise);
             
             System.out.println("✅ [EntrepriseController] Numéro RCCM sauvegardé: " + numeroRccm);
+            System.out.println("📍 [EntrepriseController] Étape actuelle: " + entreprise.getEtapeValidation());
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Numéro RCCM sauvegardé avec succès");
+            response.put("message", "Numéro RCCM sauvegardé avec succès. L'entreprise a été transférée à l'étape RCCM2.");
             response.put("id", id);
             response.put("numeroRccm", numeroRccm);
+            response.put("etapeValidation", entreprise.getEtapeValidation().toString());
             
             return ResponseEntity.ok(response);
             
@@ -951,15 +1052,15 @@ public class EntrepriseController {
                 desassignerSiRevision(entreprise, nouvelleEtape, "Paiement validé");
             }
             
-            // Sauvegarder
-            entreprise = entrepriseService.save(entreprise);
-            
             // Désassigner automatiquement si la demande est rejetée
             if ("REJETE".equals(newStatus)) {
                 System.out.println("🔄 [EntrepriseController] Désassignation automatique - Demande rejetée - Entreprise: " + entreprise.getId());
                 entreprise.setAssignedTo(null);
                 System.out.println("✅ [EntrepriseController] Demande désassignée pour retour dans 'Demandes à traiter'");
             }
+            
+            // Sauvegarder (après désassignation pour persister le changement)
+            entreprise = entrepriseService.save(entreprise);
             
             // Ajouter une note dans l'historique si fournie
             if (note != null && !note.trim().isEmpty()) {
@@ -1155,7 +1256,8 @@ public class EntrepriseController {
                 EntrepriseResponse response = toResponseShallow(ent);
                 List<EntrepriseMembre> ems = membresByEntreprise.get(ent.getId());
                 if (ems != null) {
-                    response.membres = ems.stream().map(this::mapMembre).toList();
+                    // Ne pas charger les conjoints pour éviter lazy loading exception
+                    response.membres = ems.stream().map(em -> mapMembre(em, false)).toList();
                 }
                 return response;
             });
@@ -1572,11 +1674,21 @@ public class EntrepriseController {
         // Numéros d'identification
         r.numeroNina = e.getNumeroNina();
         r.numeroRccm = e.getNumeroRccm();
+        
+        // Date de retrait des documents
+        System.out.println("📅 [MAPPING DEBUG] dateRetrait en BDD: " + e.getDateRetrait());
+        r.dateRetrait = e.getDateRetrait();
+        System.out.println("📅 [MAPPING DEBUG] dateRetrait dans response: " + r.dateRetrait);
+        
+        // Indicateurs de téléchargement
+        r.rccmTelecharge = e.getRccmTelecharge();
+        r.ninaTelecharge = e.getNinaTelecharge();
 
         // Map des membres (personnes liées) avec rôle et parts
         if (e.getMembres() != null) {
             System.out.println("🔍 [MAPPING DEBUG] Nombre de membres à mapper: " + e.getMembres().size());
-            r.membres = e.getMembres().stream().map(this::mapMembre).toList();
+            // Ne pas charger les conjoints pour les listes (seulement pour la vue détaillée individuelle)
+            r.membres = e.getMembres().stream().map(em -> mapMembre(em, false)).toList();
             System.out.println("🔍 [MAPPING DEBUG] Membres mappés: " + r.membres.size());
             if (!r.membres.isEmpty()) {
                 System.out.println("🔍 [MAPPING DEBUG] Premier membre mappé: " + r.membres.get(0));
@@ -1636,6 +1748,23 @@ public class EntrepriseController {
         
         return r;
     }
+    
+    /**
+     * Version de toResponse qui charge les conjoints pour la vue détaillée individuelle
+     * Doit être appelée dans une transaction active
+     */
+    private EntrepriseResponse toResponseWithConjoints(Entreprise e) {
+        EntrepriseResponse r = toResponse(e); // Réutiliser toResponse pour les champs de base
+        
+        // Recharger les membres avec les conjoints
+        if (e.getMembres() != null) {
+            System.out.println("🔍 [MAPPING WITH CONJOINTS] Nombre de membres à mapper: " + e.getMembres().size());
+            r.membres = e.getMembres().stream().map(em -> mapMembre(em, true)).toList();
+            System.out.println("🔍 [MAPPING WITH CONJOINTS] Membres mappés avec conjoints: " + r.membres.size());
+        }
+        
+        return r;
+    }
 
     // Méthode utilitaire pour mapper un membre
     private MembreResponse mapMembre(EntrepriseMembre em) {
@@ -1681,6 +1810,28 @@ public class EntrepriseController {
                 System.out.println("⚠️ [DEBUG CIVILITE] Civilite null pour " + mr.nom);
                 mr.civilite = "MONSIEUR"; // Fallback temporaire pour debug
             }
+            
+            // Ajouter les informations de localisation de la personne
+            mr.divisionCode = em.getPersonne().getDivisionCode();
+            if (em.getPersonne().getDivision() != null) {
+                Divisions division = em.getPersonne().getDivision();
+                mr.divisionNom = division.getNom();
+                
+                // Remonter la hiérarchie pour obtenir les noms selon le type
+                Divisions current = division;
+                while (current != null) {
+                    if (current.getDivisionType() != null) {
+                        switch (current.getDivisionType()) {
+                            case QUARTIER -> mr.quartierNom = current.getNom();
+                            case COMMUNE -> mr.communeNom = current.getNom();
+                            case ARRONDISSEMENT -> mr.arrondissementNom = current.getNom();
+                            case CERCLE -> mr.cercleNom = current.getNom();
+                            case REGION -> mr.regionNom = current.getNom();
+                        }
+                    }
+                    current = current.getParent();
+                }
+            }
         }
         mr.role = em.getRole();
         mr.pourcentageParts = em.getPourcentageParts();
@@ -1695,34 +1846,27 @@ public class EntrepriseController {
             mr.denominationEntreprise = em.getPersonne().getDenominationEntreprise();
             
             // Récupérer les informations de TOUS les conjoints si la personne est mariée (seulement si demandé)
-            if (loadConjoints) {
-                try {
-                    // Forcer le chargement lazy des conjoints
-                    List<abdaty_technologie.API_Invest.Entity.Conjoint> conjoints = em.getPersonne().getConjoints();
-                    if (conjoints != null && !conjoints.isEmpty()) {
-                        // Initialiser la collection pour éviter LazyInitializationException
-                        org.hibernate.Hibernate.initialize(conjoints);
-                        System.out.println("💍 [CONJOINT DEBUG] Conjoint(s) trouvé(s) pour " + mr.nom + ": " + conjoints.size());
-                        
-                        // Mapper TOUS les conjoints (polygamie possible)
-                        mr.conjoints = new java.util.ArrayList<>();
-                        for (abdaty_technologie.API_Invest.Entity.Conjoint conjoint : conjoints) {
-                            abdaty_technologie.API_Invest.dto.response.ConjointResponse cr = new abdaty_technologie.API_Invest.dto.response.ConjointResponse();
-                            cr.setId(conjoint.getId());
-                            cr.setPrenom(conjoint.getPrenom());
-                            cr.setNom(conjoint.getNom());
-                            cr.setDateMariage(conjoint.getDateMariage());
-                            cr.setLieuMariage(conjoint.getLieuMariage());
-                            cr.setRegimeMatrimonial(conjoint.getRegimeMatrimonial());
-                            cr.setClauseRestrictive(conjoint.getClauseRestrictive());
-                            mr.conjoints.add(cr);
-                        }
-                        System.out.println("✅ [CONJOINT DEBUG] " + mr.conjoints.size() + " conjoint(s) mappé(s) pour " + mr.nom);
-                    } else {
-                        System.out.println("⚠️ [CONJOINT DEBUG] Aucun conjoint trouvé pour " + mr.nom);
+            if (loadConjoints && em.getPersonne().getConjoints() != null) {
+                List<abdaty_technologie.API_Invest.Entity.Conjoint> conjoints = em.getPersonne().getConjoints();
+                if (!conjoints.isEmpty()) {
+                    System.out.println("💍 [CONJOINT DEBUG] Conjoint(s) trouvé(s) pour " + mr.nom + ": " + conjoints.size());
+                    
+                    // Mapper TOUS les conjoints (polygamie possible)
+                    mr.conjoints = new java.util.ArrayList<>();
+                    for (abdaty_technologie.API_Invest.Entity.Conjoint conjoint : conjoints) {
+                        abdaty_technologie.API_Invest.dto.response.ConjointResponse cr = new abdaty_technologie.API_Invest.dto.response.ConjointResponse();
+                        cr.setId(conjoint.getId());
+                        cr.setPrenom(conjoint.getPrenom());
+                        cr.setNom(conjoint.getNom());
+                        cr.setDateMariage(conjoint.getDateMariage());
+                        cr.setLieuMariage(conjoint.getLieuMariage());
+                        cr.setRegimeMatrimonial(conjoint.getRegimeMatrimonial());
+                        cr.setClauseRestrictive(conjoint.getClauseRestrictive());
+                        mr.conjoints.add(cr);
                     }
-                } catch (org.hibernate.LazyInitializationException e) {
-                    System.out.println("⚠️ [CONJOINT DEBUG] LazyInitializationException - Session fermée, conjoints non chargés pour " + mr.nom);
+                    System.out.println("✅ [CONJOINT DEBUG] " + mr.conjoints.size() + " conjoint(s) mappé(s) pour " + mr.nom);
+                } else {
+                    System.out.println("⚠️ [CONJOINT DEBUG] Aucun conjoint trouvé pour " + mr.nom);
                 }
             }
         }
@@ -1974,7 +2118,7 @@ public class EntrepriseController {
                         
                         if (personId != null) {
                             documentsService.uploadDocument(personId, entreprise.getId(), 
-                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, file);
+                                TypeDocuments.CASIER_JUDICIAIRE, "CJ-" + entreprise.getReference() + "-" + indexStr, null, file);
                         }
                     }
                 } else if (key.startsWith("participant_") && key.endsWith("_acteMariage") && value instanceof MultipartFile) {
@@ -1985,7 +2129,7 @@ public class EntrepriseController {
                         
                         if (personId != null) {
                             documentsService.uploadDocument(personId, entreprise.getId(), 
-                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, file);
+                                TypeDocuments.ACTE_MARIAGE, "AM-" + entreprise.getReference() + "-" + indexStr, null, file);
                         }
                     }
                 }
@@ -2247,9 +2391,20 @@ public class EntrepriseController {
             }
             
             if ("approuve".equals(decision)) {
-                // Toutes les entreprises vont directement à TCOM (RCCM1 supprimé du workflow)
+                // Toutes les entreprises passent par TCOM
+                // Les codes INSTAT de Bamako commencent par "90"
+                String divisionCode = entreprise.getDivisionCode();
+                boolean isBamako = divisionCode != null && divisionCode.startsWith("90");
+                
                 entreprise.setEtapeValidation(EtapeValidation.TCOM);
-                System.out.println("✅ [EntrepriseController] Entreprise approuvée - transition vers TCOM");
+                
+                if (isBamako) {
+                    System.out.println("✅ [EntrepriseController] Entreprise de Bamako approuvée - transition vers TCOM (génération automatique RCCM)");
+                    System.out.println("📍 [EntrepriseController] Division code: " + divisionCode);
+                } else {
+                    System.out.println("✅ [EntrepriseController] Entreprise hors Bamako approuvée - transition vers TCOM (saisie manuelle RCCM requise)");
+                    System.out.println("📍 [EntrepriseController] Division code: " + divisionCode + " - RCCM sera saisi manuellement");
+                }
             } else if ("rejete".equals(decision)) {
                 // Retourner à l'étape ACCUEIL et changer le statut à EN_COURS
                 entreprise.setEtapeValidation(EtapeValidation.ACCUEIL);
@@ -2567,23 +2722,27 @@ public class EntrepriseController {
             // Filtrer les entreprises selon TOUTES les antennes de l'agent
             List<Entreprise> filteredList = originalPage.getContent().stream()
                 .filter(entreprise -> {
-                    if (entreprise.getDivisionCode() != null && entreprise.getDivisionCode().length() >= 2) {
-                        String regionCode = entreprise.getDivisionCode().substring(0, 2);
-                        
-                        // Vérifier si l'entreprise correspond à AU MOINS UNE des antennes de l'agent
-                        boolean matches = agentAntennes.stream()
-                            .anyMatch(antenne -> isRegionCodeInAntenne(regionCode, antenne));
-                        
-                        System.out.println("🚨 [FILTRAGE] " + entreprise.getNom() + " (région " + regionCode + ") - Autorisée: " + matches + " (antennes: " + agentAntennes.stream().map(AntenneAgents::name).collect(Collectors.toList()) + ")");
-                        return matches;
+                    // Si pas de divisionCode, autoriser l'entreprise (pour éviter de bloquer les dossiers en cours de création)
+                    if (entreprise.getDivisionCode() == null || entreprise.getDivisionCode().length() < 2) {
+                        System.out.println("🚨 [FILTRAGE] " + entreprise.getNom() + " - PAS DE DIVISION CODE - AUTORISÉE");
+                        return true;
                     }
-                    return false; // Pas de divisionCode = pas autorisé
+                    
+                    String regionCode = entreprise.getDivisionCode().substring(0, 2);
+                    
+                    // Vérifier si l'entreprise correspond à AU MOINS UNE des antennes de l'agent
+                    boolean matches = agentAntennes.stream()
+                        .anyMatch(antenne -> isRegionCodeInAntenne(regionCode, antenne));
+                    
+                    System.out.println("🚨 [FILTRAGE] " + entreprise.getNom() + " (région " + regionCode + ") - Autorisée: " + matches + " (antennes: " + agentAntennes.stream().map(AntenneAgents::name).collect(Collectors.toList()) + ")");
+                    return matches;
                 })
                 .collect(Collectors.toList());
             
             System.out.println("🚨🚨🚨 [FILTRAGE] RÉSULTAT: " + filteredList.size() + "/" + originalPage.getContent().size() + " entreprises conservées 🚨🚨🚨");
             
-            return new PageImpl<>(filteredList, pageable, filteredList.size());
+            // Utiliser le total original pour la pagination, pas la taille filtrée
+            return new PageImpl<>(filteredList, pageable, originalPage.getTotalElements());
             
         } catch (Exception e) {
             System.out.println("🚨🚨🚨 [FILTRAGE] ERREUR: " + e.getMessage() + " 🚨🚨🚨");
@@ -3391,13 +3550,17 @@ public class EntrepriseController {
                 entreprise.setEtapeValidation(EtapeValidation.RCCM2);
                 System.out.println("✅ [EntrepriseController] Entreprise approuvée - transition vers RCCM2");
             } else if ("rejete".equals(decision)) {
-                // Retourner à l'étape précédente selon le type d'entreprise
-                // Toutes les entreprises rejetées retournent à REVISION (RCCM1 supprimé du workflow)
-                entreprise.setEtapeValidation(EtapeValidation.REVISION);
+                // Retourner à l'étape ACCUEIL pour correction
+                entreprise.setEtapeValidation(EtapeValidation.ACCUEIL);
+                entreprise.setStatutCreation(StatutCreation.REFUSEE);
                 // Sauvegarder le motif de rejet
                 entreprise.setMotifRejet(commentaire);
-                System.out.println("❌ [EntrepriseController] Entreprise rejetée - retour vers REVISION");
+                // Désassigner pour retour dans "Demandes à traiter"
+                entreprise.setAssignedTo(null);
+                System.out.println("❌ [EntrepriseController] Entreprise rejetée - retour vers ACCUEIL");
+                System.out.println("📝 [EntrepriseController] Statut: REFUSEE (rejeté)");
                 System.out.println("📝 [EntrepriseController] Motif de rejet sauvegardé: " + commentaire);
+                System.out.println("🔄 [EntrepriseController] Entreprise désassignée pour retour dans 'Demandes à traiter'");
             } else {
                 throw new BadRequestException("Décision invalide. Valeurs acceptées: 'approuve', 'rejete'");
             }

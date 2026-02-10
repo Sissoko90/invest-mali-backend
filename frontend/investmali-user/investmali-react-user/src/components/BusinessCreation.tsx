@@ -14781,7 +14781,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
       'accept': '*/*',
 
-      'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEwNTkxMTU5MTA0OTYw',
+      'Authorization': 'Bearer MTI1OTEyNjkxNDQ5MTIzOTE0NDkxMDc5MTA2OTEzMDkxMTY5MTA0OTEzMjkxMjY5MTI2OTE1NTkxMjI5MTI0OTEzMjkxMDU5MTQ0OTEwNzkxMjc5MTA1OTY1OTEyNjkxMjI5MTUzOTE2MDkxMTY5MTIyOTEwNjkxMzI5NjM5MTI3OTEyNzk2MDkxNzA5MTIyOTYxOTEwNjkxNjQ5MTI0OTE1MzkxNTA5MTUwOTExNTk2MjkxNzA5MTIwOTEyNjkxMjY5MTIxOTE2NzkxMTc5MTIx',
 
       'X-CSRF-TOKEN': ''
 
@@ -14801,7 +14801,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
       try {
 
-        const response = await fetch('https://apimali.test.instat.ml/api/get/regions', { headers: instatHeaders });
+        const response = await fetch('https://nina.api.instat.ml/api/get/regions', { headers: instatHeaders });
 
         if (response.ok) {
 
@@ -14825,7 +14825,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
       try {
 
-        const response = await fetch(`https://apimali.test.instat.ml/api/get/cercles/${regionCode}`, { headers: instatHeaders });
+        const response = await fetch(`https://nina.api.instat.ml/api/get/cercles/${regionCode}`, { headers: instatHeaders });
 
         if (response.ok) {
 
@@ -14849,7 +14849,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
       try {
 
-        const response = await fetch(`https://apimali.test.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
+        const response = await fetch(`https://nina.api.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
 
         if (response.ok) {
 
@@ -14875,7 +14875,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
       try {
 
-        const response = await fetch(`https://apimali.test.instat.ml/api/get/vfq/${communeCode}`, { headers: instatHeaders });
+        const response = await fetch(`https://nina.api.instat.ml/api/get/vfq/${communeCode}`, { headers: instatHeaders });
 
         
 
@@ -14907,7 +14907,7 @@ const getDivisionName = async (divisionCodeOrId: string): Promise<string> => {
 
         const cercleCode = divisionCodeOrId.substring(0, 4);
 
-        const response = await fetch(`https://apimali.test.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
+        const response = await fetch(`https://nina.api.instat.ml/api/get/communes/${cercleCode}`, { headers: instatHeaders });
 
         if (response.ok) {
 

@@ -44,6 +44,7 @@ interface DemandeRevision extends DemandeEntreprise {
   etapeValidation?: string;
   motifRejet?: string;
   reference?: string;
+  divisionCode?: string;
   createur?: {
     nom?: string;
     prenom?: string;
@@ -244,6 +245,7 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
           etapeValidation: 'REVISION',
           etapeActuelle: 'REVISION',
           statut: 'en_cours',
+          divisionCode: entreprise.divisionCode, // Ajouter le code de division pour détecter la localité
           demandeur: {
             nom: entreprise.createdBy?.personne?.nom || 'Utilisateur',
             prenom: entreprise.createdBy?.personne?.prenom || 'Inconnu',
@@ -1071,6 +1073,25 @@ const RevisionStep: React.FC<RevisionStepProps> = ({ onDossierUpdate }) => {
                     </div>
                     <h4 className="text-xl font-black text-slate-800">Finaliser la Révision</h4>
                   </div>
+                  
+                  {/* Message informatif selon la localité */}
+                  {selectedDemande.divisionCode && !selectedDemande.divisionCode.startsWith('90') && (
+                    <div className="mb-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-amber-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-800">
+                            <strong>Entreprise hors Bamako :</strong> Cette entreprise sera transférée à l'étape TCOM. Le numéro RCCM ne sera pas généré automatiquement et devra être <strong>saisi manuellement</strong> à l'étape TCOM en respectant le code du RCCM.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => handleFinaliserRevision(selectedDemande.id, 'approuve')}

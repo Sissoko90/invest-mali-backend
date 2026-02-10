@@ -126,6 +126,10 @@ public class Persons extends BaseEntity {
     @OneToMany(mappedBy = "personne", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EntrepriseMembre> entreprises = new ArrayList<>();
 
+    // Relation vers les conjoints (pour les personnes mariées)
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Conjoint> conjoints = new ArrayList<>();
+
     // Getters and Setters
     public String getNom() { return nom; }
     public void setNom(String nom) { this.nom = nom; }
@@ -207,5 +211,8 @@ public class Persons extends BaseEntity {
     
     public List<EntrepriseMembre> getEntreprises() { return entreprises; }
     public void setEntreprises(List<EntrepriseMembre> entreprises) { this.entreprises = entreprises; }
+    
+    public List<Conjoint> getConjoints() { return conjoints; }
+    public void setConjoints(List<Conjoint> conjoints) { this.conjoints = conjoints; }
 }
 
