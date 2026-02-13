@@ -125,6 +125,11 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
   const [showRejectConfirm, setShowRejectConfirm] = useState<boolean>(false);
   const [showStepDropdown, setShowStepDropdown] = useState(false);
   const [showRccmCertificate, setShowRccmCertificate] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Définition des étapes disponibles pour le retour (étapes précédentes à RCCM2)
   const availableSteps = [
@@ -658,7 +663,16 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {demandes.map((demande) => (
+            {(() => {
+              // Calculer la pagination
+              const totalPages = Math.ceil(demandes.length / itemsPerPage);
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const endIndex = startIndex + itemsPerPage;
+              const paginatedDemandes = demandes.slice(startIndex, endIndex);
+              
+              return (
+                <>
+                  {paginatedDemandes.map((demande) => (
               <div key={demande.id} className="bg-gradient-to-r from-white/95 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -736,6 +750,32 @@ const RCCM2Step: React.FC<RCCM2StepProps> = ({ onDossierUpdate }) => {
                 </div>
               </div>
             ))}
+                  
+                  {/* Pagination */}
+                  {demandes.length > 0 && (
+                    <div className="flex items-center justify-center gap-2 mt-6">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Précédent
+                      </button>
+                      <span className="text-sm text-gray-700 font-medium">
+                        Page {currentPage} sur {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage >= totalPages}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Suivant
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
